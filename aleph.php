@@ -156,7 +156,7 @@ class URL
       $this->source['pass'] = urldecode($d2[1]);
       $this->source['user'] = urldecode($d2[0]);
     }
-    $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]))) : array();
+    $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), function($el){return $el != '';})) : array();
     foreach ($this->path as &$part) $part = urldecode($part);
     $this->query = urldecode($arr[7][0]);
     parse_str($this->query, $this->query);
@@ -268,7 +268,7 @@ class URL
   {
     $path = isset($this->path) ? (array)$this->path : array();
     foreach ($path as &$part) $part = urlencode($part);
-    return '/' . implode('/', array_filter($path));
+    return '/' . implode('/', array_filter($path, function($el){return $el != '';}));
   }
 
   /**
@@ -2497,7 +2497,6 @@ final class Aleph implements \ArrayAccess
       $this->classes = array();
       $first = true;
     }
-    $flag = false;
     foreach ($paths as $path => $isRecursion)
     {
       foreach (scandir($path) as $item)
@@ -2542,19 +2541,29 @@ final class Aleph implements \ArrayAccess
                 exit;
               }
               $this->classes[$cs] = $file;
-              if ($cs == $class)
-              {
-                require_once($file);
-                $flag = (class_exists($class, false) || interface_exists($class, false));
-              }
             }
           }
         }
-        else if ($isRecursion && is_dir($file)) $flag |= $this->find($class, $file);
+        else if ($isRecursion && is_dir($file)) $this->find($class, $file);
       }
     }
-    if (isset($first)) $this->setClasses($this->classes);
-    return ($class === null) ? count($this->classes) : (bool)$flag;
+    $flag = false;
+    if (isset($first)) 
+    {
+      $this->setClasses($this->classes);
+      if ($class !== null)
+      {
+        foreach ($this->classes as $cs => $file)
+        {
+          if ($cs == $class)
+          {
+            require_once($file);
+            return (class_exists($class, false) || interface_exists($class, false));
+          }
+        }
+      }
+    }
+    return count($this->classes);
   }
   
   /**
@@ -2570,7 +2579,7 @@ final class Aleph implements \ArrayAccess
   {
     $params = array();
     $url = (string)$url;
-    $path = explode('/', $url);
+    $path = preg_split('/(?<!\\\)\/+/', $url);
     $path = array_map(function($p) use(&$params)
     {
       preg_match_all('/(?<!\\\)#((?:.(?!(?<!\\\)#))+.)./', $p, $matches);
