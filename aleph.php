@@ -698,7 +698,7 @@ class Response
         unset($headers['Content-Type']);
         unset($headers['Content-Length']);
       }
-      if (substr(PHP_SAPI, 0, 3) === 'cgi') header('Status: ' . $this->codes[$this->status]);
+      if (substr(PHP_SAPI, 0, 3) === 'cgi') header('Status: ' . $this->status . ' ' . $this->codes[$this->status]);
       else header('HTTP/' . $this->version . ' ' . $this->status . ' ' . $this->codes[$this->status]);
       foreach ($headers as $name => $value) header($name . ': ' . $value);
     }
