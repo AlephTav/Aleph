@@ -229,7 +229,7 @@ class URL
    */
   public function getURL()
   {
-    return ((isset($this->scheme) && $this->scheme != '') ? strtolower($this->scheme) . '://' : '') . $this->getSource() . $this->getPathAndQuery();
+    return (empty($this->scheme) ? '' : strtolower($this->scheme) . '://') . $this->getSource() . $this->getPathAndQuery();
   }
   
   /**
@@ -255,7 +255,7 @@ class URL
   public function getPathAndQuery()
   {
     $query = $this->getQuery();
-    return $this->getPath() . ($query ? '?' . $query : '') . ((isset($this->fragment) && $this->fragment != '') ? '#' . $this->fragment : '');
+    return $this->getPath() . ($query ? '?' . $query : '') . (empty($this->fragment) ? '' : '#' . $this->fragment);
   }
 
   /**
@@ -1191,6 +1191,8 @@ interface IDelegate
    * 'class[n]::method' - the same as 'class::method'.
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
    *
+   * Also $callback can be an instance of \Closure class.
+   *
    * @param string $callback - an Aleph framework callback string.
    * @access public
    */
@@ -1238,6 +1240,15 @@ interface IDelegate
    * @access public
    */
   public function in($permissions);
+  
+  /**
+   * Returns parameters of a delegate class method, function or closure. 
+   * Parameters returns as an array of ReflectionParameter class instance.
+   *
+   * @return \ReflectionParameter
+   * @access public
+   */
+  public function getParameters();
   
   /**
    * Returns array of detail information of a callback.
@@ -1303,7 +1314,7 @@ class Delegate implements IDelegate
   protected $numargs = null;
   
   /**
-   * Can be equal 'function' or 'class' according to callback format.
+   * Can be equal 'function', 'closure' or 'class' according to callback format.
    *
    * @var string $type
    * @access protected
@@ -1325,24 +1336,35 @@ class Delegate implements IDelegate
    * 'class[n]::method' - the same as 'class::method'.
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
    *
-   * @param string $callback - an Aleph framework callback string.
+   * Also $callback can be an instance of \Closure class.
+   *
+   * @param string $callback - an Aleph framework callback string or closure.
    * @access public
    */
   public function __construct($callback)
   {
-    preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*)$/', $callback, $matches);
-    if ($matches[4] == '' && $matches[2] == '')
+    if ($callback instanceof \Closure)
     {
-      $this->type = 'function';
-      $this->method = $matches[1];
+      $this->type = 'closure';
+      $this->method = $callback;
+      $callback = 'Closure';
     }
     else
     {
-      $this->type = 'class';
-      $this->class = $matches[1] ?: 'Aleph\Core\Aleph';
-      $this->numargs = (int)$matches[3];
-      $this->static = ($matches[4] == '::');
-      $this->method = $matches[5];
+      preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*)$/', $callback, $matches);
+      if ($matches[4] == '' && $matches[2] == '')
+      {
+        $this->type = 'function';
+        $this->method = $matches[1];
+      }
+      else
+      {
+        $this->type = 'class';
+        $this->class = $matches[1] ?: 'Aleph\Core\Aleph';
+        $this->numargs = (int)$matches[3];
+        $this->static = ($matches[4] == '::');
+        $this->method = $matches[5];
+      }
     }
     $this->callback = $callback;
   } 
@@ -1382,7 +1404,7 @@ class Delegate implements IDelegate
   public function call(array $args = null)
   {
     $args = (array)$args;
-    if ($this->type == 'function') return call_user_func_array($this->method, $args);
+    if ($this->type != 'class') return call_user_func_array($this->method, $args);
     else
     {
       if ($this->static) return call_user_func_array(array($this->class, $this->method), $args);
@@ -1428,12 +1450,25 @@ class Delegate implements IDelegate
       foreach ((array)$permissions as $permission)
       {
         $info = explode($this->static ? '::' : '->', $permission);
-        if (isset($info[1]) && $info[1] != '' && $info[1] != $this->method) continue;
+        if (!empty($info[1]) && $info[1] != $this->method) continue;
         $p = $this->split($info[0]);
         if ($p[0] != '' && $m == $p || $p[0] == '' && $m[1] == $p[1]) return true;
       }
     }
     return false;
+  }
+  
+  /**
+   * Returns parameters of a delegate class method, function or closure. 
+   * Parameters returns as an array of ReflectionParameter class instance.
+   *
+   * @return \ReflectionParameter
+   * @access public
+   */
+  public function getParameters()
+  {
+    if ($this->type != 'class') return foo(new \ReflectionFunction($this->method))->getParameters();
+    return foo(new \ReflectionClass($this->class))->getMethod($this->method ?: '__construct')->getParameters();
   }
   
   /**
@@ -1917,7 +1952,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Creates and executes a delegate.
    *
-   * @param string $callback - the Aleph callback string.
+   * @param string $callback - the Aleph callback string or closure.
    * @params arguments of the callback.
    * @return mixed
    * @access public
@@ -1927,7 +1962,6 @@ final class Aleph implements \ArrayAccess
   {
     $params = func_get_args();
     $method = array_shift($params);
-    if ($method instanceof \Closure) return call_user_func_array($method, $params);
     return foo(new Delegate($method))->call($params);
   }
   
@@ -2035,9 +2069,9 @@ final class Aleph implements \ArrayAccess
     foreach (array('templateDebug', 'templateBug') as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
     try
     {
-      if (isset($config['logging']) && $config['logging'])
+      if (!empty($config['logging']))
       {
-        if (isset($config['customLogMethod']) && $config['customLogMethod'])
+        if (!empty($config['customLogMethod']))
         {
           self::delegate($config['customLogMethod'], $info);
         }
@@ -2048,7 +2082,7 @@ final class Aleph implements \ArrayAccess
       }
     }
     catch (\Exception $e){}
-    if ($isDebug && isset($config['customDebugMethod']) && $config['customDebugMethod'])
+    if ($isDebug && !empty($config['customDebugMethod']))
     {
       self::delegate($config['customDebugMethod'], $e, $info);
       return;
@@ -2451,13 +2485,9 @@ final class Aleph implements \ArrayAccess
     $classes = $this->getClasses();
     if ($auto && $this->alCallBack)
     {
-      if ($this->alCallBack instanceof \Closure) $this->alCallBack($class, $classes);
-      else
-      {
-        $info = $this->alCallBack->getInfo();
-        $this->al($info['class'], false);
-        $this->alCallBack->call(array($class, $classes));
-      }
+      $info = $this->alCallBack->getInfo();
+      if ($info['type'] == 'class') $this->al($info['class'], false);
+      $this->alCallBack->call(array($class, $classes));
       return true;
     }
     $cs = strtolower($class);
@@ -2779,7 +2809,7 @@ final class Aleph implements \ArrayAccess
   public function setAutoload($callback)
   {
     if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof IDelegate)) throw new Exception($this, 'ERR_GENERAL_4');
-    if (!is_object($callback)) $callback = new Delegate($callback);
+    if (!($callback instanceof Delegate)) $callback = new Delegate($callback);
     $this->alCallBack = $callback;
   }
   
@@ -2828,7 +2858,7 @@ final class Aleph implements \ArrayAccess
     };
     $key = $url ? md5($url) : 'default';
     $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => array(), 'action' => $action, 'regex' => $url);
+    $this->acts['actions'][$key] = array('params' => array(), 'action' => $action, 'regex' => $url, 'checkParameters' => false);
     foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
   }
   
@@ -2843,11 +2873,10 @@ final class Aleph implements \ArrayAccess
   public function redirect($url, $redirect, $methods = 'GET|POST')
   {
     $params = $this->parseURLTemplate($url, $key, $regex);
-    $t = microtime(true); $k = 0;
-    foreach ($params as $param)
+    $t = microtime(true);
+    for ($k = 0, $n = count($params); $k < $n; $k++)
     {
       $redirect = preg_replace('/(?<!\\\)#((.(?!(?<!\\\)#))+.)./', md5($t + $k), $redirect);
-      $k++;
     }
     $action = function() use($t, $redirect)
     {
@@ -2859,7 +2888,7 @@ final class Aleph implements \ArrayAccess
       Aleph::go($url);
     };
     $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex);
+    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex, 'checkParameters' => false);
     foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
   }
   
@@ -2869,44 +2898,14 @@ final class Aleph implements \ArrayAccess
    * @param string $url - regex URL template.
    * @param closure | Aleph\Core\IDelegate | string $action
    * @param array | string $methods - HTTP request methods.
+   * @param boolean $checkParameters
    * @access public
    */
-  public function bind($url, $action, $methods = 'GET|POST')
+  public function bind($url, $action, $methods = 'GET|POST', $checkParameters = true)
   {
     $params = $this->parseURLTemplate($url, $key, $regex);
-    $tmp = array();
-    if ($action instanceof \Closure)
-    {
-      foreach (foo(new \ReflectionFunction($action))->getParameters() as $param) 
-      {
-        $name = $param->getName();
-        if (isset($params[$name])) $tmp[] = $params[$name];
-      }
-    }
-    else 
-    {
-      if (!($action instanceof \Delegate)) $action = new Delegate($action);
-      $info = $action->getInfo();
-      if ($info['type'] == 'function')
-      {
-        foreach (foo(new \ReflectionFunction($action))->getParameters() as $param) 
-        {
-          $name = $param->getName();
-          if (isset($params[$name])) $tmp[] = $params[$name];
-        }
-      }
-      else if ($info['type'] == 'class')
-      {
-        foreach (foo(new \ReflectionClass($info['class']))->getMethod($info['method'] ?: '__construct')->getParameters() as $param)
-        {
-          $name = $param->getName();
-          if (isset($params[$name])) $tmp[] = $params[$name];
-        }
-      }
-    }
-    $params = $tmp;
     $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex);
+    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex, 'checkParameters' => $checkParameters);
     foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
   }
   
@@ -2916,7 +2915,7 @@ final class Aleph implements \ArrayAccess
    * @param string | array - HTTP request methods.
    * @param string $url - regex URL template.
    * @param string $component - URL component.
-   * @return mixed
+   * @return \StdClass with two properties: result - a result of the acted action, success - indication that the action was worked out.
    * @access public
    */
   public function route($methods = null, $url = null, $component = Net\URL::COMPONENT_PATH)
@@ -2938,6 +2937,9 @@ final class Aleph implements \ArrayAccess
         $url = foo(new Net\URL())->build($component);
       }
     }
+    $res = new \StdClass();
+    $res->success = false;
+    $res->result = null;
     foreach ($methods as $method)
     {
       $method = strtolower($method);
@@ -2945,16 +2947,24 @@ final class Aleph implements \ArrayAccess
       foreach ($this->acts['methods'][$method] as $key => $flag)
       {
         $action = $this->acts['actions'][$key];
-        if (preg_match_all($action['regex'], $url, $matches))
+        if (!preg_match_all($action['regex'], $url, $matches)) continue;
+        $act = ($action instanceof Delegate) ? $action['action'] : new Delegate($action['action']);
+        if ($action['checkParameters'])
         {
-          $act = $action['action'];
-          $params = array();
-          foreach ($action['params'] as $param) $params[] = $matches[$param][0];
-          if ($act instanceof \Closure) return call_user_func_array($act, $params);
-          return $act->call($params);
+          foreach ($act->getParameters() as $param) 
+          {
+            $name = $param->getName();
+            if (!isset($action['params'][$name])) unset($action['params'][$name]);
+          }
         }
+        $params = array();
+        foreach ($action['params'] as $param) $params[] = $matches[$param][0];
+        $res->success = true;
+        $res->result = $act->call($params);
+        return $res;
       }
     }
+    return $res;
   }
   
   /**
