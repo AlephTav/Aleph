@@ -1142,7 +1142,7 @@ final class Aleph implements \ArrayAccess
    * @return Aleph\Cache\Cache
    * @access public
    */
-  public function cache(Cache\Cache $cache = null)
+  public function cache(Cache $cache = null)
   {
     if ($cache === null)
     {
