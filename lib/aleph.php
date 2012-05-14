@@ -523,7 +523,6 @@ final class Aleph implements \ArrayAccess
     $info['isFatalError'] = $isFatalError;
     $config = (self::$instance !== null) ? self::$instance->config : array();
     $isDebug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
-    foreach (array('templateDebug', 'templateBug') as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
     try
     {
       if (!empty($config['logging']))
@@ -563,6 +562,7 @@ final class Aleph implements \ArrayAccess
       $tmp = array();
       $info['stack'] = htmlspecialchars($info['stack']);
       foreach ($info as $k => $v) $tmp['[{' . $k . '}]'] = $v;
+      $templateDebug = isset($config['templateDebug']) ? self::dir($config['templateDebug']) : null;
       $templateDebug = strtr((is_file($templateDebug) && is_readable($templateDebug)) ? file_get_contents($templateDebug) : self::TEMPLATE_DEBUG, $tmp);
       if (isset($_SESSION))
       {
@@ -579,6 +579,7 @@ final class Aleph implements \ArrayAccess
     }
     else
     {
+      $templateBug = isset($config['templateBug']) ? self::dir($config['templateBug']) : null;
       self::$output = (is_file($templateBug) && is_readable($templateBug)) ? file_get_contents($templateBug) : self::TEMPLATE_BUG;
     }
   }
