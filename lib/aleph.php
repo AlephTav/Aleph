@@ -929,11 +929,12 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Private __clone() method prevents this object cloning.
-   *
-   * @access private
+   * Prevents this object to be cloned.
    */
-  private function __clone(){}
+  public function __clone()
+  {
+    trigger_error('Clone is not allowed.', E_USER_ERROR);
+  }
   
   /**
    * Autoloads classes and intefaces.
