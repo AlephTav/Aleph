@@ -270,7 +270,7 @@ class Template implements \ArrayAccess
     extract($this->globals);
     ob_start();
     if (is_file(${'(_._)'})) require(${'(_._)'});
-    else eval(Aleph::ecode(' ?>' . ${'(_._)'} . '<?php '));
+    else eval(\Aleph::ecode(' ?>' . ${'(_._)'} . '<?php '));
     $content = ob_get_clean();
     foreach (${'(^|^)'} as $name => $globals) $this->vars[$name]->setGlobals($globals); 
     return $content;
@@ -300,7 +300,7 @@ class Template implements \ArrayAccess
     }
     catch (\Exception $e)
     {
-      Aleph::exception($e);
+      \Aleph::exception($e);
     }
   }
 }

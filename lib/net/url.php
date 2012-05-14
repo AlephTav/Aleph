@@ -297,7 +297,7 @@ class URL
     }
     catch (\Exception $e)
     {
-      Aleph\Aleph::exception($e);
+      \Aleph::exception($e);
     }
   }
 }
