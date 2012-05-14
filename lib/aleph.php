@@ -20,7 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Core;
+namespace Aleph;
 
 use Aleph\Cache,
     Aleph\Net;
