@@ -334,11 +334,14 @@ abstract class Cache implements \ArrayAccess, \Countable
     $this->lock = true;
     $k = md5($key);
     $vault = $this->getVault();
-    $group = $vault[$k][2];
-    unset($vault['groups'][$group][$k]);
-    if (count($vault['groups'][$group]) == 0) unset($vault['groups'][$group]);
-    unset($vault[$k]);
-    $this->set($this->vaultKey, $vault, $this->vaultLifeTime);
+    if (isset($vault[$k]))
+    {
+      $group = $vault[$k][2];
+      unset($vault['groups'][$group][$k]);
+      if (count($vault['groups'][$group]) == 0) unset($vault['groups'][$group]);
+      unset($vault[$k]);
+      $this->set($this->vaultKey, $vault, $this->vaultLifeTime);
+    }
     $this->lock = false;
   }
 }

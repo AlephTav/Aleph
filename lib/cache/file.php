@@ -81,10 +81,11 @@ class File extends Cache
   public function set($key, $content, $expire, $group = '')
   {          
     if (!$this->dir) $this->setDirectory();
-    $expire = abs((int)$expire);  
+    $expire = abs((int)$expire);
     $file = $this->dir . md5($key);
-    file_put_contents($file, serialize($content));
-    file_put_contents($file . '_expire', $expire);
+    file_put_contents($file, serialize($content), LOCK_EX);
+    chmod($file, 0777);
+    touch($file, $expire + time());
     $this->saveKey($key, $expire, $group);
   }
 
@@ -115,25 +116,13 @@ class File extends Cache
     $file = $this->dir . md5($key);
     if (!is_file($file))
     {
-      if (is_file($file . '_expire')) unlink($file . '_expire');
       $this->removeKey($key);
       return true;
     }
-    if (!is_file($file . '_expire')) 
-    {
-      if (is_file($file)) unlink($file);
-      $this->removeKey($key);
-      return true;
-    }
-    if (!($mtime = filemtime($file))) return true;      
-    if ($mtime + (int)file_get_contents($file . '_expire') < time())
-    {
-      unlink($file);
-      unlink($file . '_expire');
-      $this->removeKey($key);
-      return true;
-    }
-    return false;
+    if (filemtime($file) > time()) return false;
+    unlink($file);
+    $this->removeKey($key);
+    return true;
   }
 
   /**
@@ -147,7 +136,6 @@ class File extends Cache
     if (!$this->dir) $this->setDirectory();
     $file = $this->dir . md5($key);
     if (is_file($file)) unlink($file);
-    if (is_file($file . '_expire')) unlink($file . '_expire');
     $this->removeKey($key);
   }
   
@@ -177,18 +165,11 @@ class File extends Cache
     if (!$this->dir) $this->setDirectory();
     foreach (scandir($this->dir) as $item)
     {
-      if ($item == '..' || $item == '.' || substr($item, -7) == '_expire') continue;
+      if ($item == '..' || $item == '.') continue;
       $file = $this->dir . $item;
-      if (!is_file($file . '_expire'))
+      if (filemtime($file) < time())
       {
         unlink($file);
-        $this->removeKey($file);
-        continue;
-      }
-      if (!($mtime = filemtime($file)) || $mtime + (int)file_get_contents($file . '_expire') < time())
-      {
-        unlink($file);
-        unlink($file . '_expire');
         $this->removeKey($file);
       }
     }
