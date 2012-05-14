@@ -60,7 +60,7 @@ class Exception extends \Exception
   {
     $this->class = func_get_arg(0);
     $this->token = func_get_arg(1);
-    parent::__construct(call_user_func_array(array('Aleph\Core\Aleph', 'error'), func_get_args()));
+    parent::__construct(call_user_func_array(array('Aleph', 'error'), func_get_args()));
   }
   
   /**

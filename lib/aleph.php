@@ -20,9 +20,8 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph;
-
-use Aleph\Cache,
+use Aleph\Core,
+    Aleph\Cache,
     Aleph\Net;
 
 /**
@@ -419,7 +418,7 @@ final class Aleph implements \ArrayAccess
   {
     $params = func_get_args();
     $method = array_shift($params);
-    return foo(new Delegate($method))->call($params);
+    return foo(new Core\Delegate($method))->call($params);
   }
   
   /**
@@ -523,6 +522,7 @@ final class Aleph implements \ArrayAccess
     $info['isFatalError'] = $isFatalError;
     $config = (self::$instance !== null) ? self::$instance->config : array();
     $isDebug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
+    foreach (array('templateDebug', 'templateBug') as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
     try
     {
       if (!empty($config['logging']))
@@ -562,7 +562,6 @@ final class Aleph implements \ArrayAccess
       $tmp = array();
       $info['stack'] = htmlspecialchars($info['stack']);
       foreach ($info as $k => $v) $tmp['[{' . $k . '}]'] = $v;
-      $templateDebug = isset($config['templateDebug']) ? self::dir($config['templateDebug']) : null;
       $templateDebug = strtr((is_file($templateDebug) && is_readable($templateDebug)) ? file_get_contents($templateDebug) : self::TEMPLATE_DEBUG, $tmp);
       if (isset($_SESSION))
       {
@@ -579,7 +578,6 @@ final class Aleph implements \ArrayAccess
     }
     else
     {
-      $templateBug = isset($config['templateBug']) ? self::dir($config['templateBug']) : null;
       self::$output = (is_file($templateBug) && is_readable($templateBug)) ? file_get_contents($templateBug) : self::TEMPLATE_BUG;
     }
   }
@@ -1142,7 +1140,7 @@ final class Aleph implements \ArrayAccess
    * @return Aleph\Cache\Cache
    * @access public
    */
-  public function cache(Cache $cache = null)
+  public function cache(Cache\Cache $cache = null)
   {
     if ($cache === null)
     {
@@ -1277,8 +1275,8 @@ final class Aleph implements \ArrayAccess
    */
   public function setAutoload($callback)
   {
-    if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof IDelegate)) throw new Exception($this, 'ERR_GENERAL_4');
-    if (!($callback instanceof Delegate)) $callback = new Delegate($callback);
+    if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof Core\IDelegate)) throw new Exception($this, 'ERR_GENERAL_4');
+    if (!($callback instanceof Core\Delegate)) $callback = new Core\Delegate($callback);
     $this->alCallBack = $callback;
   }
   
@@ -1417,7 +1415,7 @@ final class Aleph implements \ArrayAccess
       {
         $action = $this->acts['actions'][$key];
         if (!preg_match_all($action['regex'], $url, $matches)) continue;
-        $act = ($action instanceof Delegate) ? $action['action'] : new Delegate($action['action']);
+        $act = ($action instanceof Core\Delegate) ? $action['action'] : new Core\Delegate($action['action']);
         if ($action['checkParameters'])
         {
           foreach ($act->getParameters() as $param) 

@@ -36,8 +36,8 @@ interface IDelegate
    * Constructor. The only argument of it is string in Aleph framework format.
    * The following formats are possible:
    * 'function' - invokes a global function with name 'function'.
-   * '->method' - invokes a method 'method' of object Aleph\Core\Aleph. 
-   * '::method' - invokes a static method 'method' of class Aleph\Core\Aleph.
+   * '->method' - invokes a method 'method' of object Aleph. 
+   * '::method' - invokes a static method 'method' of class Aleph.
    * 'class::method' - invokes a static method 'method' of a class 'class'.
    * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
    * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -181,8 +181,8 @@ class Delegate implements IDelegate
    * Constructor. The only argument of it is string in Aleph framework format.
    * The following formats are possible:
    * 'function' - invokes a global function with name 'function'.
-   * '->method' - invokes a method 'method' of object Aleph\Core\Aleph. 
-   * '::method' - invokes a static method 'method' of class Aleph\Core\Aleph.
+   * '->method' - invokes a method 'method' of object Aleph. 
+   * '::method' - invokes a static method 'method' of class Aleph.
    * 'class::method' - invokes a static method 'method' of a class 'class'.
    * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
    * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -216,7 +216,7 @@ class Delegate implements IDelegate
       else
       {
         $this->type = 'class';
-        $this->class = $matches[1] ?: 'Aleph\Core\Aleph';
+        $this->class = $matches[1] ?: 'Aleph';
         $this->numargs = (int)$matches[3];
         $this->static = ($matches[4] == '::');
         $this->method = $matches[5];
@@ -264,7 +264,7 @@ class Delegate implements IDelegate
     else
     {
       if ($this->static) return call_user_func_array(array($this->class, $this->method), $args);
-      if ($this->class == 'Aleph\Core\Aleph') $class = Aleph::instance();
+      if ($this->class == 'Aleph') $class = \Aleph::instance();
       else
       {
         $class = new \ReflectionClass($this->class);

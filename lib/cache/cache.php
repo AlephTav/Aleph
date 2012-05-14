@@ -22,8 +22,6 @@
 
 namespace Aleph\Cache;
 
-use Aleph\Core;
-
 /**
  * Base abstract class for building of classes that intended for caching different data.
  *
@@ -65,7 +63,7 @@ abstract class Cache implements \ArrayAccess, \Countable
    */
   public function __construct()
   {
-    $this->vaultKey = 'vault_' . Core\Aleph::getSiteUniqueID();
+    $this->vaultKey = 'vault_' . \Aleph::getSiteUniqueID();
   }
   
   /**
@@ -86,10 +84,11 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @param string $key - a data key.
    * @param mixed $content - some data.
    * @param integer $expire - cache lifetime (in seconds).
+   * @param string $group - group of a data key.
    * @access public
    * @abstract
    */
-  abstract public function set($key, $content, $expire);
+  abstract public function set($key, $content, $expire, $group = '');
 
   /**
    * Returns some data previously conserved in cache.
@@ -271,18 +270,54 @@ abstract class Cache implements \ArrayAccess, \Countable
   }
   
   /**
+   * Returns cached data by their group.
+   *
+   * @param string $group - group of cached data.
+   * @return array
+   * @access public   
+   */
+  public function getByGroup($group = '')
+  {
+    $vault = $this->getVault();
+    if (!isset($vault['groups'][$group]) || !is_array($vault['groups'][$group])) return array();
+    $tmp = array();
+    foreach ($vault['groups'][$group] as $k => $foo)
+    {
+      $key = $vault[$k][0];
+      $tmp[$key] = $this->get($key);
+    }
+    return $tmp;
+  }
+  
+  /**
+   * Cleans cached data by their group.
+   *
+   * @param string $group - group of cached data.
+   * @access public
+   */
+  public function cleanByGroup($group = '')
+  {
+    $vault = $this->getVault();
+    if (!isset($vault['groups'][$group]) || !is_array($vault['groups'][$group])) return;
+    foreach ($vault['groups'][$group] as $k => $foo) $this->remove($vault[$k][0]);
+  }
+  
+  /**
    * Saves the key of caching data in the key vault.
    *
    * @param string $key - a key to save.
    * @param integer $expire - cache lifetime of data defined by the key.
+   * @param string $group - group of a key.
    * @access protected
    */
-  protected function saveKey($key, $expire)
+  protected function saveKey($key, $expire, $group = '')
   {
     if ($this->lock) return;
     $this->lock = true;
+    $k = md5($key);
     $vault = $this->getVault();
-    $vault[md5($key)] = array($key, abs((int)$expire));
+    $vault['groups'][$group][$k] = 1;
+    $vault[$k] = array($key, abs((int)$expire), $group);
     $this->set($this->vaultKey, $vault, $this->vaultLifeTime);
     $this->lock = false;
   }
@@ -297,8 +332,12 @@ abstract class Cache implements \ArrayAccess, \Countable
   {
     if ($this->lock) return;
     $this->lock = true;
+    $k = md5($key);
     $vault = $this->getVault();
-    unset($vault[md5($key)]);
+    $group = $vault[$k][2];
+    unset($vault['groups'][$group][$k]);
+    if (count($vault['groups'][$group]) == 0) unset($vault['groups'][$group]);
+    unset($vault[$k]);
     $this->set($this->vaultKey, $vault, $this->vaultLifeTime);
     $this->lock = false;
   }

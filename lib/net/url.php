@@ -195,7 +195,7 @@ class URL
       case self::COMPONENT_QUERY:
         return $this->getQuery();
     }
-    throw new Core\Exception('Aleph\Core\Aleph', 'ERR_URL_1', $component);
+    throw new Core\Exception('Aleph\Aleph', 'ERR_URL_1', $component);
   }
   
   /**
@@ -297,7 +297,7 @@ class URL
     }
     catch (\Exception $e)
     {
-      Core\Aleph::exception($e);
+      Aleph\Aleph::exception($e);
     }
   }
 }

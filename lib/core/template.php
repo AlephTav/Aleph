@@ -117,6 +117,28 @@ class Template implements \ArrayAccess
   {
     $this->globals = $globals;
   }
+  
+  /**
+   * Returns template string.
+   *
+   * @return string
+   * @access public
+   */
+  public function getTemplate()
+  {
+    return $this->template;
+  }
+  
+  /**
+   * Sets template.
+   *
+   * @param string $template - template string or path to a template file.
+   * @access public
+   */
+  public function setTemplate($template)
+  {
+    $this->template = $template;
+  }
 
   /**
    * Sets new value of a global template variable.
@@ -249,8 +271,7 @@ class Template implements \ArrayAccess
     ob_start();
     if (is_file(${'(_._)'})) require(${'(_._)'});
     else eval(Aleph::ecode(' ?>' . ${'(_._)'} . '<?php '));
-    $content = ob_get_contents();
-    ob_end_clean();
+    $content = ob_get_clean();
     foreach (${'(^|^)'} as $name => $globals) $this->vars[$name]->setGlobals($globals); 
     return $content;
   }

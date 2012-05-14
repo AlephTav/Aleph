@@ -52,7 +52,7 @@ class File extends Cache
    */
   public function setDirectory($path = null)
   {
-    $dir = Core\Aleph::dir($path ?: 'cache');
+    $dir = \Aleph::dir($path ?: 'cache');
     if (!is_dir($dir)) mkdir($dir, 0775, true);
     if (!is_writable($dir)) throw new Core\Exception($this, 'ERR_CACHE_FILE_1', $dir);
     $this->dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
@@ -75,16 +75,17 @@ class File extends Cache
    * @param string $key - a data key.
    * @param mixed $content - some data.
    * @param integer $expire - cache lifetime (in seconds).
+   * @param string $group - group of a data key.
    * @access public
    */  
-  public function set($key, $content, $expire)
+  public function set($key, $content, $expire, $group = '')
   {          
     if (!$this->dir) $this->setDirectory();
     $expire = abs((int)$expire);  
     $file = $this->dir . md5($key);
     file_put_contents($file, serialize($content));
     file_put_contents($file . '_expire', $expire);
-    $this->saveKey($key, $expire);
+    $this->saveKey($key, $expire, $group);
   }
 
   /**
