@@ -33,6 +33,9 @@ use Aleph\Core;
  */
 class File extends Cache
 {  
+  /**
+   * Error message templates.
+   */
   const ERR_CACHE_FILE_1 = 'Cache directory "[{var}]" is not writable.';
 
   /**
@@ -158,15 +161,18 @@ class File extends Cache
   /**
    * Garbage collector that should be used for removing of expired cache data.
    *
+   * @param float $probability - probability of garbage collector performing.
    * @access public
    */
-  public function gc()
+  public function gc($probability = 100)
   {
     if (!$this->dir) $this->setDirectory();
+    if ((float)$probability * 1000 < rand(0, 99999)) return;
     foreach (scandir($this->dir) as $item)
     {
       if ($item == '..' || $item == '.') continue;
       $file = $this->dir . $item;
+      if (!is_file($file)) continue;
       if (filemtime($file) < time())
       {
         unlink($file);

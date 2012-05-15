@@ -3,9 +3,8 @@
 $_SERVER['DOCUMENT_ROOT'] = __DIR__;
 require_once('lib/aleph.php');
 
-$a = Aleph::init()->config('app/engine/config.ini');
+$a = Aleph::init();
 
-if (method_exists($a->cache(), 'gc') && isset($a['cache']['gcProbability']))
-{
-  if ((int)$a['cache']['gcProbability'] > rand(0, 99)) $a->cache()->gc();
-}
+$a->config('app/engine/config.ini')
+  ->cache(Cache\Cache::getInstance())
+  ->gc($a['cache']['gcProbability']);

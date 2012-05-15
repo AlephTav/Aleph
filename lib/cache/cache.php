@@ -57,6 +57,28 @@ abstract class Cache implements \ArrayAccess, \Countable
   protected $vaultLifeTime = 31536000; // 1 year
   
   /**
+   * Returns an instance of caching class according to configuration settings. 
+   *
+   * @access public
+   * @static
+   */
+  public static function getInstance()
+  {
+    $a = \Aleph::getInstance();
+    $params = $a['cache'];
+    switch (strtolower(isset($params['type']) ? $params['type'] : ''))
+    {
+      case 'memory':
+        return new Memory(isset($params['servers']) ? (array)$params['servers'] : array(), isset($params['compress']) ? (bool)$params['compress'] : true);
+      case 'file':
+      default:
+        $cache = new File();
+        if (isset($params['directory'])) $cache->setDirectory($params['directory']);
+        return $cache;
+    }
+  }
+  
+  /**
    * Constructor of the class.
    *
    * @access public
@@ -126,6 +148,14 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @abstract
    */
   abstract public function clean();
+  
+  /**
+   * Garbage collector that should be used for removing of expired cache data.
+   *
+   * @param float $probability - probability of garbage collector performing.
+   * @access public
+   */
+  public function gc($probability = 100){}
   
   /**
    * Returns the number of data items previously conserved in cache.

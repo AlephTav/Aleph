@@ -710,7 +710,11 @@ final class Aleph implements \ArrayAccess
         Aleph::exception(new \ErrorException($res[2], 0, 1, $res[3], $res[4]), true);
         return Aleph::getOutput();
       });
-      foreach (array('/lib/core/exception.php' => 'Aleph\Core\Exception', '/lib/cache/cache.php' => 'Aleph\Cache\Cache', '/lib/cache/file.php' => 'Aleph\Cache\File') as $path => $class)
+      $files = array('/lib/core/exception.php' => 'Aleph\Core\Exception', 
+                     '/lib/cache/cache.php' => 'Aleph\Cache\Cache', 
+                     '/lib/cache/file.php' => 'Aleph\Cache\File',
+                     '/lib/cache/memory.php' => 'Aleph\Cache\Memory');
+      foreach ($files as $path => $class)
       {
         if (class_exists($class, false)) continue;
         if (is_file(self::$root . $path)) require_once(self::$root . $path);
@@ -1121,14 +1125,22 @@ final class Aleph implements \ArrayAccess
     }
     else
     {
-      $data = parse_ini_file($param, true);
+      $data = parse_ini_file($param, true, INI_SCANNER_RAW);
       if ($data === false) throw new Exception($this, 'ERR_CONFIG_1', $param);
     }
     if ($replace) $this->config = array();
+    $convert = function($v)
+    {
+      if ($v[0] == '[' && $v[strlen($v) - 1] == ']' || $v[0] == '{' && $v[strlen($v) - 1] == '}') 
+      {
+        if (($r = json_decode($v, true)) !== null) $v = $r;
+      }
+      return $v;
+    };
     foreach ($data as $section => $properties)
     {
-      if (is_array($properties)) foreach ($properties as $k => $v) $this->config[$section][$k] = $v;
-      else $this->config[$section] = $properties;
+      if (is_array($properties)) foreach ($properties as $k => $v) $this->config[$section][$k] = $convert($v);
+      else $this->config[$section] = $convert($properties);
     }
     return $this;
   }
