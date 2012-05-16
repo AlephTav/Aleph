@@ -22,6 +22,8 @@
 
 namespace Aleph\Cache;
 
+use Aleph\Core;
+
 /**
  * Base abstract class for building of classes that intended for caching different data.
  *
@@ -32,6 +34,11 @@ namespace Aleph\Cache;
  */
 abstract class Cache implements \ArrayAccess, \Countable
 {
+  /**
+   * Error message templates.
+   */
+  const ERR_CACHE_1 = 'Cache of type "[{var}]" is not available.';
+
   /**
    * The vault key of all cached data.  
    *
@@ -66,12 +73,25 @@ abstract class Cache implements \ArrayAccess, \Countable
   {
     $a = \Aleph::getInstance();
     $params = $a['cache'];
+    $include = function($class, $path)
+    {
+      if (class_exists($class, false)) return;
+      if (is_file(\Aleph::getRoot() . $path)) require_once(\Aleph::getRoot() . $path);
+      if (!class_exists($class, false)) throw new Core\Exception('Aleph\Core\Aleph', 'ERR_GENERAL_6', $class, \Aleph::getRoot() . $path);
+    };
     switch (strtolower(isset($params['type']) ? $params['type'] : ''))
     {
       case 'memory':
+        $include('Aleph\Cache\Memory', '/lib/cache/memory.php');
+        if (!Memory::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache', 'ERR_CACHE_1', 'Memory');
         return new Memory(isset($params['servers']) ? (array)$params['servers'] : array(), isset($params['compress']) ? (bool)$params['compress'] : true);
+      case 'apc':
+        $include('Aleph\Cache\APC', '/lib/cache/apc.php');
+        if (!APC::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache', 'ERR_CACHE_1', 'APC');
+        return new APC();
       case 'file':
       default:
+        $include('Aleph\Cache\File', '/lib/cache/file.php');
         $cache = new File();
         if (isset($params['directory'])) $cache->setDirectory($params['directory']);
         return $cache;
@@ -166,7 +186,7 @@ abstract class Cache implements \ArrayAccess, \Countable
   public function count()
   {
     $vault = $this->getVault();
-    return is_array($vault) ? count($vault) : 0;
+    return is_array($vault) ? count($vault) - 1 : 0;
   }
   
   /**

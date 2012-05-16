@@ -711,9 +711,7 @@ final class Aleph implements \ArrayAccess
         return Aleph::getOutput();
       });
       $files = array('/lib/core/exception.php' => 'Aleph\Core\Exception', 
-                     '/lib/cache/cache.php' => 'Aleph\Cache\Cache', 
-                     '/lib/cache/file.php' => 'Aleph\Cache\File',
-                     '/lib/cache/memory.php' => 'Aleph\Cache\Memory');
+                     '/lib/cache/cache.php' => 'Aleph\Cache\Cache');
       foreach ($files as $path => $class)
       {
         if (class_exists($class, false)) continue;
@@ -936,6 +934,13 @@ final class Aleph implements \ArrayAccess
    * @access private
    */
   private function __clone(){}
+  
+  /**
+   * Private __wakeup() method prevents unserialization of this object.
+   *
+   * @access private
+   */
+  private function __wakeup(){}
   
   /**
    * Autoloads classes and intefaces.
