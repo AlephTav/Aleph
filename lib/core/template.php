@@ -350,10 +350,8 @@ class Template implements \ArrayAccess
           else
           {
             $tpl = $this->vars[$part[0]];
-            $globals = $tpl->getGlobals();
-            $tpl->setGlobals($this->globals);
+            $tpl->assign($this->globals, true);
             $content .= $tmp[$part[0]] = $tpl->render();
-            $tpl->setGlobals($globals);
           }
         }        
         else $content .= $part[0];
@@ -362,11 +360,12 @@ class Template implements \ArrayAccess
     }
     foreach ($this->templates as $name) 
     {
-      $tmp[$name] = $this->vars[$name]->getGlobals();
-      $this->vars[$name]->setGlobals($this->globals);
+      $tmp[$name] = $this->vars[$name];
+      $this->vars[$name]->assign($this->globals, true);
+      $this->vars[$name] = $this->vars[$name]->render();
     }
     $content = $render($this);
-    foreach ($tmp as $name => $globals) $this->vars[$name]->setGlobals($globals);
+    foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
     return $content;
   }
 
