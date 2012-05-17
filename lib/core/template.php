@@ -22,6 +22,8 @@
 
 namespace Aleph\Core;
 
+use Aleph\Cache;
+
 /**
  * This class is templator using php as template language.
  *
@@ -31,6 +33,22 @@ namespace Aleph\Core;
  */
 class Template implements \ArrayAccess
 {
+  /**
+   * Cache expiration time of template.
+   *
+   * @var integer $expire
+   * @access public
+   */
+  public $expire = 0;
+  
+  /**
+   * An instance of Aleph\Cache\Cache class.
+   *
+   * @var Aleph\Cache\Cache $cache
+   * @access protected
+   */
+  protected $cache = null;
+
   /**
    * Template variables.
    *
@@ -67,12 +85,39 @@ class Template implements \ArrayAccess
    * Constructor.
    *
    * @param string $template - template string or path to a template file.
+   * @param integer $expire - template cache life time in seconds.
+   * @param Aleph\Cache\Cache - an instance of caching class.
    * @access public
    */
-  public function __construct($template = null)
+  public function __construct($template = null, $expire = 0, Cache\Cache $cache = null)
   {
     $this->template = $template;
-  }  
+    $this->expire = (int)$expire;
+    if ($this->expire > 0) $this->setCache($cache ?: \Aleph::getInstance()->cache());
+  }
+  
+  /**
+   * Returns an instance of caching class.
+   *
+   * @return Aleph\Cache\Cache
+   * @access public
+   */
+  public function getCache()
+  {
+    if ($this->cache === null) $this->cache = \Aleph::getInstance()->cache();
+    return $this->cache;
+  }
+  
+  /**
+   * Sets an instance of caching class.
+   *
+   * @param Aleph\Cache\Cache $cache
+   * @access public
+   */
+  public function setCache(Cache\Cache $cache)
+  {
+    $this->cache = $cache;
+  }
 
   /**
    * Returns array of template variables.
@@ -259,20 +304,69 @@ class Template implements \ArrayAccess
    */
   public function render()
   {
-    ${'(^|^)'} = array();
+    $render = function($tpl)
+    {
+      ${'(_._)'} = $tpl;
+      extract(${'(_._)'}->getVariables());
+      extract(${'(_._)'}->getGlobals());
+      ob_start();
+      if (is_file(${'(_._)'}->getTemplate())) require(${'(_._)'}->getTemplate());
+      else eval(\Aleph::ecode(' ?>' . ${'(_._)'}->getTemplate() . '<?php '));
+      return ob_get_clean();
+    };
+    $tmp = array();
+    if ($this->expire > 0)
+    {
+      $hash = md5($this->template);
+      $cache = $this->getCache();
+      if ($cache->isExpired($hash))
+      {
+        foreach ($this->templates as $name) 
+        {
+          $tmp[$name] = $this->vars[$name];
+          $this->vars[$name] = $hash . '<?php $' . $name . ';?>' . $hash;
+        }
+        $content = $render($this);
+        $parts = array();
+        foreach (explode($hash, $content) as $part)
+        {
+          $name = substr($part, 7, -3);
+          if (isset($this->vars[$name])) $parts[] = array($name, true);
+          else $parts[] = array($part, false);
+        }
+        foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
+        $cache->set($hash, $parts, $this->expire);
+      }
+      else
+      {
+        $parts = $cache->get($hash);
+      }
+      $content = ''; $tmp = array();
+      foreach ($parts as $part)
+      {
+        if ($part[1])
+        {
+          if (isset($tmp[$part[0]])) $content .= $tmp[$part[0]];
+          else
+          {
+            $tpl = $this->vars[$part[0]];
+            $globals = $tpl->getGlobals();
+            $tpl->setGlobals($this->globals);
+            $content .= $tmp[$part[0]] = $tpl->render();
+            $tpl->setGlobals($globals);
+          }
+        }        
+        else $content .= $part[0];
+      }
+      return $content;
+    }
     foreach ($this->templates as $name) 
     {
-      ${'(^|^)'}[$name] = $this->vars[$name]->getGlobals();
+      $tmp[$name] = $this->vars[$name]->getGlobals();
       $this->vars[$name]->setGlobals($this->globals);
     }
-    ${'(_._)'} = $this->template;
-    extract($this->vars);
-    extract($this->globals);
-    ob_start();
-    if (is_file(${'(_._)'})) require(${'(_._)'});
-    else eval(\Aleph::ecode(' ?>' . ${'(_._)'} . '<?php '));
-    $content = ob_get_clean();
-    foreach (${'(^|^)'} as $name => $globals) $this->vars[$name]->setGlobals($globals); 
+    $content = $render($this);
+    foreach ($tmp as $name => $globals) $this->vars[$name]->setGlobals($globals);
     return $content;
   }
 

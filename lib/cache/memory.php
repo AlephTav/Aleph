@@ -80,6 +80,7 @@ class Memory extends Cache
    */
   public function __construct(array $servers, $compress = true)
   {
+    parent::__construct();
     $this->vaultLifeTime = 2592000; // 1 month
     $this->mem = new \Memcache();
     if (count($servers))
