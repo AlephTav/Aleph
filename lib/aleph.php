@@ -51,7 +51,7 @@ final class Aleph implements \ArrayAccess
   const ERR_GENERAL_3 = 'Property "[{var}]" of class "[{var}]" doesn\'t exist.';
   const ERR_GENERAL_4 = 'Autoload callback can only be Aleph callback (string value), Closure object or Aleph\Core\IDelegate instance.';
   const ERR_GENERAL_5 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
-  const ERR_GENERAL_6 = 'Class "[{var}]" is not found in "[{var}]". Include this class manually.';
+  const ERR_GENERAL_6 = 'Class "[{var}]" is not found in "[{var}]". You should include this class manually in connect.php';
   const ERR_CONFIG_1 = 'File "[{var}]" is not correct ini file.';
 
   /**
