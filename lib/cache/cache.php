@@ -77,7 +77,7 @@ abstract class Cache implements \ArrayAccess, \Countable
     {
       if (class_exists($class, false)) return;
       if (is_file(__DIR__ . $path)) require_once(__DIR__ . $path);
-      if (!class_exists($class, false)) throw new Core\Exception('\Aleph', 'ERR_GENERAL_6', $class, __DIR__ . $path);
+      if (!class_exists($class, false)) throw new Core\Exception('Aleph', 'ERR_GENERAL_6', $class, __DIR__ . $path);
     };
     switch (strtolower(isset($params['type']) ? $params['type'] : ''))
     {

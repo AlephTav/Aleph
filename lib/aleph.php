@@ -716,7 +716,7 @@ final class Aleph implements \ArrayAccess
       {
         if (class_exists($class, false)) continue;
         if (is_file(self::$root . $path)) require_once(self::$root . $path);
-        if (!class_exists($class, false)) throw new \Exception(self::error('\Aleph', 'ERR_GENERAL_6', $class, self::$root . $path));
+        if (!class_exists($class, false)) throw new \Exception(self::error('Aleph', 'ERR_GENERAL_6', $class, self::$root . $path));
       }
       ini_set('unserialize_callback_func', 'spl_autoload_call');
       if (session_id() == '') session_start();
