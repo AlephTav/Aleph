@@ -66,20 +66,26 @@ abstract class Cache implements \ArrayAccess, \Countable
   /**
    * Returns an instance of caching class according to configuration settings. 
    *
+   * @param string $type - cache type.
+   * @param array $params - configuration parameters for cache.
    * @access public
    * @static
    */
-  public static function getInstance()
+  public static function getInstance($type = null, array $params = null)
   {
-    $a = \Aleph::getInstance();
-    $params = $a['cache'];
     $include = function($class, $path)
     {
       if (class_exists($class, false)) return;
       if (is_file(__DIR__ . $path)) require_once(__DIR__ . $path);
       if (!class_exists($class, false)) throw new Core\Exception('Aleph', 'ERR_GENERAL_6', $class, __DIR__ . $path);
     };
-    switch (strtolower(isset($params['type']) ? $params['type'] : ''))
+    if ($type === null)
+    {
+      $a = \Aleph::getInstance();
+      $params = $a['cache'];
+      $type = isset($params['type']) ? $params['type'] : '';
+    }
+    switch (strtolower($type))
     {
       case 'memory':
         $include('Aleph\Cache\Memory', '/memory.php');

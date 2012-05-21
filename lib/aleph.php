@@ -1161,7 +1161,7 @@ final class Aleph implements \ArrayAccess
   {
     if ($cache === null)
     {
-      if ($this->cache === null) $this->cache = new Cache\File();
+      if ($this->cache === null) $this->cache = Cache\Cache::getInstance('file');
       return $this->cache;
     }
     return $this->cache = $cache;
