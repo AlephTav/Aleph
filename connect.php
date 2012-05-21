@@ -1,5 +1,7 @@
 <?php
 
+use Aleph\Cache;
+
 $_SERVER['DOCUMENT_ROOT'] = __DIR__;
 require_once('lib/aleph.php');
 
