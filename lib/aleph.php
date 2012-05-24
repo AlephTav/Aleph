@@ -1082,7 +1082,8 @@ final class Aleph implements \ArrayAccess
     $path = preg_split('/(?<!\\\)\/+/', $url);
     $path = array_map(function($p) use(&$params)
     {
-      preg_match_all('/(?<!\\\)#((?:.(?!(?<!\\\)#))+.)./', $p, $matches);
+      if ($p == '') return '';
+      preg_match_all('/(?<!\\\)#((?:.(?!(?<!\\\)#))*.)./', $p, $matches);
       foreach ($matches[0] as $k => $match)
       {
         $m = $matches[1][$k];
@@ -1342,7 +1343,7 @@ final class Aleph implements \ArrayAccess
     };
     $key = $url ? md5($url) : 'default';
     $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => array(), 'action' => $action, 'regex' => $url, 'checkParameters' => false);
+    $this->acts['actions'][$key] = array('params' => array(), 'action' => $action, 'regex' => $url);
     foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
   }
   
@@ -1360,7 +1361,7 @@ final class Aleph implements \ArrayAccess
     $t = microtime(true);
     for ($k = 0, $n = count($params); $k < $n; $k++)
     {
-      $redirect = preg_replace('/(?<!\\\)#((.(?!(?<!\\\)#))+.)./', md5($t + $k), $redirect);
+      $redirect = preg_replace('/(?<!\\\)#((.(?!(?<!\\\)#))*.)./', md5($t + $k), $redirect);
     }
     $action = function() use($t, $redirect)
     {
@@ -1372,7 +1373,7 @@ final class Aleph implements \ArrayAccess
       Aleph::go($url);
     };
     $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex, 'checkParameters' => false);
+    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex);
     foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
   }
   
@@ -1381,15 +1382,16 @@ final class Aleph implements \ArrayAccess
    *
    * @param string $url - regex URL template.
    * @param closure | Aleph\Core\IDelegate | string $action
-   * @param array | string $methods - HTTP request methods.
    * @param boolean $checkParameters
+   * @param boolean $ignoreWrongDelegate
+   * @param array | string $methods - HTTP request methods.
    * @access public
    */
-  public function bind($url, $action, $methods = 'GET|POST', $checkParameters = true)
+  public function bind($url, $action, $checkParameters = false, $ignoreWrongDelegate = true, $methods = 'GET|POST')
   {
     $params = $this->parseURLTemplate($url, $key, $regex);
     $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex, 'checkParameters' => $checkParameters);
+    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex, 'checkParameters' => $checkParameters, 'ignoreWrongDelegate' => $ignoreWrongDelegate);
     foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
   }
   
@@ -1442,13 +1444,20 @@ final class Aleph implements \ArrayAccess
           }
           $act = new Core\Delegate($action['action']);
         }
-        if ($action['checkParameters'])
+        if (!$act->isCallable())
         {
+          if (!empty($action['ignoreWrongDelegate'])) continue;
+          return $res;
+        }
+        if (!empty($action['checkParameters']))
+        {
+          $tmp = array();
           foreach ($act->getParameters() as $param) 
           {
             $name = $param->getName();
-            if (!isset($action['params'][$name])) unset($action['params'][$name]);
+            if (isset($action['params'][$name])) $tmp[] = $name;
           }
+          $action['params'] = $tmp;
         }
         $params = array();
         foreach ($action['params'] as $param) $params[] = $matches[$param][0];

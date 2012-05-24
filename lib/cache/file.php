@@ -28,7 +28,7 @@ use Aleph\Core;
  * The class is intended for caching of different data using the file system.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.cache
  */
 class File extends Cache

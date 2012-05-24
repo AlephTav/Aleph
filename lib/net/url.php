@@ -28,7 +28,7 @@ use Aleph\Core;
  * URL Class is designed to modify existing URL strings and to construct new ones.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.net
  */
 class URL

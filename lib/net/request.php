@@ -26,7 +26,7 @@ namespace Aleph\Net;
  * Request Class provides easier interaction with variables of the current HTTP request.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.net
  */
 class Request

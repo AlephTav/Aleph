@@ -26,7 +26,7 @@ namespace Aleph\Net;
  * Response Class provides easier interaction with variables of the current HTTP response and to build a new response.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.net
  */
 class Response

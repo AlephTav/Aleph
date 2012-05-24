@@ -29,7 +29,7 @@ use Aleph\Core;
  *
  * @abstract
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.cache
  */
 abstract class Cache implements \ArrayAccess, \Countable

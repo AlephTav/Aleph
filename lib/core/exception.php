@@ -26,7 +26,7 @@ namespace Aleph\Core;
  * Exception allows to generate exceptions with parameterized error messages which possible to get by their tokens.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.core
  */
 class Exception extends \Exception

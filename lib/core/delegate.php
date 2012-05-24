@@ -27,7 +27,7 @@ namespace Aleph\Core;
  * Using such classes we can transform strings in certain format into callback if necessary. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.core
  */
 interface IDelegate
@@ -96,6 +96,15 @@ interface IDelegate
    * @access public
    */
   public function in($permissions);
+  
+  /**
+   * Verifies that the delegate exists and can be invoked.
+   *
+   * @param boolean $autoload - whether or not to call __autoload by default.
+   * @return boolean
+   * @access public
+   */
+  public function isCallable($autoload = true);
   
   /**
    * Returns parameters of a delegate class method, function or closure. 
@@ -291,6 +300,7 @@ class Delegate implements IDelegate
    */
   public function in($permissions)
   {
+    if ($this->type == 'closure') return true;
     if ($this->type == 'function')
     {
       $m = $this->split($this->method);
@@ -300,7 +310,7 @@ class Delegate implements IDelegate
         if ($p[0] != '' && $m == $p || $p[0] == '' && $m[1] == $p[1]) return true;
       }
     }
-    else if ($this->type == 'class')
+    else
     {
       $m = $this->split($this->class);
       foreach ((array)$permissions as $permission)
@@ -310,6 +320,30 @@ class Delegate implements IDelegate
         $p = $this->split($info[0]);
         if ($p[0] != '' && $m == $p || $p[0] == '' && $m[1] == $p[1]) return true;
       }
+    }
+    return false;
+  }
+  
+  /**
+   * Verifies that the delegate exists and can be invoked.
+   *
+   * @param boolean $autoload - whether or not to call __autoload by default.
+   * @return boolean
+   * @access public
+   */
+  public function isCallable($autoload = true)
+  {
+    if ($this->type == 'closure') return true;
+    if ($this->type == 'function') return function_exists($this->method);
+    if (class_exists($this->class, false)) return method_exists($this->class, $this->method);
+    if (!$autoload) return false;
+    $classes = \Aleph::getInstance()->getClasses();
+    $cs = strtolower($this->class);
+    if ($cs[0] != '\\') $cs = '\\' . $cs;
+    if (isset($classes[$cs]) && is_file($classes[$cs]))
+    {
+      require_once($classes[$cs]);
+      if (class_exists($cs, false)) return method_exists($cs, $this->method);
     }
     return false;
   }

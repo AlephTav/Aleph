@@ -28,7 +28,7 @@ use Aleph\Core;
  * The class intended for caching of different data using the APC extension. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.cache
  */
 class APC extends Cache

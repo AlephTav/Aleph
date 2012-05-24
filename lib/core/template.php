@@ -28,7 +28,7 @@ use Aleph\Cache;
  * This class is templator using php as template language.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.core
  */
 class Template implements \ArrayAccess
