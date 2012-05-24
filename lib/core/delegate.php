@@ -228,7 +228,7 @@ class Delegate implements IDelegate
         $this->class = $matches[1] ?: 'Aleph';
         $this->numargs = (int)$matches[3];
         $this->static = ($matches[4] == '::');
-        $this->method = $matches[5];
+        $this->method = $matches[5] ?: '__construct';
       }
     }
     $this->callback = $callback;
@@ -280,7 +280,7 @@ class Delegate implements IDelegate
         if ($this->numargs == 0) $class = $class->newInstance();
         else $class = $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
       }
-      if ($this->method == '') return $class;
+      if ($this->method == '__construct') return $class;
       return call_user_func_array(array($class, $this->method), $args);
     }
   }
@@ -335,7 +335,14 @@ class Delegate implements IDelegate
   {
     if ($this->type == 'closure') return true;
     if ($this->type == 'function') return function_exists($this->method);
-    if (class_exists($this->class, false)) return method_exists($this->class, $this->method);
+    $static = $this->static;
+    $methodExists = function($class, $method) use ($static)
+    {
+      if (!method_exists($class, $method)) return false;
+      $method = foo(new \ReflectionClass($class))->getMethod($method);
+      return $method->isPublic() && $static === $method->isStatic();
+    };
+    if (class_exists($this->class, false)) return $methodExists($this->class, $this->method);
     if (!$autoload) return false;
     $classes = \Aleph::getInstance()->getClasses();
     $cs = strtolower($this->class);
@@ -343,7 +350,7 @@ class Delegate implements IDelegate
     if (isset($classes[$cs]) && is_file($classes[$cs]))
     {
       require_once($classes[$cs]);
-      if (class_exists($cs, false)) return method_exists($cs, $this->method);
+      if (class_exists($cs, false)) return $methodExists($cs, $this->method);
     }
     return false;
   }
@@ -358,7 +365,7 @@ class Delegate implements IDelegate
   public function getParameters()
   {
     if ($this->type != 'class') return foo(new \ReflectionFunction($this->method))->getParameters();
-    return foo(new \ReflectionClass($this->class))->getMethod($this->method ?: '__construct')->getParameters();
+    return foo(new \ReflectionClass($this->class))->getMethod($this->method)->getParameters();
   }
   
   /**
