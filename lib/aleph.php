@@ -1136,7 +1136,7 @@ final class Aleph implements \ArrayAccess
     if ($replace) $this->config = array();
     $convert = function($v)
     {
-      if ($v[0] == '[' && $v[strlen($v) - 1] == ']' || $v[0] == '{' && $v[strlen($v) - 1] == '}') 
+      if ($v != '' && ($v[0] == '[' && $v[strlen($v) - 1] == ']' || $v[0] == '{' && $v[strlen($v) - 1] == '}')) 
       {
         if (($r = json_decode($v, true)) !== null) $v = $r;
       }
@@ -1432,7 +1432,16 @@ final class Aleph implements \ArrayAccess
       {
         $action = $this->acts['actions'][$key];
         if (!preg_match_all($action['regex'], $url, $matches)) continue;
-        $act = ($action instanceof Core\Delegate) ? $action['action'] : new Core\Delegate($action['action']);
+        if ($action instanceof Core\Delegate) $act = $action['action'];
+        else 
+        {
+          foreach ($action['params'] as $k => $param)
+          {
+            $action['action'] = str_replace('#' . $param . '#', $matches[$param][0], $action['action'], $count);
+            if ($count > 0) unset($action['params'][$k]);
+          }
+          $act = new Core\Delegate($action['action']);
+        }
         if ($action['checkParameters'])
         {
           foreach ($act->getParameters() as $param) 
