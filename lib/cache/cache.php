@@ -203,9 +203,9 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @access public
    */
   public function offsetExists($key)
-	 {
-	   return ($this->isExpired($key) === false);
-	 }
+  {
+    return ($this->isExpired($key) === false);
+  }
   
   /**
    * Returns the previously conserved data from cache.
@@ -214,10 +214,10 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @return mixed
    * @access public
    */
-	 public function offsetGet($key)
-	 {
-		  return $this->get($key);
-	 }
+  public function offsetGet($key)
+  {
+    return $this->get($key);
+  }
 
   /**
    * Conserves some data in cache. If the method is firstly invoked the cache lifetime value equals the value of the property "vaultLifeTime".
@@ -226,13 +226,13 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @param mixed $content
    * @access public
    */
- 	public function offsetSet($key, $content)
-	 {
+  public function offsetSet($key, $content)
+  {
     $vault = $this->getVault();
     $hash = md5($key);
     $expire = isset($vault[$hash]) ? $vault[$hash] : $this->vaultLifeTime;
     $this->set($key, $content, $expire);
-	 }
+  }
 
   /**
    * Removes a data item from cache.
@@ -240,10 +240,10 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @param string $key - a data key.
    * @access public
    */
- 	public function offsetUnset($key)
- 	{
+  public function offsetUnset($key)
+  {
     $this->remove($key);
- 	}
+  }
   
   /**
    * Returns the previously conserved data from cache.
