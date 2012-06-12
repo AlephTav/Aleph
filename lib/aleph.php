@@ -654,7 +654,7 @@ final class Aleph implements \ArrayAccess
     if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
     {
       if ($inNewWindow) self::$output = 'window.open(\'' . addslashes($url) . '\');';
-      else self::$output = 'window.location.asign(\'' . addslashes($url) . '\');';
+      else self::$output = 'window.location.assign(\'' . addslashes($url) . '\');';
     }
     else
     {
