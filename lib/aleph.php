@@ -710,13 +710,14 @@ final class Aleph implements \ArrayAccess
         Aleph::exception(new \ErrorException($res[2], 0, 1, $res[3], $res[4]), true);
         return Aleph::getOutput();
       });
-      $files = array('/lib/core/exception.php' => 'Aleph\Core\Exception', 
-                     '/lib/cache/cache.php' => 'Aleph\Cache\Cache');
+      $lib = self::$root . '/' . pathinfo(__DIR__, PATHINFO_BASENAME) . '/';
+      $files = array('core/exception.php' => 'Aleph\Core\Exception', 
+                     'cache/cache.php' => 'Aleph\Cache\Cache');
       foreach ($files as $path => $class)
       {
         if (class_exists($class, false)) continue;
-        if (is_file(self::$root . $path)) require_once(self::$root . $path);
-        if (!class_exists($class, false)) throw new \Exception(self::error('Aleph', 'ERR_GENERAL_6', $class, self::$root . $path));
+        if (is_file($lib . $path)) require_once($lib . $path);
+        if (!class_exists($class, false)) throw new \Exception(self::error('Aleph', 'ERR_GENERAL_6', $class, $lib . $path));
       }
       ini_set('unserialize_callback_func', 'spl_autoload_call');
       if (session_id() == '') session_start();
