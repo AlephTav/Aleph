@@ -47,7 +47,7 @@ interface IDelegate
    * 'class[n]::method' - the same as 'class::method'.
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
    *
-   * Also $callback can be an instance of \Closure class.
+   * Also $callback can be an instance of \Closure class or Aleph\Core\Delegate class.
    *
    * @param string $callback - an Aleph framework callback string.
    * @access public
@@ -201,14 +201,19 @@ class Delegate implements IDelegate
    * 'class[n]::method' - the same as 'class::method'.
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
    *
-   * Also $callback can be an instance of \Closure class.
+   * Also $callback can be an instance of \Closure class or Aleph\Core\Delegate class.
    *
    * @param string $callback - an Aleph framework callback string or closure.
    * @access public
    */
   public function __construct($callback)
   {
-    if ($callback instanceof \Closure)
+    if ($callback instanceof Delegate)
+    {
+      foreach ($callback->getInfo() as $var => $value) $this->{$var} = $value;
+      $this->callback = (string)$callback;
+    }
+    else if ($callback instanceof \Closure)
     {
       $this->type = 'closure';
       $this->method = $callback;
@@ -274,6 +279,7 @@ class Delegate implements IDelegate
     {
       if ($this->static) return call_user_func_array(array($this->class, $this->method), $args);
       if ($this->class == 'Aleph') $class = \Aleph::instance();
+      else if (\Aleph::get('page')) $class = \Aleph::get('page');
       else
       {
         $class = new \ReflectionClass($this->class);
@@ -300,14 +306,14 @@ class Delegate implements IDelegate
    */
   public function in($permissions)
   {
-    if ($this->type == 'closure') return true;
+    if ($this->type == 'closure' || $this->type = 'control') return true;
     if ($this->type == 'function')
     {
       $m = $this->split($this->method);
       foreach ((array)$permissions as $permission)
       {
         $p = $this->split($permission);
-        if ($p[0] != '' && $m == $p || $p[0] == '' && $m[1] == $p[1]) return true;
+        if ($p[0] != '' && $m == $p || $p[0] == '' && substr($m[1], 0, strlen($p[1])) == $p[1]) return true;
       }
     }
     else
@@ -318,7 +324,7 @@ class Delegate implements IDelegate
         $info = explode($this->static ? '::' : '->', $permission);
         if (!empty($info[1]) && $info[1] != $this->method) continue;
         $p = $this->split($info[0]);
-        if ($p[0] != '' && $m == $p || $p[0] == '' && $m[1] == $p[1]) return true;
+        if ($p[0] != '' && $m == $p || $p[0] == '' && substr($m[1], 0, strlen($p[1])) == $p[1]) return true;
       }
     }
     return false;
@@ -344,15 +350,8 @@ class Delegate implements IDelegate
     };
     if (class_exists($this->class, false)) return $methodExists($this->class, $this->method);
     if (!$autoload) return false;
-    $classes = \Aleph::getInstance()->getClasses();
-    $cs = strtolower($this->class);
-    if ($cs[0] != '\\') $cs = '\\' . $cs;
-    if (isset($classes[$cs]) && is_file($classes[$cs]))
-    {
-      require_once($classes[$cs]);
-      if (class_exists($cs, false)) return $methodExists($cs, $this->method);
-    }
-    return false;
+    if (!\Aleph::getInstance()->load($this->class)) return false;
+    return $methodExists($this->class, $this->method);
   }
   
   /**
@@ -398,6 +397,6 @@ class Delegate implements IDelegate
   protected function split($identifier)
   {
     $ex = explode('\\', $identifier);
-    return array(array_pop($ex), implode('', $ex));
+    return array(array_pop($ex), implode('\\', $ex));
   }
 }

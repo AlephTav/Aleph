@@ -107,7 +107,7 @@ final class Aleph implements \ArrayAccess
    * @access private
    * @static
    */
-  public static $eval = array();
+  private static $eval = array();
   
   /**
    * Array of different global objects.
