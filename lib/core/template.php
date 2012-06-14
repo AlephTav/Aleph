@@ -42,6 +42,15 @@ class Template implements \ArrayAccess
   public $expire = 0;
   
   /**
+   * Global template variables.
+   *
+   * @var array $globals
+   * @access protedted
+   * @static
+   */
+  protected static $globals = array();
+  
+  /**
    * An instance of Aleph\Cache\Cache class.
    *
    * @var Aleph\Cache\Cache $cache
@@ -56,14 +65,6 @@ class Template implements \ArrayAccess
    * @access protected
    */
   protected $vars = array();
-  
-  /**
-   * Global template variables.
-   *
-   * @var array $globals
-   * @access protedted
-   */
-  protected $globals = array();
   
   /**
    * Template string or path to a template file. 
@@ -149,7 +150,7 @@ class Template implements \ArrayAccess
    */
   public function getGlobals()
   {
-    return $this->globals;
+    return self::$globals;
   }
 
   /**
@@ -160,7 +161,7 @@ class Template implements \ArrayAccess
    */
   public function setGlobals(array $globals)
   {
-    $this->globals = $globals;
+    self::$globals = $globals;
   }
   
   /**
@@ -194,7 +195,7 @@ class Template implements \ArrayAccess
    */
   public function offsetSet($key, $value)
   {
-    $this->globals[$key] = $value;
+    self::$globals[$key] = $value;
   }
 
   /**
@@ -206,7 +207,7 @@ class Template implements \ArrayAccess
    */
   public function offsetExists($key)
   {
-    return isset($this->globals[$key]);
+    return isset(self::$globals[$key]);
   }
 
   /**
@@ -217,7 +218,7 @@ class Template implements \ArrayAccess
    */
   public function offsetUnset($key)
   {
-    unset($this->globals[$key]);
+    unset(self::$globals[$key]);
   }
 
   /**
@@ -229,8 +230,8 @@ class Template implements \ArrayAccess
    */
   public function &offsetGet($key)
   {
-    if (!isset($this->globals[$key])) $this->globals[$key] = null;
-    return $this->globals[$key];
+    if (!isset(self::$globals[$key])) self::$globals[$key] = null;
+    return self::$globals[$key];
   }
 
   /**
@@ -244,6 +245,7 @@ class Template implements \ArrayAccess
   {
     $this->vars[$name] = $value;
     if ($value instanceof Template) $this->templates[$name] = $name;
+    else unset($this->templates[$name]);
   }
 
   /**
@@ -347,26 +349,13 @@ class Template implements \ArrayAccess
         if ($part[1])
         {
           if (isset($tmp[$part[0]])) $content .= $tmp[$part[0]];
-          else
-          {
-            $tpl = $this->vars[$part[0]];
-            $tpl->assign($this->globals, true);
-            $content .= $tmp[$part[0]] = $tpl->render();
-          }
+          else $content .= $tmp[$part[0]] = $this->vars[$part[0]]->render();
         }        
         else $content .= $part[0];
       }
       return $content;
     }
-    foreach ($this->templates as $name) 
-    {
-      $tmp[$name] = $this->vars[$name];
-      $this->vars[$name]->assign($this->globals, true);
-      $this->vars[$name] = $this->vars[$name]->render();
-    }
-    $content = $render($this);
-    foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
-    return $content;
+    return $render($this);
   }
 
   /**

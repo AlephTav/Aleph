@@ -31,7 +31,7 @@ use Aleph\Core,
  * can be stroting any global objects. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.3
  * @package aleph.core
  * @final
  */
@@ -52,6 +52,7 @@ final class Aleph implements \ArrayAccess
   const ERR_GENERAL_4 = 'Autoload callback can only be Aleph callback (string value), Closure object or Aleph\Core\IDelegate instance.';
   const ERR_GENERAL_5 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
   const ERR_GENERAL_6 = 'Class "[{var}]" is not found in "[{var}]". You should include this class manually in connect.php';
+  const ERR_GENERAL_7 = 'Delegate "[{var}]" is not callable.';
   const ERR_CONFIG_1 = 'File "[{var}]" is not correct ini file.';
 
   /**
@@ -106,7 +107,7 @@ final class Aleph implements \ArrayAccess
    * @access private
    * @static
    */
-  private static $eval = array();
+  public static $eval = array();
   
   /**
    * Array of different global objects.
@@ -461,10 +462,16 @@ final class Aleph implements \ArrayAccess
   public static function ecode($code)
   {
     $e = new \Exception();
+    if (!count(self::$eval))
+    {
+      self::$eval['lines'] = 0;
+      self::$eval['code'] = '';
+    }
     self::$eval['trace'] = $e->getTrace();
     self::$eval['traceAsString'] = $e->getTraceAsString();
-    self::$eval['rowcount'] = count(explode(PHP_EOL, isset(self::$eval['code']) ? self::$eval['code'] : ''));
-    self::$eval['code'] = (isset(self::$eval['code']) ? self::$eval['code'] . PHP_EOL : '') . $code;
+    self::$eval['rows'] = count(explode("\n", str_replace("\r\n", "\n", $code)));
+    self::$eval['lines'] += self::$eval['rows'];
+    self::$eval['code'] .= $code . "\n";
     return $code;
   }
   
@@ -596,7 +603,7 @@ final class Aleph implements \ArrayAccess
     {
       $a = self::$instance;
       $dir = isset($a['dirs'][$dir]) ? $a['dirs'][$dir] : $dir;
-      if (isset($dir[0]) && $dir[0] != '/' && $dir[0] != '\\') $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
+      if (substr($dir, 0, strlen(self::$root)) != self::$root) $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
     }
     return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
   }
@@ -793,7 +800,7 @@ final class Aleph implements \ArrayAccess
       else if (preg_match('/([^\( ]+)\(\).*, called in ([^\(]+)\((\d+)\) : eval\(\)\'d code on line (\d+)/', $msg, $matches))
       {
         $line = $findFunc($matches[1], $fragment);
-        $matches[4] += self::$eval['rowcount'] - 1;
+        $matches[4] += self::$eval['lines'] - self::$eval['rows'];
         $msg = preg_replace('/called in [^ ]+ : eval\(\)\'d code on line \d+/', 'called in eval()\'s on line ' . $matches[4], $msg);
         $frag1 = self::codeFragment($matches[2], $matches[3]);
         $frag3 = self::codeFragment($fragment, $matches[4]);
@@ -817,7 +824,7 @@ final class Aleph implements \ArrayAccess
       }
       else
       {
-        $line += self::$eval['rowcount'] - 1;
+        $line += self::$eval['lines'] - self::$eval['rows'];
         $frag1 = self::codeFragment($trace[0]['file'], $trace[0]['line']);
         $frag2 = self::codeFragment($fragment, $line);
         $fragment = '<b>File in which the error has been catched:</b> ' . $trace[0]['file'] . $frag1 . '<b>eval()\'s code in which the error has been catched:</b> ' . $frag2;
@@ -973,7 +980,7 @@ final class Aleph implements \ArrayAccess
     {
       if ($auto) 
       {
-        self::exception(new Exception($this, 'ERR_GENERAL_1', $class));
+        self::exception(new Core\Exception($this, 'ERR_GENERAL_1', $class));
         exit;
       }
       return false;
@@ -1038,7 +1045,7 @@ final class Aleph implements \ArrayAccess
                 {
                   return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                 };
-                self::exception(new Exception($this, 'ERR_GENERAL_5', '\\' . $namespace . $tkn[1], $normalize($this->classes[$cs]), $normalize($file)));
+                self::exception(new Core\Exception($this, 'ERR_GENERAL_5', '\\' . $namespace . $tkn[1], $normalize($this->classes[$cs]), $normalize($file)));
                 exit;
               }
               $this->classes[$cs] = $file;
@@ -1295,8 +1302,7 @@ final class Aleph implements \ArrayAccess
   public function setAutoload($callback)
   {
     if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof Core\IDelegate)) throw new Exception($this, 'ERR_GENERAL_4');
-    if (!($callback instanceof Core\Delegate)) $callback = new Core\Delegate($callback);
-    $this->alCallBack = $callback;
+    $this->alCallBack = new Core\Delegate($callback);
   }
   
   /**
@@ -1400,12 +1406,12 @@ final class Aleph implements \ArrayAccess
    * Performs all actions matching all regex URL templates.
    *
    * @param string | array - HTTP request methods.
-   * @param string $url - regex URL template.
    * @param string $component - URL component.
+   * @param string $url - regex URL template.
    * @return \StdClass with two properties: result - a result of the acted action, success - indication that the action was worked out.
    * @access public
    */
-  public function route($methods = null, $url = null, $component = 'path')
+  public function route($methods = null, $component = 'path', $url = null)
   {
     $methods = is_array($methods) ? $methods : ($methods ? explode('|', $methods) : array());
     if (count($methods) == 0) 
@@ -1448,7 +1454,7 @@ final class Aleph implements \ArrayAccess
         if (!$act->isCallable())
         {
           if (!empty($action['ignoreWrongDelegate'])) continue;
-          return $res;
+          throw new Core\Exception($this, 'ERR_GENERAL_7', (string)$act);
         }
         if (!empty($action['checkParameters']))
         {
