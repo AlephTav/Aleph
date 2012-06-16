@@ -970,11 +970,11 @@ final class Aleph implements \ArrayAccess
     }
     $cs = strtolower($class);
     if ($cs[0] != '\\') $cs = '\\' . $cs;
-    if (class_exists($cs, false) || interface_exists($cs, false)) return true;
+    if (class_exists($cs, false) || interface_exists($cs, false) || (function_exists('trait_exists') && trait_exists($cs, false))) return true;
     if (isset($classes[$cs]) && is_file($classes[$cs]))
     {
       require_once($classes[$cs]);
-      if (class_exists($cs, false) || interface_exists($cs, false)) return true;
+      if (class_exists($cs, false) || interface_exists($cs, false) || (function_exists('trait_exists') && trait_exists($cs, false))) return true;
     }
     if ($this->find($cs) === false)
     {
@@ -1030,7 +1030,7 @@ final class Aleph implements \ArrayAccess
               while ($tkn != ';');
               $namespace = $ns . '\\';
             }
-            else if ($token[0] == T_CLASS || $token[0] == T_INTERFACE)
+            else if ($token[0] == T_CLASS || $token[0] == T_INTERFACE || (defined('T_TRAIT') && $token[0] == T_TRAIT))
             {
               $tks = $tokens; $k = $n;
               do
@@ -1066,7 +1066,7 @@ final class Aleph implements \ArrayAccess
           if ($cs == $class)
           {
             require_once($file);
-            return (class_exists($class, false) || interface_exists($class, false));
+            return (class_exists($class, false) || interface_exists($class, false) || (function_exists('trait_exists') && trait_exists($class, false)));
           }
         }
       }
