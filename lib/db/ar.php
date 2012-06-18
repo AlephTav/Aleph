@@ -203,6 +203,11 @@ class AR
     return $this;
   }
   
+  public function exp($sql)
+  {
+    return $this->db->exp($sql);
+  }
+  
   public function isAssigned()
   {
     return $this->assigned;
@@ -279,6 +284,11 @@ class AR
       return $this;
     }
     return $this->reset();
+  }
+  
+  public function count($where = null)
+  {
+    return $this->db->column($this->db->sql->select($this->table, $this->db->exp('COUNT(*)'))->where($where)->build($data), $data);
   }
   
   public function select($columns = '*', $where = null, $order = null, $limit = null, $offset = null)
