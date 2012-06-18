@@ -1139,22 +1139,14 @@ final class Aleph implements \ArrayAccess
     }
     else
     {
-      $data = parse_ini_file($param, true, INI_SCANNER_RAW);
+      $data = parse_ini_file($param, true);
       if ($data === false) throw new Exception($this, 'ERR_CONFIG_1', $param);
     }
     if ($replace) $this->config = array();
-    $convert = function($v)
-    {
-      if ($v != '' && ($v[0] == '[' && $v[strlen($v) - 1] == ']' || $v[0] == '{' && $v[strlen($v) - 1] == '}')) 
-      {
-        if (($r = json_decode($v, true)) !== null) $v = $r;
-      }
-      return $v;
-    };
     foreach ($data as $section => $properties)
     {
-      if (is_array($properties)) foreach ($properties as $k => $v) $this->config[$section][$k] = $convert($v);
-      else $this->config[$section] = $convert($properties);
+      if (is_array($properties)) foreach ($properties as $k => $v) $this->config[$section][$k] = $v;
+      else $this->config[$section] = $properties;
     }
     return $this;
   }
