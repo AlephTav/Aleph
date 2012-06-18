@@ -970,12 +970,11 @@ final class Aleph implements \ArrayAccess
     }
     $cs = strtolower($class);
     if ($cs[0] != '\\') $cs = '\\' . $cs;
-    $exists = class_exists($cs, false) || interface_exists($cs, false) || function_exists('trait_exists') && trait_exists($cs, false);
-    if ($exists) return true;
+    if (class_exists($cs, false) || interface_exists($cs, false) || function_exists('trait_exists') && trait_exists($cs, false)) return true;
     if (isset($classes[$cs]) && is_file($classes[$cs]))
     {
       require_once($classes[$cs]);
-      if ($exists) return true;
+      if (class_exists($cs, false) || interface_exists($cs, false) || function_exists('trait_exists') && trait_exists($cs, false)) return true;
     }
     if ($this->find($cs) === false)
     {
