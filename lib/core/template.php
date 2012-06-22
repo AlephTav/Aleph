@@ -119,6 +119,17 @@ class Template implements \ArrayAccess
   {
     $this->cache = $cache;
   }
+  
+  /**
+   * Checks whether or not a template cache lifetime is expired.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isExpired()
+  {
+    return $this->getCache()->isExpired(md5($this->template));
+  }
 
   /**
    * Returns array of template variables.
