@@ -23,8 +23,8 @@
 namespace Aleph\Utils;
 
 /**
- * This class is designed to work with the source code of a class (or interface), receive and retrieve information about the class.
- * With this class you also can change code and structure of any user defined class or define new non-existent class.
+ * This class is designed to work with the source code of a class (or interface), receive information about the class.
+ * Using this class you can also change code and structure of any user defined class or define new non-existent class.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -33,7 +33,7 @@ namespace Aleph\Utils;
 class InfoClass implements \ArrayAccess
 {
   /**
-   * Array of full information about the class.
+   *  Information about the class.
    *
    * @var array $info
    * @access protected
@@ -72,7 +72,7 @@ class InfoClass implements \ArrayAccess
   
   /**
    * Returns code definition of the constant.
-   * If the constant doesn't exist the method will return FALSE.
+   * If the constant doesn't exist the method returns FALSE.
    *
    * @param string $constant
    * @return string
@@ -86,7 +86,7 @@ class InfoClass implements \ArrayAccess
   
   /**
    * Returns code definition of the property.
-   * If the property doesn't exist the method will return FALSE.
+   * If the property doesn't exist the method returns FALSE.
    *
    * @param string $property
    * @return string
@@ -187,8 +187,8 @@ class InfoClass implements \ArrayAccess
   }
   
   /**
-   * Save code definition of the class to file where it is defined.
-   * The method will return FALSE if it is impossible to rewrite code and NULL otherwise.
+   * Saves code definition of the class to file where it is defined.
+   * The method returns FALSE if impossible to rewrite code and NULL otherwise.
    *
    * @param string $file - the file to save the class definition. 
    * @access public
@@ -224,7 +224,7 @@ class InfoClass implements \ArrayAccess
   }
 
   /**
-   * Checks whether the class parameter exist.
+   * Checks whether the class parameter exists.
    *
    * @param mixed $var - the parameter name.
    * @return boolean
@@ -260,7 +260,7 @@ class InfoClass implements \ArrayAccess
   }
 
   /**
-   * Extracts full information about the class and puts it to $info property.
+   * Extracts full information about the class and place into $info property.
    *
    * @param mixed $class - class name or class object.
    * @access protected
@@ -386,7 +386,7 @@ class InfoClass implements \ArrayAccess
   }
   
   /**
-   * Checks whether the constant is declared in the class or not.
+   * Checks whether the constant is declared in the class.
    * 
    * @param array $tokens - tokens of the class code.
    * @param string $constant - the constant name to check.
@@ -412,11 +412,11 @@ class InfoClass implements \ArrayAccess
   }
   
   /**
-   * Checks whether the interface is declared in the class or not.
+   * Checks whether the interface is declared in the class.
    * 
    * @param array $tokens - tokens of the class code.
    * @param \ReflectionClass $interface - the interface to check.
-    * @param \ReflectionClass $class - the class implementing the required interface.
+   * @param \ReflectionClass $class - the class implementing the required interface.
    * @return boolean
    * @access private
    */
@@ -493,20 +493,19 @@ class InfoClass implements \ArrayAccess
   {
     if ($code == '') return '';
     $tokens = token_get_all('<?php ' . $code . ' ?>');
+    $code = '';
     $max = count($tokens) - 3;
     for ($i = 1; $i < $max; $i++)
     {
       if ($tokens[$i] == '{')
       {
-        $min = $i + 1;
+        for ($i++; $i < $max; $i++)
+        {
+          $value = $tokens[$i];
+          $code .= is_array($value) ? $value[1] : $value;
+        }
         break;
       }
-    }
-    $code = '';
-    for ($i = $min; $i < $max; $i++)
-    {
-      $value = $tokens[$i];
-      $code .= is_array($value) ? $value[1] : $value;
     }
     return $code;
   }
