@@ -449,6 +449,79 @@ class DT
   }
   
   /**
+   * Returns the time elapsed since the specified date.
+   *
+   * @param string|\DateTime $date - the start date.
+   * @param string|\DateTime $now - the current date.
+   * @param string $format - date format string.
+   * @return string
+   * @access public
+   */
+  public static function past($date, $now, $format = null)
+  {
+    $dt = new DT($date, $format);
+    $interval = $dt->diff(new DT($now, $format));
+    $parts = array('y' => 'year', 'm' => 'month', 'd' => 'day', 'h' => 'hour', 'i' => 'minute', 's' => 'second');
+    foreach ($parts as $part => $name)
+    {
+      if ($interval->{$part} > 0)
+      {
+        if ($interval->{$part} == 1) $res = 'a ' . $name;
+        else $res = $interval->{$part} . ' ' . $name . 's';
+        return $res . ' ago';
+      }
+    }
+    return 'just now';
+  }
+  
+  /**
+   * Returns today's date.
+   *
+   * @param string $format - output date format.
+   * @param string|\DateTimeZone $timezone
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function now($format, $timezone = null)
+  {
+    $dt = new DT();
+    return $dt->getDate($format, $timezone);
+  }
+  
+  /**
+   * Returns tomorrow's date.
+   *
+   * @param string $format - output date format.
+   * @param string|\DateTimeZone $timezone
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function tomorrow($format, $timezone = null)
+  {
+    $dt = new DT();
+    $dt->addDay();
+    return $dt->getDate($format, $timezone);
+  }
+  
+  /**
+   * Returns yesterday's date.
+   *
+   * @param string $format - output date format.
+   * @param string|\DateTimeZone $timezone
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function yesterday($format, $timezone = null)
+  {
+    $dt = new DT();
+    $dt->addDay(-1);
+    return $dt->getDate($format, $timezone);
+  }
+  
+  /**
    * Returns the default time zone used by all date/time functions.
    *
    * @return string
@@ -795,6 +868,8 @@ class DT
    *
    * @param \Aleph\Utils\DT $date - the date to compare to.
    * @param boolean $absolute - determines whether to return absolute difference.
+   * @return \DateInterval
+   * @access public
    */
   public function diff(DT $date, $absolute = false)
   {
