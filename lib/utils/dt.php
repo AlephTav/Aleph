@@ -806,6 +806,7 @@ class DT
    *
    * @param string|\DateInterval $interval
    * @param integer|\Aleph\Utils\DT - the number of recurrences or DT object.
+   * @param boolean $excludeStartDate - determines whether the start date is excluded.
    * @return \Closure
    * @access public
    */
