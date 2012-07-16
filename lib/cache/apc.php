@@ -60,7 +60,7 @@ class APC extends Cache
   {
     parent::__construct();
     if (!ini_get('apc.enabled')) throw new Core\Exception($this, 'ERR_CACHE_APC_1');
-    if (php_sapi_name() === 'cli' && !ini_get('apc.enable_cli')) throw new Core\Exception('ERR_CACHE_APC_2');
+    if (php_sapi_name() === 'cli' && !ini_get('apc.enable_cli')) throw new Core\Exception($this, 'ERR_CACHE_APC_2');
   }
 
   /**
