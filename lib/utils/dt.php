@@ -440,9 +440,9 @@ class DT
     $d = $v2 - $v1;
     $res = array();
     $res['day'] = floor($d / 86400);
-    $d = $d % 86400;
+    $d %= 86400;
     $res['hour'] = floor($d / 3600);
-    $d = $d % 3600;
+    $d %= 3600;
     $res['minute'] = floor($d / 60);
     $res['second'] = $d % 60;
     return $res;
@@ -610,7 +610,7 @@ class DT
    */
   public function __construct($date = 'now', $format = null, $timezone = null)
   {
-    if ($date instanceof \DateTime) $this->dt = $date;
+    if ($date instanceof \DateTime) $this->dt = clone $date;
     else if ($timezone === null)
     {
       if ($format === null) $this->dt = new \DateTime($date);
@@ -625,7 +625,17 @@ class DT
   }
   
   /**
-   * Returns a \DateTime object is associated with the DT object.
+   * Clones an object of Aleph\Utils\DT class.
+   *
+   * @access public
+   */
+  public function __clone()
+  {
+    $this->dt = clone $this->dt;
+  }
+  
+  /**
+   * Returns a \DateTime object is associated with the Aleph\Utils\DT object.
    *
    * @return \DateTime
    * @access public
@@ -682,7 +692,7 @@ class DT
   }
   
   /**
-   * Sets the time zone for the DT object.
+   * Sets the time zone for the Aleph\Utils\DT object.
    *
    * @param string|\DateTimeZone $timezone
    * @return self
@@ -744,7 +754,7 @@ class DT
   }
 
   /**
-   * Alters the timestamp of a DT object by incrementing or decrementing in a format accepted by strtotime(). 
+   * Alters the timestamp of a Aleph\Utils\DT object by incrementing or decrementing in a format accepted by strtotime(). 
    *
    * @param string $format
    * @return self
@@ -758,7 +768,7 @@ class DT
   }
   
   /**
-   * Adds an amount of days, months, years, hours, minutes and seconds to a DT object.
+   * Adds an amount of days, months, years, hours, minutes and seconds to a Aleph\Utils\DT object.
    *
    * @param string|\DateInterval - a \DateInterval object or interval string.
    * @return self
@@ -772,7 +782,7 @@ class DT
   }
   
   /**
-   * Subtracts an amount of days, months, years, hours, minutes and seconds from a DT object.
+   * Subtracts an amount of days, months, years, hours, minutes and seconds from a Aleph\Utils\DT object.
    *
    * @param string|\DateInterval - a \DateInterval object or interval string.
    * @return self
@@ -786,87 +796,87 @@ class DT
   }
 
   /**
-   * Adds an amount of days to a DT object. The amount of days can be negative.
+   * Adds an amount of days to a Aleph\Utils\DT object. The amount of days can be negative.
    *
    * @param integer $day
-   * @return DT
+   * @return Aleph\Utils\DT
    * @access public
    */
-  public function addDay($day)
+  public function addDay($day = 1)
   {
     $this->dt->modify(($day > 0 ? '+' : '-') . abs($day) . ' day');
     return $this;
   }
 
   /**
-   * Adds an amount of months to a DT object. The amount of months can be negative.
+   * Adds an amount of months to a Aleph\Utils\DT object. The amount of months can be negative.
    *
    * @param integer $month
    * @return self
    * @access public
    */
-  public function addMonth($month)
+  public function addMonth($month = 1)
   {
     $this->dt->modify(($month > 0 ? '+' : '-') . abs($month) . ' month');
     return $this;
   }
 
   /**
-   * Adds an amount of years to a DT object. The amount of years can be negative.
+   * Adds an amount of years to a Aleph\Utils\DT object. The amount of years can be negative.
    *
    * @param integer $year
    * @return self
    * @access public
    */
-  public function addYear($year)
+  public function addYear($year = 1)
   {
     $this->dt->modify(($year > 0 ? '+' : '-') . abs($year) . ' year');
     return $this;
   }
 
   /**
-   * Adds an amount of hours to a DT object. The amount of hours can be negative.
+   * Adds an amount of hours to a Aleph\Utils\DT object. The amount of hours can be negative.
    *
    * @param integer $hour
    * @return self
    * @access public
    */
-  public function addHour($hour)
+  public function addHour($hour = 1)
   {
     $this->dt->modify(($hour > 0 ? '+' : '-') . abs($hour) . ' hour');
     return $this;
   }
 
   /**
-   * Adds an amount of minutes to a DT object. The amount of minutes can be negative.
+   * Adds an amount of minutes to a Aleph\Utils\DT object. The amount of minutes can be negative.
    *
    * @param integer $minute
    * @return self
    * @access public
    */
-  public function addMinute($minute)
+  public function addMinute($minute = 1)
   {
     $this->dt->modify(($minute > 0 ? '+' : '-') . abs($minute) . ' minute');
     return $this;
   }
 
   /**
-   * Adds an amount of seconds to a DT object. The amount of seconds can be negative.
+   * Adds an amount of seconds to a Aleph\Utils\DT object. The amount of seconds can be negative.
    *
    * @param integer $second
    * @return self
    * @access public
    */
-  public function addSecond($second)
+  public function addSecond($second = 1)
   {
     $this->dt->modify(($second > 0 ? '+' : '-') . abs($second) . ' second');
     return $this;
   }
   
   /**
-   * Returns the difference between two DT objects.
+   * Returns the difference between two Aleph\Utils\DT objects.
    *
-   * @param \Aleph\Utils\DT $date - the date to compare to.
+   * @param Aleph\Utils\DT $date - the date to compare to.
    * @param boolean $absolute - determines whether to return absolute difference.
    * @return \DateInterval
    * @access public
@@ -880,7 +890,7 @@ class DT
    * Returns \Closure object representating of date period.
    *
    * @param string|\DateInterval $interval
-   * @param integer|\Aleph\Utils\DT - the number of recurrences or DT object.
+   * @param integer|Aleph\Utils\DT - the number of recurrences or Aleph\Utils\DT object.
    * @param boolean $excludeStartDate - determines whether the start date is excluded.
    * @return \Closure
    * @access public
@@ -889,15 +899,34 @@ class DT
   {
     if (!($interval instanceof \DateInterval)) $interval = \DateInterval::createFromDateString($interval);
     if ($end instanceof DT) $end = $end->getDateTimeObject();
-    $dp = new \DatePeriod($this->dt, $interval, $end, $excludeStartDate ? \DatePeriod::EXCLUDE_START_DATE : null);
-    $period = array(); foreach ($dp as $dt) $period[] = new self($dt);
-    return function() use($period)
+    else $end = (int)$end;
+    if (!$excludeStartDate) 
     {
-      static $p;
-      if (empty($p)) $p = $period;
-      $dt = current($p);
-      if ($dt !== false) next($p);
-      return $dt;
+      $dt = clone $this;
+      $k = 0;
+    }
+    else 
+    {
+      $dt = clone $this->add($interval);
+      $k = 1;
+    }
+    if ($end instanceof \DateTime)
+    {
+      return function() use ($dt, $interval, $end)
+      {
+        if ($end->getTimestamp() < $dt->getTimestamp()) return false;
+        $res = clone $dt;
+        $dt->add($interval);
+        return $res;
+      };
+    }
+    return function() use(&$k, $dt, $interval, $end)
+    {
+      if ($end < $k) return false;
+      $k++;
+      $res = clone $dt;
+      $dt->add($interval);
+      return $res;
     };
   }
 }
