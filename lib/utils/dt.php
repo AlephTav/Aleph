@@ -23,7 +23,7 @@
 namespace Aleph\Utils;
 
 /**
- * This class is designed for different manipulating with date and time.
+ * This class is designed for different manipulations with date and time.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -56,8 +56,8 @@ class DT
   }
   
   /**
-   * Checks whether the given year is leap.
-   * If a year is not given the current year will be checked.
+   * Checks whether the given year is a leap year.
+   * If a year is not specified the current year will be checked.
    *
    * @param integer $year
    * @return boolean
@@ -228,7 +228,7 @@ class DT
   }
 
   /**
-   * Converts the given date formatted to the one format to another.
+   * Converts the given date from one format to another.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -245,7 +245,7 @@ class DT
   }
   
   /**
-   * Converts the given date formatted to the specified format to the sql date format.
+   * Converts the given date from specified format to the sql date format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -261,7 +261,7 @@ class DT
   }
 
   /**
-   * Converts the given date formatted to the sql date format to the given format.
+   * Converts the given date from sql date format to the given format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -277,7 +277,7 @@ class DT
   }
   
   /**
-   * Converts the given date formatted to the specified format to the atom date format.
+   * Converts the given date from specified format to the atom date format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -292,7 +292,7 @@ class DT
   }
   
   /**
-   * Converts the given date formatted to the atom date format to the given format.
+   * Converts the given date formatted from the atom date format to the given format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -307,7 +307,7 @@ class DT
   }
   
   /**
-   * Converts the given date formatted to the specified format to the RSS date format.
+   * Converts the given date from specified format to the RSS date format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -322,7 +322,7 @@ class DT
   }
   
   /**
-   * Converts the given date formatted to the RSS date format to the given format.
+   * Converts the given date from RSS date format to the given format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -337,7 +337,7 @@ class DT
   }
   
   /**
-   * Converts the given date formatted to the specified format to the cookie date format.
+   * Converts the given date from specified format to the cookie date format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -352,7 +352,7 @@ class DT
   }
   
   /**
-   * Converts the given date formatted to the cookie date format to the given format.
+   * Converts the given date from cookie date format to the given format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -367,10 +367,10 @@ class DT
   }
   
   /**
-   * Compares the two given dates.
+   * Compares two given dates.
    * The method returns 1 if the second date larger than the first date.
    * The method returns -1 if the second date smaller than the first date.
-   * The method returns 0 if the both dates are equals.
+   * The method returns 0 if the both dates are equal.
    * The method returns FALSE if the given dates are not valid.
    *
    * @param string $date1 - string representing the first date.
@@ -391,9 +391,9 @@ class DT
   }
   
   /**
-   * Computes the difference in the date components between the two dates given in the same format.
-   * The value of component of a date maybe one of following values: second, minute, hour, day, week, month, year.
-   * By default the method returns difference between dates in days.
+   * Computes the difference  between two dates given in the same format within the date components.
+   * The value of component of a date may be as one of following values: second, minute, hour, day, week, month, year.
+   * The method returns difference between dates in days by default.
    * The method returns FALSE if the given dates are not valid.
    *
    * @param string $date1 - string representing the first date.
@@ -405,7 +405,7 @@ class DT
    * @static
    * @link http://php.net/manual/en/dateinterval.format.php
    */
-  public static function difference($date1, $date2, $format = null, $component = '%R%a')
+  public static function difference($date1, $date2, $format = null, $component = '%r%a')
   {
     if ($format === null)
     {
@@ -563,8 +563,8 @@ class DT
   }
   
   /**
-   * Returns numerically index array with all timezone identifiers.
-   * If $combine is TRUE the method returns associated array with keys being time zones.
+   * Returns numerical index array with all timezone identifiers.
+   * If $combine is TRUE the method returns associated array with keys which are time zones.
    *
    * @param boolean $combine
    * @param \DateTimeZone $what - one of \DateTimeZone class constants.
@@ -601,7 +601,7 @@ class DT
 
   /**
    * Constructor.
-   * If parameter $date is not specified the current date will be taken. 
+   * If $date is not specified the current date will be taken. 
    *
    * @param string|\DateTime $date - string representing the date or a \DateTime object.
    * @param string $format - date format string.
@@ -635,7 +635,7 @@ class DT
   }
   
   /**
-   * Returns a \DateTime object is associated with the Aleph\Utils\DT object.
+   * Returns a \DateTime object associated with the Aleph\Utils\DT object.
    *
    * @return \DateTime
    * @access public
@@ -646,7 +646,7 @@ class DT
   }
   
   /**
-   * Returns the timezone offset in seconds from UTC on success or FALSE on failure.
+   * Returns the timezone offset expressed in seconds from UTC on success or FALSE on failure.
    *
    * @return integer
    * @access public
@@ -705,7 +705,7 @@ class DT
   }
   
   /**
-   * Returns the date formatted to the given format and for the specified time zone.
+   * Returns the date formatted to the given format for the specified time zone.
    *
    * @param string $format
    * @param string|\DateTimeZone $timezone
@@ -799,7 +799,7 @@ class DT
    * Adds an amount of days to a Aleph\Utils\DT object. The amount of days can be negative.
    *
    * @param integer $day
-   * @return Aleph\Utils\DT
+   * @return self
    * @access public
    */
   public function addDay($day = 1)
@@ -809,7 +809,7 @@ class DT
   }
 
   /**
-   * Adds an amount of months to a Aleph\Utils\DT object. The amount of months can be negative.
+   * Adds an amount of months to a Aleph\Utils\DT object. The amount of months can as well be negative.
    *
    * @param integer $month
    * @return self
@@ -822,7 +822,7 @@ class DT
   }
 
   /**
-   * Adds an amount of years to a Aleph\Utils\DT object. The amount of years can be negative.
+   * Adds an amount of years to a Aleph\Utils\DT object. The amount of years might as well be negative.
    *
    * @param integer $year
    * @return self
@@ -835,7 +835,7 @@ class DT
   }
 
   /**
-   * Adds an amount of hours to a Aleph\Utils\DT object. The amount of hours can be negative.
+   * Adds an amount of hours to a Aleph\Utils\DT object. The amount of hours might as well be negative.
    *
    * @param integer $hour
    * @return self
@@ -848,7 +848,7 @@ class DT
   }
 
   /**
-   * Adds an amount of minutes to a Aleph\Utils\DT object. The amount of minutes can be negative.
+   * Adds an amount of minutes to a Aleph\Utils\DT object. The amount of minutes  might as well be negative.
    *
    * @param integer $minute
    * @return self
@@ -861,7 +861,7 @@ class DT
   }
 
   /**
-   * Adds an amount of seconds to a Aleph\Utils\DT object. The amount of seconds can be negative.
+   * Adds an amount of seconds to a Aleph\Utils\DT object. The amount of seconds might as well be negative.
    *
    * @param integer $second
    * @return self
