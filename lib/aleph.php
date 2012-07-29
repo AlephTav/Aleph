@@ -40,7 +40,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Bug and debug templates.
    */
-  const TEMPLATE_DEBUG = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>[{message}]</pre> has been catched in file <b>[{file}]</b> on line [{line}]<br /><br />[{fragment}]<b style="font-size: 14px;">Stack Trace:</b><pre>[{stack}]</pre></body></html>';
+  const TEMPLATE_DEBUG = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>[{message}]</pre> has been catched in file <b>[{file}]</b> on line [{line}]<br /><br />[{fragment}]<b style="font-size: 14px;">Stack Trace:</b><pre>[{stack}]</pre><b>Execution Time:</b><pre>[{executionTime}]</pre><b>Memory Usage:</b><pre>[{memoryUsage}]</pre></pre></body></html>';
   const TEMPLATE_BUG = 'Sorry, server is not available at the moment. Please wait. This site will be working very soon!';
   
   /**
@@ -469,9 +469,9 @@ final class Aleph implements \ArrayAccess
     }
     self::$eval['trace'] = $e->getTrace();
     self::$eval['traceAsString'] = $e->getTraceAsString();
-    self::$eval['rows'] = count(explode("\n", str_replace("\r\n", "\n", $code)));
+    self::$eval['rows'] = count(explode("\n", str_replace("\r", '', $code)));
     self::$eval['lines'] += self::$eval['rows'];
-    self::$eval['code'] .= $code . "\n";
+    self::$eval['code'] .= $code . PHP_EOL;
     return $code;
   }
   
@@ -526,6 +526,8 @@ final class Aleph implements \ArrayAccess
     restore_error_handler();
     restore_exception_handler();
     $info = self::analyzeException($e);
+    $info['memoryUsage'] = self::getMemoryUsage();
+    $info['executionTime'] = self::getExecutionTime();
     $info['isFatalError'] = $isFatalError;
     $config = (self::$instance !== null) ? self::$instance->config : array();
     $isDebug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
@@ -1433,13 +1435,16 @@ final class Aleph implements \ArrayAccess
       {
         $action = $this->acts['actions'][$key];
         if (!preg_match_all($action['regex'], $url, $matches)) continue;
-        if ($action instanceof Core\Delegate) $act = $action['action'];
+        if ($action['action'] instanceof Core\Delegate) $act = $action['action'];
         else 
         {
-          foreach ($action['params'] as $k => $param)
+          if (!($action['action'] instanceof \Closure))
           {
-            $action['action'] = str_replace('#' . $param . '#', $matches[$param][0], $action['action'], $count);
-            if ($count > 0) unset($action['params'][$k]);
+            foreach ($action['params'] as $k => $param)
+            {
+              $action['action'] = str_replace('#' . $param . '#', $matches[$param][0], $action['action'], $count);
+              if ($count > 0) unset($action['params'][$k]);
+            }
           }
           $act = new Core\Delegate($action['action']);
         }
@@ -1481,7 +1486,7 @@ final class Aleph implements \ArrayAccess
   }
 
   /**
-   * Returns whether the requested configuration variable exist.
+   * Checks whether the requested configuration variable exist.
    *
    * @param mixed $var - name of the configuration variable.
    * @return boolean
