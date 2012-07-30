@@ -953,7 +953,7 @@ final class Aleph implements \ArrayAccess
   private function __wakeup(){}
   
   /**
-   * Autoloads classes and intefaces.
+   * Autoloads classes, interfaces and traits.
    *
    * @param string $class
    * @param boolean $auto
@@ -991,7 +991,7 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Finds a class or inteface to include into your PHP script.
+   * Finds a class or interface to include into your PHP script.
    *
    * @param string $class
    * @param string $path
