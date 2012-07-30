@@ -57,7 +57,7 @@ class File extends Cache
   {
     $dir = \Aleph::dir($path ?: 'cache');
     if (!is_dir($dir)) mkdir($dir, 0775, true);
-    if (!is_writable($dir)) throw new Core\Exception($this, 'ERR_CACHE_FILE_1', $dir);
+    if (!is_writable($dir) && !chmod($dir, 0775)) throw new Core\Exception($this, 'ERR_CACHE_FILE_1', $dir);
     $this->dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
   }
   
