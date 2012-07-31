@@ -306,7 +306,7 @@ class Delegate implements IDelegate
    */
   public function in($permissions)
   {
-    if ($this->type == 'closure' || $this->type = 'control') return true;
+    if ($this->type == 'closure' || $this->type == 'control') return true;
     if ($this->type == 'function')
     {
       $m = $this->split($this->method);
