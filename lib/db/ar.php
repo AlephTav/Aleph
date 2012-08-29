@@ -215,12 +215,12 @@ class AR
   
   public function isChanged()
   {
-    return $changed;
+    return $this->changed;
   }
   
   public function isDeleted()
   {
-    return $deleted;
+    return $this->deleted;
   }
   
   public function isPrimaryKeyFilled($insert = false)
