@@ -283,7 +283,7 @@ abstract class SQLBuilder
     $sql .= ' FROM ' . implode(', ', $select['from']);
     if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
     if (!empty($select['where'])) $sql .= ' WHERE ' . $select['where'];
-    if (!empty($select['group'])) $sql .= ' GROUP BY ' . implode(', ', $sleect['group']);
+    if (!empty($select['group'])) $sql .= ' GROUP BY ' . implode(', ', $select['group']);
     if (!empty($select['having'])) $sql .= ' HAVING ' . $select['having'];
     if (!empty($select['order'])) $sql .= ' ORDER BY ' . implode(', ', $select['order']);
     if (!empty($select['limit'])) $sql .= ' LIMIT ' . implode(', ', $select['limit']);
