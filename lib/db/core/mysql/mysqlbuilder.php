@@ -35,19 +35,55 @@ class MySQLBuilder extends SQLBuilder
     foreach ($name as &$part)
     {
       if ($part == '*') continue;
-      if ($part[0] == '`' && $part[strlen($part) - 1] == '`') 
+      $l = substr($part, 0, 1);
+      $r = substr($part, -1, 1);
+      if ($l == '`' && $r == '`') 
       {
         $part = str_replace('``', '`', substr($part, 1, -1));
+        $l = substr($part, 0, 1);
+        $r = substr($part, -1, 1);
       }
+      if ($l == ' ' || $r == ' ') throw new Core\Exception('Aleph\DB\SQLBuilder', 'ERR_SQL_2');
       $part = '`' . str_replace('`', '``', $part) . '`';
     }
     return implode('.', $name);
   }
   
-  public function tableList($schema = null)
+  public function quote($value, $isLike = false)
   {
-    if ($schema == '') return 'SHOW TABLES';
-    return 'SHOW TABLES FROM ' . $this->wrap($schema, true);
+    if ($isLike) $value = str_replace('\\', '\\\\\\\\', $value);
+    else $value = str_replace('\\', '\\\\', $value);
+    return "'" . str_replace('\'', '\'\'', $value) . "'";
+  }
+  
+  public function getPHPType($type)
+  {
+    switch ($type)
+    {
+      case 'int':
+      case 'smallint':
+      case 'tinyint':
+      case 'mediumint':
+      case 'bigint':
+      case 'timestamp':
+      case 'year':
+        return 'integer';
+      case 'double':
+      case 'float':
+      case 'real':
+      case 'decimal':
+        return 'float';
+      case 'bit':
+      case 'boolean':
+      case 'serial':
+        return 'boolean';
+    }
+    return 'string';
+  }
+  
+  public function tableList($schema)
+  {
+    return 'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ' . $this->quote($schema) . ' AND TABLE_TYPE = \'BASE TABLE\'';
   }
   
   public function tableInfo($table)
@@ -155,6 +191,7 @@ class MySQLBuilder extends SQLBuilder
         $tmp[$column]['isUnsigned'] = true;
       }
       else $tmp[$column]['isUnsigned'] = false;
+      $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
       $tmp[$column]['default'] = ($type == 'bit') ? substr($row['Default'], 2, 1) : $row['Default'];
       if ($tmp[$column]['default'] === null && !$tmp[$column]['isNullable']) $tmp[$column]['default'] = '';
       $tmp[$column]['maxLength'] = 0;

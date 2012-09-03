@@ -1,0 +1,66 @@
+Array
+(
+    [meta] => Array
+        (
+            [driver] => ...
+            [dbname] => ...
+            [charset] => ...
+            [collation] => ...                
+        )
+    [tables] => Array
+        (
+            [table_1] => Array
+                (
+                    [meta] => Array (...)
+                    [columns] => Array (...)
+                    [indexes] => Array (...)
+                    [constraints] => Array (...)
+                    [triggers] => Array (...)
+                )
+            [table_2] => Array
+                (
+                    [meta] => Array (...)
+                    [columns] => Array (...)
+                    [indexes] => Array (...)
+                    [constraints] => Array (...)
+                    [triggers] => Array (...)
+                )
+                ...
+            [table_n] => Array
+                (
+                    [meta] => Array (...)
+                    [columns] => Array (...)
+                    [indexes] => Array (...)
+                    [constraints] => Array (...)
+                    [triggers] => Array (...)
+                )
+        )
+    [procedures] => Array
+        (
+            [procedure_1] => Array (...)
+            [procedure_2] => Array (...)
+                ...
+            [procedure_n] => Array (...)
+        )
+    [events] => Array
+        (
+            [event_1] => Array (...)
+            [event_2] => Array (...)
+                ...
+            [event_n] => Array (...)
+        )
+    [views] => Array
+        (
+            [view_1] => Array (...)
+            [view_2] => Array (...)
+                ...
+            [view_n] => Array (...)
+        )
+    [data] => Array
+        (
+            [table_1] => Array (...)
+            [table_2] => Array (...)
+                ...
+            [table_n] => Array (...)
+        )
+)

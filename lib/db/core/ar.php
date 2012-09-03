@@ -56,7 +56,7 @@ class AR
     return foo(new self($table))->init($db, $metaInfoExpire);
   }
 
-  private function __construct($table)
+  protected function __construct($table)
   {
     $this->table = $table;
   }

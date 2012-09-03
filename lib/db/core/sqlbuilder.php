@@ -77,9 +77,13 @@ abstract class SQLBuilder
     }
   }
   
+  abstract public function getPHPType($type);
+  
   abstract public function wrap($name, $isTableName = false);
   
-  abstract public function tableList($schema = null);
+  abstract public function quote($value, $isLike = false);
+  
+  abstract public function tableList($schema);
   
   abstract public function tableInfo($table);
   

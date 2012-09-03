@@ -38,6 +38,7 @@ class DB
    * Error message templates.
    */
   const ERR_DB_1 = 'DSN is empty. You should set DSN to be able to connect to database.';
+  const ERR_DB_2 = 'DSN is wrong.';
 
   /**
    * These constants affect on format output data of method "execute".
@@ -251,9 +252,22 @@ class DB
     if ($options === null) $options = $this->options;
     if (!$dsn) throw new Core\Exception($this, 'ERR_DB_1');
     $this->disconnect();
-    $this->_dsn_ = array('dsn' => $dsn);
-    $dsn = explode(':', $dsn);
-    $this->_dsn_['driver'] = strtolower($dsn[0]);
+    do
+    {
+      $dsn = get_cfg_var('pdo.dsn.' . $dsn) ?: $dsn;
+      $this->_dsn_['dsn'] = $dsn;
+      $dsn = explode(':', $dsn);
+      $this->_dsn_['driver'] = strtolower($dsn[0]);
+      if ($this->_dsn_['driver'] == 'uri') 
+      {
+        unset($dsn[0]);
+        unset($dsn[1]);
+        $dsn[2] = ltrim($dsn[2], '/');
+        $dsn = file_get_contents(implode(':', $dsn));
+      }
+    }
+    while ($this->_dsn_['driver'] == 'uri');
+    if (empty($dsn[1])) throw new Core\Exception($this, 'ERR_DB_2');
     $dsn = explode(';', $dsn[1]);
     foreach ($dsn as $v)
     {
@@ -572,14 +586,20 @@ class DB
     return $this->pdo->inTransaction();
   }
   
-  public function getColumnsInfo($table)
+  public function getTableList($schema = null)
   {
-    return $this->sql->normalizeColumnInfo($this->rows($this->sql->columnsInfo($table)));
+    $this->connect();
+    return $this->columns($this->sql->tableList($schema ?: $this->_dsn_['dbname']));
   }
   
   public function getTableInfo($table)
   {
     return $this->sql->normalizeTableInfo($this->row($this->sql->tableInfo($table)));
+  }
+  
+  public function getColumnsInfo($table)
+  {
+    return $this->sql->normalizeColumnInfo($this->rows($this->sql->columnsInfo($table)));
   }
   
   protected function prepare(\PDOStatement $st, $sql, array $data)

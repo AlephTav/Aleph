@@ -40,7 +40,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Bug and debug templates.
    */
-  const TEMPLATE_DEBUG = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>[{message}]</pre> has been catched in file <b>[{file}]</b> on line [{line}]<br /><br />[{fragment}]<b style="font-size: 14px;">Stack Trace:</b><pre>[{stack}]</pre><b>Execution Time:</b><pre>[{executionTime}]</pre><b>Memory Usage:</b><pre>[{memoryUsage}]</pre></pre></body></html>';
+  const TEMPLATE_DEBUG = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>[{message}]</pre> has been catched in file <b>[{file}]</b> on line [{line}]<br /><br />[{fragment}]<b style="font-size: 14px;">Stack Trace:</b><pre>[{stack}]</pre><b>Execution Time:</b><pre>[{executionTime}] sec</pre><b>Memory Usage:</b><pre>[{memoryUsage}] Mb</pre></pre></body></html>';
   const TEMPLATE_BUG = 'Sorry, server is not available at the moment. Please wait. This site will be working very soon!';
   
   /**
@@ -526,7 +526,7 @@ final class Aleph implements \ArrayAccess
     restore_error_handler();
     restore_exception_handler();
     $info = self::analyzeException($e);
-    $info['memoryUsage'] = self::getMemoryUsage();
+    $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
     $info['executionTime'] = self::getExecutionTime();
     $info['isFatalError'] = $isFatalError;
     $config = (self::$instance !== null) ? self::$instance->config : array();
@@ -556,13 +556,15 @@ final class Aleph implements \ArrayAccess
     {
       if ($isDebug)
       {
-        if ($isFatalError) $output = $info['fragment'];
-        else $output = $info['message'] . PHP_EOL . $info['fragment'] . PHP_EOL . $info['stack'];
-        self::$output = strip_tags(html_entity_decode($output));
+        $output = PHP_EOL . PHP_EOL . 'BUG REPORT' . PHP_EOL . PHP_EOL;
+        $output .= 'The following error [[ ' . $info['message'] . ' ]] has been catched in file ' . $info['file'] . ' on line ' . $info['line'] . PHP_EOL . $info['fragment'] . PHP_EOL . PHP_EOL;
+        $output .= 'Stack Trace:' . PHP_EOL . $info['stack'] . PHP_EOL . PHP_EOL;
+        $output .= 'Execution Time: ' . $info['executionTime'] . ' sec' . PHP_EOL . 'Memory Usage: ' . $info['memoryUsage'] . ' Mb';
+        self::$output = strip_tags(html_entity_decode($output)) . PHP_EOL . PHP_EOL;
       }
       else
       {
-        self::$output = self::TEMPLATE_BUG;
+        self::$output = self::TEMPLATE_BUG . PHP_EOL;
       }
       return;
     }
