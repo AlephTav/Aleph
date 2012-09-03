@@ -305,7 +305,7 @@ class Template implements \ArrayAccess
    */
   public function assign(array $variables, $isGlobal = false)
   {
-    if ($isGlobal) $this->globals = array_merge($this->globals, $variables);
+    if ($isGlobal) self::$globals = array_merge(self::$globals, $variables);
     else $this->vars = array_merge($this->vars, $variables);
   }
 
