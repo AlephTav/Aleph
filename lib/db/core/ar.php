@@ -68,6 +68,7 @@ class AR
       $db = \Aleph::get('db');
       if (!$db) throw new Core\Exception($this, 'ERR_AR_1');
     }
+    if (!$db->isConnected()) $db->connect();
     $this->db = $db;
     if (!isset(self::$info[$this->db->getDBName()][$this->table]))
     {

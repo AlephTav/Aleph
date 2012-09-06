@@ -22,35 +22,92 @@
 
 namespace Aleph\DB\Sync;
 
+/**
+ * Class is used for reading database structure changes from the vault. 
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.db.sync
+ * @abstract
+ */
 class VaultReader implements IReader
 {
+  /**
+   * Path to the vault file.
+   *
+   * @var string $file
+   * @access protected
+   */
   protected $file = null;
   
+  /**
+   * Database structure received from the vault. 
+   *
+   * @var array $info
+   * @access protected
+   */
   protected $info = null;
   
+  /**
+   * Regular expression for detecting the tables, containing synchronizing data. 
+   *
+   * @var array $infoTablesPattern
+   * @access protected
+   */
   protected $infoTablesPattern = null;
 
+  /**
+   * Constructor.
+   *
+   * @params string $file - path to the vault file.
+   * @access public
+   */
   public function __construct($file)
   {
     $this->file = $file;
   }
   
+  /**
+   * Sets the regular expression for the names of the tables, containing synchronizing data.
+   *
+   * @param string $pattern - the regular expression.
+   * @access public
+   */
   public function setInfoTables($pattern)
   {
     $this->infoTablesPattern = $pattern;
   }
   
+  /**
+   * Returns the regular expression for detecting the tables, containing synchronizing data.
+   * 
+   * @return string
+   * @access public
+   */
   public function getInfoTables()
   {
     return $this->infoTablesPattern;
   }
   
+  /**
+   * Resets the received data of the database structure. 
+   * Repetitive call of the "read" method will allow to receive up-to-date information concerning database structure.
+   *
+   * @return self
+   * @access public
+   */
   public function reset()
   {
     $this->info = null;
     return $this;
   }
   
+  /**
+   * Reads database structure.
+   *
+   * @return array - you can find the format of returned array in file /lib/db/synchronizer/structure_db.txt
+   * @access public
+   */
   public function read()
   {
     if ($this->info) return $this->info;

@@ -22,8 +22,22 @@
 
 namespace Aleph\DB\Sync;
 
+/**
+ * Class for reading MySQL database structure.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.db.sync
+ * @abstract
+ */
 class MySQLReader extends DBReader
 {
+  /**
+   * Reads database structure.
+   *
+   * @return array - you can find the format of returned array in file /lib/db/synchronizer/structure_db.txt
+   * @access public
+   */
   public function read()
   {
     if ($this->info) return $this->info;
@@ -82,6 +96,15 @@ class MySQLReader extends DBReader
     return $this->info;
   }
 
+  /**
+   * Executes specified SQL query and returns result of its execution. 
+   *
+   * @param PDO $pdo
+   * @param string $type - type of the query.
+   * @param array $params - parameters of the query.
+   * @return mixed
+   * @access protected
+   */
   protected function getData(\PDO $pdo, $type, array $params = null)
   {
     $st = parent::getData($pdo, $type, $params);

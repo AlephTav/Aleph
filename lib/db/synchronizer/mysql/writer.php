@@ -22,8 +22,24 @@
 
 namespace Aleph\DB\Sync;
 
+/**
+ * Class for changing MySQL database structure.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.db.sync
+ * @abstract
+ */
 class MySQLWriter extends DBWriter
 {
+  /**
+   * Makes changes in database structure and information tables data.
+   * If changes were made in db structure then method returns the array of executed SQL queries.
+   *
+   * @param array $info - the array returned by method Synchronizer::compare.
+   * @return array | NULL
+   * @access public
+   */
   public function write(array $info)
   {
     $this->queries = array();

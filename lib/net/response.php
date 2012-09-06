@@ -259,7 +259,7 @@ class Response
   {
     if ($expires === false || (int)$expires <= 0) 
     {
-      $this->headers['Expires'] = 'Thu, 19 Nov 1981 08:52:00 GMT';
+      $this->headers['Expires'] = 'Sun, 3 Jan 1982 21:30:00 GMT';
       $this->headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0';
       $this->headers['Pragma'] = 'no-cache';
     }

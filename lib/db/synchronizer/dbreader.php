@@ -35,7 +35,7 @@ abstract class DBReader implements IReader
   /**
    * Read database structure. 
    *
-   * @var array $info - you can see format of this array in file /lib/db/synchronizer/structure_db.txt
+   * @var array $info - you can find format of this array in file /lib/db/synchronizer/structure_db.txt
    * @access protected
    */
   protected $info = null;
@@ -48,6 +48,12 @@ abstract class DBReader implements IReader
    */
   protected $db =  null;
   
+  /**
+   * Regular expression for detecting the tables, containing synchronizing data.
+   *
+   * @var string $infoTablesPattern
+   * @access protected
+   */
   protected $infoTablesPattern = null;
   
   /**
@@ -61,16 +67,35 @@ abstract class DBReader implements IReader
     $this->db = $db;
   }
   
+  /**
+   * Sets the regular expression for the names of the tables, containing synchronizing data.
+   *
+   * @param string $pattern - the regular expression.
+   * @access public
+   */
   public function setInfoTables($pattern)
   {
     $this->infoTablesPattern = $pattern;
   }
   
+  /**
+   * Returns the regular expression for detecting the tables, containing synchronizing data.
+   * 
+   * @return string
+   * @access public
+   */
   public function getInfoTables()
   {
     return $this->infoTablesPattern;
   }
   
+  /**
+   * Resets the received data of the database structure. 
+   * Repetitive call of the "read" method will allow to receive up-to-date information concerning database structure.
+   *
+   * @return self
+   * @access public
+   */
   public function reset()
   {
     $this->info = null;
@@ -81,8 +106,8 @@ abstract class DBReader implements IReader
    * Executes specified SQL query and returns result of its execution. 
    *
    * @param PDO $pdo
-   * @param string $type - type of query.
-   * @param array $params - parameters of SQL query.
+   * @param string $type - type of the query.
+   * @param array $params - parameters of the query.
    * @return mixed
    * @access protected
    */

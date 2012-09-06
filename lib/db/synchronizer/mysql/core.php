@@ -22,8 +22,21 @@
 
 namespace Aleph\DB\Sync;
 
+/**
+ * Main class for all MySQL databases operations. 
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.db.sync
+ */
 class MySQLCore extends DBCore
 {
+  /**
+   * Array of SQL query templates for different database operations.
+   *
+   * @var array $sql
+   * @access protected
+   */
   protected $sql = array('info' => array('database' => 'SELECT * FROM information_schema.SCHEMATA WHERE SCHEMA_NAME = db_name',
                                          'tables' => 'SELECT * FROM information_schema.TABLES WHERE TABLE_SCHEMA = db_name AND TABLE_TYPE = \'BASE TABLE\'',
                                          'table' => 'SHOW CREATE TABLE tbl_name',
@@ -61,12 +74,30 @@ class MySQLCore extends DBCore
                                            'data' => 'TRUNCATE TABLE tbl_name'),
                          'data' => array('table' => 'SELECT * FROM tbl_name'));
 
+  /**
+   * Quotes a column name or table name for use in queries.
+   *
+   * @param string $name - column or table name.
+   * @param boolean $isColumnName
+   * @return string
+   * @access public
+   * @abstract
+   */
   public function wrap($name, $isColumnName = true)
   {
     if (strlen($name) == 0 || $name == '*') return $name;
     return '`' . str_replace('`', '``', $name) . '`';
   }
   
+  /**
+   * Quotes a string value for use in queries.
+   *
+   * @param string $value
+   * @param boolean $isLike - determines whether the quoting value is used in LIKE clause.
+   * @return string
+   * @access public
+   * @abstract
+   */
   public function quote($value, $isLike = false)
   {
     if ($isLike) $value = str_replace('\\', '\\\\\\\\', $value);

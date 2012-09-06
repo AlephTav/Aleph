@@ -20,44 +20,26 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Utils;
+namespace Aleph\Web\UI\POM;
 
-/**
- * This class contains some helpful methods to work with command line.
- *
- * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.3
- * @package aleph.utils
- */
-class CLI
+use Aleph\Core;
+
+class Control
 {
-  /**
-   * Returns values of command line options. Method returns FALSE if the script is not run from command line.
-   *
-   * @param array $options - names of the options. Each option can be an array of different names (aliases) of the same option.
-   * @return array
-   * @access public
-   * @static
-   */
-  public static function getArguments(array $options)
+  public static function getViewState()
   {
-    if (PHP_SAPI !== 'cli') return false;
-    $argv = $_SERVER['argv'];
-    $argc = $_SERVER['argc'];
-    $res = $opts = array();
-    foreach ($options as $opt)
-    {
-      if (!is_array($opt)) $opts[$opt] = $opt;
-      else foreach ($opt as $o) $opts[$o] = $opt; 
-    }
-    for ($i = 1; $i < $argc; $i++)
-    {
-      if (isset($opts[$argv[$i]]))
-      {
-        $v = isset($argv[$i + 1]) && empty($opts[$argv[$i + 1]]) ? $argv[$i + 1] : '';
-        foreach ((array)$opts[$argv[$i]] as $opt) $res[$opt] = $v;
-      }
-    }
-    return $res;
+  }
+  
+  public static function setViewState(array $vs)
+  {
+  
+  }
+  
+  public static function restoreFromViewState($uniqueID)
+  {
+  }
+
+  public function __construct($id)
+  {
   }
 }

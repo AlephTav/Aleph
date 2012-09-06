@@ -23,7 +23,7 @@
 namespace Aleph\DB\Sync;
 
 /**
- * Class for writing database structure changes to the vault.
+ * Class for recording database structure changes to the vault.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -32,13 +32,33 @@ namespace Aleph\DB\Sync;
  */
 class VaultWriter implements IWriter
 {
+  /**
+   * Path to the vault file.
+   *
+   * @var string $file
+   * @access protected
+   */
   protected $file = null;
 
+  /**
+   * Constructor.
+   *
+   * @params string $file - path to the vault file.
+   * @access public
+   */
   public function __construct($file)
   {
     $this->file = $file;
   }
   
+  /**
+   * Makes changes in database structure and information tables data.
+   * If changes were made in db structure then method returns the array of executed SQL queries.
+   *
+   * @param array $info - the array returned by method Synchronizer::compare.
+   * @return array | NULL
+   * @access public
+   */
   public function write(array $info)
   {
     if (!is_file($this->file)) $data = array();

@@ -25,7 +25,7 @@ namespace Aleph\DB\Sync;
 use Aleph\Core;
 
 /**
- * Interface for all classes that read the information on the database structure.
+ * Interface for all classes reading database structure.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -34,8 +34,7 @@ use Aleph\Core;
 interface IReader
 {
   /**
-   * Sets the regular expression for table names that are information tables.
-   * Data of information tables will also be synchronized.
+   * Sets the regular expression for the names of the tables, containing synchronizing data.
    *
    * @param string $pattern - the regular expression.
    * @access public
@@ -43,7 +42,7 @@ interface IReader
   public function setInfoTables($pattern);
   
   /**
-   * Returns the regular expression for detecting of names of information tables.
+   * Returns the regular expression for detecting the tables, containing synchronizing data.
    * 
    * @return string
    * @access public
@@ -51,8 +50,8 @@ interface IReader
   public function getInfoTables();
 
   /**
-   * Resets read data of database structure. 
-   * Repeated calling method "read" will allow us to get up to date information about database structure.
+   * Resets the received data of the database structure. 
+   * Repetitive call of the "read" method will allow to receive up-to-date information concerning database structure.
    *
    * @return self
    * @access public
@@ -60,16 +59,16 @@ interface IReader
   public function reset();
   
   /**
-   * Reads information about database structure.
+   * Reads database structure.
    *
-   * @return array - you can see format of returned array in file /lib/db/synchronizer/structure_db.txt
+   * @return array - you can find the format of returned array in file /lib/db/synchronizer/structure_db.txt
    * @access public
    */
   public function read();
 }
 
 /**
- * Interface for all classes that implement changes in structure of databases.
+ * Interface for all classes that implement changes in database structure.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -78,8 +77,8 @@ interface IReader
 interface IWriter
 {
   /**
-   * Makes changes in database structure and data of information tables.
-   * If changes of db structure move to a database then the method returns the array of executed SQL queries.
+   * Makes changes in database structure and information tables data.
+   * If changes were made in db structure then method returns the array of executed SQL queries.
    *
    * @param array $info - the array returned by method Synchronizer::compare.
    * @return array | NULL
@@ -105,9 +104,9 @@ class Synchronizer
   const ERR_SYNC_3 = 'It is impossible to synchronize databases with different DBMS';
   
   /**
-   * The source database structure.
+   * The structure of the source database.
    *
-   * @var array $out - you can see format of this array in file /lib/db/synchronizer/structure_db.txt
+   * @var array $out - you can find the format of this array in file /lib/db/synchronizer/structure_db.txt
    * @access protected
    */
   protected $out = null;
@@ -115,25 +114,29 @@ class Synchronizer
   /**
    * The recipient database structure.
    *
-   * @var array $in - you can see format of this array in file /lib/db/synchronizer/structure_db.txt
+   * @var array $in - you can find the  format of this array in file /lib/db/synchronizer/structure_db.txt
    * @access protected
    */
   protected $in = null;
   
   /**
-   * Regular expression for detecting of names of information tables.
-   * Data of such tables will be synchronized.
+   * Regular expression for detecting the tables, containing synchronizing data.
    *
    * @var string $infoTablesPattern
    * @access protected
    */
   protected $infoTablesPattern = null;
   
+  /**
+   * Parameters of connection to the recipient database. 
+   *
+   * @var array $params
+   * @access protected
+   */
   protected $params = array();
   
   /**
-   * Sets the regular expression for table names that are information tables.
-   * Data of information tables will also be synchronized.
+   * Sets the regular expression for the names of the tables, containing synchronizing data.
    *
    * @param string $pattern - the regular expression.
    * @access public
@@ -144,7 +147,7 @@ class Synchronizer
   }
   
   /**
-   * Returns the regular expression for detecting of names of information tables.
+   * Returns the regular expression for detecting the tables, containing synchronizing data.
    * 
    * @return string
    * @access public
@@ -198,9 +201,9 @@ class Synchronizer
   
   /**
    * Performs synchronization.
-   * If changes of db structure move to a database then the method returns the array of executed SQL queries.  
+   * If changes were made in db structure then method returns the array of executed SQL queries. 
    *
-   * @param boolean $merge - determines whether or not merge of db structures is needed.
+   * @param boolean $merge - determines whether or not the merge of db structures is needed.
    * @return array | NULL
    * @access public
    */
@@ -218,8 +221,8 @@ class Synchronizer
    *
    * @param array $d1 - the source db structure.
    * @param array $d2 - the recipient db structure.
-   * @param boolean $merge - determines whether or not merge of db structures is needed.
-   * @return array - you can see format of returned array in file /lib/db/synchronizer/structure_compare.txt
+   * @param boolean $merge - determines whether or not the merge of db structures is needed.
+   * @return array - you can find format of returned array in file /lib/db/synchronizer/structure_compare.txt
    * @access protected
    */
   protected function compare(array $d1, array $d2, $merge)

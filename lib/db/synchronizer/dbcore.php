@@ -23,7 +23,7 @@
 namespace Aleph\DB\Sync;
 
 /**
- * Base class for all operations with database.
+ * Main class for all database operations.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -48,7 +48,7 @@ abstract class DBCore
   protected $params = array();
   
   /**
-   * Array of SQL query templates for different operations with a database.
+   * Array of SQL query templates for different database operations.
    *
    * @var array $sql
    * @access protected
@@ -125,7 +125,7 @@ abstract class DBCore
   }
   
   /**
-   * Returns PDO object is appropriate the current database session.
+   * Returns PDO object of relevant current database session.
    *
    * @return PDO
    * @access public

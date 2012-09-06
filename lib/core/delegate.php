@@ -22,6 +22,8 @@
 
 namespace Aleph\Core;
 
+use Aleph\MVC;
+
 /**
  * IDelegate interface is intended for building of Aleph framework callbacks.
  * Using such classes we can transform strings in certain format into callback if necessary. 
@@ -230,7 +232,7 @@ class Delegate implements IDelegate
       else
       {
         $this->type = 'class';
-        $this->class = $matches[1] ?: 'Aleph';
+        $this->class = $matches[1] ?: (MVC\Page::$page instanceof MVC\IPage ? get_class(MVC\Page::$page) : 'Aleph');
         $this->numargs = (int)$matches[3];
         $this->static = ($matches[4] == '::');
         $this->method = $matches[5] ?: '__construct';
