@@ -732,7 +732,7 @@ final class Aleph implements \ArrayAccess
       }
       ini_set('unserialize_callback_func', 'spl_autoload_call');
       if (session_id() == '') session_start();
-      session_regenerate_id(true);
+      else session_regenerate_id(true);
       if (isset($_GET['__DEBUG_INFORMATION__']) && isset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]))
       {
         self::$output = $_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']];
