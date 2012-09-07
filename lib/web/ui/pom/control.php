@@ -28,6 +28,7 @@ class Control
 {
   public static function getViewState()
   {
+    return array();
   }
   
   public static function setViewState(array $vs)

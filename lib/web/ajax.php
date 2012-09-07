@@ -251,9 +251,9 @@ class Ajax
    *
    * @param string $str
    * @return string
-   * @access private
+   * @access public
    */
-  private function replaceBreakups($str, $addSlashes = true)
+  public function replaceBreakups($str, $addSlashes = true)
   {
     $str = strtr($str, array("\r" => '&#0013;', "\n" => '&#0010;'));
     if (!$addSlashes) return $str;
@@ -265,9 +265,9 @@ class Ajax
    *
    * @param  string $str
    * @return string
-   * @access private
+   * @access public
    */
-  private function quote($str)
+  public function quote($str)
   {
     return strtr($str, array("\\" => "\\\\", "'" => "\'", "\r" => "\\r", "\n" => "\\n"));
   }

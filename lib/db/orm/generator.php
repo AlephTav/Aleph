@@ -69,7 +69,7 @@ class Generator
       $properties = array();
       foreach ($this->db->getColumnsInfo($table) as $column)
       {
-        $properties[] = ' * @property ' . $column['phpType'] . ' ' . $column['column'];
+        $properties[] = ' * @property ' . $column['phpType'] . ' $' . $column['column'];
       }
       $properties = implode(PHP_EOL, $properties) . PHP_EOL;
       if (!is_file($file))

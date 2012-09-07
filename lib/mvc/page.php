@@ -63,7 +63,7 @@ class Page implements IPage
    * @var string
    * @access public
    */
-  public $noSessionURL = '/';
+  public $noSessionURL = null;
   
   /**
    * The time (in seconds) of expiration cache of a page.
@@ -198,7 +198,11 @@ class Page implements IPage
   public function assign()
   {
     //if (empty($this->fv['ajax-key']) || $this->fv['ajax-key'] != sha1($this->pageID)) exit();
-    //if ($this->cache->isExpired($this->pageID . '_vs')) \Aleph::go($this->noSessionURL);
+    if ($this->cache->isExpired($this->pageID . '_vs')) 
+    {
+      if ($this->noSessionURL) \Aleph::go($this->noSessionURL);
+      \Aleph::reload();
+    }
     //POM\Control::setViewState($this->cache->get($this->pageID . '_vs'));
     //$this->body = POM\Control::restoreFromViewState($this->pageID);
     //$this->body->assign(empty($this->fv['ajax-vs']) ? array() : json_decode((string)$this->fv['ajax-vs'], true));
@@ -209,7 +213,7 @@ class Page implements IPage
     $this->ajax->doit($this->ajaxPermissions);
     //$this->body->refresh();
     $this->ajax->perform();
-    //$this->cache->set($this->pageID . '_vs', POM\Control::getViewState(), ini_get('session.gc_maxlifetime'), '--pages');
+    $this->cache->set($this->pageID . '_vs', POM\Control::getViewState(), ini_get('session.gc_maxlifetime'), '--pages');
   }
 
   /**
