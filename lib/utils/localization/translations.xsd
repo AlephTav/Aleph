@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="Localization">
+    <xsd:complexType>
+		    <xsd:sequence>
+			     <xsd:element name="Phrase" minOccurs="0" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="Key">
+                <xsd:complexType>
+                  <xsd:simpleContent>
+                    <xsd:extension base="xsd:string" />
+                  </xsd:simpleContent>
+                </xsd:complexType>
+              </xsd:element>
+              <xsd:element name="Translate" minOccurs="0" maxOccurs="unbounded">
+                <xsd:complexType mixed="true">
+                  <xsd:sequence>
+                    <xsd:element name="Case" minOccurs="0" maxOccurs="unbounded">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="Rule" />
+                          <xsd:element name="Template" />
+                        </xsd:sequence>
+                      </xsd:complexType>
+                    </xsd:element>
+                    <xsd:element name="Otherwise" minOccurs="0" maxOccurs="1" />
+                  </xsd:sequence>
+                  <xsd:attribute name="Language" type="xsd:string" use="required" />
+                  <xsd:attribute name="Direction" type="direction" />
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:simpleType name="direction">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="right" />
+      <xsd:enumeration value="left" />
+    </xsd:restriction>
+  </xsd:simpleType>
+</xsd:schema>

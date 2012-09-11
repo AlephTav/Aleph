@@ -1031,7 +1031,7 @@ final class Aleph implements \ArrayAccess
                 $tkn = $tks[++$k];
                 if ($tkn[0] == T_STRING || $tkn[0] == T_NS_SEPARATOR) $ns .= $tkn[1];
               }
-              while ($tkn != ';');
+              while ($tkn != ';' && $tkn != '{');
               $namespace = $ns . '\\';
             }
             else if ($token[0] == T_CLASS || $token[0] == T_INTERFACE || (defined('T_TRAIT') && $token[0] == T_TRAIT))
