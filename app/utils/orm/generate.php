@@ -32,4 +32,4 @@ switch (strtolower($args['--mode']))
     exit('Error: parameter "mode" with such value doesn\'t exist. Only the following mode values are possible: ar (generates active record files), orm (generates orm classes), xml (generates xml mapping file for orm).' . PHP_EOL);
 }
 
-echo 'ok.';
+echo 'ok.' . PHP_EOL;
