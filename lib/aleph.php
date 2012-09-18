@@ -26,9 +26,7 @@ use Aleph\Core,
 
 /**
  * General class of the framework.
- * With this class you can log error messages, profile your code, catche any errors, 
- * load classes, configure your application. Also this class allows routing and 
- * can be stroting any global objects. 
+ * With this class you can log error messages, profile your code, catch any errors, load classes, configure your application and store any global objects. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -52,7 +50,6 @@ final class Aleph implements \ArrayAccess
   const ERR_GENERAL_4 = 'Autoload callback can only be Aleph callback (string value), Closure object or Aleph\Core\IDelegate instance.';
   const ERR_GENERAL_5 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
   const ERR_GENERAL_6 = 'Class "[{var}]" is not found in "[{var}]". You should include this class manually in connect.php';
-  const ERR_GENERAL_7 = 'Delegate "[{var}]" is not callable.';
   const ERR_CONFIG_1 = 'File "[{var}]" is not correct ini file.';
 
   /**
@@ -152,6 +149,14 @@ final class Aleph implements \ArrayAccess
   private $response = null;
   
   /**
+   * Instance of the class Aleph\Net\Router.
+   * 
+   * @var Aleph\Net\Router $router
+   * @access private
+   */
+  private $router = null;
+  
+  /**
    * Array of configuration variables.
    *
    * @var array $config
@@ -182,13 +187,6 @@ final class Aleph implements \ArrayAccess
    * @access private
    */
   private $dirs = array();
-  
-  /**
-   * Array of actions for the routing.
-   * 
-   * @var array $acts   
-   */
-  private $acts = array('methods' => array(), 'actions' => array());
   
   /**
    * File search mask.
@@ -931,13 +929,13 @@ final class Aleph implements \ArrayAccess
     if (!self::$instance) spl_autoload_register(array($this, 'al'));
     $this->config = array();
     $this->classes = $this->dirs = $this->exclusions = array();
-    $this->acts = array('methods' => array(), 'actions' => array());
     $this->key = 'autoload_' . self::$siteUniqueID;
     $this->mask = '/^.*\.php$/i';
     $this->autoload = '';
     $this->cache = null;
     $this->request = null;
     $this->response = null;
+    $this->router = null;
   }
   
   /**
@@ -1079,49 +1077,6 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Parses URL templates for the routing.
-   *
-   * @param string $url
-   * @param string $key
-   * @param string $regex
-   * @return array
-   * @access private   
-   */
-  private function parseURLTemplate($url, &$key, &$regex)
-  {
-    $params = array();
-    $url = (string)$url;
-    $path = preg_split('/(?<!\\\)\/+/', $url);
-    $path = array_map(function($p) use(&$params)
-    {
-      if ($p == '') return '';
-      preg_match_all('/(?<!\\\)#((?:.(?!(?<!\\\)#))*.)./', $p, $matches);
-      foreach ($matches[0] as $k => $match)
-      {
-        $m = $matches[1][$k];
-        $n = strpos($m, '|');
-        if ($n !== false) 
-        {
-          $name = substr($m, 0, $n);
-          $m = substr($m, $n + 1);
-          if ($m == '') $m = '[^\/]*';
-        }
-        else 
-        {
-          $m = '[^\/]*';
-          $name = $matches[1][$k];
-        }
-        $params[$name] = $name;
-        $p = str_replace($match, '(?P<' . $name . '>' . $m . ')', $p);
-      }
-      return str_replace('\#', '#', $p);
-    }, $path);
-    $key = $url ? md5($url) : 'default';
-    $regex = '/^' . implode('\/', $path) . '$/';
-    return $params;
-  }
-  
-  /**
    * Loads or returns configuration data.
    *
    * @param string | array $param
@@ -1194,6 +1149,18 @@ final class Aleph implements \ArrayAccess
   {
     if ($this->response === null) $this->response = new Net\Response();
     return $this->response;
+  }
+  
+  /**
+   * Returns the instance of an Aleph\Net\Router object.
+   *
+   * @return Aleph\Net\Router
+   * @access public
+   */
+  public function router()
+  {
+    if ($this->router === null) $this->router = new Net\Router();
+    return $this->router;
   }
   
   /**
@@ -1323,156 +1290,6 @@ final class Aleph implements \ArrayAccess
   {
     if ($class === null) return $this->find();
     return $this->al($class, false);
-  }
-  
-  /**
-   * Enables or disables HTTPS protocol for the given URL template.
-   *
-   * @param string $url - regex for the given URL.
-   * @param boolean $flag
-   * @param array | string $methods - HTTP request methods.
-   * @access public
-   */
-  public function secure($url, $flag, $methods = 'GET|POST')
-  {
-    $action = function() use($flag)
-    {
-      $url = new Net\URL();
-      if ($url->isSecured() != $flag) 
-      {
-        $url->secure($flag);
-        Aleph::go($url->build());
-      }
-    };
-    $key = $url ? md5($url) : 'default';
-    $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => array(), 'action' => $action, 'regex' => $url);
-    foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
-  }
-  
-  /**
-   * Sets the redirect for the given URL regex template.
-   *
-   * @param string $url - regex URL template.
-   * @param string $redirect - URL to redirect.
-   * @param array | string $methods - HTTP request methods.
-   * @access public
-   */
-  public function redirect($url, $redirect, $methods = 'GET|POST')
-  {
-    $params = $this->parseURLTemplate($url, $key, $regex);
-    $t = microtime(true);
-    for ($k = 0, $n = count($params); $k < $n; $k++)
-    {
-      $redirect = preg_replace('/(?<!\\\)#((.(?!(?<!\\\)#))*.)./', md5($t + $k), $redirect);
-    }
-    $action = function() use($t, $redirect)
-    {
-      $url = $redirect;
-      foreach (func_get_args() as $k => $arg)
-      {
-        $url = str_replace(md5($t + $k), $arg, $url);
-      }
-      Aleph::go($url);
-    };
-    $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex);
-    foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
-  }
-  
-  /**
-   * Binds an URL regex template with some action.
-   *
-   * @param string $url - regex URL template.
-   * @param closure | Aleph\Core\IDelegate | string $action
-   * @param boolean $checkParameters
-   * @param boolean $ignoreWrongDelegate
-   * @param array | string $methods - HTTP request methods.
-   * @access public
-   */
-  public function bind($url, $action, $checkParameters = false, $ignoreWrongDelegate = true, $methods = 'GET|POST')
-  {
-    $params = $this->parseURLTemplate($url, $key, $regex);
-    $methods = is_array($methods) ? $methods : explode('|', $methods);
-    $this->acts['actions'][$key] = array('params' => $params, 'action' => $action, 'regex' => $regex, 'checkParameters' => $checkParameters, 'ignoreWrongDelegate' => $ignoreWrongDelegate);
-    foreach ($methods as $method) $this->acts['methods'][strtolower($method)][$key] = 1;
-  }
-  
-  /**
-   * Performs all actions matching all regex URL templates.
-   *
-   * @param string | array - HTTP request methods.
-   * @param string $component - URL component.
-   * @param string $url - regex URL template.
-   * @return \StdClass with two properties: result - a result of the acted action, success - indication that the action was worked out.
-   * @access public
-   */
-  public function route($methods = null, $component = 'path', $url = null)
-  {
-    $methods = is_array($methods) ? $methods : ($methods ? explode('|', $methods) : array());
-    if (count($methods) == 0) 
-    {
-      if (!isset($this->request()->method)) return;
-      $methods = array($this->request()->method);
-    }
-    if ($url === null)
-    {
-      if (isset($this->request()->url) && $this->request()->url instanceof Net\URL) 
-      {
-        $url = $this->request()->url->build($component);
-      }
-      else 
-      {
-        $url = foo(new Net\URL())->build($component);
-      }
-    }
-    $res = new \StdClass();
-    $res->success = false;
-    $res->result = null;
-    foreach ($methods as $method)
-    {
-      $method = strtolower($method);
-      if (!isset($this->acts['methods'][$method])) continue;
-      foreach ($this->acts['methods'][$method] as $key => $flag)
-      {
-        $action = $this->acts['actions'][$key];
-        if (!preg_match_all($action['regex'], $url, $matches)) continue;
-        if ($action['action'] instanceof Core\Delegate) $act = $action['action'];
-        else 
-        {
-          if (!($action['action'] instanceof \Closure))
-          {
-            foreach ($action['params'] as $k => $param)
-            {
-              $action['action'] = str_replace('#' . $param . '#', $matches[$param][0], $action['action'], $count);
-              if ($count > 0) unset($action['params'][$k]);
-            }
-          }
-          $act = new Core\Delegate($action['action']);
-        }
-        if (!$act->isCallable())
-        {
-          if (!empty($action['ignoreWrongDelegate'])) continue;
-          throw new Core\Exception($this, 'ERR_GENERAL_7', (string)$act);
-        }
-        if (!empty($action['checkParameters']))
-        {
-          $tmp = array();
-          foreach ($act->getParameters() as $param) 
-          {
-            $name = $param->getName();
-            if (isset($action['params'][$name])) $tmp[] = $name;
-          }
-          $action['params'] = $tmp;
-        }
-        $params = array();
-        foreach ($action['params'] as $param) $params[] = $matches[$param][0];
-        $res->success = true;
-        $res->result = $act->call($params);
-        return $res;
-      }
-    }
-    return $res;
   }
   
   /**

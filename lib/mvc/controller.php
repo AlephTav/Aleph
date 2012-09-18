@@ -40,13 +40,9 @@ class Controller
   
   protected $map = array();
   
-  protected $methods = null;
-  
-  protected $component = null;
-  
   protected $errHandlers = array();
   
-  public function __construct(array $map = array(), $methods = null, $component = 'path', Cache\Cache $cache = null)
+  public function __construct(array $map = array(), Cache\Cache $cache = null)
   {
     $a = \Aleph::getInstance();
     if (!empty($a->locked))
@@ -62,8 +58,6 @@ class Controller
       }
     }
     $this->map = $map;
-    $this->methods = $methods;
-    $this->component = $component;
   }
   
   public function setErrorHandler($status, $callback)
@@ -77,30 +71,32 @@ class Controller
     return isset($this->errHandlers[$status]) ? $this->errHandlers[$status] : false;
   }
  
-  public function execute(IPage $page = null)
+  public function execute(IPage $page = null, $methods = null)
   {
     $a = \Aleph::getInstance();
     if ($page === null)
     {
-      foreach (array('redirect', 'secure', 'bind') as $method)
+      $router = $a->router();
+      foreach (array('secure', 'redirect', 'bind') as $method)
       {
-        if (!isset($this->map[$method])) continue;
-        if ($method == 'redirect' || $method == 'secure')
+        if (empty($this->map[$method])) continue;
+        foreach ($this->map[$method] as $url => $params)
         {
-          foreach ($this->map[$method] as $url => $params)
+          if (is_array($params))
           {
-            $a->{$method}($url, $params[0], isset($params[1]) ? $params[1] : 'GET|POST');
+            $router->{$method}($url, isset($params[0]) ? $params[0] : $params['action']);
+            if (isset($params['component'])) $router->component($params['component']);
+            if (isset($params['methods'])) $router->methods($params['methods']);
+            if (isset($params['checkParameters'])) $router->checkParameters($params['checkParameters']);
+            if (isset($params['ignoreWrongDelegate'])) $router->ignoreWrongDelegate($params['ignoreWrongDelegate']);
           }
-        }
-        else
-        {
-          foreach ($this->map['bind'] as $url => $params)
+          else
           {
-            $a->{$method}($url, $params[0], isset($params[1]) ? $params[1] : false, isset($params[2]) ? $params[2] : false, isset($params[3]) ? $params[3] : 'GET|POST');
+            $router->{$method}($url, $params);
           }
         }
       }
-      $res = $a->route($this->methods, $this->component);
+      $res = $router->route($methods);
       if ($res->success === false)
       {
         if (isset($this->errHandlers[404])) 
