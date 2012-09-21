@@ -249,11 +249,11 @@ class AR
   {
     if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_9', $this->table);
     if (!array_key_exists($column, $this->columns)) throw new Core\Exception($this, 'ERR_AR_2', $column, $this->table);
-    if ($value == $this->columns[$column]) return;
     if ($value === null && !$this->isNullable($column)) throw new Core\Exception($this, 'ERR_AR_3', $column, $this->table);
+    if (is_array($value) || is_object($value) && !($value instanceof SQLExpression)) throw new Core\Exception($this, 'ERR_AR_4', $column);
+    if ((string)$value === (string)$this->columns[$column]) return;
     if (!($value instanceof SQLExpression))
     {
-      if (is_array($value) || is_object($value)) throw new Core\Exception($this, 'ERR_AR_4', $column);
       if (($ml = $this->getMaxLength($column)) > 0)
       {
         $l = strlen($value);

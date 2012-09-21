@@ -125,7 +125,7 @@ class Controller
     }
     if ($a->request()->method == 'GET' && !$a->request()->isAjax)
     {
-      if (!$page->cacheExpired()) $a->response()->stop(200, $page->cacheGet());
+      if ((int)$page->expire > 0 && !isset($page->cache[$page->getPageID()])) $a->response()->stop(200, $page->cache[$page->getPageID()]);
       foreach ($page->getSequenceMethods(true) as $method) $page->{$method}();
     }
     else

@@ -27,11 +27,8 @@ use Aleph\Core,
     Aleph\Web,
     Aleph\Web\UI\POM;
 
-interface IPage //extends \ArrayAccess, \Countable
+interface IPage
 {
-  public function cacheGet();
-  public function cacheExpired();
-  public function cacheSet($html);
   public function getPageID();
   public function access();
   public function parse();
@@ -45,6 +42,8 @@ interface IPage //extends \ArrayAccess, \Countable
 
 class Page implements IPage
 {
+  const ERR_PAGE_1 = 'Incorrect page ID.';
+
   public static $page = null;
 
   public static $defaultCache = null;
@@ -65,6 +64,8 @@ class Page implements IPage
    */
   public $noSessionURL = null;
   
+  public $cache = null;
+  
   /**
    * The time (in seconds) of expiration cache of a page.
    *
@@ -72,6 +73,8 @@ class Page implements IPage
    * @access public
    */
   public $expire = 0;
+  
+  public $body = null;
   
   /**
    * An instance of \Aleph class.
@@ -83,9 +86,7 @@ class Page implements IPage
   
   protected $fv = null;
   
-  protected $tpl = null;
-  
-  protected $cache = null;
+  protected $template = null;
 
   /**
    * The instance of Aleph\Web\AJAX class.
@@ -108,7 +109,7 @@ class Page implements IPage
     $this->fv = $this->a->request()->data;
     $this->ajax = Web\Ajax::getInstance();
     $this->cache = $cache ?: (self::$defaultCache instanceof Cache\Cache ? self::$defaultCache : $this->a->cache());
-    $this->tpl = new Core\Template($template, 0, $this->cache);
+    $this->template = $template;
     $this->pageID = md5(get_class($this) . $template . \Aleph::getSiteUniqueID());
   }
 
@@ -127,26 +128,10 @@ class Page implements IPage
   {
     return $this->sequenceMethods[$first ? 'first' : 'next'];
   }
-
-  public function cacheGet()
-  {
-    if ($this->expire) return $this->cache->get($this->pageID);
-  }
-
-  public function cacheExpired()
-  {
-    if ($this->expire) return $this->cache->isExpired($this->pageID);
-    return true;
-  }
   
-  public function cacheSet($html)
+  public function get($cid, $isRecursion = true)
   {
-    if ($this->expire) $this->cache->set($this->pageID, $html, $this->expire, '--pages');
-  }
-  
-  public function get($cid)
-  {
-    return $this->body->get($cid);
+    return $this->body->get($cid, $isRecursion);
   }
 
   /**
@@ -162,17 +147,17 @@ class Page implements IPage
   
   public function init()
   {
-    //$this->body->init();
+    $this->body->invokeMethod('init');
   }
 
   public function load()
   {
-    //$this->body->load();
+    $this->body->invokeMethod('load');
   }
   
   public function unload()
   {
-    //$this->body->unload();
+    $this->body->invokeMethod('unload');
   }
 
   /**
@@ -182,38 +167,39 @@ class Page implements IPage
    */
   public function parse()
   {
-    if (empty($this->a['pageTemplateCacheEnable']) || $this->cache->isExpired($this->pageID . '_init_vs'))
+    if (empty($this->a['pageTemplateCacheEnable']) || POM\Control::vsExpired(true))
     {
       $this->body = new POM\Body($this->pageID);
-      $this->body->parse($this->tpl);
-      if (!empty($this->a['pageTemplateCacheEnable'])) $this->cache->set($this->pageID . '_init_vs', POM\Control::getViewState(), $this->cache->getVaultLifeTime(), '--pages');
+      $this->body->parse($this->template);
+      POM\Control::vsSet($this->body, true, true);
+      if (!empty($this->a['pageTemplateCacheEnable'])) POM\Control::vsPush(true);
     }
     else
     {
-      POM\Control::setViewState($this->cache->get($this->pageID . '_init_vs'));
-      $this->body = POM\Control::restoreFromViewState($this->pageID);
+      POM\Control::vsPull(true);
+      $this->body = POM\Control::vsGet($this->pageID);
     }
   }
 
   public function assign()
   {
-    //if (empty($this->fv['ajax-key']) || $this->fv['ajax-key'] != sha1($this->pageID)) exit();
-    if ($this->cache->isExpired($this->pageID . '_vs')) 
+    if (empty($this->fv['ajax-key']) || $this->fv['ajax-key'] != sha1($this->pageID)) throw new Core\Exception($this, 'ERR_PAGE_1');
+    if (POM\Control::vsExpired()) 
     {
       if ($this->noSessionURL) \Aleph::go($this->noSessionURL);
       \Aleph::reload();
     }
-    //POM\Control::setViewState($this->cache->get($this->pageID . '_vs'));
-    //$this->body = POM\Control::restoreFromViewState($this->pageID);
-    //$this->body->assign(empty($this->fv['ajax-vs']) ? array() : json_decode((string)$this->fv['ajax-vs'], true));
+    POM\Control::vsPull();
+    $this->body = POM\Control::vsGet($this->pageID);
+    $this->body->assign(empty($this->fv['ajax-vs']) ? array() : json_decode((string)$this->fv['ajax-vs'], true));
   }
 
   public function process()
   {
     $this->ajax->doit($this->ajaxPermissions);
-    //$this->body->refresh();
+    $this->body->refresh();
     $this->ajax->perform();
-    $this->cache->set($this->pageID . '_vs', POM\Control::getViewState(), ini_get('session.gc_maxlifetime'), '--pages');
+    POM\Control::vsPush();
   }
 
   /**
@@ -223,8 +209,9 @@ class Page implements IPage
    */
   public function render()
   {
-    $this->cacheSet($html = $this->body->render());
-    $this->cache->set($this->pageID . '_vs', POM\Control::getViewState(), ini_get('session.gc_maxlifetime'), '--pages');
+    $html = $this->body->render();
+    POM\Control::vsPush();
+    if ((int)$this->expire > 0) $this->cache->set($this->pageID, $html, $this->expire, '--pages');
     echo $html;
   }
 }

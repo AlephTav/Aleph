@@ -751,6 +751,63 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
+   * Returns the code fragment of the PHP script in which the error has occured.
+   *
+   * @param string $filename
+   * @param integer $line
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function codeFragment($filename, $line)
+  {
+    $halfOfRows = 10;
+    $minColumns = 100;
+    $lines = explode("\n", str_replace("\r\n", "\n", (is_file($filename) && is_readable($filename)) ? file_get_contents($filename) : $filename));
+    $count = count($lines);
+    $total = 2 * $halfOfRows + 1;
+    if ($count <= $total)
+    {
+      $start = 0;
+      $end = $count - 1;
+      $offset = 1;
+    }
+    else if ($line - $halfOfRows <= 0)
+    {
+      $start = 0;
+      $end = $total - 1;
+      $offset = 1;
+    }
+    else if ($line + $halfOfRows >= $count)
+    {
+      $end = $count - 1;
+      $start = $count - $total;
+      $offset = $start + 1;
+    }
+    else
+    {
+      $start = $line - $halfOfRows - 1;
+      $end = $line + $halfOfRows - 1;
+      $offset = $start + 1;
+    }
+    $lines = array_slice($lines, $start, $end - $start + 1);
+    foreach ($lines as $k => &$str)
+    {
+      $str = rtrim(str_pad(($k + $offset) . '.', 6, ' ') . $str);
+      if ($line == $k + $offset) 
+      {
+        $markedLine = $k + 1;
+        $originalLength = strlen($str);
+      }
+      if (strlen($str) > $minColumns) $minColumns = strlen($str);
+      $str = htmlspecialchars($str);
+    }
+    array_unshift($lines, $lines[] = str_repeat('-', $minColumns));
+    if (isset($markedLine) && isset($lines[$markedLine])) $lines[$markedLine] = '<b style="background-color:red;color:white;"><i>' . str_pad($lines[$markedLine], $minColumns + strlen($lines[$markedLine]) - $originalLength, ' ',  STR_PAD_RIGHT). '</i></b>';
+    return '<pre>' . implode("\n", $lines) . '</pre>';
+  }
+  
+  /**
    * Analyzes an exception.
    *
    * @param \Exception $e
@@ -860,63 +917,6 @@ final class Aleph implements \ArrayAccess
     $info['line'] = $line;
     $info['fragment'] = $fragment;
     return $info;
-  }
-  
-  /**
-   * Returns the code fragment of the PHP script in which the error has occured.
-   *
-   * @param string $filename
-   * @param integer $line
-   * @return string
-   * @access private
-   * @static
-   */
-  private static function codeFragment($filename, $line)
-  {
-    $halfOfRows = 10;
-    $minColumns = 100;
-    $lines = explode("\n", str_replace("\r\n", "\n", (is_file($filename) && is_readable($filename)) ? file_get_contents($filename) : $filename));
-    $count = count($lines);
-    $total = 2 * $halfOfRows + 1;
-    if ($count <= $total)
-    {
-      $start = 0;
-      $end = $count - 1;
-      $offset = 1;
-    }
-    else if ($line - $halfOfRows <= 0)
-    {
-      $start = 0;
-      $end = $total - 1;
-      $offset = 1;
-    }
-    else if ($line + $halfOfRows >= $count)
-    {
-      $end = $count - 1;
-      $start = $count - $total;
-      $offset = $start + 1;
-    }
-    else
-    {
-      $start = $line - $halfOfRows - 1;
-      $end = $line + $halfOfRows - 1;
-      $offset = $start + 1;
-    }
-    $lines = array_slice($lines, $start, $end - $start + 1);
-    foreach ($lines as $k => &$str)
-    {
-      $str = rtrim(str_pad(($k + $offset) . '.', 6, ' ') . $str);
-      if ($line == $k + $offset) 
-      {
-        $markedLine = $k + 1;
-        $originalLength = strlen($str);
-      }
-      if (strlen($str) > $minColumns) $minColumns = strlen($str);
-      $str = htmlspecialchars($str);
-    }
-    array_unshift($lines, $lines[] = str_repeat('-', $minColumns));
-    if (isset($markedLine) && isset($lines[$markedLine])) $lines[$markedLine] = '<b style="background-color:red;color:white;"><i>' . str_pad($lines[$markedLine], $minColumns + strlen($lines[$markedLine]) - $originalLength, ' ',  STR_PAD_RIGHT). '</i></b>';
-    return '<pre>' . implode("\n", $lines) . '</pre>';
   }
   
   /**

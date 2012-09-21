@@ -128,6 +128,7 @@ class Template implements \ArrayAccess
    */
   public function isExpired()
   {
+    if ((int)$this->expire <= 0) return true;
     return $this->getCache()->isExpired(md5($this->template));
   }
 
@@ -328,7 +329,7 @@ class Template implements \ArrayAccess
       return ob_get_clean();
     };
     $tmp = array();
-    if ($this->expire > 0)
+    if ((int)$this->expire > 0)
     {
       $hash = md5($this->template);
       $cache = $this->getCache();
