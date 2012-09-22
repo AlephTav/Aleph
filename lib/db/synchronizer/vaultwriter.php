@@ -119,7 +119,7 @@ class VaultWriter implements IWriter
         foreach ($dta as $name => $v) $data[$entity][$name] = $v;
       }
     }
-    $data['data'] = $info['data'];
+    $data['data'] = isset($info['data']) ? $info['data'] : null;
     file_put_contents($this->file, gzcompress(serialize($data), 9));
   }
 }
