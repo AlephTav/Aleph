@@ -22,6 +22,8 @@
 
 namespace Aleph\DB\Sync;
 
+use Aleph\Core;
+
 /**
  * Class for changing MySQL database structure.
  *
@@ -146,7 +148,7 @@ class MySQLWriter extends DBWriter
     catch (\PDOException $e)
     {
       $pdo->rollBack();
-      throw new SynchronizerException($e->getMessage());
+      throw new Core\Exception($e->getMessage());
     }
     return $this->queries;
   }
