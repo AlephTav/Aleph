@@ -281,7 +281,7 @@ class Delegate implements IDelegate
     {
       if ($this->static) return call_user_func_array(array($this->class, $this->method), $args);
       if ($this->class == 'Aleph') $class = \Aleph::instance();
-      else if (\Aleph::get('page')) $class = \Aleph::get('page');
+      else if (MVC\Page::$page instanceof MVC\IPage && $this->class == get_class(MVC\Page::$page)) $class = MVC\Page::$page;
       else
       {
         $class = new \ReflectionClass($this->class);

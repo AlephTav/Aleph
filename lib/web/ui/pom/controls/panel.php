@@ -42,7 +42,7 @@ class Panel extends Control implements IPanel
   
   public function __construct($id)
   {
-    parent::__construct($id);
+    parent::__construct('panel', $id);
     $this->properties['expire'] = 0;
     $this->properties['tag'] = 'div';
     $this->tpl = new Core\Template();
@@ -88,9 +88,9 @@ class Panel extends Control implements IPanel
     if ($ctrl) return $ctrl;
     $searchControl = function($cid, $controls, $deep = -1) use(&$searchControl)
     {
-      foreach ($controls as $uniqueID => $obj)
+      foreach ($controls as $obj)
       {
-        $vs = $obj instanceof IControl ? $obj->getVS() : Control::vs($uniqueID);
+        $vs = $obj instanceof IControl ? $obj->getVS() : Control::vs($obj);
         if ($vs['parameters'][1]['id'] == $cid[0])
         {
           $m = 1; $n = count($cid);
@@ -98,9 +98,9 @@ class Panel extends Control implements IPanel
           {
             if (!isset($vs['controls'])) break;
             $controls = $vs['controls']; $flag = false;
-            foreach ($controls as $uniqueID => $obj)
+            foreach ($controls as $obj)
             {
-              $vs = $obj instanceof IControl ? $obj->getVS() : Control::vs($uniqueID);
+              $vs = $obj instanceof IControl ? $obj->getVS() : Control::vs($obj);
               if ($vs['parameters'][1]['id'] == $cid[$k])
               {
                 $m++;
@@ -119,7 +119,7 @@ class Panel extends Control implements IPanel
           if ($ctrl !== false) return $ctrl;
         }
       }
-      return Control::getByUniqueID($uniqueID);
+      return Control::getByUniqueID($vs['parameters'][1]['uniqueID']);
     };
     $cid = explode('.', $id);
     if ($isRecursion) return $searchControl($cid, $this->controls);

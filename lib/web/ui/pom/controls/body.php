@@ -39,7 +39,7 @@ class Body extends Panel
   
   public function __construct($id)
   {
-    parent::__construct($id);
+    parent::__construct('body', $id);
     unset($this->properties['tag']);
     unset($this->properties['expire']);
     unset($this->properties['id']);
@@ -200,7 +200,7 @@ class Body extends Panel
           $ctrl = new $class($attributes['id']);
           if ($ctrl instanceof IPanel)
           {
-            if ($attributes['masterpage'])
+            if (!empty($attributes['masterpage']))
             {
               if (count($stack)) throw new Core\Exception('ERR_BODY_2', get_class($ctrl), $ctrl->id);
               $attributes['masterpage'] = $exe($decodePHPTags($attributes['masterpage']));
@@ -330,14 +330,14 @@ class Body extends Panel
           $dom = new \DOMDocument();
           $dom->loadXML('<head>' . $matches[2] . '</head>');
           $dom = simplexml_import_dom($dom);
-          foreach ($dom as $tag => $item)
+          foreach ($dom as $tg => $item)
           {
-            $tag = strtoupper($tag);
-            if ($tag != 'SCRIPT' && $tag != 'LINK' && $tag != 'STYLE') continue;
+            $tg = strtoupper($tg);
+            if ($tg != 'SCRIPT' && $tg != 'LINK' && $tg != 'STYLE') continue;
             $attr = array();
             foreach ($item->attributes() as $k => $v) $attr[$k] = $v;
             $attr['conditions'] = $matches[1];
-            if ($tag == 'SCRIPT') $ctrl->addJS($attr, (string)$item);
+            if ($tg == 'SCRIPT') $ctrl->addJS($attr, (string)$item);
             else $ctrl->addCSS($attr, (string)$item);
           }
         }

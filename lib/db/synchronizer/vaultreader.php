@@ -59,7 +59,7 @@ class VaultReader implements IReader
   /**
    * Constructor.
    *
-   * @params string $file - path to the vault file.
+   * @param string $file - path to the vault file.
    * @access public
    */
   public function __construct($file)

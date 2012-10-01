@@ -98,8 +98,6 @@ abstract class Tag implements ITag
       \Aleph::exception($e);
     }
   }
-
-  abstract public function render();
   
   public function hasClass($class)
   {

@@ -159,8 +159,9 @@ class Template implements \ArrayAccess
    *
    * @return array
    * @access public
+   * @static
    */
-  public function getGlobals()
+  public static function getGlobals()
   {
     return self::$globals;
   }
@@ -170,8 +171,9 @@ class Template implements \ArrayAccess
    *
    * @var array $globals
    * @access public
+   * @static
    */
-  public function setGlobals(array $globals)
+  public static function setGlobals(array $globals)
   {
     self::$globals = $globals;
   }
@@ -322,7 +324,7 @@ class Template implements \ArrayAccess
     {
       ${'(_._)'} = $tpl;
       extract(${'(_._)'}->getVariables());
-      extract(${'(_._)'}->getGlobals());
+      extract(Template::getGlobals());
       ob_start();
       if (is_file(${'(_._)'}->getTemplate())) require(${'(_._)'}->getTemplate());
       else eval(\Aleph::ecode(' ?>' . ${'(_._)'}->getTemplate() . '<?php '));

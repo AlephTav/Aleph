@@ -61,7 +61,7 @@ abstract class Control extends Tags\Tag implements IControl
     {
       if (isset(self::$controls[$uniqueID])) return self::$controls[$uniqueID];
       $vs = self::$vs[$uniqueID];
-      $ctrl = new $vs['class']($vs['parameters'][1]['id']);
+      $ctrl = new $vs['class']($vs['class'] == 'Aleph\Web\UI\POM\Body' ? MVC\Page::$page->getPageID() : $vs['parameters'][1]['id']);
       $ctrl->setVS($vs);
       if ($putToPool) self::$controls[$ctrl->uniqueID] = $ctrl;
       return $ctrl;
@@ -79,13 +79,15 @@ abstract class Control extends Tags\Tag implements IControl
   
   public static function vsPull($init = false)
   {
-    $this->vs = MVC\Page::$page->cache->get(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : '_vs'));
+    self::$vs = MVC\Page::$page->cache->get(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : '_vs'));
+    Core\Template::setGlobals(self::$vs['globals']);
+    unset(self::$vs['globals']);
   }
   
   public static function vsPush($init = false)
   {
     $cache = MVC\Page::$page->cache;
-    $cache->set(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : '_vs'), self::$vs, $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), '--controls');
+    $cache->set(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : '_vs'), self::$vs + array('globals' => Core\Template::getGlobals()), $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), '--controls');
   }
   
   public static function vsExpired($init = false)
@@ -101,10 +103,11 @@ abstract class Control extends Tags\Tag implements IControl
   protected $a = null;
   protected $ajax = null;
 
-  public function __construct($id)
+  public function __construct($ctrl, $id)
   {
     if (!preg_match(self::ID_REG_EXP, $id)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $id);
     unset($this->attributes['id']);
+    $this->properties['ctrl'] = $ctrl;
     $this->properties['id'] = $id;
     $this->properties['uniqueID'] = uniqid($id);
     $this->properties['disabled'] = false;
@@ -177,12 +180,18 @@ abstract class Control extends Tags\Tag implements IControl
     //$parent->inject($this, $id, $mode);
   }
   
+  protected function invisible()
+  {
+    return '<span id="' . htmlspecialchars($this->properties['uniqueID']) . '" data-ctrl="' . htmlspecialchars($this->properties['ctrl']) . '" style="display:none;"></span>';
+  }
+  
   protected function renderAttributes(array $attributes = null, array $properties = null)
   {
     if ($attributes === null)
     {
       $properties['uniqueID'] = 'id';
       $properties['id'] = 'data-id';
+      $properties['ctrl'] = 'data-ctrl';
     }
     return parent::renderAttributes($attributes, $properties);
   }
