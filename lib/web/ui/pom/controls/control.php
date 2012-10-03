@@ -79,7 +79,7 @@ abstract class Control extends Tags\Tag implements IControl
   
   public static function vsPull($init = false)
   {
-    self::$vs = MVC\Page::$page->cache->get(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : '_vs'));
+    self::$vs = MVC\Page::$page->cache->get(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'));
     Core\Template::setGlobals(self::$vs['globals']);
     unset(self::$vs['globals']);
   }
@@ -87,12 +87,12 @@ abstract class Control extends Tags\Tag implements IControl
   public static function vsPush($init = false)
   {
     $cache = MVC\Page::$page->cache;
-    $cache->set(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : '_vs'), self::$vs + array('globals' => Core\Template::getGlobals()), $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), '--controls');
+    $cache->set(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'), self::$vs + array('globals' => Core\Template::getGlobals()), $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), '--controls');
   }
   
   public static function vsExpired($init = false)
   {
-    return MVC\Page::$page->cache->isExpired(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : '_vs'));
+    return MVC\Page::$page->cache->isExpired(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'));
   }
   
   public static function getByUniqueID($uniqueID)

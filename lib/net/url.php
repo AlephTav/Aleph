@@ -158,7 +158,7 @@ class URL
     }
     $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), function($el){return $el != '';})) : array();
     foreach ($this->path as &$part) $part = urldecode($part);
-    $this->query = urldecode($arr[7][0]);
+    $this->query = $arr[7][0];
     parse_str($this->query, $this->query);
     $this->fragment = urldecode($arr[9][0]);
   }

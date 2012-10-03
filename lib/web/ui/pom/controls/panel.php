@@ -119,7 +119,7 @@ class Panel extends Control implements IPanel
           if ($ctrl !== false) return $ctrl;
         }
       }
-      return Control::getByUniqueID($vs['parameters'][1]['uniqueID']);
+      return empty($vs) ? false : Control::getByUniqueID($vs['parameters'][1]['uniqueID']);
     };
     $cid = explode('.', $id);
     if ($isRecursion) return $searchControl($cid, $this->controls);
