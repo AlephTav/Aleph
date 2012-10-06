@@ -101,19 +101,19 @@ abstract class Tag implements ITag
   
   public function hasClass($class)
   {
-    return (strpos($this->class, $class) !== false);
+    return (strpos(' ' . trim($this->class) . ' ', ' ' . trim($class) . ' ') !== false);
   }
 
   public function addClass($class)
   {
-    if (!$this->hasClass($class)) $this->class = trim($this->class . ' ' . $class);
+    $class = trim($class);
+    if (!$this->hasClass($class)) $this->class = trim(trim($this->class) . ' ' . $class);
     return $this;
   }
 
   public function removeClass($class)
   {
-    $this->class = str_replace($class, '', $this->class);
-    $this->class = trim(str_replace(array('  ', '   '), ' ', $this->class));
+    $this->class = trim(str_replace(' ' . trim($class) . ' ', '', trim($this->class)));
     return $this;
   }
 
