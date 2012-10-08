@@ -550,7 +550,7 @@ final class Aleph implements \ArrayAccess
       self::delegate($config['customDebugMethod'], $e, $info);
       return;
     }
-    if (PHP_SAPI == 'cli')
+    if (PHP_SAPI == 'cli' || empty($_SERVER['REMOTE_ADDR']))
     {
       if ($isDebug)
       {
