@@ -140,7 +140,7 @@ class Body extends Panel
     $config = $this->a->config();
     $exe = function($code) use ($config)
     {
-      return \Aleph::exe(' ?>' . $code . '<?php ', array('config' => $config));
+      return \Aleph::exe($code, array('config' => $config));
     };
     $encodePHPTags = function($xhtml) use(&$php)
     {

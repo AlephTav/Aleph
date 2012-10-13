@@ -331,7 +331,7 @@ class Template implements \ArrayAccess
         require(${'(_._)'}->getTemplate());
         return ob_get_clean();
       }
-      return \Aleph::exe(' ?>' . $tpl->getTemplate() . '<?php ', array_merge($tpl->getVariables(), Template::getGlobals()));
+      return \Aleph::exe($tpl->getTemplate(), array_merge($tpl->getVariables(), Template::getGlobals()));
     };
     $tmp = array();
     if ((int)$this->expire > 0)

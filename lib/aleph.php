@@ -789,7 +789,7 @@ final class Aleph implements \ArrayAccess
    */
   public static function exe($code, array $vars = null)
   {
-    ${'(_._)'} = $code; unset($code);
+    ${'(_._)'} = ' ?>' . $code . '<?php '; unset($code);
     if ($vars) extract($vars);
     ob_start();
     eval(\Aleph::ecode(${'(_._)'}));
