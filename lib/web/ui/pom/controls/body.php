@@ -140,11 +140,7 @@ class Body extends Panel
     $config = $this->a->config();
     $exe = function($code) use ($config)
     {
-      ob_start();
-      eval(\Aleph::ecode(' ?>' . $code . '<?php '));
-      $res = ob_get_contents();
-      ob_end_clean();
-      return $res;
+      return \Aleph::exe(' ?>' . $code . '<?php ', array('config' => $config));
     };
     $encodePHPTags = function($xhtml) use(&$php)
     {
@@ -361,7 +357,7 @@ class Body extends Panel
       $line = xml_get_current_line_number($parser);
       $column = xml_get_current_column_number($parser);
       $file = is_file($template) ? 'file: ' . realpath($template) . ', ' : '';
-      throw new Core\Exception($this, 'ERR_BODY_1', $error, \Aleph::codeFragment($xhtml, $line), $file, $line, $column);
+      throw new Core\Exception($this, 'ERR_BODY_1', $error, '', $file, $line, $column);
     }
     xml_parser_free($parser);
     $ctrl = $stack->pop();

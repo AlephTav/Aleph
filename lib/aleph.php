@@ -38,7 +38,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Bug and debug templates.
    */
-  const TEMPLATE_DEBUG = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>[{message}]</pre> has been catched in file <b>[{file}]</b> on line [{line}]<br /><br />[{fragment}]<b style="font-size: 14px;">Stack Trace:</b><pre>[{stack}]</pre><b>Execution Time:</b><pre>[{executionTime}] sec</pre><b>Memory Usage:</b><pre>[{memoryUsage}] Mb</pre></pre></body></html>';
+  const TEMPLATE_DEBUG = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>$message</pre> has been catched in file <b>$file</b> on line $line<br /><br /><b style="font-size: 14px;">Stack Trace:</b><pre>$traceAsString</pre><b>Execution Time:</b><pre>$executionTime sec</pre><b>Memory Usage:</b><pre>$memoryUsage Mb</pre></pre></body></html>';
   const TEMPLATE_BUG = 'Sorry, server is not available at the moment. Please wait. This site will be working very soon!';
   
   /**
@@ -448,30 +448,6 @@ final class Aleph implements \ArrayAccess
     }
     return $class ? $err . ' (Token: ' . $token . ')' : $err;
   }
- 
-  /**
-   * Collects and stores information about some eval's code. 
-   *
-   * @param string $code - the code that will be executed by eval operator.
-   * @return string
-   * @access public
-   * @static
-   */
-  public static function ecode($code)
-  {
-    $e = new \Exception();
-    if (!count(self::$eval))
-    {
-      self::$eval['lines'] = 0;
-      self::$eval['code'] = '';
-    }
-    self::$eval['trace'] = $e->getTrace();
-    self::$eval['traceAsString'] = $e->getTraceAsString();
-    self::$eval['rows'] = count(explode("\n", str_replace("\r", '', $code)));
-    self::$eval['lines'] += self::$eval['rows'];
-    self::$eval['code'] .= $code . PHP_EOL;
-    return $code;
-  }
   
   /**
    * Checks whether the error handing is set or not.
@@ -515,18 +491,14 @@ final class Aleph implements \ArrayAccess
    * Set the debug output for an exception.
    *
    * @param \Exception $e
-   * @param boolean $isFatalError
    * @access public
    * @static
    */
-  public static function exception(\Exception $e, $isFatalError = false)
+  public static function exception(\Exception $e)
   {
     restore_error_handler();
     restore_exception_handler();
     $info = self::analyzeException($e);
-    $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
-    $info['executionTime'] = self::getExecutionTime();
-    $info['isFatalError'] = $isFatalError;
     $config = (self::$instance !== null) ? self::$instance->config : array();
     $isDebug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
     foreach (array('templateDebug', 'templateBug') as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
@@ -547,18 +519,17 @@ final class Aleph implements \ArrayAccess
     catch (\Exception $e){}
     if ($isDebug && !empty($config['customDebugMethod']) && self::$instance instanceof Aleph && self::$instance->load('Aleph\Core\Delegate'))
     {
-      self::delegate($config['customDebugMethod'], $e, $info);
-      return;
+      if (!self::delegate($config['customDebugMethod'], $e, $info)) return;
     }
     if (PHP_SAPI == 'cli' || empty($_SERVER['REMOTE_ADDR']))
     {
       if ($isDebug)
       {
         $output = PHP_EOL . PHP_EOL . 'BUG REPORT' . PHP_EOL . PHP_EOL;
-        $output .= 'The following error [[ ' . $info['message'] . ' ]] has been catched in file ' . $info['file'] . ' on line ' . $info['line'] . PHP_EOL . $info['fragment'] . PHP_EOL . PHP_EOL;
-        $output .= 'Stack Trace:' . PHP_EOL . $info['stack'] . PHP_EOL . PHP_EOL;
-        $output .= 'Execution Time: ' . $info['executionTime'] . ' sec' . PHP_EOL . 'Memory Usage: ' . $info['memoryUsage'] . ' Mb';
-        self::$output = strip_tags(html_entity_decode($output)) . PHP_EOL . PHP_EOL;
+        $output .= 'The following error [[ ' . $info['message'] . ' ]] has been catched in file ' . $info['file'] . ' on line ' . $info['line'] . PHP_EOL . PHP_EOL;
+        $output .= 'Stack Trace:' . PHP_EOL . $info['traceAsString'] . PHP_EOL . PHP_EOL;
+        $output .= 'Execution Time: ' . $info['executionTime'] . ' sec' . PHP_EOL . 'Memory Usage: ' . $info['memoryUsage'] . ' Mb' . PHP_EOL . PHP_EOL;
+        self::$output = $output;
       }
       else
       {
@@ -568,10 +539,21 @@ final class Aleph implements \ArrayAccess
     }
     if ($isDebug)
     {
-      $tmp = array();
-      $info['stack'] = htmlspecialchars($info['stack']);
-      foreach ($info as $k => $v) $tmp['[{' . $k . '}]'] = $v;
-      $templateDebug = strtr((is_file($templateDebug) && is_readable($templateDebug)) ? file_get_contents($templateDebug) : self::TEMPLATE_DEBUG, $tmp);
+      $render = function($tpl, $info)
+      {
+        ${'(_._)'} = $tpl; unset($tpl);
+        if (is_file(${'(_._)'})) 
+        {
+          extract($info);
+          return require(${'(_._)'});
+        }
+        $info['traceAsString'] = htmlspecialchars($info['traceAsString']);
+        extract($info);
+        eval('$res = "' . str_replace('"', '\"', ${'(_._)'}) . '";');
+        return $res;
+      };
+      if (!is_file($templateDebug) || !is_readable($templateDebug)) $templateDebug = self::TEMPLATE_DEBUG;
+      $templateDebug = $render($templateDebug, $info);
       if (isset($_SESSION))
       {
         $hash = md5(microtime() . uniqid('', true));
@@ -589,6 +571,231 @@ final class Aleph implements \ArrayAccess
     {
       self::$output = (is_file($templateBug) && is_readable($templateBug)) ? file_get_contents($templateBug) : self::TEMPLATE_BUG;
     }
+  }
+  
+  /**
+   * Analyzes an exception.
+   *
+   * @param \Exception $e
+   * @return array - exception information.
+   * @access public
+   * @static  
+   */
+  public static function analyzeException(\Exception $e)
+  {
+    $reduceObject = function($obj) use(&$reduceObject)
+    {
+      if (is_object($obj)) return '${\'' . get_class($obj) . '\'}';
+      if (is_array($obj))
+      {
+        if (count($obj) == 0) return '[]';
+        $tmp = array(); 
+        foreach ($obj as $k => $v) 
+        {
+          if ($k == '__DEBUG_INFORMATION__') continue;
+          if ($k == 'GLOBALS') $tmp[] = 'GLOBALS => *RECURSION*';
+          else $tmp[] = $k . ' => ' . $reduceObject($v);
+        }
+        return '[ ' . implode(', ', $tmp) . ' ]';
+      }
+      if (is_string($obj)) 
+      {
+        if (strlen($obj) > 1024) $obj = substr($obj, 0, 512) . ' ... [fragment missing] ... ' . substr($obj, -512);
+        return "'" . str_replace("'", '\\\'', $obj) . "'";
+      }
+      return $obj;
+    };
+    $reducePath = function($file)
+    {
+      if (strpos($file, \Aleph::getRoot()) === 0) $file = substr($file, strlen(\Aleph::getRoot()) + 1);
+      return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $file);
+    };
+    $request = function()
+    {
+      if (function_exists('apache_request_headers')) return apache_request_headers();
+      $headers = array();
+      foreach ($_SERVER as $key => $value) 
+      {
+        if (strpos($key, 'HTTP_') === 0) 
+        {
+          $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))))] = $value;
+        }
+      }
+      return $headers;
+    };
+    $response = function()
+    {
+      if (function_exists('apache_response_headers')) return apache_response_headers();
+      $headers = array();
+      foreach (headers_list() as $header) 
+      {
+        $header = explode(':', $header);
+        $headers[array_shift($header)] = trim(implode(':', $header));
+      }
+      return $headers;
+    };
+    $fragment = function($file, $line, &$index, &$command = null, $half = 10)
+    {
+      $lines = explode("\n", str_replace("\r\n", "\n", (is_file($file) && is_readable($file)) ? file_get_contents($file) : $file));
+      $count = count($lines); $line--;
+      if ($line + $half > $count)
+      {
+        $min = max(0, $line - $half);
+        $max = $count;
+      } 
+      else
+      {
+        $min = max(0, $line - $half);
+        $max = min($line + $half, $count);
+      }
+      $lines = array_splice($lines, $min, $max - $min + 1);
+      $index = $line - $min;
+      $command = empty($lines[$index]) ? '' : $lines[$index];
+      return implode("\n", $lines);
+    };
+    $findFunc = function($func, $line, $code)
+    {
+      $line--;
+      foreach (array_reverse($code) as $part)
+      {
+        $row = explode("\n", $part);
+        if (empty($row[$line])) continue;
+        $row = $row[$line];
+        $tokens = token_get_all('<?php ' . $row . '?>');
+        $k = 0; $n = count($tokens);
+        while ($k < $n) 
+        {
+          $token = $tokens[$k++];
+          if (is_array($token) && $token[0] == T_STRING && $token[1] == $func) return $part;
+        }
+      }
+      return false;
+    };
+    $flag = false; $trace = $e->getTrace();
+    $info = array();
+    $info['isFatalError'] = count($trace) == 1 && empty($trace[0]['file']) && $trace[0]['function'] == '{closure}';
+    $message = $e->getMessage();
+    $file = $e->getFile();
+    $line = $e->getLine();
+    if (self::$eval && (strpos($file, 'eval()\'d') !== false || strpos($message, 'eval()\'d') !== false))
+    {
+      if (preg_match('/, called in ([^ ]+) on line (\d+)/', $message, $matches))
+      {
+        $line = $matches[2];
+        $message = substr($message, 0, strpos($message, ', called in'));
+      }
+      else if (preg_match('/, called in ([^\(]+)\((\d+)\) : eval\(\)\'d code on line (\d+)/', $message, $matches))
+      {
+        $line = $matches[3];
+        $message = substr($message, 0, strpos($message, ', called in'));
+      }
+      $file = 'eval()\'s code';
+    }
+    else if (preg_match('/, called in ([^ ]+) on line (\d+)/', $message, $matches))
+    {
+      $file = $matches[1];
+      $line = $matches[2];
+      $message = substr($message, 0, strpos($message, ', called in'));
+    }
+    foreach ($trace as $k => &$item)
+    {
+      $item['command'] = isset($item['class']) ? $item['class'] . $item['type'] : '';
+      $item['command'] .= $item['function'] . '( ';
+      if (isset($item['args']))
+      {
+        $tmp = array();
+        foreach ($item['args'] as $arg) $tmp[] = $reduceObject($arg);
+        $item['command'] .= implode(', ', $tmp);
+      }
+      $item['command'] .= ' )';
+      if (isset($item['file']))
+      {
+        if (self::$eval && strpos($item['file'], 'eval()\'d') !== false)
+        {
+          $item['file'] = 'eval()\'s code';
+          if ($item['function'] == '{closure}' && isset($item['args'][0]) && $item['args'][0] == 4096)
+          {
+            $item['code'] = $fragment($findFunc($trace[$k + 1]['function'], $item['line'], self::$eval), $item['line'], $index);
+          }
+          else
+          {
+            $item['code'] = $fragment($findFunc($item['function'], $item['line'], self::$eval), $item['line'], $index);
+          }
+        }
+        else
+        {
+          $item['code'] = $fragment($item['file'], $item['line'], $index);
+          $item['file'] = $reducePath($item['file']);
+        }
+      }
+      else
+      {
+        $index = 0; $item['code'] = '';
+        if ($file != 'eval()\'s code') 
+        {
+          if (is_file($file)) $item['code'] = $fragment($file, $line, $index);
+        }
+        else if (self::$eval) $item['code'] = $fragment(array_pop(self::$eval), $line, $index);
+        $item['file'] = '[Internal PHP]';
+      }
+      $item['index'] = $index;
+    }
+    $info['host'] = $_SERVER['HTTP_HOST'];
+    $info['root'] = $_SERVER['DOCUMENT_ROOT']; 
+    $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
+    $info['executionTime'] = self::getExecutionTime();
+    $info['message'] = ltrim($message);
+    $info['file'] = $reducePath($file);
+    $info['line'] = $line;
+    $info['trace'] = $trace;
+    if (method_exists($e, 'getClass')) $info['class'] = $e->getClass();
+    if (method_exists($e, 'getToken')) $info['token'] = $e->getToken();
+    $info['severity'] = method_exists($e, 'getSeverity') ? $e->getSeverity() : '';
+    $info['traceAsString'] = $e->getTraceAsString();
+    $info['request'] = $request();
+    $info['response'] = $response();
+    $info['GET'] = isset($_GET) ? $_GET : array();
+    $info['POST'] = isset($_POST) ? $_POST : array();
+    $info['COOKIE'] = isset($_COOKIE) ? $_COOKIE : array();
+    $info['FILES'] = isset($_FILES) ? $_FILES : array();
+    $info['SERVER'] = isset($_SERVER) ? $_SERVER : array();
+    $info['SESSION'] = isset($_SESSION) ? $_SESSION : array();
+    unset($info['SESSION']['__DEBUG_INFORMATION__']);
+    return $info;
+  }
+  
+  /**
+   * Collects and stores information about some eval's code. 
+   *
+   * @param string $code - the code that will be executed by eval operator.
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function ecode($code)
+  {
+    self::$eval[md5($code)] = $code;
+    return $code;
+  }
+  
+  /**
+   * Executes PHP code that inserted into HTML.
+   *
+   * @param string $code - the PHP inline code.
+   * @param array $vars - variables to extract to the PHP code.
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function exe($code, array $vars = null)
+  {
+    ${'(_._)'} = $code; unset($code);
+    if ($vars) extract($vars);
+    ob_start();
+    eval(\Aleph::ecode(${'(_._)'}));
+    $res = ob_get_clean();
+    if (strpos($res, 'eval()\'d') !== false) exit($res);  
+    return $res;
   }
   
   /**
@@ -716,7 +923,7 @@ final class Aleph implements \ArrayAccess
       ob_start(function($html)
       {
         if (!Aleph::isDebug() || !preg_match('/(Fatal|Parse) error:(.*) in (.*) on line (\d+)/', $html, $res)) return Aleph::getOutput() ?: $html;
-        Aleph::exception(new \ErrorException($res[2], 0, 1, $res[3], $res[4]), true);
+        Aleph::exception(new \ErrorException($res[2], 0, 1, $res[3], $res[4]));
         return Aleph::getOutput();
       });
       $lib = self::$root . '/' . pathinfo(__DIR__, PATHINFO_BASENAME) . '/';
@@ -748,175 +955,6 @@ final class Aleph implements \ArrayAccess
       set_time_limit(0);
     }
     return self::$instance = new self();
-  }
-  
-  /**
-   * Returns the code fragment of the PHP script in which the error has occured.
-   *
-   * @param string $filename
-   * @param integer $line
-   * @return string
-   * @access public
-   * @static
-   */
-  public static function codeFragment($filename, $line)
-  {
-    $halfOfRows = 10;
-    $minColumns = 100;
-    $lines = explode("\n", str_replace("\r\n", "\n", (is_file($filename) && is_readable($filename)) ? file_get_contents($filename) : $filename));
-    $count = count($lines);
-    $total = 2 * $halfOfRows + 1;
-    if ($count <= $total)
-    {
-      $start = 0;
-      $end = $count - 1;
-      $offset = 1;
-    }
-    else if ($line - $halfOfRows <= 0)
-    {
-      $start = 0;
-      $end = $total - 1;
-      $offset = 1;
-    }
-    else if ($line + $halfOfRows >= $count)
-    {
-      $end = $count - 1;
-      $start = $count - $total;
-      $offset = $start + 1;
-    }
-    else
-    {
-      $start = $line - $halfOfRows - 1;
-      $end = $line + $halfOfRows - 1;
-      $offset = $start + 1;
-    }
-    $lines = array_slice($lines, $start, $end - $start + 1);
-    foreach ($lines as $k => &$str)
-    {
-      $str = rtrim(str_pad(($k + $offset) . '.', 6, ' ') . $str);
-      if ($line == $k + $offset) 
-      {
-        $markedLine = $k + 1;
-        $originalLength = strlen($str);
-      }
-      if (strlen($str) > $minColumns) $minColumns = strlen($str);
-      $str = htmlspecialchars($str);
-    }
-    array_unshift($lines, $lines[] = str_repeat('-', $minColumns));
-    if (isset($markedLine) && isset($lines[$markedLine])) $lines[$markedLine] = '<b style="background-color:red;color:white;"><i>' . str_pad($lines[$markedLine], $minColumns + strlen($lines[$markedLine]) - $originalLength, ' ',  STR_PAD_RIGHT). '</i></b>';
-    return '<pre>' . implode("\n", $lines) . '</pre>';
-  }
-  
-  /**
-   * Analyzes an exception.
-   *
-   * @param \Exception $e
-   * @return array - exception information.
-   * @access private
-   * @static  
-   */
-  private static function analyzeException(\Exception $e)
-  {
-    $msg = ucfirst(ltrim($e->getMessage()));
-    $trace = $e->getTrace();
-    $traceAsString = $e->getTraceAsString();
-    $file = $e->getFile();
-    $line = $e->getLine();
-    if (self::$eval && (strpos($file, 'eval()\'d') !== false || strpos($msg, 'eval()\'d') !== false))
-    {
-      $findFunc = function($func, $code)
-      {
-        foreach (explode(PHP_EOL, $code) as $n => $row)
-        {
-          $tokens = token_get_all('<?php ' . $row . '?>');
-          foreach ($tokens as $k => $token)
-          {
-            if ($token[0] != T_FUNCTION) continue;
-            while ($token[0] != T_STRING)
-            {
-              $k++;
-              $token = $tokens[$k];
-            }
-            if ($token[1] == $func) return $n + 1;
-          }
-        }
-        return false;
-      };
-      $trace = self::$eval['trace'];
-      $traceAsString = self::$eval['traceAsString'];
-      $fragment = self::$eval['code'];
-      if (preg_match('/([^\( ]+)\(\).*, called in ([^ ]+) on line (\d+)/', $msg, $matches))
-      {
-        $file = $trace[0]['file'];
-        $line = $trace[0]['line'];
-        $foundLine = $findFunc($matches[1], $fragment);
-        $frag1 = self::codeFragment($file, $line);
-        $frag2 = self::codeFragment($matches[2], $matches[3]);
-        $frag3 = self::codeFragment($fragment, $foundLine);
-        $fragment = '<b>File in which the error has been catched:</b> ' . $file . $frag1 . '<b>File in which the callable is called:</b> ' . $matches[2] . $frag2 . '<b>eval()\'s code in which the callable is defined:</b> ' . $frag3;
-        $msg .= ' in eval()\'s code on line ' . $foundLine;
-      }
-      else if (preg_match('/([^\( ]+)\(\).*, called in ([^\(]+)\((\d+)\) : eval\(\)\'d code on line (\d+)/', $msg, $matches))
-      {
-        $line = $findFunc($matches[1], $fragment);
-        $matches[4] += self::$eval['lines'] - self::$eval['rows'];
-        $msg = preg_replace('/called in [^ ]+ : eval\(\)\'d code on line \d+/', 'called in eval()\'s on line ' . $matches[4], $msg);
-        $frag1 = self::codeFragment($matches[2], $matches[3]);
-        $frag3 = self::codeFragment($fragment, $matches[4]);
-        $tmp = '<b>File in which the error has been catched:</b> ' . $matches[2] . $frag1;
-        if (strpos($file, 'eval()\'d') !== false)
-        {
-          $frag2 = self::codeFragment($fragment, $line);
-          $tmp .= '<b>eval()\'s code in which the callable is defined:</b> ' . $frag2;
-          $msg .= ' in eval()\'s code on line ' . $line;
-        }
-        else 
-        {
-          $frag2 = self::codeFragment($file, $line);
-          $tmp .= '<b>File in which the callable is defined:</b> ' . $matches[2] . $frag2;
-          $msg .= ' in ' . $file . ' on line ' . $line;
-        }
-        $tmp .= '<b>eval()\'s code in which the callable is called:</b> ' . $frag3;
-        $fragment = $tmp;
-        $file = $matches[2];
-        $line = $matches[3];
-      }
-      else
-      {
-        $line += self::$eval['lines'] - self::$eval['rows'];
-        $frag1 = self::codeFragment($trace[0]['file'], $trace[0]['line']);
-        $frag2 = self::codeFragment($fragment, $line);
-        $fragment = '<b>File in which the error has been catched:</b> ' . $trace[0]['file'] . $frag1 . '<b>eval()\'s code in which the error has been catched:</b> ' . $frag2;
-        $msg .= ' in eval()\'s code on line ' . $line;
-        $file = $trace[0]['file'];
-        $line = $trace[0]['line'];
-      }
-    }
-    else
-    {
-      if (preg_match('/([^\( ]+)\(\).*, called in ([^ ]+) on line (\d+)/', $msg, $matches))
-      {
-        $frag1 = self::codeFragment($file, $line);
-        $frag2 = self::codeFragment($matches[2], $matches[3]);
-        $fragment = '<b>File in which the callable is defined:</b> ' . $matches[2] . $frag1 . '<b>File in which the callable is called:</b> ' . $file . $frag2;
-        $msg .= ' in ' . $file . ' on line ' . $line;
-      }
-      else
-      {
-        $fragment = self::codeFragment($file, $line);
-      }
-    }
-    $info = array();
-    if (method_exists($e, 'getClass')) $info['class'] = $e->getClass();
-    if (method_exists($e, 'getToken')) $info['token'] = $e->getToken();
-    $info['message'] = $msg;
-    $info['stack'] = $traceAsString;
-    $info['code'] = $e->getCode();
-    $info['severity'] = method_exists($e, 'getSeverity') ? $e->getSeverity() : '';
-    $info['file'] = $file;
-    $info['line'] = $line;
-    $info['fragment'] = $fragment;
-    return $info;
   }
   
   /**

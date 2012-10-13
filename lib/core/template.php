@@ -322,13 +322,16 @@ class Template implements \ArrayAccess
   {
     $render = function($tpl)
     {
-      ${'(_._)'} = $tpl;
-      extract(${'(_._)'}->getVariables());
-      extract(Template::getGlobals());
-      ob_start();
-      if (is_file(${'(_._)'}->getTemplate())) require(${'(_._)'}->getTemplate());
-      else eval(\Aleph::ecode(' ?>' . ${'(_._)'}->getTemplate() . '<?php '));
-      return ob_get_clean();
+      if (is_file($tpl->getTemplate())) 
+      {
+        ${'(_._)'} = $tpl; unset($tpl);
+        extract(${'(_._)'}->getVariables());
+        extract(Template::getGlobals());
+        ob_start();
+        require(${'(_._)'}->getTemplate());
+        return ob_get_clean();
+      }
+      return \Aleph::exe(' ?>' . $tpl->getTemplate() . '<?php ', array_merge($tpl->getVariables(), Template::getGlobals()));
     };
     $tmp = array();
     if ((int)$this->expire > 0)
