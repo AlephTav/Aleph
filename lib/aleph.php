@@ -853,6 +853,7 @@ final class Aleph implements \ArrayAccess
                   'POST' => $_POST,
                   'FILES' => $_FILES,
                   'data' => $data);
+    unset($info['SESSION']['__DEBUG_INFORMATION__']);
     file_put_contents($file, serialize($info));
   }
   
