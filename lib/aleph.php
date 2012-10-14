@@ -585,6 +585,8 @@ final class Aleph implements \ArrayAccess
   {
     $reduceObject = function($obj) use(&$reduceObject)
     {
+      if ($obj === null) return 'null';
+      if (is_bool($obj)) return $obj ? 'true' : 'false';
       if (is_object($obj)) return '${\'' . get_class($obj) . '\'}';
       if (is_array($obj))
       {

@@ -105,6 +105,8 @@ $convertToHTML = function($obj) use(&$convertToHTML)
     return '[ ' . implode(', ', $tmp) . ' ]';
   }
   if (is_string($obj)) return '<span class=\'syntax-string\'>&quot;' . htmlspecialchars($obj) . '&quot;</span>';
+  if ($obj === null) $obj = 'null';
+  else if (is_bool($obj)) $obj = $obj ? 'true' : 'false';
   return '<span class=\'syntax-literal\'>' . $obj . '</span>';
 };
 
