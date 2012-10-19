@@ -101,7 +101,7 @@ class Controller
       {
         if (isset($this->errHandlers[404])) 
         {
-          $this->errHandlers[404]->call();
+          $this->errHandlers[404]->call(array($this));
           $a->response()->stop(404);
         }
         $a->response()->stop(404, 'The requested page is not found.');

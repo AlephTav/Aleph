@@ -671,7 +671,7 @@ final class Aleph implements \ArrayAccess
           if (is_array($token) && $token[0] == T_STRING && $token[1] == $func) return $part;
         }
       }
-      return false;
+      return end($code);
     };
     $flag = false; $trace = $e->getTrace();
     $info = array();
@@ -699,6 +699,7 @@ final class Aleph implements \ArrayAccess
       $line = $matches[2];
       $message = substr($message, 0, strpos($message, ', called in'));
     }
+    $push = true;
     foreach ($trace as $k => &$item)
     {
       $item['command'] = isset($item['class']) ? $item['class'] . $item['type'] : '';
@@ -741,9 +742,15 @@ final class Aleph implements \ArrayAccess
         $item['file'] = '[Internal PHP]';
       }
       $item['index'] = $index;
+      if ($item['file'] == $file && $item['line'] == $line) $push = false;
     }
-    $info['host'] = $_SERVER['HTTP_HOST'];
-    $info['root'] = $_SERVER['DOCUMENT_ROOT']; 
+    if ($push)
+    {
+      $code = $fragment($file, $line, $index, $command);
+      array_unshift($trace, array('file' => $reducePath($file), 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index));
+    }
+    $info['host'] = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : false;
+    $info['root'] = isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : false; 
     $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
     $info['executionTime'] = self::getExecutionTime();
     $info['message'] = ltrim($message);
