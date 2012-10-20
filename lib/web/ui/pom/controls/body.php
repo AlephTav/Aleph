@@ -129,6 +129,7 @@ class Body extends Panel
   
   public function assign($values)
   {
+    print_r($values);
   }
   
   public function parse($template)

@@ -594,16 +594,17 @@ final class Aleph implements \ArrayAccess
         $tmp = array(); 
         foreach ($obj as $k => $v) 
         {
+          $k = (string)$k;
           if ($k == '__DEBUG_INFORMATION__') continue;
           if ($k == 'GLOBALS') $tmp[] = 'GLOBALS => *RECURSION*';
-          else $tmp[] = $k . ' => ' . $reduceObject($v);
+          else $tmp[] = $k . ' => ' . $reduceObject($v);        
         }
         return '[ ' . implode(', ', $tmp) . ' ]';
       }
       if (is_string($obj)) 
       {
         if (strlen($obj) > 1024) $obj = substr($obj, 0, 512) . ' ... [fragment missing] ... ' . substr($obj, -512);
-        return "'" . str_replace("'", '\\\'', $obj) . "'";
+        return str_replace("\'", "\\\'", "'" . str_replace("'", '\\\'', $obj) . "'");
       }
       return $obj;
     };
@@ -699,7 +700,7 @@ final class Aleph implements \ArrayAccess
       $line = $matches[2];
       $message = substr($message, 0, strpos($message, ', called in'));
     }
-    $push = true;
+    $push = true; $reducedFile = $reducePath($file);
     foreach ($trace as $k => &$item)
     {
       $item['command'] = isset($item['class']) ? $item['class'] . $item['type'] : '';
@@ -742,19 +743,19 @@ final class Aleph implements \ArrayAccess
         $item['file'] = '[Internal PHP]';
       }
       $item['index'] = $index;
-      if ($item['file'] == $file && $item['line'] == $line) $push = false;
+      if ($item['file'] == $reducedFile && $item['line'] == $line) $push = false;
     }
-    if ($push)
+    if ($push && !$info['isFatalError'])
     {
       $code = $fragment($file, $line, $index, $command);
-      array_unshift($trace, array('file' => $reducePath($file), 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index));
+      array_unshift($trace, array('file' => $reducedFile, 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index));
     }
     $info['host'] = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : false;
     $info['root'] = isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : false; 
     $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
     $info['executionTime'] = self::getExecutionTime();
     $info['message'] = ltrim($message);
-    $info['file'] = $reducePath($file);
+    $info['file'] = $reducedFile;
     $info['line'] = $line;
     $info['trace'] = $trace;
     if (method_exists($e, 'getClass')) $info['class'] = $e->getClass();

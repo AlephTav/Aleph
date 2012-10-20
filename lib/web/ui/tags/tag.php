@@ -63,16 +63,18 @@ abstract class Tag implements ITag
 
   public function __set($param, $value)
   {
-    if (array_key_exists($param, $this->attributes)) $this->attributes[$param] = $value;
+    if (substr($param, 0, 2) == 'on') $this->addEvent($param, $value);
+    else if (array_key_exists($param, $this->attributes)) $this->attributes[$param] = $value;
     else if (array_key_exists($param, $this->properties)) $this->properties[$param] = $value;
     else throw new Core\Exception('Aleph', 'ERR_GENERAL_3', $param, get_class($this));
   }
   
   public function __get($param)
   {
+    if (substr($param, 0, 2) == 'on') isset($this->events[$param]) ? $this->events[$param] : null;
     if (array_key_exists($param, $this->attributes)) return $this->attributes[$param];
-    else if (array_key_exists($param, $this->properties)) return $this->properties[$param];
-    else throw new Core\Exception('Aleph', 'ERR_GENERAL_3', $param, get_class($this));
+    if (array_key_exists($param, $this->properties)) return $this->properties[$param];
+    throw new Core\Exception('Aleph', 'ERR_GENERAL_3', $param, get_class($this));
   }
 
   public function __isset($param)
@@ -167,8 +169,26 @@ abstract class Tag implements ITag
     return $this;
   }
   
+  public function addEvent($name, $event)
+  {
+    $this->events[$name] = $event;
+    return $this;
+  }
+  
+  public function removeEvent($name)
+  {
+    unset($this->events[$name]);
+    return $this;
+  }
+  
   protected function renderEvents()
   {
+    $tmp = array();
+    foreach ($this->events as $name => $event) 
+    {
+      if (strlen($event)) $tmp[] = $name . '="' . htmlspecialchars($event) . '"';
+    }
+    return count($tmp) ? ' ' . implode(' ', $tmp) : '';
   }
 
   protected function renderAttributes(array $attributes = null, array $properties = null)

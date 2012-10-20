@@ -45,7 +45,7 @@ abstract class Control extends Tags\Tag implements IControl
   public static $tags = array('PANEL' => true, 'TEXTBOX' => true);
   
   public static $vs = array();
-  private static $controls = array();
+  private static $controls = array('TEXTBOX' => 1);
   
   public static function vs($uniqueID)
   {

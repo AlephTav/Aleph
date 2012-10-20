@@ -183,7 +183,7 @@ class Page implements IPage
 
   public function assign()
   {
-    //if (empty($this->fv['ajax-key']) || $this->fv['ajax-key'] != sha1($this->pageID)) throw new Core\Exception($this, 'ERR_PAGE_1');
+    if (empty($this->fv['ajax-key']) || $this->fv['ajax-key'] != sha1($this->pageID)) throw new Core\Exception($this, 'ERR_PAGE_1');
     if (POM\Control::vsExpired()) 
     {
       if ($this->noSessionURL) \Aleph::go($this->noSessionURL);
