@@ -588,6 +588,7 @@ final class Aleph implements \ArrayAccess
       if ($obj === null) return 'null';
       if (is_bool($obj)) return $obj ? 'true' : 'false';
       if (is_object($obj)) return '${\'' . get_class($obj) . '\'}';
+      if (is_resource($obj)) return '${\'' . $obj . '\'}';
       if (is_array($obj))
       {
         if (count($obj) == 0) return '[]';
@@ -604,7 +605,7 @@ final class Aleph implements \ArrayAccess
       if (is_string($obj)) 
       {
         if (strlen($obj) > 1024) $obj = substr($obj, 0, 512) . ' ... [fragment missing] ... ' . substr($obj, -512);
-        return str_replace("\'", "\\\'", "'" . str_replace("'", '\\\'', $obj) . "'");
+        return '"' . addcslashes($obj, '"') . '"';
       }
       return $obj;
     };

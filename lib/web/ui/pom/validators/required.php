@@ -27,47 +27,38 @@ use Aleph\Core,
     Aleph\Web,
     Aleph\Web\UI\Tags;
 
-class TextBox extends Control
+class ValidatorRequired extends Validator
 {
-  public function __construct($id, $value = null)
+  public function __construct($id, $message = null)
   {
-    parent::__construct('textbox', $id);
-    $this->attributes['name'] = $id;
-    $this->attributes['type'] = 'text';
-    $this->attributes['value'] = $value;
-    $this->attributes['title'] = null;
-    $this->attributes['size'] = null;
-    $this->attributes['maxlength'] = null;
-    $this->attributes['autocorrect'] = null;
-    $this->attributes['autocapitalize'] = null;
-    $this->attributes['autocomplete'] = null;
-    $this->attributes['placeholder'] = null;
-    $this->attributes['disabled'] = null;
-    $this->attributes['required'] = null;
-    $this->attributes['readonly'] = null;
-    $this->properties['password'] = false;
+    parent::__construct('validatorrequired', $id, $message);
   }
 
-  public function clean()
+  public function validate()
   {
-    $this->attributes['value'] = null;
+    switch ($this->properties['mode'])
+    {
+      case 'AND':
+        $flag = true;
+        foreach ($this->properties['controls'] as $id) $flag &= $this->validateControl($id);
+        break;
+      case 'OR':
+        $flag = false;
+        foreach ($this->properties['controls'] as $id) $flag |= $this->validateControl($id);
+        break;
+      case 'XOR':
+        $n = 0;
+        foreach ($this->properties['controls'] as $id) if ($this->validateControl($id)) $n++;
+        $flag = ($n == 1);
+        break;
+    }
+    $this->properties['isValid'] = $flag;
+    $this->doAction();
     return $this;
   }
 
-  public function assign($value)
+  public function check($value)
   {
-    $this->attributes['value'] = $value;
-    return $this;
-  }
-
-  public function validate($type, Core\IDelegate $check)
-  {
-    return $check($this->attributes['value']);
-  }
-
-  public function render()
-  {
-    if (!$this->properties['visible']) return $this->invisible();
-    return '<input' . $this->renderAttributes() . $this->renderEvents() . ' />';
+    return (strlen($value) > 0);
   }
 }

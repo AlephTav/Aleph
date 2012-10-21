@@ -190,14 +190,15 @@ class Page implements IPage
       \Aleph::reload();
     }
     POM\Control::vsPull();
+    POM\Control::vsMerge(empty($this->fv['ajax-vs']) ? array() : json_decode((string)$this->fv['ajax-vs'], true));
     $this->body = POM\Control::vsGet($this->pageID);
-    $this->body->assign(empty($this->fv['ajax-vs']) ? array() : json_decode((string)$this->fv['ajax-vs'], true));
   }
 
   public function process()
   {
     $this->ajax->doit($this->ajaxPermissions);
-   // $this->body->refresh();
+    // $this->body->refresh();
+    $this->ajax->script(($this->ajax->isAjaxUpload() ? 'parent.' : '') . 'aleph.pom.setVS()');
     $this->ajax->perform();
     POM\Control::vsPush();
   }

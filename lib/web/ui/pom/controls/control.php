@@ -25,7 +25,8 @@ namespace Aleph\Web\UI\POM;
 use Aleph\Core,
     Aleph\MVC,
     Aleph\Web,
-    Aleph\Web\UI\Tags;
+    Aleph\Web\UI\Tags,
+    Aleph\Utils;
 
 interface IControl
 {
@@ -42,10 +43,11 @@ abstract class Control extends Tags\Tag implements IControl
   const ERR_CTRL_5 = '[{var}] with fullID = "[{var}]" exists already in the Panel with fullID = "[{var}]".';
   const ERR_CTRL_7 = 'Web control with uniqueID = "[{var}]" does not exist.';
   
-  public static $tags = array('PANEL' => true, 'TEXTBOX' => true);
+  public static $tags = array('PANEL' => true, 'TEXTBOX' => true, 'VALIDATORREQUIRED' => true);
   
-  public static $vs = array();
-  private static $controls = array('TEXTBOX' => 1);
+  private static $vs = array();
+  private static $vsTimestamp = 0;
+  private static $controls = array();
   
   public static function vs($uniqueID)
   {
@@ -80,14 +82,37 @@ abstract class Control extends Tags\Tag implements IControl
   public static function vsPull($init = false)
   {
     self::$vs = MVC\Page::$page->cache->get(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'));
+    self::$vsTimestamp = self::$vs['timestamp'];
     Core\Template::setGlobals(self::$vs['globals']);
     unset(self::$vs['globals']);
+    unset(self::$vs['timestamp']);
   }
   
   public static function vsPush($init = false)
   {
+    $vs = self::$vs + array('globals' => Core\Template::getGlobals(), 'timestamp' => $init ? 0 : foo(new Utils\DT('now', null, 'UTC'))->getTimestamp());
     $cache = MVC\Page::$page->cache;
-    $cache->set(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'), self::$vs + array('globals' => Core\Template::getGlobals()), $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), '--controls');
+    $cache->set(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'), $vs, $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), '--controls');
+  }
+  
+  public static function vsMerge(array $vs)
+  {
+    if ($vs['timestamp'] <= self::$vsTimestamp) return;
+    foreach ($vs['vs'] as $uniqueID => $cvs)
+    {
+      if (empty(self::$vs[$uniqueID])) continue;
+      $params = self::$vs[$uniqueID]['parameters'];
+      foreach ($cvs as $k => $v)
+      {
+        if (array_key_exists($k, $params[0])) $params[0][$k] = $v;
+        else if (array_key_exists($k, $params[2])) $params[2][$k] = $v;
+      }
+      self::$vs[$uniqueID]['parameters'] = $params;
+       //  $value = $this->fv[$this->uniqueID][$vs['parameters'][0]['uniqueID']];
+       //  if ($value === null || !$vs['extra']['assign']) continue;
+       //  $this[$vs['parameters'][0]['uniqueID']] = foo(new $vs['parameters'][1]['ctrlClass']($vs['parameters'][1]['id']))->setParameters($vs)->assign($value);
+    }
+    //print_r(self::$vs);
   }
   
   public static function vsExpired($init = false)
@@ -110,16 +135,15 @@ abstract class Control extends Tags\Tag implements IControl
     $this->properties['ctrl'] = $ctrl;
     $this->properties['id'] = $id;
     $this->properties['uniqueID'] = uniqid($id);
-    $this->properties['disabled'] = false;
-    $this->properties['visible'] = true;
     $this->properties['parentUniqueID'] = null;
+    $this->properties['visible'] = true;
     $this->a = \Aleph::getInstance();
     $this->ajax = Web\Ajax::getInstance();
   }
   
   public function getVS()
   {
-    return array('parameters' => array($this->attributes, $this->properties),
+    return array('parameters' => array($this->attributes, $this->properties, $this->events),
                  'class' => get_class($this),
                  'methods' => array('init' => method_exists($this, 'init'),
                                     'load' => method_exists($this, 'load'),
@@ -131,7 +155,7 @@ abstract class Control extends Tags\Tag implements IControl
 
   public function setVS(array $vs)
   {
-    list ($this->attributes, $this->properties) = $vs['parameters'];
+    list ($this->attributes, $this->properties, $this->events) = $vs['parameters'];
   }
   
   public function __set($param, $value)

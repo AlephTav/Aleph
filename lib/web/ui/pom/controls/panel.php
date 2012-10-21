@@ -86,7 +86,7 @@ class Panel extends Control implements IPanel
   {
     $ctrl = Control::getByUniqueID($id);
     if ($ctrl) return $ctrl;
-    $searchControl = function($cid, $controls, $deep = -1) use(&$searchControl)
+    $searchControl = function(array $cid, $controls, $deep = -1) use(&$searchControl)
     {
       foreach ($controls as $obj)
       {
@@ -119,7 +119,7 @@ class Panel extends Control implements IPanel
           if ($ctrl !== false) return $ctrl;
         }
       }
-      return empty($vs) ? false : Control::getByUniqueID($vs['parameters'][1]['uniqueID']);
+      return empty($n) ? false : Control::getByUniqueID($vs['parameters'][1]['uniqueID']);
     };
     $cid = explode('.', $id);
     if ($isRecursion) return $searchControl($cid, $this->controls);

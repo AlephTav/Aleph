@@ -129,7 +129,7 @@ class Body extends Panel
   
   public function assign($values)
   {
-    print_r($values);
+   
   }
   
   public function parse($template)
@@ -211,7 +211,6 @@ class Body extends Panel
           }
           foreach ($attributes as $k => $v) $ctrl->__set($k, $v);
           $stack->push($ctrl);
-          //if ($ctrl instanceof IValidator) self::$validators[] = $ctrl->uniqueID;
         }        
       }
       else
