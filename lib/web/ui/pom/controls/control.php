@@ -38,7 +38,7 @@ abstract class Control extends Tags\Tag implements IControl
   
   const ERR_CTRL_1 = 'ID of [{var}] should match /^[0-9a-zA-Z_]+$/ pattern, "[{var}]" was given.';
   const ERR_CTRL_2 = 'You cannot change uniqueID of [{var}] with fullID = "[{var}]".';
-  const ERR_CTRL_3 = '';
+  const ERR_CTRL_3 = 'You cannot remove control [{var}] because it is not in POM.';
   const ERR_CTRL_4 = 'You cannot change parentUniqueID of [{var}] with fullID = "[{var}]". To change parentUniqueID of some web control you should use setParent or setParentByUniqueID methods of web control object.';
   const ERR_CTRL_5 = '[{var}] with fullID = "[{var}]" exists already in the Panel with fullID = "[{var}]".';
   const ERR_CTRL_7 = 'Web control with uniqueID = "[{var}]" does not exist.';
@@ -63,7 +63,7 @@ abstract class Control extends Tags\Tag implements IControl
     {
       if (isset(self::$controls[$uniqueID])) return self::$controls[$uniqueID];
       $vs = self::$vs[$uniqueID];
-      $ctrl = new $vs['class']($vs['class'] == 'Aleph\Web\UI\POM\Body' ? MVC\Page::$page->getPageID() : $vs['parameters'][1]['id']);
+      $ctrl = new $vs['class']($vs['class'] == 'Aleph\Web\UI\POM\Body' ? MVC\Page::$page->getPageID() : $vs['parameters'][0]['data-id']);
       $ctrl->setVS($vs);
       if ($putToPool) self::$controls[$ctrl->uniqueID] = $ctrl;
       return $ctrl;
@@ -115,6 +115,22 @@ abstract class Control extends Tags\Tag implements IControl
     //print_r(self::$vs);
   }
   
+  public static function vsCompare()
+  {
+    $ajax = Web\Ajax::getInstance();
+    $actions = $ajax->getActions();
+    $ajax->setActions(array());
+    foreach (self::$controls as $uniqueID => $ctrl)
+    {
+      if (($diff = $ctrl->compare(self::$vs[$uniqueID])) !== false) 
+      {
+        $ctrl->refresh($diff);
+        self::$vs[$uniqueID] = $ctrl->getVS();
+      }
+    }
+    $ajax->setActions(array_merge($ajax->getActions(), $actions));
+  }
+  
   public static function vsExpired($init = false)
   {
     return MVC\Page::$page->cache->isExpired(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'));
@@ -127,14 +143,15 @@ abstract class Control extends Tags\Tag implements IControl
   
   protected $a = null;
   protected $ajax = null;
+  protected $doRefresh = false;
+  protected $doRemove = false;
 
   public function __construct($ctrl, $id)
   {
     if (!preg_match(self::ID_REG_EXP, $id)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $id);
-    unset($this->attributes['id']);
-    $this->properties['ctrl'] = $ctrl;
-    $this->properties['id'] = $id;
-    $this->properties['uniqueID'] = uniqid($id);
+    $this->attributes['id'] = uniqid($id);
+    $this->attributes['data-id'] = $id;
+    $this->attributes['data-ctrl'] = $ctrl;
     $this->properties['parentUniqueID'] = null;
     $this->properties['visible'] = true;
     $this->a = \Aleph::getInstance();
@@ -156,25 +173,37 @@ abstract class Control extends Tags\Tag implements IControl
   public function setVS(array $vs)
   {
     list ($this->attributes, $this->properties, $this->events) = $vs['parameters'];
+    return $this;
+  }
+  
+  public function __get($param)
+  {
+    if ($param == 'uniqueID') return $this->attributes['id'];
+    if ($param == 'id') return $this->attributes['data-id'];
+    return parent::__get($param);
   }
   
   public function __set($param, $value)
   {
     if ($param == 'uniqueID') throw new Core\Exception($this, 'ERR_CTRL_2', get_class($this), $this->getFullID());
     if ($param == 'parentUniqueID') throw new Core\Exception($this, 'ERR_CTRL_4', get_class($this), $this->getFullID());
-    if ($param == 'id' && $this->properties['id'] != $value)
+    if ($param == 'id')
     {
-      if (!preg_match(self::ID_REG_EXP, $value)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $value);
-      if ($this->properties['parentUniqueID'] != '')
+      if ($this->attributes['data-id'] != $value)
       {
-        /*$pvs = self::getActualVS($this->properties['parentUniqueID']);
-        foreach ($pvs['controls'] as $uniqueID => $v)
+        if (!preg_match(self::ID_REG_EXP, $value)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $value);
+        if ($this->properties['parentUniqueID'] != '')
         {
-          $vs = self::getActualVS($uniqueID);
-          if ($vs['parameters'][1]['id'] != $this->properties['id'] && $vs['parameters'][1]['id'] == $value)
-          throw new Core\Exception($this, 'ERR_CTRL_5', get_class($this), $this->properties['fullID'], self::restoreFromVS($uniqueID)->fullID);
-        }*/
+          /*$pvs = self::getActualVS($this->properties['parentUniqueID']);
+          foreach ($pvs['controls'] as $uniqueID => $v)
+          {
+            $vs = self::getActualVS($uniqueID);
+            if ($vs['parameters'][1]['id'] != $this->properties['id'] && $vs['parameters'][1]['id'] == $value)
+            throw new Core\Exception($this, 'ERR_CTRL_5', get_class($this), $this->properties['fullID'], self::restoreFromVS($uniqueID)->fullID);
+          }*/
+        }
       }
+      return;
     }
     parent::__set($param, $value);
   }
@@ -191,7 +220,51 @@ abstract class Control extends Tags\Tag implements IControl
     }
   }
   
-  public function setParent(IPanel $parent, $id = null, $mode = 'top')
+  public function update($time = true)
+  {
+    if ($time !== false) $time = ($time === true) ? 0 : (int)$time;
+    $this->doRefresh = $time;
+    return $this;
+  }
+  
+  public function delete($time = 0)
+  {
+    $parent = self::getByUniqueID($this->properties['parentUniqueID']);
+    if (!$parent) throw new Core\Exception($this, 'ERR_CTRL_3', $this->getFullID());
+    // delete from panel
+    $this->doRemove = (int)$time;
+    return $this;
+  }
+  
+  public function compare(array $vs, array $exclusions = null)
+  {
+    if (!$this->properties['parentUniqueID']) return false;
+    $new = array($this->attributes, $this->properties, $this->events);
+    if ($this->doRefresh !== false) return $new;
+    $diff = array(array(), array(), array());
+    for ($i = 0; $i < 3; $i++)
+    {
+      foreach ($vs['parameters'][$i] as $k => $v) 
+      {
+        if ($v != $new[$i][$k]) $diff[$i][$k] = $new[$i][$k];
+      }
+    }
+    return ($diff[0] || $diff[1] || $diff[2]) ? $diff : false;
+  }
+  
+  protected function refresh(array $diff = null, $selector = null)
+  {
+    $selector = $selector ?: '#' . $this->attributes['id'];
+    if (!$diff || $diff[1] || $diff[2]) $this->ajax->replace($selector, $this->render(), $this->doRefresh);
+    else
+    {
+      foreach ($diff[0] as $k => &$v) $v = $k . ': \'' . addslashes($v) . '\'';
+      $this->ajax->script('aleph.dom.attr(\'' . $selector . '\', {' . implode(',', $diff[0]) . '})');
+    }
+    return $this;
+  }
+  
+  /*public function setParent(IPanel $parent, $id = null, $mode = 'top')
   {
     return $this->setParentByUniqueID($parent->uniqueID, $id, $mode);
   }
@@ -202,21 +275,11 @@ abstract class Control extends Tags\Tag implements IControl
     if (!$parent) throw new \Exception('ERR_CTRL_7', $uniqueID);
     //$this->remove();
     //$parent->inject($this, $id, $mode);
-  }
+    return $this;
+  }*/
   
   protected function invisible()
   {
-    return '<span id="' . htmlspecialchars($this->properties['uniqueID']) . '" data-ctrl="' . htmlspecialchars($this->properties['ctrl']) . '" style="display:none;"></span>';
-  }
-  
-  protected function renderAttributes(array $attributes = null, array $properties = null)
-  {
-    if ($attributes === null)
-    {
-      $properties['uniqueID'] = 'id';
-      $properties['id'] = 'data-id';
-      $properties['ctrl'] = 'data-ctrl';
-    }
-    return parent::renderAttributes($attributes, $properties);
+    return '<span id="' . htmlspecialchars($this->attributes['id']) . '" style="display:none;"></span>';
   }
 }

@@ -45,7 +45,8 @@ class TextBox extends Control
     $this->attributes['disabled'] = null;
     $this->attributes['required'] = null;
     $this->attributes['readonly'] = null;
-    $this->properties['password'] = false;
+    $this->attributes['data-filter'] = null;
+    $this->attributes['data-mask'] = null;
   }
 
   public function clean()
@@ -60,9 +61,9 @@ class TextBox extends Control
     return $this;
   }
 
-  public function validate($type, Core\IDelegate $check)
+  public function validate($mode = null)
   {
-    return $check($this->attributes['value']);
+    return strlen($this->attributes['value']) > 0;
   }
 
   public function render()

@@ -66,12 +66,21 @@ abstract class Tag implements ITag
     if (substr($param, 0, 2) == 'on') $this->addEvent($param, $value);
     else if (array_key_exists($param, $this->attributes)) $this->attributes[$param] = $value;
     else if (array_key_exists($param, $this->properties)) $this->properties[$param] = $value;
-    else throw new Core\Exception('Aleph', 'ERR_GENERAL_3', $param, get_class($this));
+    else
+    {
+      $param = 'data-' . $param;
+      if (array_key_exists($param, $this->attributes)) $this->attributes[$param] = $value;
+      else if (array_key_exists($param, $this->properties)) $this->properties[$param] = $value;
+      else throw new Core\Exception('Aleph', 'ERR_GENERAL_3', $param, get_class($this));
+    }
   }
   
   public function __get($param)
   {
     if (substr($param, 0, 2) == 'on') isset($this->events[$param]) ? $this->events[$param] : null;
+    if (array_key_exists($param, $this->attributes)) return $this->attributes[$param];
+    if (array_key_exists($param, $this->properties)) return $this->properties[$param];
+    $param = 'data-' . $param;
     if (array_key_exists($param, $this->attributes)) return $this->attributes[$param];
     if (array_key_exists($param, $this->properties)) return $this->properties[$param];
     throw new Core\Exception('Aleph', 'ERR_GENERAL_3', $param, get_class($this));

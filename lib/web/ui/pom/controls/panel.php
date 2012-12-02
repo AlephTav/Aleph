@@ -91,7 +91,7 @@ class Panel extends Control implements IPanel
       foreach ($controls as $obj)
       {
         $vs = $obj instanceof IControl ? $obj->getVS() : Control::vs($obj);
-        if ($vs['parameters'][1]['id'] == $cid[0])
+        if ($vs['parameters'][0]['data-id'] == $cid[0])
         {
           $m = 1; $n = count($cid);
           for ($k = 1; $k < $n; $k++)
@@ -101,7 +101,7 @@ class Panel extends Control implements IPanel
             foreach ($controls as $obj)
             {
               $vs = $obj instanceof IControl ? $obj->getVS() : Control::vs($obj);
-              if ($vs['parameters'][1]['id'] == $cid[$k])
+              if ($vs['parameters'][0]['data-id'] == $cid[$k])
               {
                 $m++;
                 $flag = true;
@@ -119,7 +119,7 @@ class Panel extends Control implements IPanel
           if ($ctrl !== false) return $ctrl;
         }
       }
-      return empty($n) ? false : Control::getByUniqueID($vs['parameters'][1]['uniqueID']);
+      return empty($n) ? false : Control::getByUniqueID($vs['parameters'][0]['id']);
     };
     $cid = explode('.', $id);
     if ($isRecursion) return $searchControl($cid, $this->controls);
@@ -128,17 +128,17 @@ class Panel extends Control implements IPanel
   
   public function invokeMethod($method, $uniqueID = null)
   {
-    $vs = Control::vs($uniqueID ?: $this->uniqueID);
+    $vs = Control::vs($uniqueID ?: $this->attributes['id']);
     if (isset($vs['controls']))
     {
-      foreach ($vs['controls'] as $uID)
+      foreach ($vs['controls'] as $UID)
       {
-        $this->invokeMethod($method, $uID);
+        $this->invokeMethod($method, $UID);
       }
     }
     if (!empty($vs['methods'][$method])) 
     {
-      if ($this->uniqueID == $uniqueID) $this->{$method}();
+      if ($this->attributes['id'] == $uniqueID) $this->{$method}();
       else Control::vsGet($uniqueID)->{$method}();
     }
   }
@@ -148,9 +148,9 @@ class Panel extends Control implements IPanel
     foreach ($this->controls as $uniqueID => $obj)
     {
       $vs = $obj instanceof IControl ? $obj->getVS() : Control::vs($uniqueID);
-      if ($vs['parameters'][1]['id'] == $ctrl->id) throw new Core\Exception('ERR_PANEL_2', get_class($ctrl), $ctrl->id, $this->getFullID());
+      if ($vs['parameters'][0]['data-id'] == $ctrl->id) throw new Core\Exception('ERR_PANEL_2', get_class($ctrl), $ctrl->id, $this->getFullID());
     }
-    if (Control::vs($this->properties['uniqueID']))
+    if (Control::vs($this->attributes['id']))
     {
       $this->controls[$ctrl->uniqueID] = $ctrl->uniqueID;
       $ctrl->setParent($this);
@@ -159,7 +159,7 @@ class Panel extends Control implements IPanel
     else
     {
       $properties = $ctrl->getProperties();
-      $properties['parentUniqueID'] = $this->properties['uniqueID'];
+      $properties['parentUniqueID'] = $this->attributes['id'];
       $ctrl->setProperties($properties);
       $this->controls[$ctrl->uniqueID] = $ctrl;
     }

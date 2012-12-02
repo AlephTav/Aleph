@@ -29,7 +29,7 @@ use Aleph\Core,
 
 class Body extends Panel
 {
-  const ERR_BODY_1 = "XHTML parse error! [{var}].\n[{var}]\n[{var}]line: [{var}], column: [{var}].";
+  const ERR_BODY_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
   const ERR_BODY_2 = '[{var}] with ID = "[{var}]" doesn\'t have "materpage" attribute.';
 
   protected $title = array('title' => '', 'attributes' => array());
@@ -40,10 +40,11 @@ class Body extends Panel
   public function __construct($id)
   {
     parent::__construct('body', $id);
+    unset($this->attributes['data-id']);
+    unset($this->attributes['data-ctrl']);
     unset($this->properties['tag']);
     unset($this->properties['expire']);
-    unset($this->properties['id']);
-    $this->properties['uniqueID'] = $id;
+    $this->attributes['id'] = $id;
   }
   
   public function setTitle($title, array $attributes = null)
@@ -346,6 +347,7 @@ class Body extends Panel
     };
     $parser = xml_parser_create($this->a['charset'] ?: 'utf-8');
     $xhtml = is_file($template) ? file_get_contents($template) : $template;
+    if (strlen($xhtml) == 0) return false;
     $xhtml = $encodePHPTags($xhtml);
     xml_parser_set_option($parser, XML_OPTION_CASE_FOLDING, 0);
     xml_set_element_handler($parser, $startParsing, $endParsing);
@@ -356,8 +358,8 @@ class Body extends Panel
       $error = xml_error_string(xml_get_error_code($parser));
       $line = xml_get_current_line_number($parser);
       $column = xml_get_current_column_number($parser);
-      $file = is_file($template) ? 'file: ' . realpath($template) . ', ' : '';
-      throw new Core\Exception($this, 'ERR_BODY_1', $error, '', $file, $line, $column);
+      $file = is_file($template) ? "\nFile: " . realpath($template) : '';
+      throw new Core\Exception($this, 'ERR_BODY_1', $error, $file, $line, $column);
     }
     xml_parser_free($parser);
     $ctrl = $stack->pop();
@@ -404,10 +406,13 @@ class Body extends Panel
         if ($conditions) $bottom .= '<![endif]-->';
       }
     }
+    $attributes = $this->attributes;
+    unset($attributes['id']);
     foreach ($this as $uniqueID => $ctrl) $this->tpl->{$uniqueID} = $ctrl->render();
     $this->tpl->__head_entities = $top;
-    $this->tpl->__body_attributes = ' data-key="' . sha1(MVC\Page::$page->getPageID()) . '"' . $this->renderAttributes($this->attributes) . $this->renderEvents();
+    $this->tpl->__body_attributes = ' data-key="' . sha1(MVC\Page::$page->getPageID()) . '"' . $this->renderAttributes($attributes) . $this->renderEvents();
     $this->tpl->__body_entities = $bottom;
-    return '<!DOCTYPE html>' . $this->tpl->render();
+    $html = $this->tpl->render();
+    return $html ? '<!DOCTYPE html>' . $html : '';
   }
 }

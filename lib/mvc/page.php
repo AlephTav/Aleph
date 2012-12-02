@@ -110,7 +110,7 @@ class Page implements IPage
     $this->ajax = Web\Ajax::getInstance();
     $this->cache = $cache ?: (self::$defaultCache instanceof Cache\Cache ? self::$defaultCache : $this->a->cache());
     $this->template = $template;
-    $this->pageID = md5(get_class($this) . $template . \Aleph::getSiteUniqueID());
+    $this->setPageID($template);
   }
 
   /**
@@ -122,6 +122,11 @@ class Page implements IPage
   public function getPageID()
   {
     return $this->pageID;
+  }
+  
+  public function setPageID($UID)
+  {
+    $this->pageID = md5(get_class($this) . $UID . \Aleph::getSiteUniqueID());
   }
   
   public function getSequenceMethods($first = true)
@@ -196,9 +201,8 @@ class Page implements IPage
 
   public function process()
   {
-    $this->ajax->doit($this->ajaxPermissions);
-    // $this->body->refresh();
-    $this->ajax->script(($this->ajax->isAjaxUpload() ? 'parent.' : '') . 'aleph.pom.setVS()');
+    $this->ajax->process($this->ajaxPermissions);
+    POM\Control::vsCompare();
     $this->ajax->perform();
     POM\Control::vsPush();
   }

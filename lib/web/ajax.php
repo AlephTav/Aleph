@@ -96,7 +96,7 @@ class Ajax
     return self::$instance;
   }
 
-  public function doit(array $permissions = null)
+  public function process(array $permissions = null)
   {
     $fv = $this->request->data;
     if (empty($fv['ajax-method'])) return;
