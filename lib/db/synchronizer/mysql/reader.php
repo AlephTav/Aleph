@@ -139,8 +139,9 @@ class MySQLReader extends DBReader
       {
         $def = $row['Type'] . (strlen($row['Collation']) ? ' COLLATE ' . $this->db->quote($row['Collation']) : '');
         $def .= $row['Null'] == 'YES' ? ' NULL' : ' NOT NULL';
-        $def .= strlen($row['Default']) ? ' DEFAULT ' . $this->db->quote($row['Default']) : '';
+        $def .= strlen($row['Default']) ? ' DEFAULT ' . (substr($row['Type'], 0, 3) == 'bit' || $row['Default'] == 'CURRENT_TIMESTAMP' ? $row['Default'] : $this->db->quote($row['Default'])) : '';
         $def .= $row['Extra'] == 'auto_increment' ? ' AUTO_INCREMENT' : '';
+        $def .= substr($row['Extra'], 0, 2) == 'on' ? ' ' . $row['Extra'] : '';
         $def .= strlen($row['Comment']) ? ' COMMENT ' . $this->db->quote($row['Comment']) : '';
         $tmp = array();
         $tmp['column_name'] = $this->db->wrap($row['Field']);
