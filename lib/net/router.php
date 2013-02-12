@@ -56,14 +56,24 @@ class Router
   public function methods($methods)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
+    if ($methods == '*') $methods = 'GET|POST|PUT|DELETE';
+    else if ($methods == '@') $methods = 'GET|POST|PUT|DELETE|HEAD|OPTIONS|TRACE|CONNECT';
     $this->acts[$this->lact[0]][$this->lact[1]]['methods'] = $methods;
     return $this;
   }
   
-  public function checkParameters($flag)
+  public function args($args)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    $this->acts[$this->lact[0]][$this->lact[1]]['checkParameters'] = $flag;
+    if (!is_array($args)) $args = (array)$args;
+    $this->acts[$this->lact[0]][$this->lact[1]]['args'] = array_merge($this->acts[$this->lact[0]][$this->lact[1]]['args'], $args);
+    return $this;
+  }
+  
+  public function coordinateParameterNames($flag)
+  {
+    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
+    $this->acts[$this->lact[0]][$this->lact[1]]['coordinateParameterNames'] = $flag;
     return $this;
   }
   
@@ -71,6 +81,13 @@ class Router
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
     $this->acts[$this->lact[0]][$this->lact[1]]['ignoreWrongDelegate'] = $flag;
+    return $this;
+  }
+  
+  public function extra($parameter = 'extra')
+  {
+    if ($this->lact === null) throw new \Exception(err_msg(self::ERR_ROUTER_1));
+    $this->acts[$this->lact[0]][$this->lact[1]]['extra'] = $parameter;
     return $this;
   }
   
@@ -114,6 +131,7 @@ class Router
       }
     };
     $this->acts['secure'][$regex] = array('action' => $action,
+                                          'args' => array(),
                                           'params' => array(),
                                           'component' => URL::COMPONENT_ALL, 
                                           'methods' => 'GET|POST');
@@ -144,9 +162,10 @@ class Router
       {
         $url = str_replace(md5($t + $k), $arg, $url);
       }
-      Aleph::go($url);
+      \Aleph::go($url);
     };
-    $this->acts['redirect'][$regex] = array('action' => $action, 
+    $this->acts['redirect'][$regex] = array('action' => $action,
+                                            'args' => array(),
                                             'params' => $params, 
                                             'component' => URL::COMPONENT_PATH, 
                                             'methods' => 'GET|POST');
@@ -166,10 +185,11 @@ class Router
   {
     $params = $this->parseURLTemplate($regex, $regex);
     $this->acts['bind'][$regex] = array('action' => $action, 
+                                        'args' => array(),
                                         'params' => $params, 
                                         'component' => URL::COMPONENT_PATH, 
                                         'methods' => 'GET|POST', 
-                                        'checkParameters' => false, 
+                                        'coordinateParameterNames' => false, 
                                         'ignoreWrongDelegate' => true);
     $this->lact = array('bind', $regex);
     return $this;
@@ -186,7 +206,7 @@ class Router
   public function route($methods = null, $url = null)
   {
     $this->lact = null;
-    $request = \Aleph::getInstance()->request();
+    $request = Request::getInstance();
     if (!is_array($methods)) 
     {
       if (!empty($methods)) $methods = explode('|', $methods);
@@ -202,7 +222,7 @@ class Router
       foreach ($this->acts[$type] as $regex => $data)
       {
         if (!is_array($data['methods'])) $data['methods'] = explode('|', $data['methods']);
-        foreach ($data['methods'] as &$method) $method = strtoupper($method);
+        foreach ($data['methods'] as &$method) $method = strtoupper(trim($method));
         if (!array_intersect($methods, $data['methods'])) continue;
         if (isset($url)) $subject = $url;
         else
@@ -229,20 +249,21 @@ class Router
           if (!empty($data['ignoreWrongDelegate'])) continue;
           throw new Core\Exception($this, 'ERR_ROUTER_2', (string)$act);
         }
-        if (!empty($data['checkParameters']))
+        foreach ($data['params'] as &$param) $param = $matches[$param][0];
+        if (!empty($data['extra'])) $data['args'][$data['extra']] = $data['params'];
+        else $data['args'] = array_merge($data['args'], $data['params']);
+        $params = $data['args'];
+        if (!empty($data['coordinateParameterNames']))
         {
-          $tmp = array();
+          $params = array();
           foreach ($act->getParameters() as $param) 
           {
             $name = $param->getName();
-            if (isset($data['params'][$name])) $tmp[] = $name;
+            if (array_key_exists($name, $data['args'])) $params[] = $data['args'][$name];
           }
-          $data['params'] = $tmp;
         }
-        $params = array();
-        foreach ($data['params'] as $param) $params[] = $matches[$param][0];
-        $res->success = true;
         $res->result = $act->call($params);
+        $res->success = true;
         return $res;
       }
     }

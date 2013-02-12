@@ -36,6 +36,14 @@ class Response
    */
   const ERR_RESPONSE_1 = 'Invalid HTTP version. Must be only 1.0 or 1.1';
   const ERR_RESPONSE_2 = 'Cannot set response status. Status code "[{var}]" is not a valid HTTP response code.';
+  
+  /**
+   * The instance of this class.
+   * 
+   * @var Aleph\Net\Response $instance
+   * @access private
+   */           
+  private static $instance = null;
 
   /**
    * HTTP status codes.
@@ -113,14 +121,14 @@ class Response
                            511 => 'Network Authentication Required',
                            598 => 'Network read timeout error',
                            599 => 'Network connect timeout error');
-  
+ 
   /**
-   * Array of HTTP response headers.
+   * Instance of Aleph\Net\Headers class.
    *
-   * @var array $headers
-   * @access protected
+   * @var Aleph\Net\Headers $headers
+   * @access public
    */
-  protected $headers = array();
+  public $headers = null;
   
   /**
    * Version of HTTP protocol.
@@ -141,27 +149,47 @@ class Response
   /**
    * Body of HTTP resposne.
    *
-   * @var string $body
+   * @var mixed $body
    * @access public
    */
   public $body = null;
+  
+  /**
+   * Determines whether content of the response body needs to be converted according to content type or not.
+   *
+   * @var boolean $convertOutput
+   * @access public
+   */
+  public $convertOutput = false;
+  
+  /**
+   * Returns an instance of this class.
+   * 
+   * @return Aleph\Net\Response
+   * @access public
+   * @static
+   */
+  public static function getInstance()
+  {
+    if (self::$instance === null) self::$instance = new self();
+    return self::$instance;
+  }
+  
+  /**
+   * Clones an object of this class. The private method '__clone' doesn't allow to clone an instance of the class.
+   * 
+   * @access private
+   */
+  private function __clone(){}
   
   /**
    * Constructor. Initializes all internal variables of the class.
    *
    * @access public
    */
-  public function __construct()
+  private function __construct()
   {
-    if (function_exists('apache_response_headers')) $this->headers = apache_response_headers();
-    else
-    {
-      foreach (headers_list() as $header) 
-      {
-        $header = explode(':', $header);
-        $this->headers[array_shift($header)] = trim(implode(':', $header));
-      }
-    } 
+    $this->headers = Headers::getResponseHeaders();
   }
   
   /**
@@ -178,62 +206,6 @@ class Response
   }
   
   /**
-   * Sets an HTTP header.
-   *
-   * @param string $name - header name
-   * @param string $value - new header value
-   * @access public
-   */
-  public function setHeader($name, $value)
-  {
-    $this->headers[$name] = $value;
-  }
-  
-  /**
-   * Returns value of an HTTP header.
-   *
-   * @param string $name - HTTP headr name.
-   * @return string | boolean - return FALSE if a such header doesn't exist.
-   */
-  public function getHeader($name)
-  {
-    return isset($this->headers[$name]) ? $this->headers[$name] : false;
-  }
-  
-  /**
-   * Removes an HTTP header by its name.
-   *
-   * @param string $name - HTTP header name.
-   * @access public
-   */
-  public function removeHeader($name)
-  {
-    unset($this->headers[$name]);
-  }
-  
-  /**
-   * Sets array of all HTTP headers.
-   *
-   * @param array $headers - new HTTP headers.
-   * @access public
-   */
-  public function setHeaders(array $headers)
-  {
-    $this->headers = $headers;
-  }
-  
-  /**
-   * Returns array of all HTTP headers.
-   *
-   * @return array
-   * @access public
-   */
-  public function getHeaders()
-  {
-    return $this->headers;
-  }
-  
-  /**
    * Clears all variables of the current HTTP response.
    * This method removes all HTTP headers and body, sets HTTP protocol version to '1.1' and status code to 200.
    *
@@ -242,7 +214,7 @@ class Response
    */
   public function clear()
   {
-    $this->headers = array();
+    $this->headers->clear();
     $this->version = '1.1';
     $this->status = 200;
     $this->body = null;
@@ -259,15 +231,15 @@ class Response
   {
     if ($expires === false || (int)$expires <= 0) 
     {
-      $this->headers['Expires'] = 'Sun, 3 Jan 1982 21:30:00 GMT';
-      $this->headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0';
-      $this->headers['Pragma'] = 'no-cache';
+      $this->headers->merge(array('Expires' => 'Sun, 3 Jan 1982 21:30:00 GMT',
+                                  'Cache-Control' => 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0',
+                                  'Pragma' => 'no-cache'));
     }
     else
     {
       $expires = (int)$expires;
-      $this->headers['Expires'] = gmdate('D, d M Y H:i:s', $expires) . ' GMT';
-      $this->headers['Cache-Control'] = 'max-age=' . ($expires - time());
+      $this->headers->set('Expires', gmdate('D, d M Y H:i:s', $expires) . ' GMT');
+      $this->headers->set('Cache-Control', 'max-age=' . ($expires - time()));
     }
   }
   
@@ -275,14 +247,15 @@ class Response
    * Performs an HTTP redirect. Execution of this method halts the script execution. 
    *
    * @param string $url - redirect URL.
-   * @param integer $statuc - redirect HTTP status code.
+   * @param integer $status - redirect HTTP status code.
    * @access public
    */
   public function redirect($url, $status = 302)
   {
     $this->status = (int)$status;
-    $this->headers['Location'] = $url;
+    $this->headers->set('Location', $url);
     $this->send();
+    exit;
   }
   
   /**
@@ -297,10 +270,11 @@ class Response
     if ($message !== null) $this->body = $message;
     $this->status = (int)$status;
     $this->send();
+    exit;
   }
   
   /**
-   * Stops script execution and sends all HTTP response headers.
+   * Sends all HTTP response headers.
    *
    * @throws Aleph\Core\Exception with token ERR_RESPONSE_1 if new version value doesn't equal '1.0' or '1.1'
    * @throws Aleph\Core\Exception with token ERR_RESPONSE_2 if a such status code doesn't exist.
@@ -308,28 +282,63 @@ class Response
    */
   public function send()
   {  
-    if (!isset($this->version)) $this->version = '1.1';
-    if (!isset($this->status)) $this->status = 200;
-    if (!isset($this->body)) $this->body = '';
-    $isBody = ($this->status < 100 || $this->status >= 200) && 
-              $this->status != 204 && 
-              $this->status != 304 && 
-              isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] != 'HEAD';
-    if (!headers_sent()) 
+    if (headers_sent()) return;
+    if (empty($this->version)) $this->version = '1.1';
+    if (empty($this->status)) $this->status = 200;
+    if (empty($this->body)) $this->body = '';
+    $isBody = ($this->status < 100 || $this->status >= 200) && $this->status != 204 && $this->status != 304 && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] != 'HEAD';
+    $body = $this->convertOutput ? $this->convert() : $this->body;
+    if ($this->version != '1.0' && $this->version != '1.1') throw new Core\Exception($this, 'ERR_RESPONSE_1');
+    if (!isset($this->codes[$this->status])) throw new Core\Exception($this, 'ERR_RESPONSE_2', $this->status);
+    $headers = $this->headers->getHeaders();
+    if (!$isBody)
     {
-      if ($this->version != '1.0' && $this->version != '1.1') throw new Core\Exception($this, 'ERR_RESPONSE_1');
-      if (!isset($this->codes[$this->status])) throw new Core\Exception($this, 'ERR_RESPONSE_2', $this->status);
-      $headers = $this->headers;
-      if (!$isBody)
-      {
-        unset($headers['Content-Type']);
-        unset($headers['Content-Length']);
-      }
-      if (substr(PHP_SAPI, 0, 3) === 'cgi') header('Status: ' . $this->status . ' ' . $this->codes[$this->status]);
-      else header('HTTP/' . $this->version . ' ' . $this->status . ' ' . $this->codes[$this->status]);
-      foreach ($headers as $name => $value) header($name . ': ' . $value);
+      unset($headers['Content-Type']);
+      unset($headers['Content-Length']);
     }
-    if ($isBody) echo $this->body;
-    exit;
+    if (substr(PHP_SAPI, 0, 3) === 'cgi') header('Status: ' . $this->status . ' ' . $this->codes[$this->status]);
+    else header('HTTP/' . $this->version . ' ' . $this->status . ' ' . $this->codes[$this->status]);
+    foreach ($headers as $name => $value) header($name . ': ' . $value);
+    \Aleph::setOutput($isBody ? $body : '');
+  }
+  
+  /**
+   * Converts response body according to the given content type.
+   *
+   * @return string
+   * @access protected
+   */
+  public function convert()
+  {
+    $type = $this->headers->get('Content-Type');
+    if ($type === false) return $this->body;
+    switch ($type)
+    {
+      case 'text/plain':
+      case 'text/html':
+        return is_scalar($this->body) ? $this->body : serialize($this->body);
+      case 'application/json':
+        return json_encode($this->body);
+      case 'application/xml':
+        $php2xml = function($data) use (&$php2xml)
+        {
+          $xml = '';
+          if (is_array($data) || is_object($data))
+          {
+            foreach ($data as $key => $value) 
+            {
+              if (is_numeric($key)) $key = 'node';
+              $xml .= '<' . $key . '>' . $php2xml($value) . '</' . $key . '>';
+            }
+          } 
+          else 
+          {
+            $xml = htmlspecialchars($data, ENT_QUOTES);
+          }
+          return $xml;
+        };
+        return '<?xml version="1.0" encoding="UTF-8" ?><nodes>' . $php2xml($this->body) . '</nodes>';
+    }
+    return $this->body;
   }
 }

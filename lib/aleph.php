@@ -133,22 +133,6 @@ final class Aleph implements \ArrayAccess
   private $cache = null;
   
   /**
-   * Instance of the class Aleph\Net\Request.
-   *
-   * @var Aleph\Net\Request $request
-   * @access private
-   */
-  private $request = null;
-  
-  /**
-   * Instance of the class Aleph\Net\Response.
-   * 
-   * @var Aleph\Net\Response $response
-   * @access private
-   */
-  private $response = null;
-  
-  /**
    * Instance of the class Aleph\Net\Router.
    * 
    * @var Aleph\Net\Router $router
@@ -479,12 +463,26 @@ final class Aleph implements \ArrayAccess
       error_reporting($errorLevel ?: ini_get('error_reporting'));
       return;
     }
-    error_reporting($errorLevel ?: E_ALL | E_STRICT);
+    error_reporting($errorLevel ?: E_ALL);
     set_exception_handler(array(__CLASS__, 'exception'));
     set_error_handler(function($errno, $errstr, $errfile, $errline)
     {
-      throw new \ErrorException($errstr, 0, $errno, $errfile, $errline);
+      self::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
     }, $errorLevel);
+  }
+  
+  /**
+   * This method is automatically invoked when a fatal error occurred.
+   *
+   * @access public
+   * @static
+   */
+  public static function fatal()
+  {
+    if (self::isDebug() && preg_match('/(Fatal|Parse) error:(.*) in (.*) on line (\d+)/', ob_get_contents(), $res)) 
+    {
+      self::exception(new \ErrorException($res[2], 999, 1, $res[3], $res[4]));
+    }
   }
   
   /**
@@ -677,7 +675,7 @@ final class Aleph implements \ArrayAccess
     };
     $flag = false; $trace = $e->getTrace();
     $info = array();
-    $info['isFatalError'] = count($trace) == 1 && empty($trace[0]['file']) && $trace[0]['function'] == '{closure}';
+    $info['isFatalError'] = $e->getCode() == 999;
     $message = $e->getMessage();
     $file = $e->getFile();
     $line = $e->getLine();
@@ -927,17 +925,16 @@ final class Aleph implements \ArrayAccess
       self::$time['script_execution_time'] = microtime(true);
       ini_set('display_errors', 1);
       ini_set('html_errors', 0);
-      self::debug(true, E_ALL | E_STRICT);
+      if (!defined('NO_GZHANDLER') && extension_loaded('zlib') && !ini_get('zlib.output_compression')) ini_set('zlib.output_compression', 4096);
+      ob_start(function($output)
+      {
+        return strlen(Aleph::getOutput()) ? Aleph::getOutput() : $output;
+      });
+      register_shutdown_function(array(__CLASS__, 'fatal'));
+      self::debug(true, E_ALL);
       if (!isset($_SERVER['DOCUMENT_ROOT'])) $_SERVER['DOCUMENT_ROOT'] = __DIR__;
       self::$root = rtrim($_SERVER['DOCUMENT_ROOT'], '\\/');
       self::$siteUniqueID = md5(self::$root);
-      if (!defined('NO_GZHANDLER') && extension_loaded('zlib') && !ini_get('zlib.output_compression')) ini_set('zlib.output_compression', 4096);
-      ob_start(function($html)
-      {
-        if (!Aleph::isDebug() || !preg_match('/(Fatal|Parse) error:(.*) in (.*) on line (\d+)/', $html, $res)) return Aleph::getOutput() ?: $html;
-        Aleph::exception(new \ErrorException($res[2], 0, 1, $res[3], $res[4]));
-        return Aleph::getOutput();
-      });
       $lib = self::$root . '/' . pathinfo(__DIR__, PATHINFO_BASENAME) . '/';
       $files = array('core/exception.php' => 'Aleph\Core\Exception', 
                      'cache/cache.php' => 'Aleph\Cache\Cache');
@@ -983,8 +980,6 @@ final class Aleph implements \ArrayAccess
     $this->mask = '/^.*\.php$/i';
     $this->autoload = '';
     $this->cache = null;
-    $this->request = null;
-    $this->response = null;
     $this->router = null;
   }
   
@@ -1185,8 +1180,7 @@ final class Aleph implements \ArrayAccess
    */
   public function request()
   {
-    if ($this->request === null) $this->request = new Net\Request();
-    return $this->request;
+    return Net\Request::getInstance();
   }
   
   /**
@@ -1197,8 +1191,7 @@ final class Aleph implements \ArrayAccess
    */
   public function response()
   {
-    if ($this->response === null) $this->response = new Net\Response();
-    return $this->response;
+    return Net\Response::getInstance();
   }
   
   /**
