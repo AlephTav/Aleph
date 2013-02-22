@@ -11,6 +11,7 @@ class API
   protected static $map = array();
   protected static $request = null;
   protected static $response = null;
+  protected static $contentType = 'json';
   protected static $namespace = '\\';
   protected static $convertErrors = false;
   
@@ -28,24 +29,24 @@ class API
     return true;
   }
   
-  protected static function notFound()
+  protected static function notFound($content = null)
   {
-    self::$response->stop(404, '');
+    self::$response->stop(404, $content);
   }
 
   public static function process()
   {
     \Aleph::getInstance()->config(array('customDebugMethod' => __CLASS__ . '::error'));
-    $map = static::$map;
-    $namespace = static::$namespace;
     self::$request = Request::getInstance();
     self::$response = Response::getInstance();
     self::$response->convertOutput = true;
-    self::$response->headers->setContentType('json');
-    $process = function($resource, array $params = null) use ($map, $namespace)
+    self::$response->headers->setContentType(static::$contentType);
+    $namespace = static::$namespace;
+    $process = function(array $resource, array $params = null) use ($namespace)
     {
-      if (empty($map[$resource]['callback'])) throw new Core\Exception('Aleph\Net\API', 'ERR_API_1', $resource);
-      $callback = $map[$resource]['callback'];
+      if (empty($resource['callback'])) throw new Core\Exception('Aleph\Net\API', 'ERR_API_1', $resource);
+      if (isset($resource['contentType'])) API::$response->headers->setContentType($resource['contentType']);
+      $callback = $resource['callback'];
       if ($callback[0] != '\\') $callback = $namespace . $callback;
       $callback = new Core\Delegate($callback);
       $api = $callback->getClassObject();
@@ -56,29 +57,29 @@ class API
       API::$response->send();
     };
     $router = new Router();
-    foreach ($map as $resource => $data)
+    foreach (static::$map as $resource => $info)
     {
-      $data['methods'] = empty($data['methods']) ? 'GET' : $data['methods'];
-      if (isset($data['secure']))
+      foreach ($info as $methods => $data)
       {
-        $router->secure($resource, $data['secure'])
-               ->methods($data['methods'])
-               ->component(empty($data['component']) ? URL::COMPONENT_ALL : $data['component']);
-      }
-      else if (isset($data['redirect']))
-      {
-        $router->redirect($resource, $data['redirect'])
-               ->methods($data['methods'])
-               ->component(empty($data['component']) ? URL::COMPONENT_PATH : $data['component']);
-      }
-      else
-      {
-        $router->bind($resource, $process)
-               ->methods($data['methods'])
-               ->component(empty($data['component']) ? URL::COMPONENT_PATH : $data['component'])
-               ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
-               ->args(array('resource' => $resource))
-               ->extra('params');
+        if (isset($data['secure']))
+        {
+          $router->secure($resource, $data['secure'], $methods)
+                 ->component(empty($data['component']) ? URL::COMPONENT_ALL : $data['component']);
+        }
+        else if (isset($data['redirect']))
+        {
+          $router->redirect($resource, $data['redirect'], $methods)
+                 ->component(empty($data['component']) ? URL::COMPONENT_PATH : $data['component']);
+        }
+        else
+        {
+          $router->bind($resource, $process, $methods)
+                 ->component(empty($data['component']) ? URL::COMPONENT_PATH : $data['component'])
+                 ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
+                 ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames'])
+                 ->args(array('resource' => $data))
+                 ->extra('params');
+        }
       }
     }
     if (!$router->route()->success) static::notFound();
@@ -101,7 +102,7 @@ class API
     return $result;
   }
   
-  protected function before($resource, array &$params){}
+  protected function before(array $resource, array &$params){}
   
-  protected function after($resource, array &$params){}
+  protected function after(array $resource, array &$params){}
 }

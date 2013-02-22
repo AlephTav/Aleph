@@ -36,29 +36,32 @@ class Router
 {
   const ERR_ROUTER_1 = 'No action is defined. You should first call one of the following methods: secure(), redirect() or bind()';
   const ERR_ROUTER_2 = 'Delegate "[{var}]" is not callable.';
+  const ERR_ROUTER_3 = 'URL component "[{var}]" doesn\'t exist. You should only use one of the following components: Net\URL::COMPONENT_ALL, Net\URL::COMPONENT_SOURCE, Net\URL::COMPONENT_QUERY, Net\URL::COMPONENT_PATH, Net\URL::COMPONENT_PATH_AND_QUERY';
 
   /**
    * Array of actions for the routing.
    * 
-   * @var array $acts   
+   * @var array $acts
+   * @access protected
    */
   protected $acts = array();
   
+  /**
+   * Stores the link on the last invoked method.
+   *
+   * @var array $lact
+   * @access protected
+   */
   protected $lact = null;
   
   public function component($component)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    $this->acts[$this->lact[0]][$this->lact[1]]['component'] = $component;
-    return $this;
-  }
-  
-  public function methods($methods)
-  {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    if ($methods == '*') $methods = 'GET|POST|PUT|DELETE';
-    else if ($methods == '@') $methods = 'GET|POST|PUT|DELETE|HEAD|OPTIONS|TRACE|CONNECT';
-    $this->acts[$this->lact[0]][$this->lact[1]]['methods'] = $methods;
+    if (!in_array($component, array(URL::COMPONENT_ALL, URL::COMPONENT_SOURCE, URL::COMPONENT_QUERY, URL::COMPONENT_PATH, URL::COMPONENT_PATH_AND_QUERY))) throw new Core\Exception($this, 'ERR_ROUTER_3');
+    foreach ($this->lact[2] as $method)
+    {
+      $this->acts[$this->lact[0]][$method][$this->lact[1]]['component'] = $component;
+    }
     return $this;
   }
   
@@ -66,49 +69,82 @@ class Router
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
     if (!is_array($args)) $args = (array)$args;
-    $this->acts[$this->lact[0]][$this->lact[1]]['args'] = array_merge($this->acts[$this->lact[0]][$this->lact[1]]['args'], $args);
+    foreach ($this->lact[2] as $method)
+    {
+      $this->acts[$this->lact[0]][$method][$this->lact[1]]['args'] = array_merge($this->acts[$this->lact[0]][$method][$this->lact[1]]['args'], $args);
+    }
     return $this;
   }
   
   public function coordinateParameterNames($flag)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    $this->acts[$this->lact[0]][$this->lact[1]]['coordinateParameterNames'] = $flag;
+    foreach ($this->lact[2] as $method)
+    {
+      $this->acts[$this->lact[0]][$method][$this->lact[1]]['coordinateParameterNames'] = (bool)$flag;
+    }
     return $this;
   }
   
   public function ignoreWrongDelegate($flag)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    $this->acts[$this->lact[0]][$this->lact[1]]['ignoreWrongDelegate'] = $flag;
+    foreach ($this->lact[2] as $method)
+    {
+      $this->acts[$this->lact[0]][$method][$this->lact[1]]['ignoreWrongDelegate'] = (bool)$flag;
+    }
     return $this;
   }
   
   public function extra($parameter = 'extra')
   {
-    if ($this->lact === null) throw new \Exception(err_msg(self::ERR_ROUTER_1));
-    $this->acts[$this->lact[0]][$this->lact[1]]['extra'] = $parameter;
+    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
+    foreach ($this->lact[2] as $method)
+    {
+      $this->acts[$this->lact[0]][$method][$this->lact[1]]['extra'] = $parameter;
+    }
     return $this;
   }
   
-  public function remove($regex, $type = null)
+  /**
+   * Removes the definite action for the given router type and HTTP methods.
+   *
+   * @param string $regex - a regex corresponding to the specified URL.
+   * @param string $type - router type. It can be one of the following values: "bind", "redirect" or "secure".
+   * @param array | string $methods - HTTP methods.
+   */
+  public function remove($regex, $type = null, $methods = '*')
   {
+    $methods = $this->normalizeMethods($methods);
     if ($type === null)
     {
-      unset($this->acts['secure'][$regex]);
-      unset($this->acts['redirect'][$regex]);
-      unset($this->acts['bind'][$regex]);
+      foreach (array('secure', 'redirect', 'bind') as $type)
+      {
+        foreach ($methods as $method) unset($this->acts[$type][$method][$regex]);
+      }
     }
-    else unset($this->acts[$type][$regex]);
-    if ($this->lact !== null && $this->lact[0] == $type && $this->lact[1] == $regex) $this->lact = null;
+    else
+    {
+      foreach ($methods as $method) unset($this->acts[$type][$method][$regex]);
+    }
+    $this->lact = null;
     return $this;
   }
   
+  /**
+   * Removes all router data of the certain type. 
+   * If type is not set the methods removes all router data.
+   *
+   * @param string $type - router type. It can be one of the following values: "bind", "redirect" or "secure".
+   * @return self
+   * @access public
+   */
   public function clean($type = null)
   {
     if ($type === null) $this->acts = array();
     else unset($this->acts[$type]);
     $this->lact = null;
+    return $this;
   }
 
   /**
@@ -116,11 +152,13 @@ class Router
    *
    * @param string $regex - regex for the given URL.
    * @param boolean $flag
+   * @param array | string $methods - HTTP methods for which the secure operation is permitted.
    * @return self
    * @access public
    */
-  public function secure($regex, $flag)
+  public function secure($regex, $flag, $methods = '*')
   {
+    $methods = $this->normalizeMethods($methods);
     $action = function() use($flag)
     {
       $url = new URL();
@@ -130,12 +168,13 @@ class Router
         \Aleph::go($url->build());
       }
     };
-    $this->acts['secure'][$regex] = array('action' => $action,
-                                          'args' => array(),
-                                          'params' => array(),
-                                          'component' => URL::COMPONENT_ALL, 
-                                          'methods' => 'GET|POST');
-    $this->lact = array('secure', $regex);
+    $data = array('action' => $action,
+                  'args' => array(),
+                  'params' => array(),
+                  'component' => URL::COMPONENT_ALL, 
+                  'methods' => $methods);
+    foreach ($methods as $method) $this->acts['secure'][$method][$regex] = $data;
+    $this->lact = array('secure', $regex, $methods);
     return $this;
   }
   
@@ -144,12 +183,14 @@ class Router
    *
    * @param string $regex - regex URL template.
    * @param string $redirect - URL to redirect.
+   * @param array | string $methods - HTTP methods for which the redirect is permitted.
    * @return self
    * @access public
    */
-  public function redirect($regex, $redirect)
+  public function redirect($regex, $redirect, $methods = '*')
   {
     $params = $this->parseURLTemplate($regex, $regex);
+    $methods = $this->normalizeMethods($methods);
     $t = microtime(true);
     for ($k = 0, $n = count($params); $k < $n; $k++)
     {
@@ -164,12 +205,13 @@ class Router
       }
       \Aleph::go($url);
     };
-    $this->acts['redirect'][$regex] = array('action' => $action,
-                                            'args' => array(),
-                                            'params' => $params, 
-                                            'component' => URL::COMPONENT_PATH, 
-                                            'methods' => 'GET|POST');
-    $this->lact = array('redirect', $regex);
+    $data = array('action' => $action,
+                  'args' => array(),
+                  'params' => $params, 
+                  'component' => URL::COMPONENT_PATH,
+                  'methods' => $methods);
+    foreach ($methods as $method) $this->acts['redirect'][$method][$regex] = $data;
+    $this->lact = array('redirect', $regex, $methods);
     return $this;
   }
   
@@ -178,20 +220,23 @@ class Router
    *
    * @param string $regex - regex URL template.
    * @param closure | Aleph\Core\IDelegate | string $action
+   * @param array | string $methods - HTTP methods for which the given action is permitted.
    * @return self
    * @access public
    */
-  public function bind($regex, $action)
+  public function bind($regex, $action, $methods = '*')
   {
     $params = $this->parseURLTemplate($regex, $regex);
-    $this->acts['bind'][$regex] = array('action' => $action, 
-                                        'args' => array(),
-                                        'params' => $params, 
-                                        'component' => URL::COMPONENT_PATH, 
-                                        'methods' => 'GET|POST', 
-                                        'coordinateParameterNames' => false, 
-                                        'ignoreWrongDelegate' => true);
-    $this->lact = array('bind', $regex);
+    $methods = $this->normalizeMethods($methods);
+    $data = array('action' => $action, 
+                  'args' => array(),
+                  'params' => $params, 
+                  'component' => URL::COMPONENT_PATH, 
+                  'methods' => $methods, 
+                  'coordinateParameterNames' => false, 
+                  'ignoreWrongDelegate' => true);
+    foreach ($methods as $method) $this->acts['bind'][$method][$regex] = $data;
+    $this->lact = array('bind', $regex, $methods);
     return $this;
   }
   
@@ -219,52 +264,53 @@ class Router
     foreach (array('secure', 'redirect', 'bind') as $type)
     {
       if (empty($this->acts[$type])) continue;
-      foreach ($this->acts[$type] as $regex => $data)
+      foreach ($this->acts[$type] as $method => $actions)
       {
-        if (!is_array($data['methods'])) $data['methods'] = explode('|', $data['methods']);
-        foreach ($data['methods'] as &$method) $method = strtoupper(trim($method));
-        if (!array_intersect($methods, $data['methods'])) continue;
-        if (isset($url)) $subject = $url;
-        else
+        if (!in_array($method, $methods)) continue;
+        foreach ($actions as $regex => $data)
         {
-          if (empty($urls[$data['component']])) $urls[$data['component']] = $request->url->build($data['component']);
-          $subject = $urls[$data['component']];
-        }
-        if (!preg_match_all($regex, $subject, $matches)) continue;
-        if ($data['action'] instanceof Core\Delegate) $act = $data['action'];
-        else 
-        {
-          if (!($data['action'] instanceof \Closure))
+          if (isset($url)) $subject = $url;
+          else
           {
-            foreach ($data['params'] as $k => $param)
+            if (empty($urls[$data['component']])) $urls[$data['component']] = $request->url->build($data['component']);
+            $subject = $urls[$data['component']];
+          }
+          if (!preg_match_all($regex, $subject, $matches)) continue;
+          if ($data['action'] instanceof Core\Delegate) $act = $data['action'];
+          else 
+          {
+            if (!($data['action'] instanceof \Closure))
             {
-              $data['action'] = str_replace('#' . $param . '#', $matches[$param][0], $data['action'], $count);
-              if ($count > 0) unset($data['params'][$k]);
+              foreach ($data['params'] as $k => $param)
+              {
+                $data['action'] = str_replace('#' . $param . '#', $matches[$param][0], $data['action'], $count);
+                if ($count > 0) unset($data['params'][$k]);
+              }
             }
+            $act = new Core\Delegate($data['action']);
           }
-          $act = new Core\Delegate($data['action']);
-        }
-        if (!$act->isCallable())
-        {
-          if (!empty($data['ignoreWrongDelegate'])) continue;
-          throw new Core\Exception($this, 'ERR_ROUTER_2', (string)$act);
-        }
-        foreach ($data['params'] as &$param) $param = $matches[$param][0];
-        if (!empty($data['extra'])) $data['args'][$data['extra']] = $data['params'];
-        else $data['args'] = array_merge($data['args'], $data['params']);
-        $params = $data['args'];
-        if (!empty($data['coordinateParameterNames']))
-        {
-          $params = array();
-          foreach ($act->getParameters() as $param) 
+          if (!$act->isCallable())
           {
-            $name = $param->getName();
-            if (array_key_exists($name, $data['args'])) $params[] = $data['args'][$name];
+            if (!empty($data['ignoreWrongDelegate'])) continue;
+            throw new Core\Exception($this, 'ERR_ROUTER_2', (string)$act);
           }
+          foreach ($data['params'] as &$param) $param = $matches[$param][0];
+          if (!empty($data['extra'])) $data['args'][$data['extra']] = $data['params'];
+          else $data['args'] = array_merge($data['args'], $data['params']);
+          $params = $data['args'];
+          if (!empty($data['coordinateParameterNames']))
+          {
+            $params = array();
+            foreach ($act->getParameters() as $param) 
+            {
+              $name = $param->getName();
+             if (array_key_exists($name, $data['args'])) $params[] = $data['args'][$name];
+            } 
+          }
+          $res->result = $act->call($params);
+          $res->success = true;
+          return $res;
         }
-        $res->result = $act->call($params);
-        $res->success = true;
-        return $res;
       }
     }
     return $res;
@@ -309,5 +355,21 @@ class Router
     }, $path);
     $regex = '/^' . implode('\/', $path) . '$/';
     return $params;
+  }
+  
+  /**
+   * Returns array of HTTP methods in canonical form (in uppercase and without spaces).
+   *
+   * @param string|array - HTTP methods.
+   * @return array
+   * @access protected
+   */
+  protected function normalizeMethods($methods)
+  {
+    if ($methods == '*') return array('GET', 'PUT', 'POST', 'DELETE');
+    if ($methods == '@') return array('GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT');
+    $methods = is_array($methods) ? $methods : explode('|', $methods);
+    foreach ($methods as &$method) $method = strtoupper(trim($method));
+    return $methods;
   }
 }
