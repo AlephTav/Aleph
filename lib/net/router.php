@@ -30,7 +30,6 @@ use Aleph\Core;
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.core
- * @final
  */
 class Router
 {
