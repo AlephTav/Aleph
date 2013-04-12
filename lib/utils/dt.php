@@ -451,8 +451,8 @@ class DT
   /**
    * Returns the time elapsed since the specified date.
    *
-   * @param string|\DateTime $date - the start date.
-   * @param string|\DateTime $now - the current date.
+   * @param string | \DateTime $date - the start date.
+   * @param string | \DateTime $now - the current date.
    * @param string $format - date format string.
    * @return string
    * @access public
@@ -478,7 +478,7 @@ class DT
    * Returns today's date.
    *
    * @param string $format - output date format.
-   * @param string|\DateTimeZone $timezone
+   * @param string | \DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -493,7 +493,7 @@ class DT
    * Returns tomorrow's date.
    *
    * @param string $format - output date format.
-   * @param string|\DateTimeZone $timezone
+   * @param string | \DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -509,7 +509,7 @@ class DT
    * Returns yesterday's date.
    *
    * @param string $format - output date format.
-   * @param string|\DateTimeZone $timezone
+   * @param string | \DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -551,7 +551,7 @@ class DT
    * Returns abbreviation of the given time zone.
    * The time zone can be an instance of \DateTimeZone or a string.
    *
-   * @param string|\DateTimeZone $timezone
+   * @param string | \DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -570,6 +570,7 @@ class DT
    * @param \DateTimeZone $what - one of \DateTimeZone class constants.
    * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to \DateTimeZone::PER_COUNTRY.
    * @return array
+   * @access public
    * @static
    */
   public static function getTimeZoneList($combine = false, $what = \DateTimeZone::ALL, $country = null)
@@ -580,11 +581,70 @@ class DT
   }
   
   /**
+   * Returns list (associative array) of timezones in GMT format.
+   *
+   * @param array $replacement - can be used to replace some timezone names by others.
+   * @param \DateTimeZone $what - one of \DateTimeZone class constants.
+   * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to \DateTimeZone::PER_COUNTRY.
+   * @return array
+   * @access public
+   * @static
+   */
+  public static function getGMTTimeZoneList(array $replacement = null, $what = \DateTimeZone::ALL, $country = null)
+  {
+    $list = array();
+    foreach (\DateTimeZone::listIdentifiers($what, $country) as $zone)
+    {
+      $tz = new \DateTimeZone($zone);
+      $offset = $tz->getOffset(new \DateTime('now', $tz));
+      $hours = str_pad(intval(abs($offset) / 3600), 2, '0', STR_PAD_LEFT);
+      $minutes = str_pad(intval(abs($offset) % 3600 / 60), 2, '0', STR_PAD_LEFT);
+      if (isset($replacement[$zone])) $tz = $replacement[$zone];
+      else
+      {
+        $tz = explode('/', str_replace('_', ' ', $zone));
+        array_shift($tz);
+        $tz = implode(' - ', $tz);
+      }
+      $list[$zone] = '(GMT' . ($offset >= 0 ? '+' : '-') . $hours . ':' . $minutes . ') ' . $tz;
+    }
+    array_pop($list);
+    uasort($list, function($a, $b)
+    {
+      $aa = (int)substr($a, 4, 3);
+      $bb = (int)substr($b, 4, 3);
+      if ($aa == $bb) return substr($a, 12) > substr($b, 12);
+      return $aa > $bb;
+    });
+    return $list;
+  }
+  
+  /**
+   * Returns timezone string in GMT format.
+   *
+   * @param string $timezone - timezone key.
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function getGMTTimeZone($timezone)
+  {
+    $tz = new \DateTimeZone($timezone);
+    $offset = $tz->getOffset(new \DateTime('now', $tz));
+    $hours = str_pad(intval(abs($offset) / 3600), 2, '0', STR_PAD_LEFT);
+    $minutes = str_pad(intval(abs($offset) % 3600 / 60), 2, '0', STR_PAD_LEFT);
+    $tz = explode('/', str_replace('_', ' ', $zone));
+    array_shift($tz);
+    $tz = implode(' - ', $tz);
+    return '(GMT' . ($offset >= 0 ? '+' : '-') . $hours . ':' . $minutes . ') ' . $tz;
+  }
+  
+  /**
    * Converts the given date from one time zone and date format to another time zone and date format.
    *
    * @param string $date - string representing the date.
-   * @param string|\DateTimeZone $zoneOut - output date time zone.
-   * @param string|\DateTimeZone $zoneIn - input date time zone.
+   * @param string | \DateTimeZone $zoneOut - output date time zone.
+   * @param string | \DateTimeZone $zoneIn - input date time zone.
    * @param string $out - output format string.
    * @param string $in - input format string.
    * @return string
@@ -603,9 +663,9 @@ class DT
    * Constructor.
    * If $date is not specified the current date will be taken. 
    *
-   * @param string|\DateTime $date - string representing the date or a \DateTime object.
+   * @param string | \DateTime $date - string representing the date or a \DateTime object.
    * @param string $format - date format string.
-   * @param string|\DateTimeZone $timezone - date time zone.
+   * @param string | \DateTimeZone $timezone - date time zone.
    * @access public
    */
   public function __construct($date = 'now', $format = null, $timezone = null)
@@ -659,12 +719,18 @@ class DT
   /**
    * Returns the Unix timestamp representing the date.
    *
+   * @param string | \DateTimeZone $timezone
    * @return integer
    * @access public
    */
-  public function getTimestamp()
+  public function getTimestamp($timezone = null)
   {
-    return $this->dt->getTimestamp();
+    if ($timezone === null) return $this->dt->getTimestamp();
+    $tz = $this->dt->getTimezone();
+    $this->setTimezone($timezone);
+    $date = $this->dt->getTimestamp();
+    $this->setTimezone($tz);
+    return $date;
   }
   
   /**
@@ -694,7 +760,7 @@ class DT
   /**
    * Sets the time zone for the Aleph\Utils\DT object.
    *
-   * @param string|\DateTimeZone $timezone
+   * @param string | \DateTimeZone $timezone
    * @return self
    * @access public
    */
@@ -708,18 +774,17 @@ class DT
    * Returns the date formatted to the given format for the specified time zone.
    *
    * @param string $format
-   * @param string|\DateTimeZone $timezone
+   * @param string | \DateTimeZone $timezone
    * @return string
    * @access public
    */
   public function getDate($format, $timezone = null)
   {
     if ($timezone === null) return $this->dt->format($format);
-    $timezone = $timezone instanceof \DateTimeZone ? $timezone : new \DateTimeZone($timezone);
     $tz = $this->dt->getTimezone();
-    $this->dt->setTimezone($timezone);
+    $this->setTimezone($timezone);
     $date = $this->dt->format($format);
-    $this->dt->setTimezone($tz);
+    $this->setTimezone($tz);
     return $date;
   }
   
@@ -770,7 +835,7 @@ class DT
   /**
    * Adds an amount of days, months, years, hours, minutes and seconds to a Aleph\Utils\DT object.
    *
-   * @param string|\DateInterval - a \DateInterval object or interval string.
+   * @param string | \DateInterval - a \DateInterval object or interval string.
    * @return self
    * @access public
    * @link http://www.php.net/manual/en/class.dateinterval.php
@@ -784,7 +849,7 @@ class DT
   /**
    * Subtracts an amount of days, months, years, hours, minutes and seconds from a Aleph\Utils\DT object.
    *
-   * @param string|\DateInterval - a \DateInterval object or interval string.
+   * @param string | \DateInterval - a \DateInterval object or interval string.
    * @return self
    * @access public
    * @link http://www.php.net/manual/en/class.dateinterval.php
@@ -887,10 +952,31 @@ class DT
   }
   
   /**
+   * Compares two given dates.
+   * The method returns 1 if the second date larger than the first date.
+   * The method returns -1 if the second date smaller than the first date.
+   * The method returns 0 if the both dates are equal.
+   *
+   * @param Aleph\Utils\DT $date - the date to compare to.
+   * @param string | \DateTimeZone $timezone
+   * @return integer
+   * @access public
+   * @static
+   */
+  public function cmp(DT $date, $timezone = null)
+  {
+    $v1 = $this->getTimestamp($timezone);
+    $v2 = $date->getTimestamp($timezone);
+    if ($v2 > $v1) return 1;
+    if ($v2 < $v1) return -1;
+    return 0;
+  }
+  
+  /**
    * Returns \Closure object representating of date period.
    *
-   * @param string|\DateInterval $interval
-   * @param integer|Aleph\Utils\DT - the number of recurrences or Aleph\Utils\DT object.
+   * @param string | \DateInterval $interval
+   * @param integer | Aleph\Utils\DT - the number of recurrences or Aleph\Utils\DT object.
    * @param boolean $excludeStartDate - determines whether the start date is excluded.
    * @return \Closure
    * @access public

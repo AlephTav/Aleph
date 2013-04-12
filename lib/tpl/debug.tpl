@@ -78,7 +78,7 @@ $highlight = function($code)
                T_REQUIRE                     => 'syntax-function',
                T_UNSET                       => 'syntax-function');
   $res = '';
-  $tokens = token_get_all('<?php ' . $code);
+  $tokens = @token_get_all('<?php ' . $code);
   unset($tokens[0]);
   foreach ($tokens as $token)
   {
@@ -123,6 +123,7 @@ $file2class = function($file)
 $maxLineLen = $maxFileLen = 0; $hli = -1;
 foreach ($trace as $n => $item) 
 {
+  if (empty($item['line'])) continue;
   if ($maxLineLen < strlen($item['line'])) $maxLineLen = strlen($item['line']);
   if ($maxFileLen < strlen($item['file'])) $maxFileLen = strlen($item['file']);
   if ($hli == -1 && $item['line'] == $line) $hli = $n;
@@ -146,7 +147,7 @@ $stack = '<table id="error-stack-trace">';
 foreach ($trace as $n => $item)
 {
   $stack .= '<tr data-file-lines-id="file-line-' . $n . '" class="error-stack-trace-line' . ($hli == $n ? ' highlight' : ($hli > $n ? ' pre-highlight' : '')) . ($item['file'] != '[Internal PHP]' ? '' : ' is-native') . '">';
-  $stack .= '<td class="linenumber">' . str_pad($item['line'], $maxLineLen, ' ', STR_PAD_LEFT) . '</td>';
+  $stack .= '<td class="linenumber">' . str_pad(isset($item['line']) ? $item['line'] : '', $maxLineLen, ' ', STR_PAD_LEFT) . '</td>';
   $stack .= '<td class="filename ' . $file2class($item['file']) . '">' . str_pad($item['file'], $maxFileLen, ' ', STR_PAD_RIGHT) . '</td>';
   $stack .= '<td class="lineinfo">' . $highlight($item['command']) . '</td>';
   $stack .= '</tr>';

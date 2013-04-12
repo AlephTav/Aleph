@@ -22,7 +22,7 @@
  
 namespace Aleph\Utils;
 
-use Aleph\Web;
+use Aleph\Core;
 
 /**
  * The class is designed for extended operations with the html document as DOM.
@@ -33,6 +33,8 @@ use Aleph\Web;
  */
 class DOMDocumentEx extends \DOMDocument
 {
+  const ERR_DOM_1 = 'DOM Element with ID = "[{var}]" is not found.';
+
   const DOM_INJECT_TOP = 'top';
   const DOM_INJECT_BOTTOM = 'bottom';
   const DOM_INJECT_AFTER = 'after';
@@ -55,206 +57,170 @@ class DOMDocumentEx extends \DOMDocument
    * Replaces some of the php tags in $source.
    * 
    * @param string $source 
+   * @param integer $options - bitwise OR of the libxml option constants.
    * @return string 
    * @access public
    */
-  /*public function loadHTML($source)
+  public function loadHTML($source, $options = 0)
   {
+    if (!\Aleph::isDebug()) return parent::loadHTML($source);
+    $level = ini_get('error_reporting');
     \Aleph::debug(true, E_ALL & ~E_NOTICE & ~E_WARNING);
-    $res = parent::loadHTML($source);
-    \Aleph::debug(true, E_ALL & ~E_NOTICE);
+    $res = parent::loadHTML($source, $options);
+    \Aleph::debug(true, $level);
     return $res;
-  }*/
+  }
 
-   /**
-    * Loads the html file from the link.
-    * Загружает html файл по ссылке.
-    * 
-    * @param string $filename 
-    * @return string 
-    * @access public
-    */
-   /*public function loadHTMLFile($filename)
-   {
-      Debugger::setErrorReporting(E_ALL & ~E_NOTICE & ~E_WARNING);
-      $res = $this->loadHTML(file_get_contents($filename));
-      Debugger::setErrorReporting(E_ALL & ~E_NOTICE);
-      return $res;
-   }*/
+  /**
+   * Loads the html file from the link.
+   * 
+   * @param string $filename
+   * @param integer $options - bitwise OR of the libxml option constants.
+   * @return string 
+   * @access public
+   */
+  public function loadHTMLFile($filename, $options = 0)
+  {
+    return $this->loadHTML(file_get_contents($filename), $options);
+  }
 
-   /**
-    * Converts encoded php tags.
-    * Преобразует зашифрованные php теги.
-    * 
-    * @return string 
-    * @access public
-    */
-   public function saveHTML()
-   {
-      return Web\XHTMLParser::decodePHPTags(parent::saveHTML());
-   }
+  /**
+   * Returns the html code of the whole node.
+   * 
+   * @return string 
+   * @access public
+   */
+  public function getHTML()
+  {
+    return $this->getInnerHTML($this->documentElement->firstChild);
+  }
 
-   /**
-    * Save the file in $filename.
-    * Сохраняет файл в $filename.
-    * 
-    * @param string $filename
-    * @return mixed 
-    * @access public
-    */
-   public function saveHTMLFile($filename)
-   {
-      return file_put_contents($filename, $this->saveHTML());
-   }
+  /**
+   * Adds a node $id code $html
+   * 
+   * @param string $id
+   * @param string $html
+   * @access public
+   */
+  public function insert($id, $html)
+  {
+    $el = $this->getElementById($id);
+    if ($el === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    $this->setInnerHTML($el, $html);
+  }
 
-   /**
-    * Returns the html code of the whole node.
-    * Возвращает html код всего узла.
-    * 
-    * @return string 
-    * @access public
-    */
-   public function getHTML()
-   {
-      return $this->getInnerHTML($this->documentElement->firstChild);
-   }
+  /**
+   * Replace a node $id code $html
+   * 
+   * @param string $id
+   * @param string $html
+   * @access public
+   */
+  public function replace($id, $html)
+  {
+    $el = $this->getElementById($id);
+    if ($el === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    $el->parentNode->replaceChild($this->HTMLToNode($html), $el);
+  }
 
-   /**
-    * Adds a node $id code $html
-    * Добавляет в узел $id код $html
-    * 
-    * @param string $id
-    * @param string $html
-    * @access public
-    */
-   public function insert($id, $html)
-   {
-      $el = $this->getElementById($id);
-      if ($el == null) throw new \Exception(err_msg('ERR_DOM_1', array($id)));
-      $this->setInnerHTML($el, $html);
-   }
+  /**
+   * Adds $html to the node $id. The optional parameter specifies where 
+   * to add (at the beginning or end, before or after the element).
+   * 
+   * @param string $id
+   * @param string $html
+   * @param string $mode
+   * @access public
+   */
+  public function inject($id, $html, $mode = self::DOM_INJECT_TOP)
+  {
+    $el = $this->getElementById($id);
+    if ($el === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    $node = $this->HTMLToNode($html);
+    switch ($mode)
+    {
+      case self::DOM_INJECT_TOP:
+        $el->firstChild ? $el->insertBefore($node, $el->firstChild) : $el->appendChild($node);
+        break;
+      case self::DOM_INJECT_BOTTOM:
+        $el->appendChild($node);
+        break;
+      case self::DOM_INJECT_BEFORE:
+        if ($el->parentNode) $el->parentNode->insertBefore($node, $el);
+        break;
+      case self::DOM_INJECT_AFTER:
+        if ($el->parentNode) $el->nextSibling ? $el->parentNode->insertBefore($node, $el->nextSibling) : $el->parentNode->appendChild($node);
+        break;
+    }
+  }
 
-   /**
-    * Replace a node $id code $html
-    * Заменяет узел $id на $html
-    * 
-    * @param string $id
-    * @param string $html
-    * @access public
-    */
-   public function replace($id, $html)
-   {
-      $el = $this->getElementById($id);
-      if ($el == null) throw new \Exception(err_msg('ERR_DOM_1', array($id)));
-      $el->parentNode->replaceChild($this->HTMLToNode($html), $el);
-   }
+  /**
+   * Returns the html code of $node, converting the php tags.
+   * 
+   * @param string $node
+   * @return string 
+   * @access public
+   */
+  public function getInnerHTML(\DOMNode $node)
+  {
+    foreach ($node->childNodes as $child)
+    {
+      $dom = new \DOMDocument();
+      $dom->appendChild($dom->importNode($child, true));
+      $html .= trim($dom->saveHTML());
+    }
+    return $html;
+  }
 
-   /**
-    * Adds $html to the node $id. The optional parameter specifies where 
-    * to add (at the beginning or end, before or after the element).
-    * Добавляет $html в узел $id. Необязаттельный параметр указывает, 
-    * куда добавлять (в начало, в конец, до или после элемента).
-    * 
-    * @param string $id
-    * @param string $html
-    * @param string $mode
-    * @access public
-    */
-   public function inject($id, $html, $mode = self::DOM_INJECT_TOP)
-   {
-      $el = $this->getElementById($id);
-      if ($el == null) throw new \Exception(err_msg('ERR_DOM_1', array($id)));
-      $node = $this->HTMLToNode($html);
-      switch ($mode)
-      {
-         case self::DOM_INJECT_TOP:
-           ($el->firstChild) ? $el->insertBefore($node, $el->firstChild) : $el->appendChild($node);
-           break;
-         case self::DOM_INJECT_BOTTOM:
-           $el->appendChild($node);
-           break;
-         case self::DOM_INJECT_BEFORE:
-           if ($el->parentNode) $el->parentNode->insertBefore($node, $el);
-           break;
-         case self::DOM_INJECT_AFTER:
-           if ($el->parentNode) ($el->nextSibling) ? $el->parentNode->insertBefore($node, $el->nextSibling) : $el->parentNode->appendChild($node);
-           break;
-      }
-   }
+  /**
+   * Removes all child nodes in $node and adds a new.
+   * 
+   * @param  \DOMNode string $node
+   * @param string $html
+   * @access public
+   */
+  public function setInnerHTML(\DOMNode $node, $html)
+  {
+    $node->nodeValue = '';
+    foreach ($node->childNodes as $child) $node->removeChild($child);
+    $node->appendChild($this->HTMLToNode($html));
+  }
 
-   /**
-    * Returns the html code of $node, converting the php tags
-    * Возвращает html код узла $node, преобразуя php теги
-    * 
-    * @param string $node
-    * @return string 
-    * @access public
-    */
-   public function getInnerHTML(\DOMNode $node)
-   {
-      foreach ($node->childNodes as $child)
-      {
-         $dom = new \DOMDocument();
-         $dom->appendChild($dom->importNode($child, true));
-         $html .= trim($dom->saveHTML());
-      }
-      return Web\XHTMLParser::decodePHPTags($html);
-   }
-
-   /**
-    * Removes all child nodes in $node and adds a new
-    * Удаляет все дочерние узлы в $node и добавляет новый
-    * 
-    * @param  \DOMNode string $node
-    * @param string $html
-    * @access public
-    */
-   public function setInnerHTML(\DOMNode $node, $html)
-   {
-      $node->nodeValue = '';
-      foreach ($node->childNodes as $child) $node->removeChild($child);
-      $node->appendChild($this->HTMLToNode($html));
-   }
-
-   /**
-    * Returns the html converted into a node. 
-    * If there are php tags, they will be encoded.
-    * Возвращает html конвертированный в узел. 
-    * Если присутствуют пхп теги, они будут закодированы.
-    * 
-    * @param string $html
-    * @return string 
-    * @access public
-    */
-   public function HTMLToNode($html)
-   {
-      if ($html == '') return new \DOMText('');
-      $dom = new DOMDocumentEx($this->version, $this->encoding);
-      $dom->loadHTML($html);
-      $node = $this->importNode($dom->documentElement->firstChild->firstChild, true);
-      if (!preg_match('/^<[a-zA-Z].*/', $html)) $node = new \DOMText(Web\XHTMLParser::encodePHPTags($html));
-      return $node;
-   }
+  /**
+   * Returns the html converted into a node. 
+   * If there are php tags, they will be encoded.
+   * 
+   * @param string $html
+   * @return string 
+   * @access public
+   */
+  public function HTMLToNode($html)
+  {
+    if ($html == '') return new \DOMText('');
+    $dom = new DOMDocumentEx($this->version, $this->encoding);
+    $dom->loadHTML($html);
+    $node = $this->importNode($dom->documentElement->firstChild->firstChild, true);
+    if (!preg_match('/^<[a-zA-Z].*/', $html)) $node = new \DOMText($html);
+    return $node;
+  }
    
-   /**
-    * Get the element by its ID. 
-    * Extends standard feature processing option if the returned value is null
-    * Получить элемент по его ID. Расширяет стандартную функцию, 
-    * обрабатывая вариант, если возвращено значение null.
-    * 
-    * @param string $id
-    * @return object
-    * @access public
-    */
-   public function getElementById($id)
-   {
-      $el = parent::getElementById($id);
-	  if ($el == null)
-	  {
-         $xp = new \DomXPath($this);
-         $res = $xp->query('//*[@id = \'' . addslashes($id) . '\']'); 
-         $el = $res->item(0); 
-	  }
-	  return $el;
-   }
+  /**
+   * Get the element by its ID. 
+   * Extends standard feature processing option if the returned value is null.
+   * 
+   * @param string $id
+   * @return object
+   * @access public
+   */
+  public function getElementById($id)
+  {
+    $el = parent::getElementById($id);
+	   if ($el === null)
+	   {
+      $xp = new \DomXPath($this);
+      $res = $xp->query('//*[@id = \'' . addslashes($id) . '\']'); 
+      $el = $res->item(0); 
+	   }
+	   return $el;
+  }
 }

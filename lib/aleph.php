@@ -194,7 +194,7 @@ final class Aleph implements \ArrayAccess
    * @var string | closure | Aleph\Core\IDelegate
    * @access private
    */
-  private $alCallBack = null;
+  private $alCallback = null;
   
   /**
    * Returns an instance of this class.
@@ -886,7 +886,7 @@ final class Aleph implements \ArrayAccess
     {
       if ($inNewWindow) self::$output = '<script type="text/javascript">window.open(\'' . addslashes($url) . '\');</script>';
       else self::$output = '<script type="text/javascript">window.location.assign(\'' . addslashes($url) . '\');</script>';
-    } 
+    }
     if ($immediately) exit;
   }
   
@@ -977,7 +977,7 @@ final class Aleph implements \ArrayAccess
     $this->config = array();
     $this->classes = $this->dirs = $this->exclusions = array();
     $this->key = 'autoload_' . self::$siteUniqueID;
-    $this->mask = '/^.*\.php$/i';
+    $this->mask = '/.+\.php$/i';
     $this->autoload = '';
     $this->cache = null;
     $this->router = null;
@@ -1008,11 +1008,11 @@ final class Aleph implements \ArrayAccess
   private function al($class, $auto = true)
   {
     $classes = $this->getClasses();
-    if ($auto && $this->alCallBack)
+    if ($auto && $this->alCallback)
     {
-      $info = $this->alCallBack->getInfo();
+      $info = $this->alCallback->getInfo();
       if ($info['type'] == 'class') $this->al($info['class'], false);
-      $this->alCallBack->call(array($class, $classes));
+      $this->alCallback->call(array($class, $classes));
       return true;
     }
     $cs = strtolower($class);
@@ -1215,7 +1215,7 @@ final class Aleph implements \ArrayAccess
   public function setClasses(array $classes)
   {
     $this->classes = $classes;
-    $this->cache()->set($this->key, $this->classes, $this->cache()->getVaultLifeTime());
+    $this->cache()->set($this->key, $this->classes, $this->cache()->getVaultLifeTime(), '--autoload');
   }
   
   /**
@@ -1231,7 +1231,7 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Sets array of classes that shouldn't be included in the class searching.
+   * Sets array of files that shouldn't be included in the class searching.
    *
    * @param array $exclusions
    * @access public
@@ -1242,7 +1242,7 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Returns array of classes that shouldn't be included in the class searching.
+   * Returns array of files that shouldn't be included in the class searching.
    *
    * @return array
    * @access public
@@ -1302,13 +1302,13 @@ final class Aleph implements \ArrayAccess
   /**
    * Sets autoload callback. Callback can be a closure, an instance of Aleph\Core\IDelegate or Aleph callback string.
    *
-   * @param string | closure | Aleph\Core\IDelegate
+   * @param string | closure | Aleph\Core\IDelegate $callback
    * @access public
    */
   public function setAutoload($callback)
   {
     if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof Core\IDelegate)) throw new Exception($this, 'ERR_GENERAL_4');
-    $this->alCallBack = new Core\Delegate($callback);
+    $this->alCallback = new Core\Delegate($callback);
   }
   
   /**
@@ -1319,7 +1319,7 @@ final class Aleph implements \ArrayAccess
    */
   public function getAutoload()
   {
-    return $this->alCallBack;
+    return $this->alCallback;
   }
   
   /**

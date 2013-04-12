@@ -99,7 +99,7 @@ class Controller
       $res = $router->route($methods);
       if ($res->success === false)
       {
-        if (isset($this->errHandlers[404])) 
+        if (isset($this->errHandlers[404]))
         {
           $this->errHandlers[404]->call(array($this));
           $a->response()->stop(404);

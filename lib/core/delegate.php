@@ -282,12 +282,7 @@ class Delegate implements IDelegate
       if ($this->static) return call_user_func_array(array($this->class, $this->method), $args);
       if ($this->class == 'Aleph') $class = \Aleph::instance();
       else if (MVC\Page::$page instanceof MVC\IPage && $this->class == get_class(MVC\Page::$page)) $class = MVC\Page::$page;
-      else
-      {
-        $class = new \ReflectionClass($this->class);
-        if ($this->numargs == 0) $class = $class->newInstance();
-        else $class = $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
-      }
+      else $class = $this->getClassObject($args);
       if ($this->method == '__construct') return $class;
       return call_user_func_array(array($class, $this->method), $args);
     }
@@ -387,7 +382,30 @@ class Delegate implements IDelegate
                  'static' => $this->static,
                  'numargs' => $this->numargs,
                  'type' => $this->type);
-  } 
+  }
+  
+  public function getClass()
+  {
+    return $this->class;
+  }
+  
+  public function getMethod()
+  {
+    return $this->method;
+  }
+  
+  public function getType()
+  {
+    return $this->type;
+  }
+   
+  public function getClassObject(array $args = null)
+  {
+    if (empty($this->class)) return;
+    $class = new \ReflectionClass($this->class);
+    if ($this->numargs == 0) return $class->newInstance();
+    return $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
+  }
   
   /**
    * Splits full class name on two part: namespace and proper class name. Method returns these parts as an array.
