@@ -256,7 +256,7 @@ class Tokenizer implements \Iterator
    */
   private function extractDoubleQuotedString()
   {
-    if (preg_match('/"(?:.*?[^\\\]{1}(?:\\\\\\\\)*?)?"/', $this->source, $matches, PREG_OFFSET_CAPTURE, $this->seek))
+    if (preg_match('/"(?:.*?[^\\\]{1}(?:\\\\\\\\)*?)?"/s', $this->source, $matches, PREG_OFFSET_CAPTURE, $this->seek))
     {
       $portion = substr($this->source, $this->seek, $matches[0][1] + strlen($matches[0][0]) - $this->seek);
     }
@@ -265,7 +265,7 @@ class Tokenizer implements \Iterator
       $portion = substr($this->source, $this->seek);
     }
     $this->tokens = self::parse($portion);
-    return array_shift($this->tokens); 
+    return array_shift($this->tokens);
   }
   
   /**
