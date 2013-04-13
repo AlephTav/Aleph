@@ -27,6 +27,7 @@ function test_tokenizer()
   echo '<td valign="top"><pre>' . htmlspecialchars(print_r($original, true)) . '</pre></td>';
   echo '<td valign="top"><pre>' . htmlspecialchars(print_r($tokens, true)) . '</pre></td>';
   echo '</tr></table>';*/
+
   return $original == $tokens;
 }
 
