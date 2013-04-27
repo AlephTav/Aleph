@@ -1,0 +1,22 @@
+/* Google Font API */
+@import url(http://fonts.googleapis.com/css?family=Droid+Serif:400,400italic,700|Droid+Sans:700);
+
+/* import core styles | Basis-Stylesheets einbinden */
+@import url(/cfg/css/yaml/core/base.css);
+
+/* import screen layout | Screen-Layout einbinden */
+@import url(/cfg/css/yaml/navigation/hlist.css);
+@import url(/cfg/css/yaml/navigation/vlist.css);
+@import url(/cfg/css/yaml/forms/gray-theme.css);
+
+@import url(/cfg/css/yaml/screen/typography.css);
+@import url(/cfg/css/yaml/screen/screen-FULLPAGE-layout.css);
+
+/* import print layout | Druck-Layout einbinden */
+@import url(/cfg/css/yaml/print/print.css);
+
+.ym-label{font-weight:bold;}
+.popup{left:-1000px;position:fixed;min-width:300px;}
+.errbox{border:2px solid #FFFFFF;border-radius:5px 5px 5px 5px;box-shadow:0 0 3px #000000;line-height:3em;margin:20px;padding:0 20px 20px 20px;}
+.subtitle{border-bottom:1px solid #CCCCCC;}
+.cache-file,.cache-memory{display:none;}

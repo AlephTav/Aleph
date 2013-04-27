@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+	 <title>Aleph | Configurator</title>
+	 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	 <link href="/cfg/css/styles.css" rel="stylesheet" type="text/css" />
+	 <!--[if lte IE 7]>
+  <link href="/cfg/css/yaml/core/iehacks.css" rel="stylesheet" type="text/css" />
+	 <![endif]-->
+  <script src="/cfg/js/jquery-1.8.3.min.js" type="text/javascript"></script>
+  <script src="/cfg/js/configurator.js" type="text/javascript"></script>
+</head>
+<body>
+  <div id="ppMsg" class="popup"><p id="msg" class="box success"></p></div>
+  <header>
+    <div class="ym-wrapper">
+	    	<div class="ym-wbox">
+        <h1>Configurator v1.0</h1>
+      </div>
+    </div>
+  </header>
+  <div class="ym-wrapper">
+    <? if (count($errors)){ ?>
+    <div class="errbox">
+      <h2>Errors</h2>
+      <? foreach ($errors as $error){ ?>
+      <p class="box error"><?=htmlspecialchars($error);?></p>
+      <?}?>
+    </div>
+    <?}else{?>
+		  <div class="ym-wbox">
+      <div class="box info" style="margin-top:0;">
+        <h2>Config</h2>
+        <div class="ym-form">
+          <div class="ym-grid">
+            <div class="ym-g33 ym-gl">
+              <div class="ym-grid">
+                <h6 class="subtitle">General Settings</h6>
+                <div class="ym-g66 ym-gl">
+                  <div class="ym-fbox-check">
+                    <span class="ym-label">Debugging</span>
+                    <input type="radio" id="debugOn" value="1" name="debug" <?=(empty($cfg['debugging']) ? '' : 'checked="checked"');?> />
+								            <label for="debugOn">On</label>
+								            <input type="radio" id="debugOff" value="0" name="debug" <?=(empty($cfg['debugging']) ? 'checked="checked"' : '');?> />
+								            <label for="debugOff">Off</label>
+                  </div>
+                </div>
+                <div class="ym-g33 ym-gr">
+                  <div class="ym-fbox-check">
+                    <span class="ym-label">Logging</span>
+                    <input type="radio" id="logOn" value="1" name="logging" <?=(empty($cfg['logging']) ? '' : 'checked="checked"');?>  />
+								            <label for="logOn">On</label>
+								            <input type="radio" id="logOff" value="0" name="logging" <?=(empty($cfg['logging']) ? 'checked="checked"' : '');?> />
+								            <label for="logOff">Off</label>
+                  </div>
+                </div>
+              </div>
+              <div class="ym-fbox-text">
+								        <label class="ym-label" for="tplDebug">Debug Info Template</label>
+								        <input type="text" id="tplDebug" name="tplDebug" value="<?=@$cfg['templateDebug'];?>" />
+							       </div>
+              <div class="ym-fbox-text">
+								        <label class="ym-label" for="tplBug">Bug Info Template</label>
+								        <input type="text" id="tplBug" name="tplBug" value="<?=@$cfg['templateBug'];?>" />
+							       </div>
+              <h6 class="subtitle">Cache Settings</h6>
+              <div class="ym-fbox-select">
+                <label for="cacheType">Type</label>
+                <select id="cacheType" name="cacheType" size="1">
+                  <option value="apc" <?=(@$cfg['cache']['type'] == 'apc' ? 'selected="selected"' : '');?>>APC</option>
+                  <option value="file" <?=(@$cfg['cache']['type'] == 'file' ? 'selected="selected"' : '');?>>File</option>
+                  <option value="memory" <?=(@$cfg['cache']['type'] == 'memory' ? 'selected="selected"' : '');?>>Memory</option>
+                </select>
+              </div>
+              <div class="ym-fbox-text cache-file">
+								        <label class="ym-label" for="cacheDirectory">Directory</label>
+								        <input type="text" id="cacheDirectory" name="cacheDirectory" value="<?=@$cfg['cache']['directory'];?>" />
+							       </div>
+              <div class="ym-fbox-text cache-file">
+								        <label class="ym-label" for="gcProbability">GC Probability</label>
+								        <input type="text" id="gcProbability" name="gcProbability" value="<?=@$cfg['cache']['gcProbability'];?>" />
+							       </div>
+              <div class="ym-fbox-check cache-memory">
+                <span class="ym-label">Compress</span>
+                <input type="radio" id="compressYes" value="1" name="compress" <?=(empty($cfg['cache']['compress']) ? '' : 'checked="checked"');?>  />
+								        <label for="compressYes">Yes</label>
+								        <input type="radio" id="compressNo" value="0" name="compress" <?=(empty($cfg['cache']['compress']) ? 'checked="checked"' : '');?> />
+								        <label for="compressNo">No</label>
+              </div>
+              <div class="ym-fbox-text cache-memory">
+                <label class="ym-label" for="memServers">Servers (json format)</label>
+                <textarea name="memServers" id="memServers" cols="30" rows="7"><?=(isset($cfg['cache']['servers']) ? json_encode($cfg['cache']['servers']) : '');?></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="ym-fbox-button">
+            <a class="ym-button ym-save" href="javascript:;" title="Save config changes">Save</a>
+            <a class="ym-button ym-spark" href="javascript:;" title="Restore default settings">Default</a>
+          </div>
+        </div>
+      </div>
+      <div class="box info">
+        <h2>Cache</h2>
+        <div class="ym-form">
+          <div class="ym-fbox-check">
+            <div>
+              <span class="ym-label">Cache Groups</span>
+								      <input type="radio" id="groupAll" value="all" name="cacheGroup" checked="checked" />
+								      <label for="groupAll">All</label>
+							     </div>
+							     <div>
+								      <input type="radio" id="groupAutoload" value="autoload" name="cacheGroup" />
+								      <label for="groupAutoload">Autoload</label>
+							     </div>
+            <div>
+								      <input type="radio" id="groupLocalization" value="localization" name="cacheGroup" />
+								      <label for="groupLocalization">Localization</label>
+							     </div>
+            <div>
+								      <input type="radio" id="groupDatabase" value="database" name="cacheGroup" />
+								      <label for="groupDatabase">Database</label>
+							     </div>
+            <div>
+								      <input type="radio" id="groupPages" value="pages" name="cacheGroup" />
+								      <label for="groupPages">Pages</label>
+							     </div>
+            <div>
+								      <input type="radio" id="groupOther" value="other" name="cacheGroup" />
+								      <label for="groupOther">Other</label>
+              <div class="ym-fbox-text"><input type="text" id="otherGroup" disabled="disabled" /></div>
+							     </div>
+						    </div>
+          <div class="ym-fbox-button">
+							     <input type="button" id="btnClean" value="Clean" title="Clear group cache" />
+            <input type="button" id="btnGC" value="Run GC" title="Run garbage collector" />
+						    </div>
+        </div>
+      </div>
+      <div class="box info">
+        <h2>PHP Info</h2>
+        <iframe src="?info" width="100%" height="500px;" style="border:none;"></iframe>
+      </div>
+    </div>
+    <?}?>
+  </div>
+  <footer>
+	   <div class="ym-wrapper">
+		    <div class="ym-wbox">
+        <div class="ym-grid">
+          <div class="ym-g70 ym-gl"></div>
+			       <div class="ym-g30 ym-gr">Copyright &copy; 2012 by Aleph Tav. All Rights Reserved.</div>
+        </div>
+		    </div>
+	   </div>
+  </footer>
+</body>
+</html>
