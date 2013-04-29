@@ -38,26 +38,24 @@ class URL
    * Eeach constant is related to a particular part of a URL.
    * E.g.: URL http://user:password@my.host.com:8080/one/two/three?var1=val1&var2=val2&var3=val3#fragment
    * Here: 
-   * COMPONENT_ALL corresponds whole URL
-   * COMPONENT_SOURCE corresponds user:password@my.host.com:8080
-   * COMPONENT_QUERY corresponds var1=val1&var2=val2&var3=val3
-   * COMPONENT_PATH corresponds /one/two/three
-   * COMPONENT_PATH_AND_QUERY corresponds /one/two/three?var1=val1&var2=val2&var3=val3#fragment
+   * ALL corresponds whole URL.
+   * SCHEME corresponds http://
+   * HOST corresponds user:password@my.host.com:8080
+   * QUERY corresponds var1=val1&var2=val2&var3=val3
+   * PATH corresponds /one/two/three
+   * FRAGMENT corresponds fragment
+   * Also you can combine these constants to get needed part of URL.
    * For more information about URL structure, please see http://en.wikipedia.org/wiki/Uniform_resource_locator
    */
-  const COMPONENT_ALL = 'all';
-  const COMPONENT_SOURCE = 'source';
-  const COMPONENT_QUERY = 'query';
-  const COMPONENT_PATH = 'path';
-  const COMPONENT_PATH_AND_QUERY = 'path&query';
+  const ALL = 31;
+  const SCHEME = 1;
+  const HOST = 2;
+  const PATH = 4;
+  const QUERY = 8;
+  const FRAGMENT = 16;
   
   /**
-   * Error templates, throwing by URL class.
-   */
-  const ERR_URL_1 = 'URL component "[{var}]" doesn\'t exist.';
-  
-  /**
-   * Scheme Component of a URL.
+   * Scheme component of a URL.
    *
    * @var    string
    * @access public
@@ -65,33 +63,33 @@ class URL
   public $scheme = null;
 
   /**
-   * Source Component of a URL.
-   * Source represents associative array of the following structure: array('port' => ..., 'host' => ..., 'user' => ..., 'pass' => ...)
+   * Source component of a URL.
+   * Source represents associative array of the following structure: ['host' => ..., 'port' => ..., 'user' => ..., 'pass' => ...]
    *
    * @var    array
    * @access public
    */
-  public $source = array();
+  public $source = [];
 
   /**
-   * Path Component of a URL.
+   * Path component of a URL.
    * Path represents array of separate parts of URL path component.
-   * E.g.: URL path /one/two/three will be represented as array('one', 'two', 'three').
+   * E.g.: URL path /one/two/three will be represented as ['one', 'two', 'three'].
    *
    * @var    array
    * @access public
    */
-  public $path = array();
+  public $path = [];
 
   /**
-   * Query Component of a URL.
+   * Query component of a URL.
    * Query represents associative array in which keys and values are names and values of query fields.
-   * E.g.: URL query ?var1=val1&var2=val2&var3=val3 will be represented as array('var1' => 'val1', 'var2' => 'val2', 'var3' => 'val3')
+   * E.g.: URL query ?var1=val1&var2=val2&var3=val3 will be represented as ['var1' => 'val1', 'var2' => 'val2', 'var3' => 'val3']
    *
    * @var    array
    * @access public
    */
-  public $query = array();
+  public $query = [];
 
   /**
    * Fragment Component of a URL.
@@ -111,7 +109,7 @@ class URL
    */
   public function __construct($url = null)
   {
-    $this->parse($url === null ? self::current() : '');
+    $this->parse($url === null ? self::current() : $url);
   }
   
   /**
@@ -123,8 +121,12 @@ class URL
    */
   public static function current()
   {
-    if (!isset($_SERVER)) return false;
-    return ((empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') ? 'http://' : 'https://') . $_SERVER['HTTP_HOST'] . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF']);
+    if (!isset($_SERVER['HTTP_HOST'])) return false;
+    $url = empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off' ? 'http://' : 'https://';
+    if (isset($_SERVER['PHP_AUTH_USER'])) $url .= $_SERVER['PHP_AUTH_USER'] . ':' . $_SERVER['PHP_AUTH_PW'] . '@';
+    $url .= $_SERVER['HTTP_HOST'];
+    if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != 80) $url .= ':' . $_SERVER['SERVER_PORT'];
+    return $url . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF']);
   }
   
   /**
@@ -137,26 +139,26 @@ class URL
   {
     preg_match_all('@^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?@', $url, $arr);
     $this->scheme = strtolower($arr[2][0]);
-    $this->source = array();
+    $this->source = [];
     $data = explode('@', $arr[4][0]);
     if (!isset($data[1]))
     {
       $data = explode(':', $data[0]);
-      $this->source['port'] = isset($data[1]) ? $data[1] : '';
       $this->source['host'] = urldecode($data[0]);
+      $this->source['port'] = isset($data[1]) ? $data[1] : '';
       $this->source['user'] = '';
       $this->source['pass'] = '';
     }
     else
     {
       $d1 = explode(':', $data[1]);
-      $this->source['port'] = $d1[1];
       $this->source['host'] = urldecode($d1[0]);
+      $this->source['port'] = $d1[1];
       $d2 = explode(':', $data[0]);
-      $this->source['pass'] = urldecode($d2[1]);
       $this->source['user'] = urldecode($d2[0]);
+      $this->source['pass'] = urldecode($d2[1]);
     }
-    $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), function($el){return $el != '';})) : array();
+    $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), function($el){return $el != '';})) : [];
     foreach ($this->path as &$part) $part = urldecode($part);
     $this->query = $arr[7][0];
     parse_str($this->query, $this->query);
@@ -169,33 +171,54 @@ class URL
    * <code>
    * $url = new URL('http://user:pass@my.host.com/some/path?p1=v1&p2=v2#frag');
    * echo $url->build();                              // shows whole URL
-   * echo $url->build(URL::COMPONENT_SOURCE);         // shows user:pass@my.host.com
-   * echo $url->build(URL::COMPONENT_PATH);           // shows /some/path
-   * echo $url->build(URL::COMPONENT_QUERY);          // shows p1=v1&p2=v2
-   * echo $url->build(URL::COMPONENT_PATH_AND_QUERY); // shows /some/path?p1=v1&p2=v2#frag
+   * echo $url->build(URL::SCHEME);                   // shows http://
+   * echo $url->build(URL::HOST);                     // shows user:pass@my.host.com
+   * echo $url->build(URL::PATH);                     // shows /some/path
+   * echo $url->build(URL::QUERY);                    // shows p1=v1&p2=v2
+   * echo $url->build(URL::PATH | URL::QUERY);        // shows /some/path?p1=v1&p2=v2
+   * echo $url->build(URL::QUERY | URL::FRAGMENT);    // shows p1=v1&p2=v2#frag
    * </code>
    *
    * @param string $component - name of an URL component.
    * @return string
-   * @throws Aleph\Core\Exception with token ERR_URL_1 if $component is not matched with allowed components.
    * @access public
    */
-  public function build($component = self::COMPONENT_ALL)
+  public function build($component = self::ALL)
   {
-    switch ($component)
+    $url = '';
+    if ($component & self::SCHEME) 
     {
-      case self::COMPONENT_ALL: 
-        return $this->getURL();
-      case self::COMPONENT_SOURCE:
-        return $this->getSource();
-      case self::COMPONENT_PATH_AND_QUERY:
-        return $this->getPathAndQuery();
-      case self::COMPONENT_PATH:
-        return $this->getPath();
-      case self::COMPONENT_QUERY:
-        return $this->getQuery();
+      if (isset($this->scheme)) $url .= strtolower($this->scheme) . '://';
     }
-    throw new Core\Exception('Aleph\Aleph', 'ERR_URL_1', $component);
+    if ($component & self::HOST)
+    {
+      $source = [];
+      foreach (['host', 'port', 'user', 'pass'] as $k) $source[$k] = isset($this->source[$k]) ? $this->source[$k] : '';
+      $credentials = $source['user'] ? $source['user'] . ':' . $source['pass'] : '';
+      $url .= ($credentials ? $credentials . '@' : '') . $source['host'] . ($source['port'] ? ':' . $source['port'] : '');
+    }
+    if ($component & self::PATH)
+    {
+      $tmp = [];
+      $path = isset($this->path) ? (array)$this->path : [];
+      foreach ($path as $part) if ($part != '') $tmp[] = urlencode($part);
+      if ($component & self::HOST) $url .= '/';
+      $url .= implode('/', $tmp); 
+    }
+    if ($component & self::QUERY)
+    {
+      if (isset($this->query))
+      {
+        if ($component ^ self::QUERY) $url .= '?';
+        $url .= http_build_query((array)$this->query);
+      }
+    }
+    if ($component & self::FRAGMENT)
+    {
+      if ($component ^ self::FRAGMENT) $url .= '#';
+      $url .= urlencode($this->fragment);
+    }
+    return $url;
   }
   
   /**
@@ -222,69 +245,8 @@ class URL
   }
   
   /**
-   * Creates and returns URL string.
-   *
-   * @return string
-   * @access public
-   */
-  public function getURL()
-  {
-    return (empty($this->scheme) ? '' : strtolower($this->scheme) . '://') . $this->getSource() . $this->getPathAndQuery();
-  }
-  
-  /**
-   * Returns the Source Component of a URL.
-   *
-   * @return string
-   * @access public
-   */
-  public function getSource()
-  {
-    $source = array();
-    foreach (array('host', 'port', 'user', 'pass') as $k) $source[$k] = isset($this->source[$k]) ? $this->source[$k] : '';
-    $credentials = $source['user'] ? $source['user'] . ':' . $source['pass'] : '';
-    return ($credentials ? $credentials . '@' : '') . $source['host'] . ($source['port'] ? ':' . $source['port'] : '');
-  }
-
-  /**
-   * Returns the Path and Query Components of a URL.
-   *
-   * @return string
-   * @access public
-   */
-  public function getPathAndQuery()
-  {
-    $query = $this->getQuery();
-    return $this->getPath() . ($query ? '?' . $query : '') . (empty($this->fragment) ? '' : '#' . $this->fragment);
-  }
-
-  /**
-   * Returns the Path Component of a URL.
-   *
-   * @return string
-   * @access public
-   */
-  public function getPath()
-  {
-    $path = isset($this->path) ? (array)$this->path : array();
-    foreach ($path as &$part) $part = urlencode($part);
-    return '/' . implode('/', array_filter($path, function($el){return $el != '';}));
-  }
-
-  /**
-   * Returns the Query Component of a URL.
-   *
-   * @return string
-   * @access public
-   */
-  public function getQuery()
-  {
-    return isset($this->query) ? http_build_query((array)$this->query) : '';
-  }
-  
-  /**
    * Converts object of this class in string corresponding whole URL.
-   * This method is equivalent to method getURL().
+   * This method is equivalent to method build().
    *
    * @return string
    * @access public
@@ -293,7 +255,7 @@ class URL
   {
     try
     {
-      return $this->getURL();
+      return $this->build();
     }
     catch (\Exception $e)
     {

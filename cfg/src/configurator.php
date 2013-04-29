@@ -21,6 +21,12 @@ class Configurator
       phpinfo();
       exit;
     }
+    if (isset($_GET['tests'])) 
+    {
+      $file = pathinfo($this->config['path']['aleph'], PATHINFO_DIRNAME) . '/_tests/test.php';
+      if (file_exists($file)) require_once($file);
+      exit;
+    }
     set_time_limit(0);
     $errors = $cfg = array();
     if (!file_exists($this->config['path']['aleph'])) $errors[] = 'File aleph.php is not found.';

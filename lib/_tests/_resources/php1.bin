@@ -1,6 +1,7 @@
 <?php
 
-$too = "Some data has a\\\"lready \"been\" output, can't send PDF file";
+$too = "Some data has a\\\"lready \"been\" output, 
+        can't send PDF file";
 
 $foo = 'Nowdocs are to single-quoted strings what heredocs are to double-quoted strings. 
 A nowdoc is specified similarly to a heredoc, but no parsing is done inside a nowdoc. 

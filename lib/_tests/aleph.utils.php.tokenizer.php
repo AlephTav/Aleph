@@ -1,11 +1,16 @@
 <?php
 
+use Aleph\Utils\PHP;
+
 require_once(__DIR__ . '/../utils/php/tokenizer.php');
 
+/**
+ * Test for Aleph\Utils\PHP\Tokenizer
+ */
 function test_tokenizer()
 {
   $source = __DIR__ . '/_resources/php1.bin';
-  $tokenizer = new \Aleph\Utils\PHP\Tokenizer($source);
+  $tokenizer = new PHP\Tokenizer($source);
 
   $tokens = [];
   foreach ($tokenizer as $n => $token) $tokens[$n] = $token;
