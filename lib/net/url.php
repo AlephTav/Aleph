@@ -202,7 +202,7 @@ class URL
       $tmp = [];
       $path = isset($this->path) ? (array)$this->path : [];
       foreach ($path as $part) if ($part != '') $tmp[] = urlencode($part);
-      if ($component & self::HOST) $url .= '/';
+      if ($component & self::HOST && count($tmp)) $url .= '/';
       $url .= implode('/', $tmp); 
     }
     if ($component & self::QUERY)
