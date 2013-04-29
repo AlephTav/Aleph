@@ -209,13 +209,13 @@ class URL
     {
       if (isset($this->query))
       {
-        if ($component ^ self::QUERY) $url .= '?';
+        if ($url) $url .= '?';
         $url .= http_build_query((array)$this->query);
       }
     }
     if ($component & self::FRAGMENT)
     {
-      if ($component ^ self::FRAGMENT) $url .= '#';
+      if ($url) $url .= '#';
       $url .= urlencode($this->fragment);
     }
     return $url;
