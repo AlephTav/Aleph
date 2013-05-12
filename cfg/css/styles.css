@@ -15,8 +15,12 @@
 /* import print layout | Druck-Layout einbinden */
 @import url(/cfg/css/yaml/print/print.css);
 
+.ym-form textarea{font-family:monospace;}
 .ym-label{font-weight:bold;}
-.popup{left:-1000px;position:fixed;min-width:300px;}
+.popup{left:-1000px;position:fixed;min-width:300px;z-index:100;}
 .errbox{border:2px solid #FFFFFF;border-radius:5px 5px 5px 5px;box-shadow:0 0 3px #000000;line-height:3em;margin:20px;padding:0 20px 20px 20px;}
 .subtitle{border-bottom:1px solid #CCCCCC;}
 .cache-file,.cache-memory{display:none;}
+.dialog{width:500px;min-height:160px;z-index:100;}
+.shadow{width:100%;height:100%;z-index:99;background-color:#000000;position:fixed;left:0;top:0;opacity:0.5;filter:alpha(opacity=50);display:none;}
+hr{border-color:#CCCCCC;}

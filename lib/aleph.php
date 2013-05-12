@@ -1132,7 +1132,7 @@ final class Aleph implements \ArrayAccess
   public function config($param = null, $replace = false)
   {
     if ($param === null) return $this->config;
-    if (is_array($param)) 
+    if (is_array($param))
     {
       if ($replace) 
       {
@@ -1149,7 +1149,18 @@ final class Aleph implements \ArrayAccess
     if ($replace) $this->config = array();
     foreach ($data as $section => $properties)
     {
-      if (is_array($properties)) foreach ($properties as $k => $v) $this->config[$section][$k] = $v;
+      if (is_array($properties)) 
+      {
+        foreach ($properties as $k => $v)
+        {
+          if (!is_array($v) && strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}')) 
+          {
+            $tmp = json_decode($v, true);
+            $v = $tmp !== null ? $tmp : $v;
+          }
+          $this->config[$section][$k] = $v;
+        }
+      }
       else $this->config[$section] = $properties;
     }
     return $this;

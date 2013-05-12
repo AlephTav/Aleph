@@ -12,7 +12,16 @@
   <script src="/cfg/js/configurator.js" type="text/javascript"></script>
 </head>
 <body>
+  <div id="shadow" class="shadow"></div>
   <div id="ppMsg" class="popup"><p id="msg" class="box success"></p></div>
+  <div id="ppDialog" class="box info popup dialog">
+    <h4 id="subject"></h4>
+    <div class="box warning"><p id="question"></p></div>
+    <div>
+      <a id="btnYes" class="ym-button ym-gr" href="javascript:;">Yes</a>
+      <a id="btnNo" class="ym-button ym-gr" href="javascript:;" onclick="hideDialog();">No</a>
+    </div>
+  </div>
   <header>
     <div class="ym-wrapper">
 	    	<div class="ym-wbox">
@@ -90,13 +99,57 @@
               </div>
               <div class="ym-fbox-text cache-memory">
                 <label class="ym-label" for="memServers">Servers (json format)</label>
-                <textarea name="memServers" id="memServers" cols="30" rows="7"><?=(isset($cfg['cache']['servers']) ? json_encode($cfg['cache']['servers']) : '');?></textarea>
+                <textarea name="memServers" id="memServers" cols="30" rows="7" class="json"><?=(isset($cfg['cache']['servers']) ? json_encode($cfg['cache']['servers']) : '');?></textarea>
+              </div>
+            </div>
+            <div class="ym-g33 ym-gl">
+              <h6 class="subtitle">Directory Aliases</h6>
+              <div id="divNewAlias" class="ym-fbox-text">
+                <label class="ym-label" for="newAlias">Alias<sup class="ym-required">*</sup></label>
+                <input type="text" id="newAlias" name="newAlias" />
+                <label class="ym-label" for="newDir">Directory<sup class="ym-required">*</sup></label>
+                <input type="text" id="newDir" name="newDir" />
+                <a id="btnAddNewAlias" class="ym-button ym-add" style="float:right;" title="Add new directory alias">Add</a>
+              </div>
+              <hr />
+              <div id="aliases" class="ym-grid">
+                <? $i = -1; foreach ($cfg['dirs'] as $alias => $dir){ $i++; ?>
+                <div id="divAlias<?=$i;?>" class="ym-fbox-text alias">
+                  <label class="ym-label" for="alias<?=$i;?>">Alias<sup class="ym-required">*</sup></label>
+                  <input type="text" id="alias<?=$i;?>" name="alias<?=$i;?>" value="<?=htmlspecialchars($alias);?>" />
+                  <label class="ym-label" for="dir<?=$i;?>">Directory<sup class="ym-required">*</sup></label>
+                  <input type="text" id="dir<?=$i;?>" name="dir<?=$i;?>" value="<?=htmlspecialchars($dir);?>" />
+                  <a id="btnDeleteAlias<?=$i;?>" class="ym-button ym-delete" style="float:right;" title="Delete directory alias">Delete</a>
+                </div>
+                <?}?>
+              </div>
+            </div>
+            <div class="ym-g33 ym-gl">
+              <h6 class="subtitle">Custom Settings</h6>
+              <div id="divNewProp" class="ym-fbox-text">
+                <label class="ym-label" for="newProp">Name<sup class="ym-required">*</sup></label>
+                <input type="text" id="newProp" name="newProp" />
+                <label class="ym-label" for="newValue">Value (json format)</label>
+                <textarea id="newValue" name="newValue" rows="7"></textarea>
+                <a id="btnAddNewProp" class="ym-button ym-add" style="float:right;" title="Add new custom property">Add</a>
+              </div>
+              <hr />
+              <div id="props" class="ym-grid">
+                <? $i = -1; foreach ($cfg as $prop => $value){ if (in_array($prop, $common)) continue; $i++; ?>
+                <div id="divProp<?=$i;?>" class="ym-fbox-text prop">
+                  <label class="ym-label" for="prop<?=$i;?>">Name<sup class="ym-required">*</sup></label>
+                  <input type="text" id="prop<?=$i;?>" name="prop<?=$i;?>" value="<?=htmlspecialchars($prop);?>" />
+                  <label class="ym-label" for="value<?=$i;?>">Value (json format)</label>
+                  <textarea id="value<?=$i;?>" name="value<?=$i;?>" rows="7" class="json"><?=(isset($value) ? json_encode($value) : '');?></textarea>
+                  <a id="btnDeleteProp<?=$i;?>" class="ym-button ym-delete" style="float:right;" title="Delete custom property">Delete</a>
+                </div>
+                <?}?>
               </div>
             </div>
           </div>
           <div class="ym-fbox-button">
-            <a class="ym-button ym-save" href="javascript:;" title="Save config changes">Save</a>
-            <a class="ym-button ym-spark" href="javascript:;" title="Restore default settings">Default</a>
+            <a id="btnSave" class="ym-button ym-save" href="javascript:;" title="Save config changes">Save</a>
+            <a id="btnDefault" class="ym-button ym-spark" href="javascript:;" title="Restore default settings">Default</a>
           </div>
         </div>
       </div>
