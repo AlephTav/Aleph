@@ -64,17 +64,17 @@ class API
         if (isset($data['secure']))
         {
           $router->secure($resource, $data['secure'], $methods)
-                 ->component(empty($data['component']) ? URL::COMPONENT_ALL : $data['component']);
+                 ->component(empty($data['component']) ? URL::ALL : $data['component']);
         }
         else if (isset($data['redirect']))
         {
           $router->redirect($resource, $data['redirect'], $methods)
-                 ->component(empty($data['component']) ? URL::COMPONENT_PATH : $data['component']);
+                 ->component(empty($data['component']) ? URL::PATH : $data['component']);
         }
         else
         {
           $router->bind($resource, $process, $methods)
-                 ->component(empty($data['component']) ? URL::COMPONENT_PATH : $data['component'])
+                 ->component(empty($data['component']) ? URL::PATH : $data['component'])
                  ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
                  ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames'])
                  ->args(array('resource' => $data))

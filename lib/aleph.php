@@ -504,7 +504,7 @@ final class Aleph implements \ArrayAccess
     {
       if (!empty($config['logging']))
       {
-        if (!empty($config['customLogMethod']) && self::$instance instanceof Aleph && self::$instance->load('Aleph\Core\Delegate'))
+        if (!empty($config['customLogMethod']) && self::$instance instanceof \Aleph && self::$instance->load('Aleph\Core\Delegate'))
         {
           self::delegate($config['customLogMethod'], $info);
         }
@@ -515,7 +515,7 @@ final class Aleph implements \ArrayAccess
       }
     }
     catch (\Exception $e){}
-    if ($isDebug && !empty($config['customDebugMethod']) && self::$instance instanceof Aleph && self::$instance->load('Aleph\Core\Delegate'))
+    if ($isDebug && !empty($config['customDebugMethod']) && self::$instance instanceof \Aleph && self::$instance->load('Aleph\Core\Delegate'))
     {
       if (!self::delegate($config['customDebugMethod'], $e, $info)) return;
     }
@@ -928,7 +928,7 @@ final class Aleph implements \ArrayAccess
       if (!defined('NO_GZHANDLER') && extension_loaded('zlib') && !ini_get('zlib.output_compression')) ini_set('zlib.output_compression', 4096);
       ob_start(function($output)
       {
-        return strlen(Aleph::getOutput()) ? Aleph::getOutput() : $output;
+        return strlen(\Aleph::getOutput()) ? \Aleph::getOutput() : $output;
       });
       register_shutdown_function(array(__CLASS__, 'fatal'));
       self::debug(true, E_ALL);
@@ -975,7 +975,8 @@ final class Aleph implements \ArrayAccess
   {
     if (!self::$instance) spl_autoload_register(array($this, 'al'));
     $this->config = array();
-    $this->classes = $this->dirs = $this->exclusions = array();
+    $this->classes = $this->exclusions = array();
+    $this->dirs = array(self::$root => true);
     $this->key = 'autoload_' . self::$siteUniqueID;
     $this->mask = '/.+\.php$/i';
     $this->autoload = '';
@@ -1144,7 +1145,7 @@ final class Aleph implements \ArrayAccess
     else
     {
       $data = parse_ini_file($param, true);
-      if ($data === false) throw new Exception($this, 'ERR_CONFIG_1', $param);
+      if ($data === false) throw new Core\Exception($this, 'ERR_CONFIG_1', $param);
     }
     if ($replace) $this->config = array();
     foreach ($data as $section => $properties)
@@ -1313,7 +1314,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Sets autoload callback. Callback can be a closure, an instance of Aleph\Core\IDelegate or Aleph callback string.
    *
-   * @param string | closure | Aleph\Core\IDelegate $callback
+   * @param string | \Closure | Aleph\Core\IDelegate $callback
    * @access public
    */
   public function setAutoload($callback)

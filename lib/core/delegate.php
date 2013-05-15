@@ -38,8 +38,8 @@ interface IDelegate
    * Constructor. The only argument of it is string in Aleph framework format.
    * The following formats are possible:
    * 'function' - invokes a global function with name 'function'.
-   * '->method' - invokes a method 'method' of object Aleph. 
-   * '::method' - invokes a static method 'method' of class Aleph.
+   * '->method' - invokes a method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object. 
+   * '::method' - invokes a static method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object.
    * 'class::method' - invokes a static method 'method' of a class 'class'.
    * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
    * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -118,7 +118,7 @@ interface IDelegate
   public function getParameters();
   
   /**
-   * Returns array of detail information of a callback.
+   * Returns array of detail information of the callback.
    * Output array has the format array('class' => ... [string] ..., 
    *                                   'method' => ... [string] ..., 
    *                                   'static' => ... [boolean] ..., 
@@ -129,6 +129,39 @@ interface IDelegate
    * @access public
    */
   public function getInfo();
+  
+  /**
+   * Returns full class name (with namespace) of the callback.
+   *
+   * @return string
+   * @access public
+   */
+  public function getClass();
+  
+  /**
+   * Returns method name of the callback.
+   *
+   * @return string
+   * @access public
+   */
+  public function getMethod();
+  
+  /**
+   * Returns callback type. Possible values can be "closure", "function" or "class".
+   *
+   * @return string
+   * @access public
+   */
+  public function getType();
+  
+  /**
+   * Creates and returns object of callback's class.
+   *
+   * @param array $args - arguments of the class constructor.
+   * @return object
+   * @access public
+   */
+  public function getClassObject(array $args = null);
 }
 
 /**
@@ -192,8 +225,8 @@ class Delegate implements IDelegate
    * Constructor. The only argument of it is string in Aleph framework format.
    * The following formats are possible:
    * 'function' - invokes a global function with name 'function'.
-   * '->method' - invokes a method 'method' of object Aleph. 
-   * '::method' - invokes a static method 'method' of class Aleph.
+   * '->method' - invokes a method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object. 
+   * '::method' - invokes a static method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object.
    * 'class::method' - invokes a static method 'method' of a class 'class'.
    * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
    * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -365,7 +398,7 @@ class Delegate implements IDelegate
   }
   
   /**
-   * Returns array of detail information of a callback.
+   * Returns array of detail information of the callback.
    * Output array has the format array('class' => ... [string] ..., 
    *                                   'method' => ... [string] ..., 
    *                                   'static' => ... [boolean] ..., 
@@ -384,21 +417,46 @@ class Delegate implements IDelegate
                  'type' => $this->type);
   }
   
+  /**
+   * Returns full class name (with namespace) of the callback.
+   *
+   * @return string
+   * @access public
+   */
   public function getClass()
   {
     return $this->class;
   }
   
+  /**
+   * Returns method name of the callback.
+   *
+   * @return string
+   * @access public
+   */
   public function getMethod()
   {
     return $this->method;
   }
   
+  /**
+   * Returns callback type. Possible values can be "closure", "function" or "class".
+   *
+   * @return string
+   * @access public
+   */
   public function getType()
   {
     return $this->type;
   }
-   
+  
+  /**
+   * Creates and returns object of callback's class.
+   *
+   * @param array $args - arguments of the class constructor.
+   * @return object
+   * @access public
+   */
   public function getClassObject(array $args = null)
   {
     if (empty($this->class)) return;

@@ -1,11 +1,50 @@
 <?php
+/**
+ * Copyright (c) 2012 Aleph Tav
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @link http://www.4leph.com
+ * @copyright Copyright &copy; 2012 Aleph Tav
+ * @license http://www.opensource.org/licenses/MIT
+ */
 
 namespace Aleph\Net;
 
+/**
+ * Class provides access to HTTP headers of the server's request or response.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.net
+ */
 class Headers
 {
+  /**
+   * HTTP headers of the server's request or response.
+   *
+   * @var array $headers
+   * @access protected
+   */
   protected $headers = array();
 
+  /**
+   * Array of content type aliases.
+   *
+   * @var array $contentTypeMap
+   * @access protected
+   */
   protected $contentTypeMap = array('text' => 'text/plain',
                                     'html' => 'text/html',
                                     'json' => 'application/json',
@@ -27,8 +66,9 @@ class Headers
   private function __clone(){}
   
   /**
-   * Constructor.
+   * Constructor. Extracts HTTP headers.
    *
+   * @param string $mode - type of headers (response or request).
    * @access public
    */
   private function __construct($mode)
@@ -61,16 +101,43 @@ class Headers
     }
   }
   
+  /**
+   * Returns HTTP headers of the current HTTP request.
+   *
+   * @return self
+   * @access public
+   * @static
+   */
   public static function getRequestHeaders()
   {
     if (self::$instance['request'] === null) self::$instance['request'] = new self('request');
     return self::$instance['request'];
   }
   
+  /**
+   * Returns HTTP headers of the server response.
+   *
+   * @return self
+   * @access public
+   * @static
+   */
   public static function getResponseHeaders()
   {
     if (self::$instance['response'] === null) self::$instance['response'] = new self('response');
     return self::$instance['response'];
+  }
+  
+  /**
+   * Returns normalized header name.
+   *
+   * @param string $name
+   * @return string
+   */
+  public static function normalizeHeaderName($name)
+  {
+    $name = strtr(trim($name), array('_' => ' ', '-' => ' '));
+    $name = ucwords(strtolower($name));
+    return str_replace(' ', '-', $name);
   }
   
   /**
@@ -96,11 +163,22 @@ class Headers
     $this->merge($headers);
   }
   
+  /**
+   * Adds and merges array of new headers.
+   *
+   * @param array $headers
+   * @access public
+   */
   public function merge(array $headers)
   {
     foreach ($headers as $name => $value) $this->set($name, $value);
   }
   
+  /**
+   * Removes all headers.
+   *
+   * @access public
+   */
   public function clear()
   {
     $this->headers = array();
@@ -141,21 +219,26 @@ class Headers
     unset($this->headers[self::normalizeHeaderName($name)]);
   }
   
+  /**
+   * Returns content type.
+   *
+   * @return string
+   * @access public
+   */
   public function getContentType()
   {
     return $this->get('Content-Type');
   }
   
+  /**
+   * Sets content type header. You can use content type alias instead of some HTTP headers (that are determined by $contentTypeMap property).
+   *
+   * @param string $type - content type or its alias.
+   * @access public
+   */
   public function setContentType($type)
   {
     $type = isset($this->contentTypeMap[$type]) ? $this->contentTypeMap[$type] : $type;
     $this->headers['Content-Type'] = $type;
-  }
-
-  public static function normalizeHeaderName($name)
-  {
-    $name = strtr(trim($name), array('_' => ' ', '-' => ' '));
-    $name = ucwords(strtolower($name));
-    return str_replace(' ', '-', $name);
   }
 }

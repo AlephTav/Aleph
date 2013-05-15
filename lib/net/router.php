@@ -35,7 +35,6 @@ class Router
 {
   const ERR_ROUTER_1 = 'No action is defined. You should first call one of the following methods: secure(), redirect() or bind()';
   const ERR_ROUTER_2 = 'Delegate "[{var}]" is not callable.';
-  const ERR_ROUTER_3 = 'URL component "[{var}]" doesn\'t exist. You should only use one of the following components: Net\URL::COMPONENT_ALL, Net\URL::COMPONENT_SOURCE, Net\URL::COMPONENT_QUERY, Net\URL::COMPONENT_PATH, Net\URL::COMPONENT_PATH_AND_QUERY';
 
   /**
    * Array of actions for the routing.
@@ -56,7 +55,6 @@ class Router
   public function component($component)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    if (!in_array($component, array(URL::COMPONENT_ALL, URL::COMPONENT_SOURCE, URL::COMPONENT_QUERY, URL::COMPONENT_PATH, URL::COMPONENT_PATH_AND_QUERY))) throw new Core\Exception($this, 'ERR_ROUTER_3');
     foreach ($this->lact[2] as $method)
     {
       $this->acts[$this->lact[0]][$method][$this->lact[1]]['component'] = $component;
@@ -170,7 +168,7 @@ class Router
     $data = array('action' => $action,
                   'args' => array(),
                   'params' => array(),
-                  'component' => URL::COMPONENT_ALL, 
+                  'component' => URL::ALL, 
                   'methods' => $methods);
     foreach ($methods as $method) $this->acts['secure'][$method][$regex] = $data;
     $this->lact = array('secure', $regex, $methods);
@@ -207,7 +205,7 @@ class Router
     $data = array('action' => $action,
                   'args' => array(),
                   'params' => $params, 
-                  'component' => URL::COMPONENT_PATH,
+                  'component' => URL::PATH,
                   'methods' => $methods);
     foreach ($methods as $method) $this->acts['redirect'][$method][$regex] = $data;
     $this->lact = array('redirect', $regex, $methods);
@@ -230,7 +228,7 @@ class Router
     $data = array('action' => $action, 
                   'args' => array(),
                   'params' => $params, 
-                  'component' => URL::COMPONENT_PATH, 
+                  'component' => URL::PATH, 
                   'methods' => $methods, 
                   'coordinateParameterNames' => false, 
                   'ignoreWrongDelegate' => true);
