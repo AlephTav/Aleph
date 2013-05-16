@@ -27,10 +27,10 @@ use Aleph\Core;
 /**
  * Base abstract class for building of classes that intended for caching different data.
  *
- * @abstract
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.cache
+ * @abstract
  */
 abstract class Cache implements \ArrayAccess, \Countable
 {

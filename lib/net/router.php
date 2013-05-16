@@ -33,6 +33,7 @@ use Aleph\Core;
  */
 class Router
 {
+  // Error message templates.
   const ERR_ROUTER_1 = 'No action is defined. You should first call one of the following methods: secure(), redirect() or bind()';
   const ERR_ROUTER_2 = 'Delegate "[{var}]" is not callable.';
 
@@ -52,6 +53,13 @@ class Router
    */
   protected $lact = null;
   
+  /**
+   * Sets URL-component for the current URL template.
+   *
+   * @param integer $component
+   * @return self
+   * @access public
+   */
   public function component($component)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
@@ -62,10 +70,34 @@ class Router
     return $this;
   }
   
-  public function args($args)
+  /**
+   * Sets array of regular expressions that applied to appropriate variables of the URL template.
+   * if at least one regular expression does not match with the appropriate URL template variable, then the callback is not called.
+   *
+   * @param array $validation
+   * @return self
+   * @access public   
+   */
+  public function validation(array $validation)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    if (!is_array($args)) $args = (array)$args;
+    foreach ($this->lact[2] as $method)
+    {
+      $this->acts[$this->lact[0]][$method][$this->lact[1]]['validation'] = $validation;
+    }
+    return $this;
+  }
+  
+  /**
+   * Sets an associated array of additional parameters that will be passed to the callback.
+   *
+   * @param array $args
+   * @return self
+   * @access public
+   */
+  public function args(array $args)
+  {
+    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
     foreach ($this->lact[2] as $method)
     {
       $this->acts[$this->lact[0]][$method][$this->lact[1]]['args'] = array_merge($this->acts[$this->lact[0]][$method][$this->lact[1]]['args'], $args);
@@ -73,6 +105,13 @@ class Router
     return $this;
   }
   
+  /**
+   * Determines whether to synchronize the URL template variables and parameters of the callback.
+   *
+   * @param boolean $flag
+   * @return self
+   * @access public
+   */
   public function coordinateParameterNames($flag)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
@@ -83,6 +122,13 @@ class Router
     return $this;
   }
   
+  /**
+   * Determines whether or not the wrong callback is ignored.
+   *
+   * @param boolean $flag
+   * @return self
+   * @access public
+   */
   public function ignoreWrongDelegate($flag)
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
@@ -93,6 +139,13 @@ class Router
     return $this;
   }
   
+  /**
+   * If this parameter is set then all URL template variables (as associated array) are passed to extra parameter.
+   *
+   * @param string $parameter - name of callback parameter determining as extra parameter.
+   * @return self
+   * @access public
+   */
   public function extra($parameter = 'extra')
   {
     if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
@@ -168,7 +221,8 @@ class Router
     $data = array('action' => $action,
                   'args' => array(),
                   'params' => array(),
-                  'component' => URL::ALL, 
+                  'component' => URL::ALL,
+                  'validation' => array(),
                   'methods' => $methods);
     foreach ($methods as $method) $this->acts['secure'][$method][$regex] = $data;
     $this->lact = array('secure', $regex, $methods);
@@ -206,6 +260,7 @@ class Router
                   'args' => array(),
                   'params' => $params, 
                   'component' => URL::PATH,
+                  'validation' => array(),
                   'methods' => $methods);
     foreach ($methods as $method) $this->acts['redirect'][$method][$regex] = $data;
     $this->lact = array('redirect', $regex, $methods);
@@ -273,6 +328,16 @@ class Router
             $subject = $urls[$data['component']];
           }
           if (!preg_match_all($regex, $subject, $matches)) continue;
+          $flag = true;
+          foreach ($data['validation'] as $param => $rgx)
+          {
+            if (isset($matches[$param]) && !preg_match($rgx, $matches[$param][0]))
+            {
+              $flag = false;
+              break;
+            }
+          }
+          if (!$flag) continue;
           if ($data['action'] instanceof Core\Delegate) $act = $data['action'];
           else 
           {

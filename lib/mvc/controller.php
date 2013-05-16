@@ -23,6 +23,7 @@
 namespace Aleph\MVC;
 
 use Aleph\Core,
+    Aleph\Net,
     Aleph\Cache;
 
 /**
@@ -126,31 +127,37 @@ class Controller
     if ($page === null)
     {
       $router = $a->router();
-      foreach (array('secure', 'redirect', 'bind') as $method)
+      foreach ($this->map as $resource => $info)
       {
-        if (empty($this->map[$method])) continue;
-        foreach ($this->map[$method] as $url => $params)
+        foreach ($info as $methods => $data)
         {
-          if (is_array($params))
+          if (isset($data['secure']))
           {
-            $router->{$method}($url, isset($params[0]) ? $params[0] : $params['action']);
-            if (isset($params['component'])) $router->component($params['component']);
-            if (isset($params['methods'])) $router->methods($params['methods']);
-            if (isset($params['checkParameters'])) $router->checkParameters($params['checkParameters']);
-            if (isset($params['ignoreWrongDelegate'])) $router->ignoreWrongDelegate($params['ignoreWrongDelegate']);
+            $router->secure($resource, $data['secure'], $methods)
+                   ->component(empty($data['component']) ? Net\URL::ALL : $data['component']);
+          }
+          else if (isset($data['redirect']))
+          {
+            $router->redirect($resource, $data['redirect'], $methods)
+                   ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
+                   ->validation(empty($data['validation']) ? array() : $data['validation']);
           }
           else
           {
-            $router->{$method}($url, $params);
+            $router->bind($resource, $data['callback'], $methods)
+                   ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
+                   ->validation(empty($data['validation']) ? array() : $data['validation'])
+                   ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
+                   ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames']);
           }
         }
       }
       $res = $router->route($methods);
       if ($res->success === false)
       {
-        if (isset($this->errHandlers[404]))
+        if (isset($this->handlers[404]))
         {
-          $this->errHandlers[404]->call(array($this));
+          $this->handlers[404]->call(array($this));
           $a->response()->stop(404);
         }
         $a->response()->stop(404, 'The requested page is not found.');
@@ -165,9 +172,9 @@ class Controller
     if (!$page->access())
     {
       if (!empty($page->noAccessURL)) \Aleph::go($page->noAccessURL);
-      else if (isset($this->errHandlers[403]))
+      else if (isset($this->handlers[403]))
       {
-        $this->errHandlers[403]->call();
+        $this->handlers[403]->call();
         $a->response()->stop(403);
       }
       $a->response()->stop(403, 'Access denied.');
