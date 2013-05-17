@@ -569,6 +569,7 @@ final class Aleph implements \ArrayAccess
     {
       self::$output = (is_file($templateBug) && is_readable($templateBug)) ? file_get_contents($templateBug) : self::TEMPLATE_BUG;
     }
+    exit;
   }
   
   /**
@@ -638,7 +639,7 @@ final class Aleph implements \ArrayAccess
     };
     $fragment = function($file, $line, &$index, &$command = null, $half = 10)
     {
-      $lines = explode("\n", str_replace("\r\n", "\n", (is_file($file) && is_readable($file)) ? file_get_contents($file) : $file));
+      $lines = explode("\n", preg_replace('/\r\n|\r/', "\n", (is_file($file) && is_readable($file)) ? file_get_contents($file) : $file));
       $count = count($lines); $line--;
       if ($line + $half > $count)
       {
