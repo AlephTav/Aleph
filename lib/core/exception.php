@@ -58,8 +58,18 @@ class Exception extends \Exception
    */
   public function __construct(/* $class, $token, $var1, $var2, ... */)
   {
-    $this->class = func_get_arg(0);
-    $this->token = func_get_arg(1);
+    $class = func_get_arg(0);
+    if (is_object($class))
+    {
+      $this->class = get_class($class);
+      $this->token = func_get_arg(1);
+    }
+    else
+    {
+      $class = explode('::', $class);
+      $this->class = ltrim($class[0], '\\');
+      $this->token = isset($class[1]) ? $class[1] : func_get_arg(1);
+    }
     parent::__construct(call_user_func_array(array('Aleph', 'error'), func_get_args()));
   }
   

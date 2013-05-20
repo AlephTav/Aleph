@@ -418,10 +418,19 @@ final class Aleph implements \ArrayAccess
   {
     $params = func_get_args();
     $class = array_shift($params);
-    $class = is_object($class) ? get_class($class) : $class;
-    $token = array_shift($params);
+    if (is_object($class))
+    {
+      $class = get_class($class);
+      $token = array_shift($params);
+    }
+    else
+    {
+      $class = explode('::', $class);
+      $token = isset($class[1]) ? $class[1] : array_shift($params);
+      $class = ltrim($class[0], '\\');
+    }
     $err = $token;
-    if ($class != '')
+    if ($class)
     {
       $err = constant($class . '::' . $token);
       $token = $class . '::' . $token;
