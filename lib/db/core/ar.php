@@ -53,7 +53,7 @@ class AR
   
   public static function getInstance($table, DB $db = null, $metaInfoExpire = null)
   {
-    return foo(new self($table))->init($db, $metaInfoExpire);
+    return (new self($table))->init($db, $metaInfoExpire);
   }
 
   protected function __construct($table)

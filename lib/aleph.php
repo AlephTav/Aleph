@@ -251,7 +251,7 @@ final class Aleph implements \ArrayAccess
    */
   public static function has($key)
   {
-    return isset(self::$registry[$key]);
+    return array_key_exists($key, self::$registry);
   }
   
   /**
@@ -391,7 +391,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Creates and executes a delegate.
    *
-   * @param string $callback - the Aleph callback string or closure.
+   * @param string | \Closure | Aleph\Core\IDelegate $callback - the Aleph callback string or closure.
    * @params arguments of the callback.
    * @return mixed
    * @access public
@@ -400,8 +400,7 @@ final class Aleph implements \ArrayAccess
   public static function delegate(/* $callback, $arg1, $arg2, ... */)
   {
     $params = func_get_args();
-    $method = array_shift($params);
-    return foo(new Core\Delegate($method))->call($params);
+    return (new Core\Delegate(array_shift($params)))->call($params);
   }
   
   /**
@@ -970,7 +969,6 @@ final class Aleph implements \ArrayAccess
         $_COOKIE = array_map($func, $_COOKIE);
       }
       if (date_default_timezone_set(date_default_timezone_get()) === false) date_default_timezone_set('UTC');
-      eval('function foo($foo) {return $foo;}');
       set_time_limit(0);
     }
     return self::$instance = new self();
@@ -1331,7 +1329,7 @@ final class Aleph implements \ArrayAccess
    */
   public function setAutoload($callback)
   {
-    if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof Core\IDelegate)) throw new Exception($this, 'ERR_GENERAL_4');
+    if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof Core\IDelegate)) throw new Core\Exception($this, 'ERR_GENERAL_4');
     $this->alCallback = new Core\Delegate($callback);
   }
   

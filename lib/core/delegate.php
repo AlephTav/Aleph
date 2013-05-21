@@ -375,7 +375,7 @@ class Delegate implements IDelegate
     $methodExists = function($class, $method) use ($static)
     {
       if (!method_exists($class, $method)) return false;
-      $method = foo(new \ReflectionClass($class))->getMethod($method);
+      $method = (new \ReflectionClass($class))->getMethod($method);
       return $method->isPublic() && $static === $method->isStatic();
     };
     if (class_exists($this->class, false)) return $methodExists($this->class, $this->method);
@@ -393,8 +393,8 @@ class Delegate implements IDelegate
    */
   public function getParameters()
   {
-    if ($this->type != 'class') return foo(new \ReflectionFunction($this->method))->getParameters();
-    return foo(new \ReflectionClass($this->class))->getMethod($this->method)->getParameters();
+    if ($this->type != 'class') return (new \ReflectionFunction($this->method))->getParameters();
+    return (new \ReflectionClass($this->class))->getMethod($this->method)->getParameters();
   }
   
   /**

@@ -26,6 +26,8 @@ function test_registry()
   $res &= \Aleph::has('foo') === true;
   \Aleph::remove('foo');
   $res &= \Aleph::get('foo') === null;
+  \Aleph::set('foo', null);
+  $res &= \Aleph::has('foo') === true;
   return !$res ? 'Registry functionality does not work.' : true; 
 }
 
