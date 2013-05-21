@@ -1151,11 +1151,13 @@ final class Aleph implements \ArrayAccess
         return $this;
       }
       $data = $param;
+      $ini = false;
     }
     else
     {
       $data = parse_ini_file($param, true);
       if ($data === false) throw new Core\Exception($this, 'ERR_CONFIG_1', $param);
+      $ini = true;
     }
     if ($replace) $this->config = array();
     foreach ($data as $section => $properties)
@@ -1164,7 +1166,7 @@ final class Aleph implements \ArrayAccess
       {
         foreach ($properties as $k => $v)
         {
-          if (!is_array($v) && strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}')) 
+          if ($ini && !is_array($v) && strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}')) 
           {
             $tmp = json_decode($v, true);
             $v = $tmp !== null ? $tmp : $v;
