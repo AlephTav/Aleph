@@ -90,7 +90,7 @@ abstract class Cache implements \ArrayAccess, \Countable
       case 'memory':
         $include('Aleph\Cache\Memory', '/memory.php');
         if (!Memory::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache', 'ERR_CACHE_1', 'Memory');
-        return new Memory(isset($params['servers']) ? (array)$params['servers'] : array(), isset($params['compress']) ? (bool)$params['compress'] : true);
+        return new Memory(isset($params['servers']) ? (array)$params['servers'] : [], isset($params['compress']) ? (bool)$params['compress'] : true);
       case 'apc':
         $include('Aleph\Cache\APC', '/apc.php');
         if (!APC::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache', 'ERR_CACHE_1', 'APC');
@@ -230,8 +230,17 @@ abstract class Cache implements \ArrayAccess, \Countable
   {
     $vault = $this->getVault();
     $hash = md5($key);
-    $expire = isset($vault[$hash]) ? $vault[$hash] : $this->vaultLifeTime;
-    $this->set($key, $content, $expire);
+    if (isset($vault[$hash]))
+    {
+      $expire = $vault[$hash][1];
+      $group = $vault[$hash][2];
+    }
+    else
+    {
+      $expire = $this->vaultLifeTime;
+      $group = '';
+    }
+    $this->set($key, $content, $expire, $group);
   }
 
   /**
@@ -335,8 +344,8 @@ abstract class Cache implements \ArrayAccess, \Countable
   public function getByGroup($group = '')
   {
     $vault = $this->getVault();
-    if (!isset($vault['groups'][$group]) || !is_array($vault['groups'][$group])) return array();
-    $tmp = array();
+    if (!isset($vault['groups'][$group]) || !is_array($vault['groups'][$group])) return [];
+    $tmp = [];
     foreach ($vault['groups'][$group] as $k => $foo)
     {
       $key = $vault[$k][0];
@@ -373,7 +382,7 @@ abstract class Cache implements \ArrayAccess, \Countable
     $k = md5($key);
     $vault = $this->getVault();
     $vault['groups'][$group][$k] = 1;
-    $vault[$k] = array($key, abs((int)$expire), $group);
+    $vault[$k] = [$key, abs((int)$expire), $group];
     $this->set($this->vaultKey, $vault, $this->vaultLifeTime);
     $this->lock = false;
   }

@@ -70,7 +70,7 @@ class Exception extends \Exception
       $this->class = ltrim($class[0], '\\');
       $this->token = isset($class[1]) ? $class[1] : func_get_arg(1);
     }
-    parent::__construct(call_user_func_array(array('Aleph', 'error'), func_get_args()));
+    parent::__construct(call_user_func_array(['Aleph', 'error'], func_get_args()));
   }
   
   /**
@@ -93,5 +93,16 @@ class Exception extends \Exception
   public function getToken()
   {
     return $this->token;
+  }
+  
+  /**
+   * Returns full information about the current exception.
+   *
+   * @return array
+   * @access public
+   */
+  public function getInfo()
+  {
+    return \Aleph::analyzeException($this);
   }
 }

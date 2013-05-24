@@ -4,6 +4,8 @@ set_time_limit(0);
 
 $classes = ['Aleph',
             'Aleph\Core\Exception',
+            'Aleph\Cache\Cache',
+            'Aleph\Core\Template',
             'Aleph\Net\URL',
             'Aleph\Utils\PHP\Tokenizer'];
 
@@ -13,4 +15,5 @@ foreach ($classes as $class)
   $msg = $res === true ? '+' : ($res ? $res : '-');
   if (PHP_SAPI === 'cli') echo $class . ': ' . $msg . PHP_EOL;
   else echo '<div style="' . ($res !== true ? 'color:#B22222;' : '') . '"><b>' . $class . ':</b> ' . $msg . '</div>';
+  ob_flush();
 }

@@ -48,7 +48,7 @@ class Template implements \ArrayAccess
    * @access protedted
    * @static
    */
-  protected static $globals = array();
+  protected static $globals = [];
   
   /**
    * An instance of Aleph\Cache\Cache class.
@@ -57,6 +57,14 @@ class Template implements \ArrayAccess
    * @access protected
    */
   protected $cache = null;
+  
+  /**
+   * Unique cache identifier of template.
+   *
+   * @var string $cacheID
+   * @access protected
+   */
+  protected $cacheID = null;
 
   /**
    * Template variables.
@@ -64,7 +72,7 @@ class Template implements \ArrayAccess
    * @var array $vars
    * @access protected
    */
-  protected $vars = array();
+  protected $vars = [];
   
   /**
    * Template string or path to a template file. 
@@ -75,26 +83,49 @@ class Template implements \ArrayAccess
   protected $template = null;
   
   /**
-   * Array names of template variables are instances of Template class.
+   * Returns array of global template variables.
    *
-   * @var array $templates
-   * @access protected
+   * @return array
+   * @access public
+   * @static
    */
-  protected $templates = array();
+  public static function getGlobals()
+  {
+    return self::$globals;
+  }
+
+  /**
+   * Sets global template variables.
+   *
+   * @param array $globals - new global template variables.
+   * @param boolean $merge - determines whether new variables are merged with existing variables.
+   * @access public
+   * @static
+   */
+  public static function setGlobals(array $globals, $merge = false)
+  {
+    if (!$merge) self::$globals = $globals;
+    else self::$globals = array_merge(self::$globals, $globals);
+  }
   
   /**
    * Constructor.
    *
    * @param string $template - template string or path to a template file.
    * @param integer $expire - template cache life time in seconds.
+   * @param string $cacheID - unique cache identifier of template.
    * @param Aleph\Cache\Cache - an instance of caching class.
    * @access public
    */
-  public function __construct($template = null, $expire = 0, Cache\Cache $cache = null)
+  public function __construct($template = null, $expire = 0, $cacheID = null, Cache\Cache $cache = null)
   {
     $this->template = $template;
     $this->expire = (int)$expire;
-    if ($this->expire > 0) $this->setCache($cache ?: \Aleph::getInstance()->cache());
+    if ($this->expire > 0) 
+    {
+      $this->setCache($cache ?: \Aleph::getInstance()->cache());
+      $this->setCacheID($cacheID);
+    }
   }
   
   /**
@@ -121,6 +152,28 @@ class Template implements \ArrayAccess
   }
   
   /**
+   * Returns unique cache identifier of template.
+   *
+   * @return string
+   * @access public
+   */
+  public function getCacheID()
+  {
+    return $this->cacheID;
+  }
+  
+  /**
+   * Sets unique cache identifier of template.
+   *
+   * @param string $cacheID
+   * @access public
+   */
+  public function setCacheID($cacheID)
+  {
+    $this->cacheID = $cacheID;
+  }
+  
+  /**
    * Checks whether or not a template cache lifetime is expired.
    *
    * @return boolean
@@ -138,7 +191,7 @@ class Template implements \ArrayAccess
    * @return array
    * @access public
    */
-  public function getVariables()
+  public function getVars()
   {
     return $this->vars;
   }
@@ -146,36 +199,14 @@ class Template implements \ArrayAccess
   /**
    * Sets template variables.
    *
-   * @var array $variables
+   * @param array $vars
+   * @param boolean $merge - determines whether new variables are merged with existing variables.
    * @access public
    */
-  public function setVariables(array $variables)
+  public function setVars(array $vars, $merge = false)
   {
-    $this->vars = $variables;
-  }
-  
-  /**
-   * Returns array of global template variables.
-   *
-   * @return array
-   * @access public
-   * @static
-   */
-  public static function getGlobals()
-  {
-    return self::$globals;
-  }
-
-  /**
-   * Sets global template variables.
-   *
-   * @var array $globals
-   * @access public
-   * @static
-   */
-  public static function setGlobals(array $globals)
-  {
-    self::$globals = $globals;
+    if (!$merge) $this->vars = $vars;
+    else $this->vars = array_merge($this->vars, $vars);
   }
   
   /**
@@ -203,49 +234,49 @@ class Template implements \ArrayAccess
   /**
    * Sets new value of a global template variable.
    *
-   * @param string $key - unique identifier of variable name.
-   * @param mixed $value - value of variable name. 
+   * @param string $name - global variable name.
+   * @param mixed $value - global variable value. 
    * @access public
    */
-  public function offsetSet($key, $value)
+  public function offsetSet($name, $value)
   {
-    self::$globals[$key] = $value;
+    self::$globals[$name] = $value;
   }
 
   /**
-   * Checks whether or not a global template variable with some unique identifier exist.
+   * Checks whether or not a global template variable with the same name exists.
    *
-   * @param string $key - unique identifier of a global variable name.
+   * @param string $name - global variable name.
    * @return boolean
    * @access public
    */
-  public function offsetExists($key)
+  public function offsetExists($name)
   {
-    return isset(self::$globals[$key]);
+    return isset(self::$globals[$name]);
   }
 
   /**
    * Deletes a global template variable.
    *
-   * @param string $key - unique identifier of variable name.
+   * @param string $key - global variable name.
    * @access public
    */
-  public function offsetUnset($key)
+  public function offsetUnset($name)
   {
-    unset(self::$globals[$key]);
+    unset(self::$globals[$name]);
   }
 
   /**
    * Gets value of a global template variable.
    *
-   * @param string $key - unique identifier of variable name.
+   * @param string $name - global variable name.
    * @return mixed
    * @access public
    */
-  public function &offsetGet($key)
+  public function &offsetGet($name)
   {
-    if (!isset(self::$globals[$key])) self::$globals[$key] = null;
-    return self::$globals[$key];
+    if (!isset(self::$globals[$name])) self::$globals[$name] = null;
+    return self::$globals[$name];
   }
 
   /**
@@ -258,8 +289,6 @@ class Template implements \ArrayAccess
   public function __set($name, $value)
   {
     $this->vars[$name] = $value;
-    if ($value instanceof Template) $this->templates[$name] = $name;
-    else unset($this->templates[$name]);
   }
 
   /**
@@ -296,20 +325,6 @@ class Template implements \ArrayAccess
   public function __unset($name)
   {
     unset($this->vars[$name]);
-    unset($this->templates[$name]);
-  }
-
-  /**
-   * Adds array of template variables or global template variables.
-   *
-   * @param array $variables
-   * @param boolean $isGlobal - determines whether global template variables (TRUE) or local template variables (FALSE) use.
-   * @access public
-   */
-  public function assign(array $variables, $isGlobal = false)
-  {
-    if ($isGlobal) self::$globals = array_merge(self::$globals, $variables);
-    else $this->vars = array_merge($this->vars, $variables);
   }
 
   /**
@@ -325,54 +340,58 @@ class Template implements \ArrayAccess
       if (is_file($tpl->getTemplate())) 
       {
         ${'(_._)'} = $tpl; unset($tpl);
-        extract(${'(_._)'}->getVariables());
         extract(Template::getGlobals());
+        extract(${'(_._)'}->getVars());
         ob_start();
         require(${'(_._)'}->getTemplate());
         return ob_get_clean();
       }
-      return \Aleph::exe($tpl->getTemplate(), array_merge($tpl->getVariables(), Template::getGlobals()));
+      return \Aleph::exe($tpl->getTemplate(), array_merge(Template::getGlobals(), $tpl->getVars()));
     };
-    $tmp = array();
-    if ((int)$this->expire > 0)
+    if ((int)$this->expire <= 0) return $render($this);
+    $hash = $this->cacheID !== null ? $this->cacheID : md5($this->template);
+    $cache = $this->getCache();
+    if ($cache->isExpired($hash))
     {
-      $hash = md5($this->template);
-      $cache = $this->getCache();
-      if ($cache->isExpired($hash))
+      $tmp = [];
+      foreach (array_merge(self::$globals, $this->vars) as $name => $value) 
       {
-        foreach ($this->templates as $name) 
+        if ($value instanceof Template)
         {
           $tmp[$name] = $this->vars[$name];
           $this->vars[$name] = $hash . '<?php $' . $name . ';?>' . $hash;
         }
-        $content = $render($this);
-        $parts = array();
-        foreach (explode($hash, $content) as $part)
-        {
-          $name = substr($part, 7, -3);
-          if (isset($this->vars[$name])) $parts[] = array($name, true);
-          else $parts[] = array($part, false);
-        }
-        foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
-        $cache->set($hash, $parts, $this->expire);
       }
+      $content = $render($this); $parts = [];
+      foreach (explode($hash, $content) as $part)
+      {
+        $name = substr($part, 7, -3);
+        if (isset($this->vars[$name])) $parts[] = [$name, true];
+        else $parts[] = [$part, false];
+      }
+      foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
+      $cache->set($hash, $parts, $this->expire);
+    }
+    else
+    {
+      $parts = $cache->get($hash);
+    }
+    $content = ''; $tmp = [];
+    foreach ($parts as $part)
+    {
+      if ($part[1] === false) $content .= $part[0];
       else
       {
-        $parts = $cache->get($hash);
-      }
-      $content = ''; $tmp = array();
-      foreach ($parts as $part)
-      {
-        if ($part[1])
+        $part = $part[0];
+        if (isset($tmp[$part])) $content .= $tmp[$part];
+        else 
         {
-          if (isset($tmp[$part[0]])) $content .= $tmp[$part[0]];
-          else $content .= $tmp[$part[0]] = $this->vars[$part[0]]->render();
-        }        
-        else $content .= $part[0];
-      }
-      return $content;
+          $tmp[$part] = $this->vars[$part]->render();
+          $content .= $tmp[$part];
+        }
+      } 
     }
-    return $render($this);
+    return $content;
   }
 
   /**

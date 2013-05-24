@@ -312,12 +312,12 @@ class Delegate implements IDelegate
     if ($this->type != 'class') return call_user_func_array($this->method, $args);
     else
     {
-      if ($this->static) return call_user_func_array(array($this->class, $this->method), $args);
+      if ($this->static) return call_user_func_array([$this->class, $this->method], $args);
       if ($this->class == 'Aleph') $class = \Aleph::instance();
       else if (MVC\Page::$page instanceof MVC\IPage && $this->class == get_class(MVC\Page::$page)) $class = MVC\Page::$page;
       else $class = $this->getClassObject($args);
       if ($this->method == '__construct') return $class;
-      return call_user_func_array(array($class, $this->method), $args);
+      return call_user_func_array([$class, $this->method], $args);
     }
   }
 
@@ -410,11 +410,11 @@ class Delegate implements IDelegate
    */
   public function getInfo()
   {
-    return array('class' => $this->class, 
-                 'method' => $this->method,
-                 'static' => $this->static,
-                 'numargs' => $this->numargs,
-                 'type' => $this->type);
+    return ['class' => $this->class, 
+            'method' => $this->method,
+            'static' => $this->static,
+            'numargs' => $this->numargs,
+            'type' => $this->type];
   }
   
   /**
@@ -475,6 +475,6 @@ class Delegate implements IDelegate
   protected function split($identifier)
   {
     $ex = explode('\\', $identifier);
-    return array(array_pop($ex), implode('\\', $ex));
+    return [array_pop($ex), implode('\\', $ex)];
   }
 }

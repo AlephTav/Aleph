@@ -136,7 +136,7 @@ class Memory extends Cache
       {
         $this->mem->set($k . $n, $part, $this->compress, $expire);
       }
-      $this->mem->set($k, array($k => $n), $this->compress, $expire);
+      $this->mem->set($k, [$k => $n], $this->compress, $expire);
     }
     $this->saveKey($key, $expire, $group);
   }

@@ -355,7 +355,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Returns the execution time (in seconds) of your PHP script. 
    *
-   * @return integer
+   * @return float
    * @access public
    * @static
    */
@@ -367,7 +367,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Returns the request time (in seconds) of your PHP script. 
    *
-   * @return integer
+   * @return float
    * @access public
    * @static
    */
@@ -406,7 +406,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Returns an error message by its token.
    *
-   * @param string $class - class with the needed error message constant.
+   * @param string | object $class - class with the needed error message constant.
    * @param string $token - name of the needed error message constant.
    * @params values of parameters of the error message.
    * @return string
@@ -1143,7 +1143,7 @@ final class Aleph implements \ArrayAccess
     if ($param === null) return $this->config;
     if (is_array($param))
     {
-      if ($replace) 
+      if ($replace)
       {
         $this->config = $param;
         return $this;
@@ -1336,7 +1336,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Returns autoload callback.
    *
-   * @return closure | Aleph\Core\IDelegate
+   * @return Aleph\Core\IDelegate
    * @access public
    */
   public function getAutoload()
