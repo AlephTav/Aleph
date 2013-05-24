@@ -22,15 +22,16 @@ function test_cache()
   unset($cache->{$key});
   if ($cache->{$key} !== null) return 'Removing expired data doesn\'t work.';
   // Checks group logic.
-  $cache->set($key . '1', 0, 10, 'grp');
-  $cache->set($key . '2', 1, 10, 'grp');
-  $cache->set($key . '3', 2, 10, 'grp');
+  $grp = uniqid('grp', true);
+  $cache->set($key . '1', 0, 10, $grp);
+  $cache->set($key . '2', 1, 10, $grp);
+  $cache->set($key . '3', 2, 10, $grp);
   $cache[$key . '1'] = $cache[$key . '1'] + 1;
   $cache[$key . '2'] = $cache[$key . '2'] + 1;
   $cache[$key . '3'] = $cache[$key . '3'] + 1;
-  if ($cache->getByGroup('grp') !== [$key . '1' => 1, $key . '2' => 2, $key . '3' => 3] || $cache->getByGroup('') !== []) return 'Group data storing doesn\'t work.';
-  $cache->cleanByGroup('grp');
-  if ($cache->getByGroup('grp') !== []) return 'Group data removing doesn\'t work.';
+  if ($cache->getByGroup($grp) !== [$key . '1' => 1, $key . '2' => 2, $key . '3' => 3] || $cache->getByGroup('') !== []) return 'Group data storing doesn\'t work.';
+  $cache->cleanByGroup($grp);
+  if ($cache->getByGroup($grp) !== []) return 'Group data removing doesn\'t work.';
   return true;
 }
 
