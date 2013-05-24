@@ -934,7 +934,11 @@ final class Aleph implements \ArrayAccess
       self::$time['script_execution_time'] = microtime(true);
       ini_set('display_errors', 1);
       ini_set('html_errors', 0);
-      if (!defined('NO_GZHANDLER') && extension_loaded('zlib') && !ini_get('zlib.output_compression')) ini_set('zlib.output_compression', 4096);
+      if (!defined('NO_GZHANDLER') && extension_loaded('zlib') && !ini_get('zlib.output_compression'))
+      {
+        ini_set('output_buffering', 1);
+        ini_set('zlib.output_compression', 4096);
+      }
       ob_start(function($output)
       {
         return strlen(\Aleph::getOutput()) ? \Aleph::getOutput() : $output;
