@@ -1,0 +1,9 @@
+<? if (count($logs) == 0){ ?>
+<div>Log is empty</div>
+<?}else{?>
+<ul>
+  <? foreach ($logs as $dir){ ?>
+  <li><a class="log-dirs" href="javascript:;"><b><?=htmlspecialchars($dir);?></b></a><li>
+  <?}?>
+</ul>
+<?}?>

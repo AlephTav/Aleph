@@ -116,13 +116,13 @@ final class Aleph implements \ArrayAccess
   private static $registry = array();
   
   /**
-   * Marker of error handling.
+   * Marker of the error handling mode.
    *
-   * @var boolean $debug
+   * @var boolean $errHandling
    * @access private
    * @static
    */
-  private static $debug = false;
+  private static $errHandling = false;
   
   /**
    * Instance of the class Aleph\Cache\Cache (or its child).
@@ -442,28 +442,28 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Checks whether the error handing is set or not.
+   * Checks whether the error handling is turned on.
    *
    * @return boolean
    * @access public
    * @static
    */
-  public static function isDebug()
+  public static function isErrorHandlingEnabled()
   {
-    return self::$debug;
+    return self::$errHandling;
   }
   
   /**
-   * Enables and disables the debug mode.
+   * Enables and disables the error handling mode.
    *
    * @param boolean $enable - if it equals TRUE then the debug mode is enabled and it is disabled otherwise.
    * @param integer $errorLevel - new error reporting level.
    * @access public
    * @static
    */
-  public static function debug($enable = true, $errorLevel = null)
+  public static function errorHandling($enable = true, $errorLevel = null)
   {
-    self::$debug = $enable;
+    self::$errHandling = $enable;
     restore_error_handler();
     restore_exception_handler();
     if (!$enable)
@@ -487,7 +487,7 @@ final class Aleph implements \ArrayAccess
    */
   public static function fatal()
   {
-    if (self::isDebug() && preg_match('/(Fatal|Parse) error:(.*) in (.*) on line (\d+)/', ob_get_contents(), $res)) 
+    if (self::isErrorHandlingEnabled() && preg_match('/(Fatal|Parse) error:(.*) in (.*) on line (\d+)/', ob_get_contents(), $res)) 
     {
       self::exception(new \ErrorException($res[2], 999, 1, $res[3], $res[4]));
     }
@@ -506,7 +506,7 @@ final class Aleph implements \ArrayAccess
     restore_exception_handler();
     $info = self::analyzeException($e);
     $config = (self::$instance !== null) ? self::$instance->config : array();
-    $isDebug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
+    $debug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
     foreach (array('templateDebug', 'templateBug') as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
     try
     {
@@ -523,13 +523,13 @@ final class Aleph implements \ArrayAccess
       }
     }
     catch (\Exception $e){}
-    if ($isDebug && !empty($config['customDebugMethod']) && self::$instance instanceof \Aleph && self::$instance->load('Aleph\Core\Delegate'))
+    if ($debug && !empty($config['customDebugMethod']) && self::$instance instanceof \Aleph && self::$instance->load('Aleph\Core\Delegate'))
     {
       if (!self::delegate($config['customDebugMethod'], $e, $info)) return;
     }
     if (PHP_SAPI == 'cli' || empty($_SERVER['REMOTE_ADDR']))
     {
-      if ($isDebug)
+      if ($debug)
       {
         $output = PHP_EOL . PHP_EOL . 'BUG REPORT' . PHP_EOL . PHP_EOL;
         $output .= 'The following error [[ ' . $info['message'] . ' ]] has been catched in file ' . $info['file'] . ' on line ' . $info['line'] . PHP_EOL . PHP_EOL;
@@ -543,7 +543,7 @@ final class Aleph implements \ArrayAccess
       }
       return;
     }
-    if ($isDebug)
+    if ($debug)
     {
       $render = function($tpl, $info)
       {
@@ -683,7 +683,9 @@ final class Aleph implements \ArrayAccess
       return end($code);
     };
     $flag = false; $trace = $e->getTrace();
-    $info = array();
+    $info = [];
+    $info['time'] = date('Y-m-d H:i:s:u');
+    $info['sessionID'] = session_id();
     $info['isFatalError'] = $e->getCode() == 999;
     $message = $e->getMessage();
     $file = $e->getFile();
@@ -758,16 +760,14 @@ final class Aleph implements \ArrayAccess
       $code = $fragment($file, $line, $index, $command);
       array_unshift($trace, array('file' => $reducedFile, 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index));
     }
-    $info['host'] = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : false;
-    $info['root'] = isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : false; 
     $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
     $info['executionTime'] = self::getExecutionTime();
     $info['message'] = ltrim($message);
     $info['file'] = $reducedFile;
     $info['line'] = $line;
     $info['trace'] = $trace;
-    if (method_exists($e, 'getClass')) $info['class'] = $e->getClass();
-    if (method_exists($e, 'getToken')) $info['token'] = $e->getToken();
+    $info['class'] = method_exists($e, 'getClass') ? $e->getClass() : '';
+    $info['token'] = method_exists($e, 'getToken') ? $e->getToken() : '';
     $info['severity'] = method_exists($e, 'getSeverity') ? $e->getSeverity() : '';
     $info['traceAsString'] = $e->getTraceAsString();
     $info['request'] = $request();
@@ -852,27 +852,12 @@ final class Aleph implements \ArrayAccess
    *
    * @param mixed $data - some data to log.
    * @access public
-   * @static  
+   * @static
    */
   public static function log($data)
   {
     $path = self::dir('logs') . '/' . date('Y F');
-    if (!is_dir($path)) mkdir($path, 0775, true);
-    $file = $path . '/' . date('d H.i.s#') . microtime(true) . '.log';
-    if (isset($_SERVER)) $url = ((empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') ? 'http://' : 'https://') . $_SERVER['HTTP_HOST'] . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF']);
-    else $url = false;
-    $info = array('IP' => $_SERVER['REMOTE_ADDR'],
-                  'ID' => session_id(),
-                  'time' => date('m/d/Y H:i:s:u'),
-                  'url' => $url,
-                  'SESSION' => $_SESSION,
-                  'COOKIE' => $_COOKIE,
-                  'GET' => $_GET,
-                  'POST' => $_POST,
-                  'FILES' => $_FILES,
-                  'data' => $data);
-    unset($info['SESSION']['__DEBUG_INFORMATION__']);
-    file_put_contents($file, serialize($info));
+    if (is_dir($path) || mkdir($path, 0775, true)) file_put_contents($path . '/' . date('d H.i.s#') . microtime(true) . '.log', serialize($data));
   }
   
   /**
@@ -944,7 +929,7 @@ final class Aleph implements \ArrayAccess
         return strlen(\Aleph::getOutput()) ? \Aleph::getOutput() : $output;
       });
       register_shutdown_function(array(__CLASS__, 'fatal'));
-      self::debug(true, E_ALL);
+      self::errorHandling(true, E_ALL);
       if (!isset($_SERVER['DOCUMENT_ROOT'])) $_SERVER['DOCUMENT_ROOT'] = __DIR__;
       self::$root = rtrim($_SERVER['DOCUMENT_ROOT'], '\\/');
       self::$siteUniqueID = md5(self::$root);

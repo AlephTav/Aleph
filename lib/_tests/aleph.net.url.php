@@ -34,9 +34,14 @@ function test_url()
   }
   $_SERVER = $server;
   // Checks url parsing.
-  $url = new Net\URL('HTTPS://user:test@my.test.com:8080/some%2Ftest///path/index.html?v1=val1&v2=val%3F2&v3[]=val31&v3[]=val32#frag%23ment');
+  $msg = 'Parsing is not working correctly.';
+  $url = new Net\URL('index.php');
+  if ($url->path !== ['index.php']) return $msg;
+  $url->parse('http://my.host/index.php');
+  if ($url->scheme !== 'http' || $url->path !== ['index.php'] || $url->source !== ['host' => 'my.host', 'port' => '', 'user' => '', 'pass' => '']) return $msg;
+  $url->parse('HTTPS://user:test@my.test.com:8080/some%2Ftest///path/index.html?v1=val1&v2=val%3F2&v3[]=val31&v3[]=val32#frag%23ment');
   if ($url->scheme !== 'https' || $url->fragment !== 'frag#ment' || $url->path !== ['some/test', 'path', 'index.html'] || $url->query !== ['v1' => 'val1', 'v2' => 'val?2', 'v3' => ['val31', 'val32']] ||
-      $url->source !== ['host' => 'my.test.com', 'port' => '8080', 'user' => 'user', 'pass' => 'test']) return 'Parsing is not working correctly.';
+      $url->source !== ['host' => 'my.test.com', 'port' => '8080', 'user' => 'user', 'pass' => 'test']) return $msg;
   // Checks url building.
   $url = new Net\URL('');
   $url->scheme = 'HTTPS';

@@ -141,7 +141,7 @@ class URL
     $this->scheme = strtolower($arr[2][0]);
     $this->source = [];
     $data = explode('@', $arr[4][0]);
-    if (!isset($data[1]))
+    if (empty($data[1]))
     {
       $data = explode(':', $data[0]);
       $this->source['host'] = urldecode($data[0]);
@@ -153,10 +153,10 @@ class URL
     {
       $d1 = explode(':', $data[1]);
       $this->source['host'] = urldecode($d1[0]);
-      $this->source['port'] = $d1[1];
+      $this->source['port'] = isset($d1[1]) ? $d1[1] : '';
       $d2 = explode(':', $data[0]);
       $this->source['user'] = urldecode($d2[0]);
-      $this->source['pass'] = urldecode($d2[1]);
+      $this->source['pass'] = urldecode(isset($d2[1]) ? $d2[1] : '');
     }
     $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), function($el){return $el != '';})) : [];
     foreach ($this->path as &$part) $part = urldecode($part);

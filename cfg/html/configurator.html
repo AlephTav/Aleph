@@ -8,7 +8,11 @@
 	 <!--[if lte IE 7]>
   <link href="/cfg/css/yaml/core/iehacks.css" rel="stylesheet" type="text/css" />
 	 <![endif]-->
+  <link rel="stylesheet" href="/cfg/css/shCore.css"/>	
+	 <link rel="stylesheet" href="/cfg/css/shCoreDefault.css"/>
   <script src="/cfg/js/jquery-1.8.3.min.js" type="text/javascript"></script>
+	 <script src="/cfg/js/shCore.js" type="text/javascript"></script>
+	 <script src="/cfg/js/shBrushPhp.js" type="text/javascript"></script>
   <script src="/cfg/js/configurator.js" type="text/javascript"></script>
 </head>
 <body>
@@ -188,6 +192,23 @@
 							     <input type="button" id="btnClean" value="Clean" title="Clear group cache" />
             <input type="button" id="btnGC" value="Run GC" title="Run garbage collector" />
 						    </div>
+        </div>
+      </div>
+      <div class="box info">
+        <h2>Logs</h2>
+        <div class="ym-grid">
+          <div class="ym-g33 ym-gl">
+            <div class="ym-form">
+              <nav id="logList" class="log-list ym-vlist"><? require_once(__DIR__ . '/loglist.html'); ?></nav>
+              <div class="ym-fbox-button">
+							         <input type="button" id="btnLogClean" value="Clean" title="Clear log directory" />
+                <input type="button" id="btnLogRefresh" value="Refresh" title="Refresh log info" />
+						        </div>
+            </div>
+          </div>
+          <div class="ym-g66 ym-gl">
+            <div id="logDetails" class="log-details ym-form"></div>
+          </div>
         </div>
       </div>
       <div class="box info">

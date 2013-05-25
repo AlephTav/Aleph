@@ -28,38 +28,24 @@ class Configurator
       exit;
     }
     set_time_limit(0);
-    $errors = $cfg = array();
-    if (!file_exists($this->config['path']['aleph'])) $errors[] = 'File aleph.php is not found.';
-    if (!file_exists($this->config['path']['config'])) $errors[] = 'File config.php is not found.';
-    if ($this->isPHPConfig()) 
-    {
-      $cfg = require_once($this->config['path']['config']);
-    }
-    else
-    {
-      $data = parse_ini_file($this->config['path']['config'], true);
-      if ($data === false) $errors[] = 'Config file is corrupted.';
-      $cfg = array();
-      foreach ($data as $section => $properties)
-      {
-        if (is_array($properties)) 
-        {
-          foreach ($properties as $k => $v)
-          {
-            if (!is_array($v) && strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}'))
-            {
-              $tmp = json_decode($v, true);
-              $v = $tmp !== null ? $tmp : $v;
-            }
-            $cfg[$section][$k] = $v;
-          }
-        }
-        else $cfg[$section] = $properties;
-      }
-    }
-    $this->show(array('errors' => $errors, 
-                      'cfg' => $cfg, 
-                      'common' => array('logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'cache')));
+    $errors = $cfg = [];
+    // Checks existing of general files.
+    if (!file_exists($this->config['path']['aleph'])) $errors[] = 'File ' . $this->config['path']['aleph'] . ' is not found.';
+    if (!file_exists($this->config['path']['config'])) $errors[] = 'File ' . $this->config['path']['config'] . ' is not found.';
+    if (count($errors)) $this->show(['errors' => $errors]);
+    // Initializes the framework.
+    require_once($this->config['path']['aleph']);
+    $a = \Aleph::init();
+    \Aleph::errorHandling(false);
+    // Reads config data.
+    $cfg = $a->config($this->isPHPConfig() ? require($this->config['path']['config']) : $this->config['path']['config'])->config();
+    // Search log directories.
+    $logs = $this->getLogDirectories();
+    // Shows page.
+    $this->show(['errors' => [], 
+                 'cfg' => $cfg, 
+                 'logs' => $logs,
+                 'common' => ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'cache']]);
   }
   
   public function process()
@@ -67,11 +53,16 @@ class Configurator
     if (!self::isAjaxRequest()) return;
     $args = self::getArguments();
     if (empty($args['method'])) return;
+    // Initializes the framework.
     require_once($this->config['path']['aleph']);
     $a = \Aleph::init();
-    \Aleph::debug(false);
+    \Aleph::errorHandling(false);
+    // Reads config data.
     $a->config($this->isPHPConfig() ? require($this->config['path']['config']) : $this->config['path']['config']);
+    // Sets default cache.
     $a->cache(Cache\Cache::getInstance());
+    // Performs action.
+    $res = false;
     switch ($args['method'])
     {
       case 'cache.gc':
@@ -126,7 +117,47 @@ class Configurator
                                      'elements' => 'app/inc/tpl/elements'));
         $this->saveConfig($cfg);
         break;
+      case 'log.refresh':
+        $res = $this->render('loglist.html', ['logs' => $this->getLogDirectories()]);
+        break;
+      case 'log.clean':
+        $this->removeFiles(\Aleph::dir('logs'), false);
+        $res = $this->render('loglist.html', []);
+        break;
+      case 'log.files':
+        if (empty($args['dir'])) break;
+        $dir = \Aleph::dir('logs') . '/' . $args['dir'];
+        if (!is_dir($dir)) break;
+        $files = [];
+        foreach (scandir($dir) as $item)
+        {
+          if ($item == '..' || $item == '.') continue;
+          if (date_create_from_format('d H.i.s', explode('#', $item)[0]) instanceof \DateTime) $files[] = $item;
+        }
+        sort($files);
+        $files = array_reverse($files);
+        $res = $this->render('logsublist.html', ['files' => $files]);
+        break;
+      case 'log.details':
+        if (empty($args['dir']) || empty($args['file'])) break;
+        $file = \Aleph::dir('logs') . '/' . $args['dir'] . '/' . $args['file'];
+        $res = unserialize(file_get_contents($file));
+        $res = $this->render('logdetails.html', ['log' => $res, 'file' => $args['dir'] . ' ' . $args['file']]);
+        break;
     }
+    if ($res !== false) echo $res;
+  }
+  
+  private function getLogDirectories()
+  {
+    $logs = []; $dir = \Aleph::dir('logs');
+    foreach (scandir($dir) as $item)
+    {
+      if ($item == '..' || $item == '.') continue;
+      if (date_create_from_format('Y F', $item) instanceof \DateTime) $logs[] = $item;
+    }
+    sort($logs);
+    return array_reverse($logs);
   }
   
   private function saveConfig(array $cfg)
@@ -206,10 +237,33 @@ class Configurator
     return strtolower(pathinfo($this->config['path']['config'], PATHINFO_EXTENSION)) == 'php';
   }
   
+  private function removeFiles($dir, $removeDir = true)
+  {
+    if (!is_dir($dir)) return false;
+    foreach (scandir($dir) as $item)
+    {
+      if ($item == '..' || $item == '.') continue;
+      $file = $dir . '/' . $item;
+      if (is_dir($file)) $this->removeFiles($file, true);
+      else unlink($file);   
+    }
+    if ($removeDir) rmdir($dir);
+  }
+  
   private function show(array $vars)
   {
     extract($vars);
     require(__DIR__ . '/../html/configurator.html');
+    exit;
+  }
+  
+  private function render($file, array $vars)
+  {
+    ${'(_._)'} = $file;
+    extract($vars);
+    ob_start();
+    require(__DIR__ . '/../html/' . ${'(_._)'});
+    return ob_get_clean();
   }
   
   private static function getArguments()

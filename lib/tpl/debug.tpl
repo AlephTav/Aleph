@@ -184,6 +184,8 @@ foreach (array(array('request', 'response'), array('GET', 'POST'), array('COOKIE
 }
 
 $fileClass = $file2class($file);
+$title = isset($SERVER['HTTP_HOST']) ? $SERVER['HTTP_HOST'] : '';
+$title = $title . ($title ? ' | ' : '') . (isset($SERVER['DOCUMENT_ROOT']) ? $SERVER['DOCUMENT_ROOT'] : '');
 
 return <<<HTML
 <!DOCTYPE html>
@@ -275,7 +277,7 @@ a.ajax-button:hover{color:#fff;}
 </head>
 <body>
   <div class="background">
-    <h2 id="error-file-root">$host | $root</h2>
+    <h2 id="error-file-root">$title</h2>
     <h1 id="error-title">$message</h1>
     <h2 id="error-file" class="has_code">
       <span id="error-linenumber">$line</span>

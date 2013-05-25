@@ -16,4 +16,5 @@ foreach ($classes as $class)
   if (PHP_SAPI === 'cli') echo $class . ': ' . $msg . PHP_EOL;
   else echo '<div style="' . ($res !== true ? 'color:#B22222;' : '') . '"><b>' . $class . ':</b> ' . $msg . '</div>';
   ob_flush();
+  flush();
 }

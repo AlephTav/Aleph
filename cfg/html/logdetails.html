@@ -1,0 +1,113 @@
+<? if (is_array($log) && array_key_exists('isFatalError', $log)){ ?>
+<h6>Error Log (<?=htmlspecialchars($file);?>)</h6>
+<table class="bordertable">
+  <thead>
+		  <tr>
+				  <th>Name</th>
+						<th>Value</th>
+				</tr>
+		</thead>
+		<tbody>
+		  <tr>
+				  <td>Time</td>
+						<td><?=htmlspecialchars($log['time']);?></td>
+				</tr>
+    <tr>
+				  <td>Session ID</td>
+						<td><?=htmlspecialchars($log['sessionID']);?></td>
+				</tr>
+    <tr>
+      <td>Fatal Error</td>
+      <td><?=($log['isFatalError'] ? 'Yes' : 'No');?></td>
+    </tr>
+    <tr>
+      <td>Memory Usage</td>
+      <td><?=htmlspecialchars($log['memoryUsage']);?> Mb</td>
+    </tr>
+    <tr>
+      <td>Execution Time</td>
+      <td><?=htmlspecialchars($log['executionTime']);?> sec.</td>
+    </tr>
+    <tr>
+      <td>Error Message</td>
+      <td><?=htmlspecialchars($log['message']);?></td>
+    </tr>
+    <tr>
+      <td>File</td>
+      <td><?=htmlspecialchars($log['file']);?></td>
+    </tr>
+    <tr>
+      <td>Line</td>
+      <td><?=htmlspecialchars($log['line']);?></td>
+    </tr>
+    <tr>
+      <td>Severity</td>
+      <td><?=htmlspecialchars($log['severity']);?></td>
+    </tr>
+    <tr>
+      <td>Class</td>
+      <td><?=htmlspecialchars($log['class'] ?: '-');?></td>
+    </tr>
+    <tr>
+      <td>Token</td>
+      <td><?=htmlspecialchars($log['token'] ?: '-');?></td>
+    </tr>
+    <tr>
+      <td>Trace (as string)</td>
+      <td><?=nl2br(htmlspecialchars($log['traceAsString']));?></td>
+    </tr>
+    <tr>
+      <td>Request</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['request']));?></textarea></td>
+    </tr>
+    <tr>
+      <td>Response</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['response']));?></textarea></td>
+    </tr>
+    <tr>
+      <td>$_GET</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['GET']));?></textarea></td>
+    </tr>
+    <tr>
+      <td>$_POST</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['POST']));?></textarea></td>
+    </tr>
+    <tr>
+      <td>$_FILES</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['FILES']));?></textarea></td>
+    </tr>
+    <tr>
+      <td>$_COOKIE</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['COOKIE']));?></textarea></td>
+    </tr>
+    <tr>
+      <td>$_SERVER</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['SERVER']));?></textarea></td>
+    </tr>
+    <tr>
+      <td>$_SESSION</td>
+      <td><textarea><?=htmlspecialchars(json_encode($log['SESSION']));?></textarea></td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <h5>Trace</h5><br />
+        <div class="log-trace">
+          <? foreach ($log['trace'] as $row){ ?>
+          <b>File:</b> <?=htmlspecialchars($row['file']);?><br />
+          <? if (isset($row['line'])){ ?>
+          <b>Line:</b> <?=htmlspecialchars($row['line']);?><br />
+          <b>Code:</b>
+          <script type="syntaxhighlighter" class="brush:php;highlight:<?=($row['index'] + 1);?>"><![CDATA[<?=$row['code'];?>]]></script>
+          <?}else{?>
+          <b>Command:</b> <?=htmlspecialchars($row['command']);?><br /><br />
+          <?}?>
+          <?}?>
+        </div>
+      </td>
+    </tr>
+  </tbody>
+</table>
+<?}else{?>
+<h6>Custom Log (<?=htmlspecialchars($file);?>)</h6>
+<textarea style="height:661px;"><?=htmlspecialchars(json_encode($log));?></textarea>
+<?}?>

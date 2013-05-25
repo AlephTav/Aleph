@@ -19,7 +19,7 @@ $(function()
   // Garbage Collector
   $('#btnGC').click(function()
   {
-    $.ajax({'type': 'POST', 'data': {'method': 'cache.gc'}}).success(function()
+    $.ajax({'type': 'POST', 'data': {'method': 'cache.gc'}}).done(function()
     {
       showMsg('Garbage Collector has been successfully run.');
     });
@@ -28,7 +28,7 @@ $(function()
   $('#btnClean').click(function()
   {
     var group = $('input:checked[name="cacheGroup"]').val();
-    $.ajax({'type': 'POST', 'data': {'method': 'cache.clean', 'custom': group == 'other' ? 1 : 0, 'group': group == 'other' ? $('#otherGroup').val() : group}}).success(function()
+    $.ajax({'type': 'POST', 'data': {'method': 'cache.clean', 'custom': group == 'other' ? 1 : 0, 'group': group == 'other' ? $('#otherGroup').val() : group}}).done(function()
     {
       showMsg('Cache has been successfully cleaned.');
     });
@@ -39,7 +39,7 @@ $(function()
     showDialog('Confirmation', 'Are you sure you want to restore the default configuration settings?', function()
     {
       hideDialog(true);
-      $.ajax({'type': 'POST', 'data': {'method': 'config.restore'}}).success(function()
+      $.ajax({'type': 'POST', 'data': {'method': 'config.restore'}}).done(function()
       {
         showMsg('Default settings have been successfully restored.');
         window.location.reload(true);
@@ -99,7 +99,7 @@ $(function()
       return;
     }
     $('#shadow').show();
-    $.ajax({'type': 'POST', 'data': {'method': 'config.save', 'config': cfg}}).success(function()
+    $.ajax({'type': 'POST', 'data': {'method': 'config.save', 'config': cfg}}).done(function()
     {
       showMsg('Settings have been successfully saved.');
       window.location.reload(true);
@@ -167,17 +167,37 @@ $(function()
     nProps++;
   });
   $('.prop > .ym-delete').click(deleteProperty);
+  // Refresh logs
+  $('#btnLogRefresh').click(function()
+  {
+    $.ajax({'type': 'POST', 'data': {'method': 'log.refresh'}}).done(function(html)
+    {
+      $('#logList').html(html);
+      $('#logDetails').html('');
+      showMsg('Log has been successfully refreshed.');
+      $('.log-dirs').click(loadLogFiles);
+    });
+  });
+  // Delete logs
+  $('#btnLogClean').click(function()
+  {
+    showDialog('Confirmation', 'Are you sure you want to remove all logs?', function()
+    {
+      $.ajax({'type': 'POST', 'data': {'method': 'log.clean'}}).done(function(html)
+      {
+        $('#logList').html(html);
+        showMsg('Log has been successfully cleaned.');
+        hideDialog();
+      });
+    });
+  });
+  // Loads log files
+  $('.log-dirs').click(loadLogFiles);
   // Preparing
+  //---------------------------------------------
   selectCacheType($('#cacheType').val());
   // Normalizing of json data in textareas.
-  if (typeof(JSON) != 'undefined')
-  {
-    $('.json').val(function(index, val)
-    {
-      if (val == '') return val;
-      return JSON.stringify(JSON.parse(val), null, 4);
-    });
-  }
+  normalizeJSON('.json');
 });
 
 var thMsg;
@@ -206,6 +226,18 @@ function hideDialog(leftShadow)
 {
   if (!leftShadow) $('#shadow').hide();
   $('#ppDialog').hide();
+}
+
+function normalizeJSON(selector)
+{
+  if (typeof(JSON) != 'undefined')
+  {
+    $(selector).val(function(index, val)
+    {
+      if (val == '') return val;
+      return JSON.stringify(JSON.parse(val), null, 4);
+    });
+  }
 }
 
 function selectCacheType(type)
@@ -244,5 +276,29 @@ function deleteProperty()
   {
     $('#divProp' + i).remove();
     hideDialog();
+  });
+}
+
+function loadLogFiles()
+{
+  var el = $(this), dir = el.text(), list = el.parent().find('ul');
+  if (list.length > 0)
+  {
+    list.toggle();
+    return;
+  }
+  $.ajax({'type': 'POST', 'data': {'method': 'log.files', 'dir': dir}}).done(function(html)
+  {
+    if (el.parent().find('ul').length > 0) return;
+    el.parent().append(html).find('ul > li').click(function()
+    {
+      var file = $(this).text();
+      $.ajax({'type': 'POST', 'data': {'method': 'log.details', 'dir': dir, 'file': file}}).done(function(html)
+      {
+        $('#logDetails').html(html);
+        normalizeJSON('.log-details textarea');
+        SyntaxHighlighter.highlight();
+      });
+    });
   });
 }
