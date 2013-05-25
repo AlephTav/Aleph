@@ -122,7 +122,7 @@ class Configurator
         break;
       case 'log.clean':
         $this->removeFiles(\Aleph::dir('logs'), false);
-        $res = $this->render('loglist.html', []);
+        $res = $this->render('loglist.html', ['logs' => []]);
         break;
       case 'log.files':
         if (empty($args['dir'])) break;
