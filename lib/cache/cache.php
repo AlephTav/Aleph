@@ -77,23 +77,23 @@ abstract class Cache implements \ArrayAccess, \Countable
     {
       if (class_exists($class, false)) return;
       if (is_file(__DIR__ . $path)) require_once(__DIR__ . $path);
-      if (!class_exists($class, false)) throw new Core\Exception('Aleph', 'ERR_GENERAL_6', $class, __DIR__ . $path);
+      if (!class_exists($class, false)) throw new Core\Exception('Aleph::ERR_GENERAL_6', $class, __DIR__ . $path);
     };
     if ($type === null)
     {
       $a = \Aleph::getInstance();
-      $params = $a['cache'];
+      $params = isset($a['cache']) ? $a['cache'] : [];
       $type = isset($params['type']) ? $params['type'] : '';
     }
     switch (strtolower($type))
     {
       case 'memory':
         $include('Aleph\Cache\Memory', '/memory.php');
-        if (!Memory::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache', 'ERR_CACHE_1', 'Memory');
+        if (!Memory::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'Memory');
         return new Memory(isset($params['servers']) ? (array)$params['servers'] : [], isset($params['compress']) ? (bool)$params['compress'] : true);
       case 'apc':
         $include('Aleph\Cache\APC', '/apc.php');
-        if (!APC::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache', 'ERR_CACHE_1', 'APC');
+        if (!APC::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'APC');
         return new APC();
       case 'file':
       default:
@@ -184,7 +184,7 @@ abstract class Cache implements \ArrayAccess, \Countable
   public function gc($probability = 100){}
   
   /**
-   * Returns the number of data items previously conserved in cache.
+   * Returns the number of groups in the cache.
    *
    * @return integer
    * @access public

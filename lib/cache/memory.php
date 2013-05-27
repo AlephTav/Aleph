@@ -74,7 +74,7 @@ class Memory extends Cache
   /**
    * Constructor.
    *
-   * @param array $servers - host for a memcache connection.
+   * @param array $servers - hosts for a memcache connection.
    * @param boolean $compress - if value of this parameter is TRUE any data will be compressed before placing in a cache, otherwise data will not be compressed.
    * @access public
    */
@@ -101,7 +101,7 @@ class Memory extends Cache
       $this->mem->addServer('127.0.0.1', 11211);
     }
     if ($compress && !extension_loaded('zlib')) throw new Core\Exception($this, 'ERR_CACHE_MEMORY_1');
-    $this->compress = ($compress) ? MEMCACHE_COMPRESSED : 0;
+    $this->compress = $compress ? MEMCACHE_COMPRESSED : 0;
   }
 
   /**
