@@ -43,7 +43,7 @@ class Router
    * @var array $acts
    * @access protected
    */
-  protected $acts = array();
+  protected $acts = [];
   
   /**
    * Stores the link on the last invoked method.
@@ -168,7 +168,7 @@ class Router
     $methods = $this->normalizeMethods($methods);
     if ($type === null)
     {
-      foreach (array('secure', 'redirect', 'bind') as $type)
+      foreach (['secure', 'redirect', 'bind'] as $type)
       {
         foreach ($methods as $method) unset($this->acts[$type][$method][$regex]);
       }
@@ -191,7 +191,7 @@ class Router
    */
   public function clean($type = null)
   {
-    if ($type === null) $this->acts = array();
+    if ($type === null) $this->acts = [];
     else unset($this->acts[$type]);
     $this->lact = null;
     return $this;
@@ -218,14 +218,14 @@ class Router
         \Aleph::go($url->build());
       }
     };
-    $data = array('action' => $action,
-                  'args' => array(),
-                  'params' => array(),
-                  'component' => URL::ALL,
-                  'validation' => array(),
-                  'methods' => $methods);
+    $data = ['action' => $action,
+             'args' => [],
+             'params' => [],
+             'component' => URL::ALL,
+             'validation' => [],
+             'methods' => $methods];
     foreach ($methods as $method) $this->acts['secure'][$method][$regex] = $data;
-    $this->lact = array('secure', $regex, $methods);
+    $this->lact = ['secure', $regex, $methods];
     return $this;
   }
   
@@ -235,35 +235,38 @@ class Router
    * @param string $regex - regex URL template.
    * @param string $redirect - URL to redirect.
    * @param array | string $methods - HTTP methods for which the redirect is permitted.
+   * @param closure | string | Aleph\Core\IDelegate - a callback function that will be invoked before the redirect.
    * @return self
    * @access public
    */
-  public function redirect($regex, $redirect, $methods = '*')
+  public function redirect($regex, $redirect, $methods = '*', $callback = null)
   {
     $params = $this->parseURLTemplate($regex, $regex);
     $methods = $this->normalizeMethods($methods);
-    $t = microtime(true);
-    for ($k = 0, $n = count($params); $k < $n; $k++)
+    $t = microtime(true); $k = 0;
+    foreach ($params as $name)
     {
-      $redirect = preg_replace('/(?<!\\\)#((.(?!(?<!\\\)#))*.)./', md5($t + $k), $redirect);
+      $redirect = str_replace('#' . $name . '#', md5($t + $k), $redirect);
+      $k++;
     }
-    $action = function() use($t, $redirect)
+    $action = function() use($t, $redirect, $callback)
     {
       $url = $redirect;
       foreach (func_get_args() as $k => $arg)
       {
         $url = str_replace(md5($t + $k), $arg, $url);
       }
-      \Aleph::go($url);
+      if ($callback === null) \Aleph::go($url);
+      return \Aleph::delegate($callback, $url);
     };
-    $data = array('action' => $action,
-                  'args' => array(),
-                  'params' => $params, 
-                  'component' => URL::PATH,
-                  'validation' => array(),
-                  'methods' => $methods);
+    $data = ['action' => $action,
+             'args' => [],
+             'params' => $params, 
+             'component' => URL::PATH,
+             'validation' => [],
+             'methods' => $methods];
     foreach ($methods as $method) $this->acts['redirect'][$method][$regex] = $data;
-    $this->lact = array('redirect', $regex, $methods);
+    $this->lact = ['redirect', $regex, $methods];
     return $this;
   }
   
@@ -280,15 +283,16 @@ class Router
   {
     $params = $this->parseURLTemplate($regex, $regex);
     $methods = $this->normalizeMethods($methods);
-    $data = array('action' => $action, 
-                  'args' => array(),
-                  'params' => $params, 
-                  'component' => URL::PATH, 
-                  'methods' => $methods, 
-                  'coordinateParameterNames' => false, 
-                  'ignoreWrongDelegate' => true);
+    $data = ['action' => $action, 
+             'args' => [],
+             'params' => $params, 
+             'component' => URL::PATH,
+             'validation' => [],
+             'methods' => $methods, 
+             'coordinateParameterNames' => false, 
+             'ignoreWrongDelegate' => true];
     foreach ($methods as $method) $this->acts['bind'][$method][$regex] = $data;
-    $this->lact = array('bind', $regex, $methods);
+    $this->lact = ['bind', $regex, $methods];
     return $this;
   }
   
@@ -296,7 +300,7 @@ class Router
    * Performs all actions matching all regex URL templates.
    *
    * @param string | array $methods - HTTP request methods.
-   * @param string $url - the URL string to route.
+   * @param string | Aleph\Net\URL $url - the URL string to route.
    * @return \StdClass with two properties: result - a result of the acted action, success - indication that the action was worked out.
    * @access public
    */
@@ -304,16 +308,14 @@ class Router
   {
     $this->lact = null;
     $request = Request::getInstance();
-    if (!is_array($methods)) 
-    {
-      if (!empty($methods)) $methods = explode('|', $methods);
-      else $methods = array($request->method);
-    }
+    if ($methods === null) $methods = [$request->method];
+    else $methods = $this->normalizeMethods($methods);
+    $url = (string)$url;
     $res = new \StdClass();
     $res->success = false;
     $res->result = null;
-    $urls = array();
-    foreach (array('secure', 'redirect', 'bind') as $type)
+    $urls = [];
+    foreach (['secure', 'redirect', 'bind'] as $type)
     {
       if (empty($this->acts[$type])) continue;
       foreach ($this->acts[$type] as $method => $actions)
@@ -362,7 +364,7 @@ class Router
           $params = $data['args'];
           if (!empty($data['coordinateParameterNames']))
           {
-            $params = array();
+            $params = [];
             foreach ($act->getParameters() as $param) 
             {
               $name = $param->getName();
@@ -388,34 +390,28 @@ class Router
    */
   protected function parseURLTemplate($url, &$regex)
   {
-    $params = array();
-    $url = (string)$url;
-    $path = preg_split('/(?<!\\\)\/+/', $url);
-    $path = array_map(function($p) use(&$params)
+    $params = []; $regex = (string)$url;
+    $regex = preg_replace_callback('/(?:^|[^\\\])(?:\\\\\\\\)*#(.*?[^\\\](?:\\\\\\\\)*)(?:#|$)/', function($matches) use (&$params)
     {
-      if ($p == '') return '';
-      preg_match_all('/(?<!\\\)#((?:.(?!(?<!\\\)#))*.)./', $p, $matches);
-      foreach ($matches[0] as $k => $match)
+      $n = strpos($matches[1], '|');
+      if ($n === false) 
       {
-        $m = $matches[1][$k];
-        $n = strpos($m, '|');
-        if ($n !== false) 
-        {
-          $name = substr($m, 0, $n);
-          $m = substr($m, $n + 1);
-          if ($m == '') $m = '[^\/]*';
-        }
-        else 
-        {
-          $m = '[^\/]*';
-          $name = $matches[1][$k];
-        }
-        $params[$name] = $name;
-        $p = str_replace($match, '(?P<' . $name . '>' . $m . ')', $p);
+        $p = '[^/]*';
+        $name = $matches[1];
       }
-      return str_replace('\#', '#', $p);
-    }, $path);
-    $regex = '/^' . implode('\/', $path) . '$/';
+      else
+      {
+        $name = substr($matches[1], 0, $n);
+        $p = substr($matches[1], $n + 1);
+        if ($p == '') $p = '[^\/]*';
+      }
+      $params[$name] = $name;
+      $n = strlen($matches[0]);
+      $n = $n - strlen($matches[1]) - ($matches[0][$n - 1] == '#' ? 1 : 0) - 1;
+      $p = '(?P<' . $name . '>' . $p . ')';
+      return substr($matches[0], 0, $n) . $p . substr($matches[0], $n + strlen($p));
+    }, $regex);
+    $regex = '#^' . $regex . '$#';
     return $params;
   }
   
@@ -428,8 +424,8 @@ class Router
    */
   protected function normalizeMethods($methods)
   {
-    if ($methods == '*') return array('GET', 'PUT', 'POST', 'DELETE');
-    if ($methods == '@') return array('GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT');
+    if ($methods == '*') return ['GET', 'PUT', 'POST', 'DELETE'];
+    if ($methods == '@') return ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'];
     $methods = is_array($methods) ? $methods : explode('|', $methods);
     foreach ($methods as &$method) $method = strtoupper(trim($method));
     return $methods;

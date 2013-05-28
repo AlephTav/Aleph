@@ -86,7 +86,7 @@ final class Aleph implements \ArrayAccess
    * @access private
    * @static
    */
-  private static $time = array();
+  private static $time = [];
   
   /**
    * Response body.
@@ -104,7 +104,7 @@ final class Aleph implements \ArrayAccess
    * @access private
    * @static
    */
-  private static $eval = array();
+  private static $eval = [];
   
   /**
    * Array of different global objects.
@@ -113,7 +113,7 @@ final class Aleph implements \ArrayAccess
    * @access private
    * @static
    */
-  private static $registry = array();
+  private static $registry = [];
   
   /**
    * Marker of the error handling mode.
@@ -146,7 +146,7 @@ final class Aleph implements \ArrayAccess
    * @var array $config
    * @access private  
    */
-  private $config = array();
+  private $config = [];
   
   /**
    * Array of paths to all classes of the applcation and framework.
@@ -154,7 +154,7 @@ final class Aleph implements \ArrayAccess
    * @var array $classes
    * @access private
    */
-  private $classes = array();
+  private $classes = [];
   
   /**
    * Array of paths to classes to exclude them from the class searching.
@@ -162,7 +162,7 @@ final class Aleph implements \ArrayAccess
    * @var array $exclusions
    * @access private  
    */
-  private $exclusions = array();
+  private $exclusions = [];
   
   /**
    * Direcotires for class searching.
@@ -170,7 +170,7 @@ final class Aleph implements \ArrayAccess
    * @var array $dirs
    * @access private
    */
-  private $dirs = array();
+  private $dirs = [];
   
   /**
    * File search mask.
@@ -472,7 +472,7 @@ final class Aleph implements \ArrayAccess
       return;
     }
     error_reporting($errorLevel ?: E_ALL);
-    set_exception_handler(array(__CLASS__, 'exception'));
+    set_exception_handler([__CLASS__, 'exception']);
     set_error_handler(function($errno, $errstr, $errfile, $errline)
     {
       self::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
@@ -505,9 +505,9 @@ final class Aleph implements \ArrayAccess
     restore_error_handler();
     restore_exception_handler();
     $info = self::analyzeException($e);
-    $config = (self::$instance !== null) ? self::$instance->config : array();
+    $config = (self::$instance !== null) ? self::$instance->config : [];
     $debug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
-    foreach (array('templateDebug', 'templateBug') as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
+    foreach (['templateDebug', 'templateBug'] as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
     try
     {
       if (!empty($config['logging']))
@@ -599,7 +599,7 @@ final class Aleph implements \ArrayAccess
       if (is_array($obj))
       {
         if (count($obj) == 0) return '[]';
-        $tmp = array(); 
+        $tmp = []; 
         foreach ($obj as $k => $v) 
         {
           $k = (string)$k;
@@ -624,7 +624,7 @@ final class Aleph implements \ArrayAccess
     $request = function()
     {
       if (function_exists('apache_request_headers')) return apache_request_headers();
-      $headers = array();
+      $headers = [];
       foreach ($_SERVER as $key => $value) 
       {
         if (strpos($key, 'HTTP_') === 0) 
@@ -637,7 +637,7 @@ final class Aleph implements \ArrayAccess
     $response = function()
     {
       if (function_exists('apache_response_headers')) return apache_response_headers();
-      $headers = array();
+      $headers = [];
       foreach (headers_list() as $header) 
       {
         $header = explode(':', $header);
@@ -717,7 +717,7 @@ final class Aleph implements \ArrayAccess
       $item['command'] .= $item['function'] . '( ';
       if (isset($item['args']))
       {
-        $tmp = array();
+        $tmp = [];
         foreach ($item['args'] as $arg) $tmp[] = $reduceObject($arg);
         $item['command'] .= implode(', ', $tmp);
       }
@@ -758,7 +758,7 @@ final class Aleph implements \ArrayAccess
     if ($push && !$info['isFatalError'])
     {
       $code = $fragment($file, $line, $index, $command);
-      array_unshift($trace, array('file' => $reducedFile, 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index));
+      array_unshift($trace, ['file' => $reducedFile, 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index]);
     }
     $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
     $info['executionTime'] = self::getExecutionTime();
@@ -772,12 +772,12 @@ final class Aleph implements \ArrayAccess
     $info['traceAsString'] = $e->getTraceAsString();
     $info['request'] = $request();
     $info['response'] = $response();
-    $info['GET'] = isset($_GET) ? $_GET : array();
-    $info['POST'] = isset($_POST) ? $_POST : array();
-    $info['COOKIE'] = isset($_COOKIE) ? $_COOKIE : array();
-    $info['FILES'] = isset($_FILES) ? $_FILES : array();
-    $info['SERVER'] = isset($_SERVER) ? $_SERVER : array();
-    $info['SESSION'] = isset($_SESSION) ? $_SESSION : array();
+    $info['GET'] = isset($_GET) ? $_GET : [];
+    $info['POST'] = isset($_POST) ? $_POST : [];
+    $info['COOKIE'] = isset($_COOKIE) ? $_COOKIE : [];
+    $info['FILES'] = isset($_FILES) ? $_FILES : [];
+    $info['SERVER'] = isset($_SERVER) ? $_SERVER : [];
+    $info['SESSION'] = isset($_SESSION) ? $_SESSION : [];
     unset($info['SESSION']['__DEBUG_INFORMATION__']);
     return $info;
   }
@@ -928,14 +928,14 @@ final class Aleph implements \ArrayAccess
       {
         return strlen(\Aleph::getOutput()) ? \Aleph::getOutput() : $output;
       });
-      register_shutdown_function(array(__CLASS__, 'fatal'));
+      register_shutdown_function([__CLASS__, 'fatal']);
       self::errorHandling(true, E_ALL);
       if (!isset($_SERVER['DOCUMENT_ROOT'])) $_SERVER['DOCUMENT_ROOT'] = __DIR__;
       self::$root = rtrim($_SERVER['DOCUMENT_ROOT'], '\\/');
       self::$siteUniqueID = md5(self::$root);
       $lib = self::$root . '/' . pathinfo(__DIR__, PATHINFO_BASENAME) . '/';
-      $files = array('core/exception.php' => 'Aleph\Core\Exception', 
-                     'cache/cache.php' => 'Aleph\Cache\Cache');
+      $files = ['core/exception.php' => 'Aleph\Core\Exception', 
+                'cache/cache.php' => 'Aleph\Cache\Cache'];
       foreach ($files as $path => $class)
       {
         if (class_exists($class, false)) continue;
@@ -970,10 +970,10 @@ final class Aleph implements \ArrayAccess
    */
   private function __construct()
   {
-    if (!self::$instance) spl_autoload_register(array($this, 'al'));
-    $this->config = array();
-    $this->classes = $this->exclusions = array();
-    $this->dirs = array(self::$root => true);
+    if (!self::$instance) spl_autoload_register([$this, 'al']);
+    $this->config = [];
+    $this->classes = $this->exclusions = [];
+    $this->dirs = [self::$root => true];
     $this->key = 'autoload_' . self::$siteUniqueID;
     $this->mask = '/.+\.php$/i';
     $this->autoload = '';
@@ -1010,7 +1010,7 @@ final class Aleph implements \ArrayAccess
     {
       $info = $this->alCallback->getInfo();
       if ($info['type'] == 'class') $this->al($info['class'], false);
-      $this->alCallback->call(array($class, $classes));
+      $this->alCallback->call([$class, $classes]);
       return true;
     }
     $cs = strtolower($class);
@@ -1043,11 +1043,11 @@ final class Aleph implements \ArrayAccess
    */
   private function find($class = null, $path = null)
   {
-    if ($path) $paths = array($path => true);
+    if ($path) $paths = [$path => true];
     else
     {
-      $paths = $this->dirs ?: array(self::$root => true);
-      $this->classes = array();
+      $paths = $this->dirs ?: [self::$root => true];
+      $this->classes = [];
       $first = true;
     }
     foreach ($paths as $path => $isRecursion)
@@ -1146,7 +1146,7 @@ final class Aleph implements \ArrayAccess
       if ($data === false) throw new Core\Exception($this, 'ERR_CONFIG_1', $param);
       $ini = true;
     }
-    if ($replace) $this->config = array();
+    if ($replace) $this->config = [];
     foreach ($data as $section => $properties)
     {
       if (is_array($properties)) 

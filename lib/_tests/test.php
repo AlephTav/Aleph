@@ -7,6 +7,7 @@ $classes = ['Aleph',
             'Aleph\Cache\Cache',
             'Aleph\Core\Template',
             'Aleph\Net\URL',
+            'Aleph\Net\Router',
             'Aleph\Utils\PHP\Tokenizer'];
 
 foreach ($classes as $class)

@@ -92,7 +92,7 @@ class URL
   public $query = [];
 
   /**
-   * Fragment Component of a URL.
+   * Fragment component of a URL.
    *
    * @var    string
    * @access public

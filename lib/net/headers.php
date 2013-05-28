@@ -37,7 +37,7 @@ class Headers
    * @var array $headers
    * @access protected
    */
-  protected $headers = array();
+  protected $headers = [];
 
   /**
    * Array of content type aliases.
@@ -45,10 +45,10 @@ class Headers
    * @var array $contentTypeMap
    * @access protected
    */
-  protected $contentTypeMap = array('text' => 'text/plain',
-                                    'html' => 'text/html',
-                                    'json' => 'application/json',
-                                    'xml' => 'application/xml');
+  protected $contentTypeMap = ['text' => 'text/plain',
+                               'html' => 'text/html',
+                               'json' => 'application/json',
+                               'xml' => 'application/xml'];
 
   /**
    * Array of instances of this class.
@@ -56,7 +56,7 @@ class Headers
    * @var array $instance
    * @access private
    */           
-  private static $instance = array('request' => null, 'response' => null);
+  private static $instance = ['request' => null, 'response' => null];
 
   /**
    * Clones an object of this class. The private method '__clone' doesn't allow to clone an instance of the class.
@@ -135,7 +135,7 @@ class Headers
    */
   public static function normalizeHeaderName($name)
   {
-    $name = strtr(trim($name), array('_' => ' ', '-' => ' '));
+    $name = strtr(trim($name), ['_' => ' ', '-' => ' ']);
     $name = ucwords(strtolower($name));
     return str_replace(' ', '-', $name);
   }
@@ -159,7 +159,7 @@ class Headers
    */
   public function setHeaders(array $headers)
   {
-    $this->headers = array();
+    $this->headers = [];
     $this->merge($headers);
   }
   
@@ -181,7 +181,7 @@ class Headers
    */
   public function clear()
   {
-    $this->headers = array();
+    $this->headers = [];
   }
   
   /**

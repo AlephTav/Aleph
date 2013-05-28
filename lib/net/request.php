@@ -77,7 +77,7 @@ class Request
    * @var array $data
    * @access public
    */
-  public $data = array();
+  public $data = [];
   
   /**
    * AJAX request indicator.
