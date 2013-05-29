@@ -179,7 +179,7 @@ class Headers
    *
    * @access public
    */
-  public function clear()
+  public function clean()
   {
     $this->headers = [];
   }

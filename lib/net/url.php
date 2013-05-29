@@ -186,34 +186,28 @@ class URL
   public function build($component = self::ALL)
   {
     $url = '';
-    if ($component & self::SCHEME) 
+    if ($component & self::SCHEME && $this->scheme) 
     {
-      if (isset($this->scheme)) $url .= strtolower($this->scheme) . '://';
+      $url .= strtolower($this->scheme) . '://';
     }
     if ($component & self::HOST)
     {
-      $source = [];
-      foreach (['host', 'port', 'user', 'pass'] as $k) $source[$k] = isset($this->source[$k]) ? $this->source[$k] : '';
-      $credentials = $source['user'] ? $source['user'] . ':' . $source['pass'] : '';
-      $url .= ($credentials ? $credentials . '@' : '') . $source['host'] . ($source['port'] ? ':' . $source['port'] : '');
+      $credentials = $this->source['user'] ? $this->source['user'] . ':' . $this->source['pass'] : '';
+      $url .= ($credentials ? $credentials . '@' : '') . $this->source['host'] . ($this->source['port'] ? ':' . $this->source['port'] : '');
     }
     if ($component & self::PATH)
     {
       $tmp = [];
-      $path = isset($this->path) ? (array)$this->path : [];
-      foreach ($path as $part) if ($part != '') $tmp[] = urlencode($part);
+      foreach ($this->path as $part) if ($part != '') $tmp[] = urlencode($part);
       if ($component & self::HOST && count($tmp)) $url .= '/';
       $url .= implode('/', $tmp); 
     }
-    if ($component & self::QUERY)
+    if ($component & self::QUERY && count($this->query))
     {
-      if (isset($this->query))
-      {
-        if ($url) $url .= '?';
-        $url .= http_build_query((array)$this->query);
-      }
+      if ($url) $url .= '?';
+      $url .= http_build_query($this->query);
     }
-    if ($component & self::FRAGMENT)
+    if ($component & self::FRAGMENT && $this->fragment)
     {
       if ($url) $url .= '#';
       $url .= urlencode($this->fragment);

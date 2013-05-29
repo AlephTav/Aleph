@@ -43,6 +43,7 @@ function test_url()
   if ($url->scheme !== 'https' || $url->fragment !== 'frag#ment' || $url->path !== ['some/test', 'path', 'index.html'] || $url->query !== ['v1' => 'val1', 'v2' => 'val?2', 'v3' => ['val31', 'val32']] ||
       $url->source !== ['host' => 'my.test.com', 'port' => '8080', 'user' => 'user', 'pass' => 'test']) return $msg;
   // Checks url building.
+  $msg = 'Building is not working correctly.';
   $url = new Net\URL('');
   $url->scheme = 'HTTPS';
   $url->fragment = 'fragment';
@@ -57,7 +58,10 @@ function test_url()
       $url->build(Net\URL::QUERY) !== 'a=1&b=2&c%5B0%5D=a&c%5B1%5D=b&c%5Bc%5D%5B0%5D=1&c%5Bc%5D%5B1%5D=2&c%5Bc%5D%5B2%5D=3' ||
       $url->build(Net\URL::FRAGMENT) !== 'fragment' ||
       $url->build(Net\URL::PATH | Net\URL::QUERY | Net\URL::FRAGMENT) !== 'very/long/path/index.php?a=1&b=2&c%5B0%5D=a&c%5B1%5D=b&c%5Bc%5D%5B0%5D=1&c%5Bc%5D%5B1%5D=2&c%5Bc%5D%5B2%5D=3#fragment' ||
-      $url->build(Net\URL::SCHEME | Net\URL::HOST | Net\URL::PATH) != 'https://user:pass@my.host:6060/very/long/path/index.php') return 'Building is not working correctly.';
+      $url->build(Net\URL::SCHEME | Net\URL::HOST | Net\URL::PATH) != 'https://user:pass@my.host:6060/very/long/path/index.php') return $msg;
+  $url->fragment = '';
+  $url->query = [];
+  if ($url->build() !== 'https://user:pass@my.host:6060/very/long/path/index.php') return $msg;
   return true;
 }
 

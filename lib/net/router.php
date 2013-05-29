@@ -62,12 +62,7 @@ class Router
    */
   public function component($component)
   {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    foreach ($this->lact[2] as $method)
-    {
-      $this->acts[$this->lact[0]][$method][$this->lact[1]]['component'] = $component;
-    }
-    return $this;
+    return $this->option('component', $component);
   }
   
   /**
@@ -80,12 +75,7 @@ class Router
    */
   public function validation(array $validation)
   {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    foreach ($this->lact[2] as $method)
-    {
-      $this->acts[$this->lact[0]][$method][$this->lact[1]]['validation'] = $validation;
-    }
-    return $this;
+    return $this->option('validation', $validation);
   }
   
   /**
@@ -97,12 +87,7 @@ class Router
    */
   public function args(array $args)
   {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    foreach ($this->lact[2] as $method)
-    {
-      $this->acts[$this->lact[0]][$method][$this->lact[1]]['args'] = array_merge($this->acts[$this->lact[0]][$method][$this->lact[1]]['args'], $args);
-    }
-    return $this;
+    return $this->option('args', $args);
   }
   
   /**
@@ -114,12 +99,7 @@ class Router
    */
   public function coordinateParameterNames($flag)
   {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    foreach ($this->lact[2] as $method)
-    {
-      $this->acts[$this->lact[0]][$method][$this->lact[1]]['coordinateParameterNames'] = (bool)$flag;
-    }
-    return $this;
+    return $this->option('coordinateParameterNames', (bool)$flag);
   }
   
   /**
@@ -131,12 +111,7 @@ class Router
    */
   public function ignoreWrongDelegate($flag)
   {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    foreach ($this->lact[2] as $method)
-    {
-      $this->acts[$this->lact[0]][$method][$this->lact[1]]['ignoreWrongDelegate'] = (bool)$flag;
-    }
-    return $this;
+    return $this->option('ignoreWrongDelegate', (bool)$flag);
   }
   
   /**
@@ -148,12 +123,7 @@ class Router
    */
   public function extra($parameter = 'extra')
   {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
-    foreach ($this->lact[2] as $method)
-    {
-      $this->acts[$this->lact[0]][$method][$this->lact[1]]['extra'] = $parameter;
-    }
-    return $this;
+    return $this->option('extra', $parameter);
   }
   
   /**
@@ -203,19 +173,22 @@ class Router
    * @param string $regex - regex for the given URL.
    * @param boolean $flag
    * @param array | string $methods - HTTP methods for which the secure operation is permitted.
+   * @param closure | string | Aleph\Core\IDelegate - a callback function that will be invoked before the redirect.
    * @return self
    * @access public
    */
-  public function secure($regex, $flag, $methods = '*')
+  public function secure($regex, $flag, $methods = '*', $callback = null)
   {
     $methods = $this->normalizeMethods($methods);
-    $action = function() use($flag)
+    $action = function() use($flag, $callback)
     {
       $url = new URL();
       if ($url->isSecured() != $flag) 
       {
         $url->secure($flag);
-        \Aleph::go($url->build());
+        $url = $url->build();
+        if ($callback === null) \Aleph::go($url);
+        return \Aleph::delegate($callback, $url);
       }
     };
     $data = ['action' => $action,
@@ -396,14 +369,14 @@ class Router
       $n = strpos($matches[1], '|');
       if ($n === false) 
       {
-        $p = '[^/]*';
+        $p = '[^/]*?';
         $name = $matches[1];
       }
       else
       {
         $name = substr($matches[1], 0, $n);
         $p = substr($matches[1], $n + 1);
-        if ($p == '') $p = '[^\/]*';
+        if ($p == '') $p = '[^/]*?';
       }
       $params[$name] = $name;
       $n = strlen($matches[0]);
@@ -429,5 +402,27 @@ class Router
     $methods = is_array($methods) ? $methods : explode('|', $methods);
     foreach ($methods as &$method) $method = strtoupper(trim($method));
     return $methods;
+  }
+  
+  /**
+   * Adds new option to the current action.
+   *
+   * @param string $option
+   * @param mixed $value
+   * @return self
+   * @access private
+   */
+  private function option($option, $value)
+  {
+    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
+    if (is_array($value))
+    {
+      foreach ($this->lact[2] as $method) $this->acts[$this->lact[0]][$method][$this->lact[1]][$option] = array_merge($this->acts[$this->lact[0]][$method][$this->lact[1]][$option], $value);
+    }
+    else
+    {
+      foreach ($this->lact[2] as $method) $this->acts[$this->lact[0]][$method][$this->lact[1]][$option] = $value;
+    }
+    return $this;
   }
 }
