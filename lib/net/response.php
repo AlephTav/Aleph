@@ -291,15 +291,15 @@ class Response
     $isBody = ($this->status < 100 || $this->status >= 200) && $this->status != 204 && $this->status != 304 && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] != 'HEAD';
     $body = $this->convertOutput ? $this->convert() : $this->body;
     if ($this->version != '1.0' && $this->version != '1.1') throw new Core\Exception($this, 'ERR_RESPONSE_1');
-    if (!isset($this->codes[$this->status])) throw new Core\Exception($this, 'ERR_RESPONSE_2', $this->status);
+    if (!isset(self::$codes[$this->status])) throw new Core\Exception($this, 'ERR_RESPONSE_2', $this->status);
     $headers = $this->headers->getHeaders();
     if (!$isBody)
     {
       unset($headers['Content-Type']);
       unset($headers['Content-Length']);
     }
-    if (substr(PHP_SAPI, 0, 3) === 'cgi') header('Status: ' . $this->status . ' ' . $this->codes[$this->status]);
-    else header('HTTP/' . $this->version . ' ' . $this->status . ' ' . $this->codes[$this->status]);
+    if (substr(PHP_SAPI, 0, 3) === 'cgi') header('Status: ' . $this->status . ' ' . self::$codes[$this->status]);
+    else header('HTTP/' . $this->version . ' ' . $this->status . ' ' . self::$codes[$this->status]);
     foreach ($headers as $name => $value) header($name . ': ' . $value);
     \Aleph::setOutput($isBody ? $body : '');
   }

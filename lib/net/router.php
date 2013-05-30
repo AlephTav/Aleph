@@ -283,7 +283,8 @@ class Router
     $request = Request::getInstance();
     if ($methods === null) $methods = [$request->method];
     else $methods = $this->normalizeMethods($methods);
-    $url = (string)$url;
+    if ($url === null) $url = $request->url;
+    else if (!($url instanceof URL)) $url = new URL($url);
     $res = new \StdClass();
     $res->success = false;
     $res->result = null;
@@ -296,17 +297,12 @@ class Router
         if (!in_array($method, $methods)) continue;
         foreach ($actions as $regex => $data)
         {
-          if (isset($url)) $subject = $url;
-          else
-          {
-            if (empty($urls[$data['component']])) $urls[$data['component']] = $request->url->build($data['component']);
-            $subject = $urls[$data['component']];
-          }
-          if (!preg_match_all($regex, $subject, $matches)) continue;
+          if (empty($urls[$data['component']])) $urls[$data['component']] = $url->build($data['component']);
+          if (!preg_match($regex, $urls[$data['component']], $matches)) continue;
           $flag = true;
           foreach ($data['validation'] as $param => $rgx)
           {
-            if (isset($matches[$param]) && !preg_match($rgx, $matches[$param][0]))
+            if (isset($matches[$param]) && !preg_match($rgx, $matches[$param]))
             {
               $flag = false;
               break;
@@ -320,7 +316,8 @@ class Router
             {
               foreach ($data['params'] as $k => $param)
               {
-                $data['action'] = str_replace('#' . $param . '#', $matches[$param][0], $data['action'], $count);
+                if (empty($matches[$param])) continue;
+                $data['action'] = str_replace('#' . $param . '#', $matches[$param], $data['action'], $count);
                 if ($count > 0) unset($data['params'][$k]);
               }
             }
@@ -331,7 +328,7 @@ class Router
             if (!empty($data['ignoreWrongDelegate'])) continue;
             throw new Core\Exception($this, 'ERR_ROUTER_2', (string)$act);
           }
-          foreach ($data['params'] as &$param) $param = $matches[$param][0];
+          foreach ($data['params'] as &$param) $param = isset($matches[$param]) ? $matches[$param] : null;
           if (!empty($data['extra'])) $data['args'][$data['extra']] = $data['params'];
           else $data['args'] = array_merge($data['args'], $data['params']);
           $params = $data['args'];

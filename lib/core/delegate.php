@@ -48,6 +48,7 @@ interface IDelegate
    * 'class[n]' - creates an object of a class 'class' with its constructor taking n arguments.
    * 'class[n]::method' - the same as 'class::method'.
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
+   * 'class@cid->method' - invokes a method 'method' of web control type of 'class' with unique (or logic) ID equals 'cid'.
    *
    * Also $callback can be an instance of \Closure class or Aleph\Core\Delegate class.
    *
@@ -119,11 +120,12 @@ interface IDelegate
   
   /**
    * Returns array of detail information of the callback.
-   * Output array has the format array('class' => ... [string] ..., 
-   *                                   'method' => ... [string] ..., 
-   *                                   'static' => ... [boolean] ..., 
-   *                                   'numargs' => ... [integer] ..., 
-   *                                   'type' => ... [string] ...)
+   * Output array has the format ['class' => ... [string] ..., 
+   *                              'method' => ... [string] ..., 
+   *                              'static' => ... [boolean] ..., 
+   *                              'numargs' => ... [integer] ..., 
+   *                              'cid' => ... [string] ...,
+   *                              'type' => ... [string] ...]
    *
    * @return array
    * @access public
@@ -147,7 +149,7 @@ interface IDelegate
   public function getMethod();
   
   /**
-   * Returns callback type. Possible values can be "closure", "function" or "class".
+   * Returns callback type. Possible values can be "closure", "function", "class" or "control".
    *
    * @return string
    * @access public
@@ -173,6 +175,9 @@ interface IDelegate
  */
 class Delegate implements IDelegate
 {
+  // Error message template.
+  const ERR_DELEGATE_1 = 'Control with UID = "[{var}]" is not found.';
+
   /**
    * A string in the Aleph callback format.
    *
@@ -214,6 +219,14 @@ class Delegate implements IDelegate
   protected $numargs = null;
   
   /**
+   * Contains logic identifier or unique identifier of a web-control.
+   *
+   * @var string $cid
+   * @access protected
+   */
+  protected $cid = null;
+  
+  /**
    * Can be equal 'function', 'closure' or 'class' according to callback format.
    *
    * @var string $type
@@ -235,6 +248,7 @@ class Delegate implements IDelegate
    * 'class[n]' - creates an object of a class 'class' with its constructor taking n arguments.
    * 'class[n]::method' - the same as 'class::method'.
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
+   * 'class@cid->method' - invokes a method 'method' of web control type of 'class' with unique (or logic) ID equals 'cid'.
    *
    * Also $callback can be an instance of \Closure class or Aleph\Core\Delegate class.
    *
@@ -256,6 +270,7 @@ class Delegate implements IDelegate
     }
     else
     {
+      $callback = htmlspecialchars_decode($callback);
       preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*)$/', $callback, $matches);
       if ($matches[4] == '' && $matches[2] == '')
       {
@@ -269,6 +284,13 @@ class Delegate implements IDelegate
         $this->numargs = (int)$matches[3];
         $this->static = ($matches[4] == '::');
         $this->method = $matches[5] ?: '__construct';
+        $class = explode('@', $this->class);
+        if (count($class) > 1)
+        {
+          $this->class = $class[0];
+          $this->cid = $class[1];
+          $this->type = 'control';
+        }
       }
     }
     $this->callback = $callback;
@@ -309,11 +331,15 @@ class Delegate implements IDelegate
   public function call(array $args = null)
   {
     $args = (array)$args;
-    if ($this->type != 'class') return call_user_func_array($this->method, $args);
+    if ($this->type != 'class' && $this->type != 'control') return call_user_func_array($this->method, $args);
     else
     {
       if ($this->static) return call_user_func_array([$this->class, $this->method], $args);
-      if ($this->class == 'Aleph') $class = \Aleph::instance();
+      if ($this->type == 'control')
+      {
+        if (($class = MVC\Page::$page->get($this->cid)) === false) throw new Core\Exception($this, 'ERR_DELEGATE_1', $this->cid);
+      }
+      else if ($this->class == 'Aleph') $class = \Aleph::getInstance();
       else if (MVC\Page::$page instanceof MVC\IPage && $this->class == get_class(MVC\Page::$page)) $class = MVC\Page::$page;
       else $class = $this->getClassObject($args);
       if ($this->method == '__construct') return $class;
@@ -336,7 +362,7 @@ class Delegate implements IDelegate
    */
   public function in($permissions)
   {
-    if ($this->type == 'closure' || $this->type == 'control') return true;
+    if ($this->type == 'closure') return true;
     if ($this->type == 'function')
     {
       $m = $this->split($this->method);
@@ -371,6 +397,7 @@ class Delegate implements IDelegate
   {
     if ($this->type == 'closure') return true;
     if ($this->type == 'function') return function_exists($this->method);
+    if ($this->type == 'control') return MVC\Page::$page->get($this->cid) !== false;
     $static = $this->static;
     $methodExists = function($class, $method) use ($static)
     {
@@ -399,11 +426,12 @@ class Delegate implements IDelegate
   
   /**
    * Returns array of detail information of the callback.
-   * Output array has the format array('class' => ... [string] ..., 
-   *                                   'method' => ... [string] ..., 
-   *                                   'static' => ... [boolean] ..., 
-   *                                   'numargs' => ... [integer] ..., 
-   *                                   'type' => ... [string] ...)
+   * Output array has the format ['class' => ... [string] ..., 
+   *                              'method' => ... [string] ..., 
+   *                              'static' => ... [boolean] ..., 
+   *                              'numargs' => ... [integer] ..., 
+   *                              'cid' => ... [string] ...,
+   *                              'type' => ... [string] ...]
    *
    * @return array
    * @access public
@@ -414,6 +442,7 @@ class Delegate implements IDelegate
             'method' => $this->method,
             'static' => $this->static,
             'numargs' => $this->numargs,
+            'cid' => $this->cid,
             'type' => $this->type];
   }
   
@@ -440,7 +469,7 @@ class Delegate implements IDelegate
   }
   
   /**
-   * Returns callback type. Possible values can be "closure", "function" or "class".
+   * Returns callback type. Possible values can be "closure", "function", "class" or "control".
    *
    * @return string
    * @access public
@@ -460,6 +489,7 @@ class Delegate implements IDelegate
   public function getClassObject(array $args = null)
   {
     if (empty($this->class)) return;
+    if ($this->type == 'control') return MVC\Page::$page->get($this->cid);
     $class = new \ReflectionClass($this->class);
     if ($this->numargs == 0) return $class->newInstance();
     return $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
@@ -470,11 +500,12 @@ class Delegate implements IDelegate
    *
    * @param string $identifier - full class name.
    * @return array
-   * @access protected
+   * @access private
    */
-  protected function split($identifier)
+  private function split($identifier)
   {
-    $ex = explode('\\', $identifier);
+    if (strlen($identifier) == 0) return ['', ''];
+    $ex = explode('\\', $identifier[0] == '\\' ? ltrim($identifier, '\\') : $identifier);
     return [array_pop($ex), implode('\\', $ex)];
   }
 }

@@ -2,7 +2,6 @@
 
 namespace Aleph\Net;
 
-require_once(__DIR__ . '/../core/delegate.php');
 require_once(__DIR__ . '/../net/headers.php');
 require_once(__DIR__ . '/../net/request.php');
 require_once(__DIR__ . '/../net/router.php');
@@ -17,14 +16,14 @@ function test_router()
   // Testing bind() method.
   $msg = 'Method bind() doesn\'t work.';
   $router = new Router();
-  $router->bind('category/#category|[^\#]+?#(/#ID#|)\##fragment|![0-9]+', $foo, 'GET');
-  $res = $router->route('GET', 'category/my_category/123#!345');
-  if ($res->success !== true || $res->result !== ['my_category', '123', '!345']) return $msg;
-  $res = $router->route('GET', 'category/cat#!100');
-  if ($res->success !== true || $res->result !== ['cat', '', '!100']) return $msg;
-  $res = $router->route('POST', 'category/cat#!100');
+  $router->bind('category/#category|[^0-9]+#(/#ID#|)', $foo, 'GET');
+  $res = $router->route('GET', 'category/my_category/123');
+  if ($res->success !== true || $res->result !== ['my_category', '123']) return $msg;
+  $res = $router->route('GET', 'category/cat');
+  if ($res->success !== true || $res->result !== ['cat', null]) return $msg;
+  $res = $router->route('POST', 'category/cat');
   if ($res->success !== false) return $msg;
-  $res = $router->route('GET', 'category/my_#category/123#!345');
+  $res = $router->route('GET', 'category/my_0category/123');
   if ($res->success !== false) return $msg;
   // Checks full bind() method.
   $router->clean('bind');
@@ -32,12 +31,12 @@ function test_router()
          ->component(URL::HOST | URL::PATH)
          ->validation(['path1' => '/^_a+_$/', 'path3' => '/^[0-9]*$/'])
          ->args(['arg1' => 'a', 'arg2' => 'b']);
-  $res = $router->route('POST', 'my.host.net/_aaaa_/foo/333');
+  $res = $router->route('POST', 'http://my.host.net/_aaaa_/foo/333');
   if ($res->success !== true || $res->result !== ['a', 'b', '_aaaa_', 'foo', '333']) return 'Extended method bind() doesn\'t work.';
   // Checks redirect() method.
-  $router->redirect('category/#category|[^\#]+?#(/#ID#|)\##fragment|![0-9]+', 'post/#ID#_#category#/#fragment#', 'GET', function($url){return $url;});
+  $router->redirect('category/#category|[^0-9]+#(/#ID#|)\##fragment|%21[0-9]+', 'post/#ID#_#category#/#fragment#', 'GET', function($url){return $url;})->component(URL::PATH | URL::FRAGMENT);
   $res = $router->route('GET', 'category/my_category/123#!345');
-  if ($res->success !== true || $res->result !== 'post/123_my_category/!345') return 'Method redirect() doesn\'t work.';
+  if ($res->success !== true || $res->result !== 'post/123_my_category/%21345') return 'Method redirect() doesn\'t work.';
   // Checks secure() method.
   $url = new URL();
   $router->secure('/^http.*/', true, '*', function($url){return $url;});

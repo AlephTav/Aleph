@@ -4,6 +4,7 @@ set_time_limit(0);
 
 $classes = ['Aleph',
             'Aleph\Core\Exception',
+            'Aleph\Core\Delegate',
             'Aleph\Cache\Cache',
             'Aleph\Core\Template',
             'Aleph\Net\URL',
