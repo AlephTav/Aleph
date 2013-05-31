@@ -92,7 +92,7 @@ class Controller
    * Sets HTTP error handler. Processing of 404th and 403rd errors is only available.
    *
    * @param integer $status - HTTP code error.
-   * @param string | \Closure | Aleph\Core\IDelegate $callback
+   * @param mixed $callback - a delegate.
    * @return self
    * @access public
    */
@@ -153,7 +153,7 @@ class Controller
         }
       }
       $res = $router->route($methods);
-      if ($res->success === false)
+      if ($res['success'] === false)
       {
         if (isset($this->handlers[404]))
         {
@@ -164,8 +164,8 @@ class Controller
       }
       else
       {
-        if (!($res->result instanceof IPage)) return $res->result;
-        $page = $res->result;
+        if (!($res['result'] instanceof IPage)) return $res['result'];
+        $page = $res['result'];
       }      
     }
     Page::$page = $page;

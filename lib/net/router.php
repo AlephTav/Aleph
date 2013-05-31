@@ -41,17 +41,17 @@ class Router
    * Array of actions for the routing.
    * 
    * @var array $acts
-   * @access protected
+   * @access private
    */
-  protected $acts = [];
+  private $acts = [];
   
   /**
    * Stores the link on the last invoked method.
    *
    * @var array $lact
-   * @access protected
+   * @access private
    */
-  protected $lact = null;
+  private $lact = null;
   
   /**
    * Sets URL-component for the current URL template.
@@ -173,7 +173,7 @@ class Router
    * @param string $regex - regex for the given URL.
    * @param boolean $flag
    * @param array | string $methods - HTTP methods for which the secure operation is permitted.
-   * @param closure | string | Aleph\Core\IDelegate - a callback function that will be invoked before the redirect.
+   * @param mixed $callback - a delegate that will be invoked before the redirect.
    * @return self
    * @access public
    */
@@ -208,7 +208,7 @@ class Router
    * @param string $regex - regex URL template.
    * @param string $redirect - URL to redirect.
    * @param array | string $methods - HTTP methods for which the redirect is permitted.
-   * @param closure | string | Aleph\Core\IDelegate - a callback function that will be invoked before the redirect.
+   * @param mixed $callback - a delegate that will be invoked before the redirect.
    * @return self
    * @access public
    */
@@ -247,7 +247,7 @@ class Router
    * Binds an URL regex template with some action.
    *
    * @param string $regex - regex URL template.
-   * @param closure | Aleph\Core\IDelegate | string $action
+   * @param mixed $action - a delegate.
    * @param array | string $methods - HTTP methods for which the given action is permitted.
    * @return self
    * @access public
@@ -274,7 +274,7 @@ class Router
    *
    * @param string | array $methods - HTTP request methods.
    * @param string | Aleph\Net\URL $url - the URL string to route.
-   * @return \StdClass with two properties: result - a result of the acted action, success - indication that the action was worked out.
+   * @return array with two elements: result - a result of the acted action, success - indication that the action was worked out.
    * @access public
    */
   public function route($methods = null, $url = null)
@@ -285,9 +285,7 @@ class Router
     else $methods = $this->normalizeMethods($methods);
     if ($url === null) $url = $request->url;
     else if (!($url instanceof URL)) $url = new URL($url);
-    $res = new \StdClass();
-    $res->success = false;
-    $res->result = null;
+    $res = ['success' => false, 'result' => null];
     $urls = [];
     foreach (['secure', 'redirect', 'bind'] as $type)
     {
@@ -341,13 +339,29 @@ class Router
              if (array_key_exists($name, $data['args'])) $params[] = $data['args'][$name];
             } 
           }
-          $res->result = $act->call($params);
-          $res->success = true;
+          $res['result'] = $act->call($params);
+          $res['success'] = true;
           return $res;
         }
       }
     }
     return $res;
+  }
+  
+  /**
+   * Returns array of HTTP methods in canonical form (in uppercase and without spaces).
+   *
+   * @param string|array - HTTP methods.
+   * @return array
+   * @access private
+   */
+  private function normalizeMethods($methods)
+  {
+    if ($methods == '*') return ['GET', 'PUT', 'POST', 'DELETE'];
+    if ($methods == '@') return ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'];
+    $methods = is_array($methods) ? $methods : explode('|', $methods);
+    foreach ($methods as &$method) $method = strtoupper(trim($method));
+    return $methods;
   }
   
   /**
@@ -358,7 +372,7 @@ class Router
    * @return array
    * @access private   
    */
-  protected function parseURLTemplate($url, &$regex)
+  private function parseURLTemplate($url, &$regex)
   {
     $params = []; $regex = (string)$url;
     $regex = preg_replace_callback('/(?:^|[^\\\])(?:\\\\\\\\)*#(.*?[^\\\](?:\\\\\\\\)*)(?:#|$)/', function($matches) use (&$params)
@@ -383,22 +397,6 @@ class Router
     }, $regex);
     $regex = '#^' . $regex . '$#';
     return $params;
-  }
-  
-  /**
-   * Returns array of HTTP methods in canonical form (in uppercase and without spaces).
-   *
-   * @param string|array - HTTP methods.
-   * @return array
-   * @access protected
-   */
-  protected function normalizeMethods($methods)
-  {
-    if ($methods == '*') return ['GET', 'PUT', 'POST', 'DELETE'];
-    if ($methods == '@') return ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'];
-    $methods = is_array($methods) ? $methods : explode('|', $methods);
-    foreach ($methods as &$method) $method = strtoupper(trim($method));
-    return $methods;
   }
   
   /**

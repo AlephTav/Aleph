@@ -47,9 +47,8 @@ final class Aleph implements \ArrayAccess
   const ERR_GENERAL_1 = 'Class "[{var}]" is not found.';
   const ERR_GENERAL_2 = 'Method "[{var}]" of class "[{var}]" doesn\'t exist.';
   const ERR_GENERAL_3 = 'Property "[{var}]" of class "[{var}]" doesn\'t exist.';
-  const ERR_GENERAL_4 = 'Autoload callback can only be Aleph callback (string value), Closure object or Aleph\Core\IDelegate instance.';
-  const ERR_GENERAL_5 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
-  const ERR_GENERAL_6 = 'Class "[{var}]" is not found in "[{var}]". You should include this class manually in connect.php';
+  const ERR_GENERAL_4 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
+  const ERR_GENERAL_5 = 'Class "[{var}]" is not found in "[{var}]". You should include this class manually in connect.php';
   const ERR_CONFIG_1 = 'File "[{var}]" is not correct ini file.';
 
   /**
@@ -189,9 +188,9 @@ final class Aleph implements \ArrayAccess
   private $key = null;
   
   /**
-   * Autoload callback. Can be a closure, an instance of Aleph\Core\IDelegate or a string in Aleph callback format.
+   * Autoload callback.
    *
-   * @var string | closure | Aleph\Core\IDelegate
+   * @var mixed $alCallback
    * @access private
    */
   private $alCallback = null;
@@ -391,7 +390,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Creates and executes a delegate.
    *
-   * @param string | \Closure | Aleph\Core\IDelegate $callback - the Aleph callback string or closure.
+   * @param mixed $callback - a delegate.
    * @params arguments of the callback.
    * @return mixed
    * @access public
@@ -940,7 +939,7 @@ final class Aleph implements \ArrayAccess
       {
         if (class_exists($class, false)) continue;
         if (is_file($lib . $path)) require_once($lib . $path);
-        if (!class_exists($class, false)) throw new \Exception(self::error('Aleph', 'ERR_GENERAL_6', $class, $lib . $path));
+        if (!class_exists($class, false)) throw new \Exception(self::error('Aleph', 'ERR_GENERAL_5', $class, $lib . $path));
       }
       ini_set('unserialize_callback_func', 'spl_autoload_call');
       if (session_id() == '') session_start();
@@ -1090,7 +1089,7 @@ final class Aleph implements \ArrayAccess
                 {
                   return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                 };
-                self::exception(new Core\Exception($this, 'ERR_GENERAL_5', '\\' . $namespace . $tkn[1], $normalize($this->classes[$cs]), $normalize($file)));
+                self::exception(new Core\Exception($this, 'ERR_GENERAL_4', '\\' . $namespace . $tkn[1], $normalize($this->classes[$cs]), $normalize($file)));
                 exit;
               }
               $this->classes[$cs] = $file;
@@ -1311,14 +1310,13 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Sets autoload callback. Callback can be a closure, an instance of Aleph\Core\IDelegate or Aleph callback string.
+   * Sets autoload callback.
    *
-   * @param string | \Closure | Aleph\Core\IDelegate $callback
+   * @param mixed $callback - a delegate.
    * @access public
    */
   public function setAutoload($callback)
   {
-    if (is_array($callback) || is_object($callback) && !($callback instanceof \Closure) && !($callback instanceof Core\IDelegate)) throw new Core\Exception($this, 'ERR_GENERAL_4');
     $this->alCallback = new Core\Delegate($callback);
   }
   

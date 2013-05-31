@@ -82,7 +82,7 @@ class API
         }
       }
     }
-    if (!$router->route()->success) static::notFound();
+    if (!$router->route()['success']) static::notFound();
   }
   
   protected function batch()

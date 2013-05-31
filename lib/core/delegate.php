@@ -50,9 +50,7 @@ interface IDelegate
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
    * 'class@cid->method' - invokes a method 'method' of web control type of 'class' with unique (or logic) ID equals 'cid'.
    *
-   * Also $callback can be an instance of \Closure class or Aleph\Core\Delegate class.
-   *
-   * @param string $callback - an Aleph framework callback string.
+   * @param mixed $callback - an Aleph framework callback string or a callable callback.
    * @access public
    */
   public function __construct($callback);
@@ -176,7 +174,8 @@ interface IDelegate
 class Delegate implements IDelegate
 {
   // Error message template.
-  const ERR_DELEGATE_1 = 'Control with UID = "[{var}]" is not found.';
+  const ERR_DELEGATE_1 = 'Callback is not callable.';
+  const ERR_DELEGATE_2 = 'Control with UID = "[{var}]" is not found.';
 
   /**
    * A string in the Aleph callback format.
@@ -250,14 +249,12 @@ class Delegate implements IDelegate
    * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
    * 'class@cid->method' - invokes a method 'method' of web control type of 'class' with unique (or logic) ID equals 'cid'.
    *
-   * Also $callback can be an instance of \Closure class or Aleph\Core\Delegate class.
-   *
-   * @param string $callback - an Aleph framework callback string or closure.
+   * @param mixed $callback - an Aleph framework callback string or a callable callback.
    * @access public
    */
   public function __construct($callback)
   {
-    if ($callback instanceof Delegate)
+    if ($callback instanceof IDelegate)
     {
       foreach ($callback->getInfo() as $var => $value) $this->{$var} = $value;
       $this->callback = (string)$callback;
@@ -266,10 +263,31 @@ class Delegate implements IDelegate
     {
       $this->type = 'closure';
       $this->method = $callback;
-      $callback = 'Closure';
+      $this->callback = 'Closure';
+    }
+    else if (is_object($callback))
+    {
+      $class = new \ReflectionClass($callback);
+      $this->type = 'class';
+      $this->class = $callback;
+      $this->method = '__construct';
+      $this->numargs = $class->hasMethod($this->method) ? $class->getConstructor()->getNumberOfParameters() : 0;
+      $this->static = false;
+      $this->callback = get_class($callback) . '[' . ($this->numargs ?: '') . ']';
+    }
+    else if (is_array($callback))
+    {
+      if (!is_callable($callback, true)) throw new Exception($this, 'ERR_DELEGATE_1');
+      $this->type = 'class';
+      $this->class = $callback[0];
+      $this->method = $callback[1];
+      $this->static = !is_object($this->class);
+      $this->numargs = $this->static ? 0 : (new \ReflectionClass($this->class))->getConstructor()->getNumberOfParameters();
+      $this->callback = (is_object($this->class) ? get_class($this->class) : $this->class) . ($this->static ? '::' : '[' . ($this->numargs ?: ''). ']->') . $this->method;
     }
     else
     {
+      if ($callback == '' || is_numeric($callback)) throw new Exception($this, 'ERR_DELEGATE_1');
       $callback = htmlspecialchars_decode($callback);
       preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*)$/', $callback, $matches);
       if ($matches[4] == '' && $matches[2] == '')
@@ -281,6 +299,7 @@ class Delegate implements IDelegate
       {
         $this->type = 'class';
         $this->class = $matches[1] ?: (MVC\Page::$page instanceof MVC\IPage ? get_class(MVC\Page::$page) : 'Aleph');
+        if ($this->class[0] == '\\') $this->class = ltrim($this->class, '\\');
         $this->numargs = (int)$matches[3];
         $this->static = ($matches[4] == '::');
         $this->method = $matches[5] ?: '__construct';
@@ -292,8 +311,8 @@ class Delegate implements IDelegate
           $this->type = 'control';
         }
       }
+      $this->callback = $callback;
     }
-    $this->callback = $callback;
   } 
   
   /**
@@ -331,14 +350,17 @@ class Delegate implements IDelegate
   public function call(array $args = null)
   {
     $args = (array)$args;
-    if ($this->type != 'class' && $this->type != 'control') return call_user_func_array($this->method, $args);
+    if ($this->type == 'function' || $this->type == 'closure') return call_user_func_array($this->method, $args);
+    if ($this->type == 'control')
+    {
+      if (($class = MVC\Page::$page->get($this->cid)) === false) throw new Core\Exception($this, 'ERR_DELEGATE_2', $this->cid);
+      if ($this->method == '__construct') return $class;
+      return call_user_func_array([$class, $this->method], $args);
+    }
     else
     {
       if ($this->static) return call_user_func_array([$this->class, $this->method], $args);
-      if ($this->type == 'control')
-      {
-        if (($class = MVC\Page::$page->get($this->cid)) === false) throw new Core\Exception($this, 'ERR_DELEGATE_1', $this->cid);
-      }
+      if (is_object($this->class)) $class = $this->class;
       else if ($this->class == 'Aleph') $class = \Aleph::getInstance();
       else if (MVC\Page::$page instanceof MVC\IPage && $this->class == get_class(MVC\Page::$page)) $class = MVC\Page::$page;
       else $class = $this->getClassObject($args);
@@ -374,7 +396,7 @@ class Delegate implements IDelegate
     }
     else
     {
-      $m = $this->split($this->class);
+      $m = $this->split(is_object($this->class) ? get_class($this->class) : $this->class);
       foreach ((array)$permissions as $permission)
       {
         $info = explode($this->static ? '::' : '->', $permission);
@@ -402,10 +424,12 @@ class Delegate implements IDelegate
     $methodExists = function($class, $method) use ($static)
     {
       if (!method_exists($class, $method)) return false;
-      $method = (new \ReflectionClass($class))->getMethod($method);
+      $class = new \ReflectionClass($class);
+      if (!$class->hasMethod($method)) return false;
+      $method = $class->getMethod($method);
       return $method->isPublic() && $static === $method->isStatic();
     };
-    if (class_exists($this->class, false)) return $methodExists($this->class, $this->method);
+    if (is_object($this->class) || class_exists($this->class, false)) return $methodExists($this->class, $this->method);
     if (!$autoload) return false;
     if (!\Aleph::getInstance()->load($this->class)) return false;
     return $methodExists($this->class, $this->method);
@@ -413,15 +437,18 @@ class Delegate implements IDelegate
   
   /**
    * Returns parameters of a delegate class method, function or closure. 
-   * Parameters returns as an array of ReflectionParameter class instance.
+   * Method returns FALSE if class method doesn't exist.
+   * Parameters are returned as an array of ReflectionParameter class instance.
    *
-   * @return \ReflectionParameter
+   * @return \ReflectionParameter | boolean
    * @access public
    */
   public function getParameters()
   {
     if ($this->type != 'class') return (new \ReflectionFunction($this->method))->getParameters();
-    return (new \ReflectionClass($this->class))->getMethod($this->method)->getParameters();
+    $class = new \ReflectionClass($this->class);
+    if (!$class->hasMethod($this->method)) return false;
+    return $class->getMethod($this->method)->getParameters();
   }
   
   /**
