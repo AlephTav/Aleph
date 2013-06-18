@@ -38,14 +38,14 @@ class Configurator
     $a = \Aleph::init();
     \Aleph::errorHandling(false);
     // Reads config data.
-    $cfg = $a->config($this->isPHPConfig() ? require($this->config['path']['config']) : $this->config['path']['config'])->config();
+    $cfg = $a->config($this->config['path']['config'])->config();
     // Search log directories.
     $logs = $this->getLogDirectories();
     // Shows page.
     $this->show(['errors' => [], 
                  'cfg' => $cfg, 
                  'logs' => $logs,
-                 'common' => ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'cache']]);
+                 'common' => ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'cache']]);
   }
   
   public function process()
@@ -58,7 +58,7 @@ class Configurator
     $a = \Aleph::init();
     \Aleph::errorHandling(false);
     // Reads config data.
-    $a->config($this->isPHPConfig() ? require($this->config['path']['config']) : $this->config['path']['config']);
+    $a->config($this->config['path']['config']);
     // Sets default cache.
     $a->cache(Cache\Cache::getInstance());
     // Performs action.
@@ -98,23 +98,23 @@ class Configurator
         $this->saveConfig($cfg);
         break;
       case 'config.restore':
-        $cfg = array('debugging' => true,
-                     'logging' => true,
-                     'templateDebug' => 'lib/tpl/debug.tpl',
-                     'cache' => array('gcProbability' => 33.333,
-                                      'type' => 'file',
-                                      'directory' => 'cache'),
-                     'dirs' => array('application' => 'app',
-                                     'framework' => 'lib',
-                                     'logs' => 'app/tmp/logs',
-                                     'cache' => 'app/tmp/cache',
-                                     'temp' => 'app/tmp/null',
-                                     'ar' => 'app/core/model/ar',
-                                     'orm' => 'app/core/model/orm',
-                                     'js' => 'app/inc/js',
-                                     'css' => 'app/inc/css',
-                                     'tpl' => 'app/inc/tpl',
-                                     'elements' => 'app/inc/tpl/elements'));
+        $cfg = ['debugging' => true,
+                'logging' => true,
+                'templateDebug' => 'lib/tpl/debug.tpl',
+                'cache' => ['gcProbability' => 33.333,
+                            'type' => 'file',
+                            'directory' => 'cache'],
+                'dirs' => ['application' => 'app',
+                           'framework' => 'lib',
+                           'logs' => 'app/tmp/logs',
+                           'cache' => 'app/tmp/cache',
+                           'temp' => 'app/tmp/null',
+                           'ar' => 'app/core/model/ar',
+                           'orm' => 'app/core/model/orm',
+                           'js' => 'app/inc/js',
+                           'css' => 'app/inc/css',
+                           'tpl' => 'app/inc/tpl',
+                           'elements' => 'app/inc/tpl/elements']];
         $this->saveConfig($cfg);
         break;
       case 'log.refresh':
@@ -173,7 +173,7 @@ class Configurator
         if ($j == $i) break;
         $res .= is_array($token) ? $token[1] : $token;
       }
-      $res .= 'return ' . $this->formArray($cfg, 13) . ';';
+      $res .= 'return ' . $this->formArray($cfg, 8) . ';';
     }
     else
     {
@@ -184,12 +184,12 @@ class Configurator
   
   private function formINIFile(array $a)
   {
-    $tmp1 = $tmp2 = array();
+    $tmp1 = $tmp2 = [];
     foreach ($a as $k => $v)
     {
       if (is_array($v))
       {
-        $tmp = array('[' . $k . ']');
+        $tmp = ['[' . $k . ']'];
         foreach ($v as $kk => $vv)
         {
           if (!is_numeric($vv))
@@ -217,24 +217,19 @@ class Configurator
     return implode(PHP_EOL, array_merge($tmp1, $tmp2));
   }
   
-  private function formArray(array $a, $indent = 6)
+  private function formArray(array $a, $indent = 1)
   {
     $tmp = array();
     foreach ($a as $k => $v)
     {
       if (is_string($k)) $k = "'" . addcslashes($k, "'") . "'";
-      if (is_array($v)) $v = $this->formArray($v, $indent + strlen($k) + 10);
+      if (is_array($v)) $v = $this->formArray($v, $indent + strlen($k) + 5);
       else if (is_string($v)) $v = "'" . addcslashes($v, "'") . "'";
       else if (is_bool($v)) $v = $v ? 'true' : 'false';
       else if ($v === null) $v = 'null';
       $tmp[] = $k . ' => ' . $v;
     }
-    return 'array(' . implode(',' . PHP_EOL . str_repeat(' ', $indent), $tmp) . ')';
-  }
-  
-  private function isPHPConfig()
-  {
-    return strtolower(pathinfo($this->config['path']['config'], PATHINFO_EXTENSION)) == 'php';
+    return '[' . implode(',' . PHP_EOL . str_repeat(' ', $indent), $tmp) . ']';
   }
   
   private function removeFiles($dir, $removeDir = true)
@@ -269,6 +264,11 @@ class Configurator
   private static function getArguments()
   {
     return $_REQUEST;
+  }
+  
+  private function isPHPConfig()
+  {
+    return strtolower(pathinfo($this->config['path']['config'], PATHINFO_EXTENSION)) == 'php';
   }
   
   private static function isAjaxRequest()

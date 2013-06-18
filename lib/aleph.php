@@ -1141,26 +1141,36 @@ final class Aleph implements \ArrayAccess
     }
     else
     {
-      $data = parse_ini_file($param, true);
-      if ($data === false) throw new Core\Exception($this, 'ERR_CONFIG_1', $param);
-      $ini = true;
+      $ini = false;
+      if (strtolower(pathinfo($param, PATHINFO_EXTENSION)) == 'php') $data = require_once($param);
+      else
+      {
+        $data = parse_ini_file($param, true);
+        if ($data === false) throw new Core\Exception($this, 'ERR_CONFIG_1', $param);
+        $ini = true;
+      }
     }
     if ($replace) $this->config = [];
+    $convert = function($v) use ($ini)
+    {
+      if (!$ini || is_array($v) || is_object($v)) return $v;
+      if (strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}'))
+      {
+        $tmp = json_decode($v, true);
+        $v = $tmp !== null ? $tmp : $v;
+      }
+      return $v;
+    };
     foreach ($data as $section => $properties)
     {
       if (is_array($properties)) 
       {
-        foreach ($properties as $k => $v)
-        {
-          if ($ini && !is_array($v) && strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}')) 
-          {
-            $tmp = json_decode($v, true);
-            $v = $tmp !== null ? $tmp : $v;
-          }
-          $this->config[$section][$k] = $v;
-        }
+        foreach ($properties as $k => $v) $this->config[$section][$k] = $convert($v);
       }
-      else $this->config[$section] = $properties;
+      else 
+      {
+        $this->config[$section] = $convert($properties);
+      }
     }
     return $this;
   }

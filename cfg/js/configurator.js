@@ -53,6 +53,8 @@ $(function()
                'logging': $('#logOn').attr('checked') == 'checked' ? 1 : 0,
                'templateDebug': $('#tplDebug').val(),
                'templateBug': $('#tplBug').val(),
+               'customDebugMethod': $('#customDebugMethod').val(),
+               'customLogMethod': $('#customLogMethod').val(),
                'dirs': {},
                'custom': {},
                'cache': {'type': $('#cacheType').val()}};
