@@ -161,6 +161,8 @@ class Request
   {
     $type = $this->headers->get('Content-Type');
     if ($type === false || strlen($this->input) == 0) return $this->input;
+    $separatorPos = strpos($type, ';');
+    if ($separatorPos !== false) $type = trim(substr($type, 0, $separatorPos));
     switch ($type)
     {
       case 'text/plain':
@@ -174,7 +176,7 @@ class Request
           return $this->input;
         }
       case 'application/json':
-        return json_decode($this->body, true);
+        return json_decode($this->input, true);
       case 'application/xml':
         return json_decode(json_encode(simplexml_load_string($this->input)), true);
     }
