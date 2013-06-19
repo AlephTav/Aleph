@@ -1014,11 +1014,11 @@ final class Aleph implements \ArrayAccess
     }
     $cs = strtolower($class);
     if ($cs[0] != '\\') $cs = '\\' . $cs;
-    if (class_exists($cs, false) || interface_exists($cs, false) || function_exists('trait_exists') && trait_exists($cs, false)) return true;
+    if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     if (isset($classes[$cs]) && is_file($classes[$cs]))
     {
       require_once($classes[$cs]);
-      if (class_exists($cs, false) || interface_exists($cs, false) || function_exists('trait_exists') && trait_exists($cs, false)) return true;
+      if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     }
     if ($this->find($cs) === false)
     {
@@ -1045,6 +1045,18 @@ final class Aleph implements \ArrayAccess
     if ($path) $paths = [$path => true];
     else
     {
+      $cache = $this->cache();
+      if ($cache->get($this->key) === false)
+      {
+        while (($classes = $cache->get($this->key)) === false) sleep(1);
+        if (isset($classes[$class]) && is_file($classes[$class]))
+        {
+          require_once($classes[$class]);
+          return class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false);
+        }
+        return false;
+      }
+      $cache->set($this->key, false, $cache->getVaultLifeTime(), '--autoload');
       $paths = $this->dirs ?: [self::$root => true];
       $this->classes = [];
       $first = true;
