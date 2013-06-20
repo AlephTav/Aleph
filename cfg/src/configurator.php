@@ -77,7 +77,7 @@ class Configurator
           if (!empty($args['custom'])) $a->cache()->cleanByGroup($group);
           else
           {
-            $map = array('autoload' => '--autoload', 'localization' => '--localization', 'database' => '--db', 'pages' => '--pom');
+            $map = array('localization' => '--localization', 'database' => '--db', 'pages' => '--pom');
             if (isset($map[$group])) $a->cache()->cleanByGroup($map[$group]);
           }
         }
