@@ -45,6 +45,7 @@ class Configurator
     $this->show(['errors' => [], 
                  'cfg' => $cfg, 
                  'logs' => $logs,
+                 'classes' => $a->getClasses(),
                  'common' => ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'cache']]);
   }
   

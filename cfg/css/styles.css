@@ -23,9 +23,11 @@
 .cache-file,.cache-memory{display:none;}
 .dialog{width:500px;min-height:160px;z-index:100;}
 .shadow{width:100%;height:100%;z-index:99;background-color:#000000;position:fixed;left:0;top:0;opacity:0.5;filter:alpha(opacity=50);display:none;}
-.log-list{margin:10px;max-height:600px;min-height:600px;overflow-x:hidden;overflow-y:auto;}
-.log-details{max-height:696px;min-height:696px;overflow-x:hidden;overflow-y:auto;}
+.log-list{margin:10px;max-height:704px;min-height:704px;overflow-x:hidden;overflow-y:auto;}
+.log-details{max-height:800px;min-height:800px;overflow-x:hidden;overflow-y:auto;}
 .log-trace{max-width:654px;overflow-x:hidden;overflow-y:auto;}
+.class-map{max-height:800px;min-height:800px;overflow-y:auto;}
 .bordertable{margin:0;}
 .bordertable textarea{height:300px;}
 hr{border-color:#CCCCCC;}
+h2{cursor:pointer;}

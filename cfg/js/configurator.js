@@ -14,6 +14,10 @@ $(function()
   {
     selectCacheType($(this).val());
   });
+  $('h2').click(function()
+  {
+    $(this).next().toggle();
+  });
   // Actions
   //---------------------------------------------
   // Garbage Collector

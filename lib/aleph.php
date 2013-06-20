@@ -48,7 +48,6 @@ final class Aleph implements \ArrayAccess
   const ERR_GENERAL_2 = 'Method "[{var}]" of class "[{var}]" doesn\'t exist.';
   const ERR_GENERAL_3 = 'Property "[{var}]" of class "[{var}]" doesn\'t exist.';
   const ERR_GENERAL_4 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
-  const ERR_GENERAL_5 = 'Class "[{var}]" is not found in "[{var}]". You should include this class manually in connect.php';
   const ERR_CONFIG_1 = 'File "[{var}]" is not correct ini file.';
 
   /**
@@ -180,12 +179,12 @@ final class Aleph implements \ArrayAccess
   private $mask = null;
   
   /**
-   * Cache key for storing of paths to including classes.
+   * Path to the class map file.
    *
    * @var string $key
    * @access private
    */
-  private $key = null;
+  private $classmap = null;
   
   /**
    * Autoload callback.
@@ -932,15 +931,6 @@ final class Aleph implements \ArrayAccess
       if (!isset($_SERVER['DOCUMENT_ROOT'])) $_SERVER['DOCUMENT_ROOT'] = __DIR__;
       self::$root = rtrim($_SERVER['DOCUMENT_ROOT'], '\\/');
       self::$siteUniqueID = md5(self::$root);
-      $lib = self::$root . '/' . pathinfo(__DIR__, PATHINFO_BASENAME) . '/';
-      $files = ['core/exception.php' => 'Aleph\Core\Exception', 
-                'cache/cache.php' => 'Aleph\Cache\Cache'];
-      foreach ($files as $path => $class)
-      {
-        if (class_exists($class, false)) continue;
-        if (is_file($lib . $path)) require_once($lib . $path);
-        if (!class_exists($class, false)) throw new \Exception(self::error('Aleph', 'ERR_GENERAL_5', $class, $lib . $path));
-      }
       ini_set('unserialize_callback_func', 'spl_autoload_call');
       if (session_id() == '') session_start();
       else session_regenerate_id(true);
@@ -973,7 +963,7 @@ final class Aleph implements \ArrayAccess
     $this->config = [];
     $this->classes = $this->exclusions = [];
     $this->dirs = [self::$root => true];
-    $this->key = 'autoload_' . self::$siteUniqueID;
+    $this->classmap = self::$root . '/classmap.php';
     $this->mask = '/.+\.php$/i';
     $this->autoload = '';
     $this->cache = null;
@@ -1045,10 +1035,9 @@ final class Aleph implements \ArrayAccess
     if ($path) $paths = [$path => true];
     else
     {
-      $cache = $this->cache();
-      if ($cache->get($this->key) === false)
+      if (file_exists($this->classmap) && require($this->classmap) === false)
       {
-        while (($classes = $cache->get($this->key)) === false) sleep(1);
+        while (($classes = require($this->classmap)) === false) sleep(1);
         if (isset($classes[$class]) && is_file($classes[$class]))
         {
           require_once($classes[$class]);
@@ -1056,7 +1045,7 @@ final class Aleph implements \ArrayAccess
         }
         return false;
       }
-      $cache->set($this->key, false, $cache->getVaultLifeTime(), '--autoload');
+      file_put_contents($this->classmap, '<?php return false;');
       $paths = $this->dirs ?: [self::$root => true];
       $this->classes = [];
       $first = true;
@@ -1101,7 +1090,7 @@ final class Aleph implements \ArrayAccess
                 {
                   return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                 };
-                self::exception(new Core\Exception($this, 'ERR_GENERAL_4', '\\' . $namespace . $tkn[1], $normalize($this->classes[$cs]), $normalize($file)));
+                self::exception(new \Exception(self::error('Aleph::ERR_GENERAL_4', '\\' . $namespace . $tkn[1], $normalize($this->classes[$cs]), $normalize($file))));
                 exit;
               }
               $this->classes[$cs] = $file;
@@ -1246,8 +1235,11 @@ final class Aleph implements \ArrayAccess
    */
   public function setClasses(array $classes)
   {
+    $code = [];
+    foreach ($classes as $class => $path) $code[] = "'" . $class . "' => '" . str_replace("'", "\'", $path) . "'";
+    file_put_contents($this->classmap, '<?php return [' . implode(',' . PHP_EOL . '              ', $code) . '];');
+    chmod($this->classmap, 0775);
     $this->classes = $classes;
-    $this->cache()->set($this->key, $this->classes, $this->cache()->getVaultLifeTime(), '--autoload');
   }
   
   /**
@@ -1258,7 +1250,7 @@ final class Aleph implements \ArrayAccess
    */
   public function getClasses()
   {
-    if (!$this->classes) $this->classes = (array)$this->cache()->get($this->key); 
+    if (!$this->classes) $this->classes = file_exists($this->classmap) ? (array)require($this->classmap) : [];
 	   return $this->classes;
   }
   

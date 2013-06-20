@@ -45,7 +45,7 @@
 		  <div class="ym-wbox">
       <div class="box info" style="margin-top:0;">
         <h2>Config</h2>
-        <div class="ym-form">
+        <div class="ym-form" style="display:none;">
           <div class="ym-grid">
             <div class="ym-g33 ym-gl">
               <div class="ym-grid">
@@ -167,7 +167,7 @@
       </div>
       <div class="box info">
         <h2>Cache</h2>
-        <div class="ym-form">
+        <div class="ym-form" style="display:none;">
           <div class="ym-fbox-check">
             <div>
               <span class="ym-label">Cache Groups</span>
@@ -204,7 +204,7 @@
       </div>
       <div class="box info">
         <h2>Logs</h2>
-        <div class="ym-grid">
+        <div class="ym-grid" style="display:none;">
           <div class="ym-g33 ym-gl">
             <div class="ym-form">
               <nav id="logList" class="log-list ym-vlist"><? require_once(__DIR__ . '/loglist.html'); ?></nav>
@@ -220,12 +220,16 @@
         </div>
       </div>
       <div class="box info">
+        <h2>Class Map</h2>
+        <div class="ym-grid" style="display:none;"><pre class="class-map"><?=print_r($classes, true);?></pre></div>
+      </div>
+      <div class="box info">
         <h2>PHP Info</h2>
-        <iframe src="?info" width="100%" height="500px;" style="border:none;"></iframe>
+        <iframe src="?info" width="100%" height="800px;" style="border:none;display:none;"></iframe>
       </div>
       <div class="box info">
         <h2>Auto Tests</h2>
-        <iframe src="?tests" width="100%" height="500px;" style="border:none;"></iframe>
+        <iframe src="?tests" width="100%" height="800px;" style="border:none;display:none;"></iframe>
       </div>
     </div>
     <?}?>
