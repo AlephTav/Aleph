@@ -77,7 +77,7 @@ class Configurator
           if (!empty($args['custom'])) $a->cache()->cleanByGroup($group);
           else
           {
-            $map = array('localization' => '--localization', 'database' => '--db', 'pages' => '--pom');
+            $map = ['templates' => '--templates', 'localization' => '--localization', 'database' => '--db', 'pages' => '--pom'];
             if (isset($map[$group])) $a->cache()->cleanByGroup($map[$group]);
           }
         }
@@ -102,9 +102,9 @@ class Configurator
         $cfg = ['debugging' => true,
                 'logging' => true,
                 'templateDebug' => 'lib/tpl/debug.tpl',
-                'cache' => ['gcProbability' => 33.333,
-                            'type' => 'file',
-                            'directory' => 'cache'],
+                'cache' => ['type' => 'file',
+                            'directory' => 'cache',
+                            'gcProbability' => 33.333],
                 'dirs' => ['application' => 'app',
                            'framework' => 'lib',
                            'logs' => 'app/tmp/logs',
@@ -224,10 +224,13 @@ class Configurator
     foreach ($a as $k => $v)
     {
       if (is_string($k)) $k = "'" . addcslashes($k, "'") . "'";
-      if (is_array($v)) $v = $this->formArray($v, $indent + strlen($k) + 5);
-      else if (is_string($v)) $v = "'" . addcslashes($v, "'") . "'";
-      else if (is_bool($v)) $v = $v ? 'true' : 'false';
-      else if ($v === null) $v = 'null';
+      if (!is_numeric($v))
+      {
+        if (is_array($v)) $v = $this->formArray($v, $indent + strlen($k) + 5);
+        else if (is_string($v)) $v = "'" . addcslashes($v, "'") . "'";
+        else if (is_bool($v)) $v = $v ? 'true' : 'false';
+        else if ($v === null) $v = 'null';
+      }
       $tmp[] = $k . ' => ' . $v;
     }
     return '[' . implode(',' . PHP_EOL . str_repeat(' ', $indent), $tmp) . ']';

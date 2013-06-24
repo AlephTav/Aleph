@@ -108,15 +108,6 @@ interface IDelegate
   public function isCallable($autoload = true);
   
   /**
-   * Returns parameters of a delegate class method, function or closure. 
-   * Parameters returns as an array of ReflectionParameter class instance.
-   *
-   * @return \ReflectionParameter
-   * @access public
-   */
-  public function getParameters();
-  
-  /**
    * Returns array of detail information of the callback.
    * Output array has the format ['class' => ... [string] ..., 
    *                              'method' => ... [string] ..., 
@@ -153,6 +144,16 @@ interface IDelegate
    * @access public
    */
   public function getType();
+  
+  /**
+   * Returns parameters of a delegate class method, function or closure. 
+   * Method returns FALSE if class method doesn't exist.
+   * Parameters are returned as an array of \ReflectionParameter class instance.
+   *
+   * @return array | boolean
+   * @access public
+   */
+  public function getParameters();
   
   /**
    * Creates and returns object of callback's class.
@@ -289,7 +290,8 @@ class Delegate implements IDelegate
     {
       if ($callback == '' || is_numeric($callback)) throw new Exception($this, 'ERR_DELEGATE_1');
       $callback = htmlspecialchars_decode($callback);
-      preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*)$/', $callback, $matches);
+      preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*|[^:-]*parent::[^:-]*)$/', $callback, $matches);
+      if (count($matches) == 0) throw new Exception($this, 'ERR_DELEGATE_1');
       if ($matches[4] == '' && $matches[2] == '')
       {
         $this->type = 'function';
@@ -436,22 +438,6 @@ class Delegate implements IDelegate
   }
   
   /**
-   * Returns parameters of a delegate class method, function or closure. 
-   * Method returns FALSE if class method doesn't exist.
-   * Parameters are returned as an array of ReflectionParameter class instance.
-   *
-   * @return \ReflectionParameter | boolean
-   * @access public
-   */
-  public function getParameters()
-  {
-    if ($this->type != 'class') return (new \ReflectionFunction($this->method))->getParameters();
-    $class = new \ReflectionClass($this->class);
-    if (!$class->hasMethod($this->method)) return false;
-    return $class->getMethod($this->method)->getParameters();
-  }
-  
-  /**
    * Returns array of detail information of the callback.
    * Output array has the format ['class' => ... [string] ..., 
    *                              'method' => ... [string] ..., 
@@ -504,6 +490,22 @@ class Delegate implements IDelegate
   public function getType()
   {
     return $this->type;
+  }
+  
+  /**
+   * Returns parameters of a delegate class method, function or closure. 
+   * Method returns FALSE if class method doesn't exist.
+   * Parameters are returned as an array of \ReflectionParameter class instance.
+   *
+   * @return array | boolean
+   * @access public
+   */
+  public function getParameters()
+  {
+    if ($this->type != 'class') return (new \ReflectionFunction($this->method))->getParameters();
+    $class = new \ReflectionClass($this->class);
+    if (!$class->hasMethod($this->method)) return false;
+    return $class->getMethod($this->method)->getParameters();
   }
   
   /**

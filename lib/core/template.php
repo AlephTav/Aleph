@@ -34,14 +34,6 @@ use Aleph\Cache;
 class Template implements \ArrayAccess
 {
   /**
-   * Cache expiration time of template.
-   *
-   * @var integer $expire
-   * @access public
-   */
-  public $expire = 0;
-  
-  /**
    * Global template variables.
    *
    * @var array $globals
@@ -65,6 +57,14 @@ class Template implements \ArrayAccess
    * @access protected
    */
   protected $cacheID = null;
+  
+  /**
+   * Cache expiration time of template.
+   *
+   * @var integer $expire
+   * @access protected
+   */
+  protected $expire = 0;
 
   /**
    * Template variables.
@@ -171,6 +171,28 @@ class Template implements \ArrayAccess
   public function setCacheID($cacheID)
   {
     $this->cacheID = $cacheID;
+  }
+  
+  /**
+   * Returns cache expiration time.
+   *
+   * @return integer
+   * access public
+   */
+  public function getExpirationTime()
+  {
+    return $this->expire;
+  }
+  
+  /**
+   * Sets cache expiration time (in seconds).
+   *
+   * @param integer $expire
+   * @access public
+   */
+  public function setExpirationTime($expire)
+  {
+    $this->expire = $expire;
   }
   
   /**
@@ -370,7 +392,7 @@ class Template implements \ArrayAccess
         else $parts[] = [$part, false];
       }
       foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
-      $cache->set($hash, $parts, $this->expire);
+      $cache->set($hash, $parts, $this->expire, '--templates');
     }
     else
     {

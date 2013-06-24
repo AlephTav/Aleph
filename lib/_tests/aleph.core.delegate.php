@@ -50,6 +50,7 @@ function test_delegate_parse()
   if ((new Delegate('test@ctrl->foo'))->getInfo() !== ['class' => 'test', 'method' => 'foo', 'static' => false, 'numargs' => 0, 'cid' => 'ctrl', 'type' => 'control']) return false;
   if ((new Delegate('test[]'))->getInfo() !== ['class' => 'test', 'method' => '__construct', 'static' => false, 'numargs' => 0, 'cid' => null, 'type' => 'class']) return false;
   if ((new Delegate('\test[123]'))->getInfo() !== ['class' => 'test', 'method' => '__construct', 'static' => false, 'numargs' => 123, 'cid' => null, 'type' => 'class']) return false;
+  if ((new Delegate('test::parent::foo'))->getInfo() !== ['class' => 'test', 'method' => 'parent::foo', 'static' => true, 'numargs' => 0, 'cid' => null, 'type' => 'class']) return false;
   $class = new \stdClass();
   $d = new Delegate($class);
   if ((string)$d !== 'stdClass[]' || $d->getInfo() !== ['class' => $class, 'method' => '__construct', 'static' => false, 'numargs' => 0, 'cid' => null, 'type' => 'class']) return false;
