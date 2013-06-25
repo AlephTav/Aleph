@@ -1035,17 +1035,23 @@ final class Aleph implements \ArrayAccess
     if ($path) $paths = [$path => true];
     else
     {
-      if (file_exists($this->classmap) && require($this->classmap) === false)
+      if (file_exists($this->classmap) && (require($this->classmap)) === false)
       {
-        while (($classes = require($this->classmap)) === false) sleep(1);
-        if (isset($classes[$class]) && is_file($classes[$class]))
+        $seconds = 0;
+        while (($classes = require($this->classmap)) === false && ++$seconds <= 900) sleep(1);
+        if ($seconds <= 900)
         {
-          require_once($classes[$class]);
-          return class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false);
+          if (isset($classes[$class]) && is_file($classes[$class]))
+          {
+            require_once($classes[$class]);
+            return class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false);
+          }
+          return false;
         }
-        return false;
+        // if we wait more than 15 minutes then it's probably something went wrong and we should try to perform searching again.
+        file_put_contents($this->classmap, '<?php return [];');
       }
-      file_put_contents($this->classmap, '<?php return false;');
+      else file_put_contents($this->classmap, '<?php return false;');
       $paths = $this->dirs ?: [self::$root => true];
       $this->classes = [];
       $first = true;
