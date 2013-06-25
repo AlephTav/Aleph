@@ -246,7 +246,7 @@ public Aleph\Net\Router extra($parameter = 'extra')
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-public Aleph\Net\Router coordinateParameterNames(boolean $flag)
+public Aleph\Net\Router coordinateParameterNames(boolean $flag = true)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Параметры:**
@@ -262,7 +262,7 @@ public Aleph\Net\Router coordinateParameterNames(boolean $flag)
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-public Aleph\Net\Router ignoreWrongDelegate(boolean $flag)
+public Aleph\Net\Router ignoreWrongDelegate(boolean $flag = true)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 **Параметры:**
@@ -271,7 +271,8 @@ public Aleph\Net\Router ignoreWrongDelegate(boolean $flag)
 
 Если параметр метода равен TRUE, то делегат который не может быть вызван будет
 пропущен и маршрутизатор продолжит свою работу. Если параметр равен FALSE, то
-при попытке вызвать некорректный делегат будет выброшено исключение.
+при попытке вызвать некорректный делегат будет выброшено исключение. По
+умолчанию игнорирование делегатов не способных к вызовам отключено.
 
 
 

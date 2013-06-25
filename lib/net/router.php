@@ -97,7 +97,7 @@ class Router
    * @return self
    * @access public
    */
-  public function coordinateParameterNames($flag)
+  public function coordinateParameterNames($flag = true)
   {
     return $this->option('coordinateParameterNames', (bool)$flag);
   }
@@ -109,7 +109,7 @@ class Router
    * @return self
    * @access public
    */
-  public function ignoreWrongDelegate($flag)
+  public function ignoreWrongDelegate($flag = true)
   {
     return $this->option('ignoreWrongDelegate', (bool)$flag);
   }
@@ -263,7 +263,7 @@ class Router
              'validation' => [],
              'methods' => $methods, 
              'coordinateParameterNames' => false, 
-             'ignoreWrongDelegate' => true];
+             'ignoreWrongDelegate' => false];
     foreach ($methods as $method) $this->acts['bind'][$method][$regex] = $data;
     $this->lact = ['bind', $regex, $methods];
     return $this;
@@ -375,7 +375,7 @@ class Router
   private function parseURLTemplate($url, &$regex)
   {
     $params = []; $regex = (string)$url;
-    $regex = preg_replace_callback('/(?:^|[^\\\])(?:\\\\\\\\)*#(.*?[^\\\](?:\\\\\\\\)*)(?:#|$)/', function($matches) use (&$params)
+    $regex = preg_replace_callback('/(?:\A|[^\\\])(?:\\\\\\\\)*#(.*?[^\\\](?:\\\\\\\\)*)(?:#|\z)/', function($matches) use (&$params)
     {
       $n = strpos($matches[1], '|');
       if ($n === false) 
@@ -395,7 +395,7 @@ class Router
       $p = '(?P<' . $name . '>' . $p . ')';
       return substr($matches[0], 0, $n) . $p . substr($matches[0], $n + strlen($p));
     }, $regex);
-    $regex = '#^' . $regex . '$#';
+    $regex = '#\A' . $regex . '\z#';
     return $params;
   }
   

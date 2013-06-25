@@ -95,9 +95,9 @@
           <? foreach ($log['trace'] as $row){ ?>
           <b>File:</b> <?=htmlspecialchars($row['file']);?><br />
           <? if (isset($row['line'])){ ?>
-          <b>Line:</b> <?=htmlspecialchars($row['line']);?><br />
+          <b>Line:</b> <?=(int)$row['line'];?><br />
           <b>Code:</b>
-          <script type="syntaxhighlighter" class="brush:php;highlight:<?=($row['index'] + 1);?>"><![CDATA[<?=$row['code'];?>]]></script>
+          <script type="syntaxhighlighter" class="brush:php;first-line:<?=($row['line'] - $row['index']);?>;highlight:<?=(int)$row['line'];?>"><![CDATA[<?=$row['code'];?>]]></script>
           <?}else{?>
           <b>Command:</b> <?=htmlspecialchars($row['command']);?><br /><br />
           <?}?>
