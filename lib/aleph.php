@@ -1149,7 +1149,7 @@ final class Aleph implements \ArrayAccess
     else
     {
       $ini = false;
-      if (strtolower(pathinfo($param, PATHINFO_EXTENSION)) == 'php') $data = require_once($param);
+      if (strtolower(pathinfo($param, PATHINFO_EXTENSION)) == 'php') $data = require($param);
       else
       {
         $data = parse_ini_file($param, true);
@@ -1172,6 +1172,7 @@ final class Aleph implements \ArrayAccess
     {
       if (is_array($properties)) 
       {
+        if (empty($this->config[$section]) || !is_array($this->config[$section])) $this->config[$section] = [];
         foreach ($properties as $k => $v) $this->config[$section][$k] = $convert($v);
       }
       else 

@@ -10,13 +10,17 @@ $(function()
   {
     $('#otherGroup').removeAttr('disabled').focus();
   });
-  $('#cacheType').change(function()
+  $('body').on('change', '#cacheType', function()
   {
     selectCacheType($(this).val());
   });
   $('h2').click(function()
   {
     $(this).next().toggle();
+  });
+  $('#divTests').click(function()
+  {
+    if ($('#tests').attr('src') == undefined) $('#tests').attr('src', '?tests');
   });
   // Actions
   //---------------------------------------------
@@ -37,31 +41,40 @@ $(function()
       showMsg('Cache has been successfully cleaned.');
     });
   });
+  // Select config file
+  $('#config').change(function()
+  {
+    $.ajax({'type': 'POST', 'data': {'method': 'config.file', 'file': $(this).val()}}).done(function(html)
+    {
+      $('#configDetails').html(html);
+      normalizeJSON('.json');
+    });
+  });
   // Default config settings restoring
-  $('#btnDefault').click(function()
+  $('body').on('click', '#btnDefault', function()
   {
     showDialog('Confirmation', 'Are you sure you want to restore the default configuration settings?', function()
     {
       hideDialog(true);
-      $.ajax({'type': 'POST', 'data': {'method': 'config.restore'}}).done(function()
+      $.ajax({'type': 'POST', 'data': {'method': 'config.restore', 'file': $('#config').val()}}).done(function(html)
       {
+        $('#configDetails').html(html);
         showMsg('Default settings have been successfully restored.');
-        window.location.reload(true);
+        $('#shadow').hide();
+        normalizeJSON('.json');
       });
     });
   });
   // Config saving
-  $('#btnSave').click(function()
+  $('body').on('click', '#btnSave', function()
   {
-    var cfg = {'debugging': $('#debugOn').attr('checked') == 'checked' ? 1 : 0,
-               'logging': $('#logOn').attr('checked') == 'checked' ? 1 : 0,
-               'templateDebug': $('#tplDebug').val(),
-               'templateBug': $('#tplBug').val(),
-               'customDebugMethod': $('#customDebugMethod').val(),
-               'customLogMethod': $('#customLogMethod').val(),
-               'dirs': {},
-               'custom': {},
-               'cache': {'type': $('#cacheType').val()}};
+    var tmp, cfg = {'debugging': $('#debugOn').attr('checked') == 'checked' ? 1 : 0, 
+                    'logging': $('#logOn').attr('checked') == 'checked' ? 1 : 0};
+    if ((tmp = $('#tplDebug').val()) != '') cfg['templateDebug'] = tmp;
+    if ((tmp = $('#tplBug').val()) != '') cfg['templateBug'] = tmp;
+    if ((tmp = $('#customDebugMethod').val()) != '') cfg['customDebugMethod'] = tmp;
+    if ((tmp = $('#customLogMethod').val()) != '') cfg['customLogMethod'] = tmp;
+    cfg['cache'] = {'type': $('#cacheType').val()};
     if (cfg.cache.type == 'file')
     {
       cfg.cache.directory = $('#cacheDirectory').val();
@@ -84,6 +97,7 @@ $(function()
         return;
       }
       $(this).removeClass('ym-error');
+      if (typeof cfg['dirs'] == 'undefined') cfg['dirs'] = {};
       cfg.dirs[alias.val()] = dir.val();
     });
     $('.prop').each(function()
@@ -97,6 +111,7 @@ $(function()
         return;
       }
       $(this).removeClass('ym-error');
+      if (typeof cfg['custom'] == 'undefined') cfg['custom'] = {};
       cfg.custom[prop.val()] = value.val();
     });
     if (!flag)
@@ -105,15 +120,15 @@ $(function()
       return;
     }
     $('#shadow').show();
-    $.ajax({'type': 'POST', 'data': {'method': 'config.save', 'config': cfg}}).done(function()
+    $.ajax({'type': 'POST', 'data': {'method': 'config.save', 'file': $('#config').val(), 'config': cfg}}).done(function()
     {
       showMsg('Settings have been successfully saved.');
-      window.location.reload(true);
+      $('#shadow').hide();
     });
   });
   // New directory alias adding 
   var nAliases = $('.alias').length;
-  $('#btnAddNewAlias').click(function()
+  $('body').on('click', '#btnAddNewAlias', function()
   {
     var alias = $('#newAlias').val(), dir = $('#newDir').val();
     if (alias == '' || dir == '') 
@@ -139,10 +154,10 @@ $(function()
     $('#newAlias').val('')
     nAliases++;
   });
-  $('.alias > .ym-delete').click(deleteAlias);
+  $('body').on('click', '.alias > .ym-delete', deleteAlias);
   // New config custom property adding
   var nProps = $('.prop').length;
-  $('#btnAddNewProp').click(function()
+  $('body').on('click', '#btnAddNewProp', function()
   {
     var prop = $('#newProp').val(), value = $('#newValue').val();
     if (prop == '' || prop == 'debugging' || prop == 'logging' || prop == 'templateDebug' || prop == 'templateBug' || prop == 'cache' || prop == 'dirs') 
@@ -172,7 +187,7 @@ $(function()
     $('#newValue').val('')
     nProps++;
   });
-  $('.prop > .ym-delete').click(deleteProperty);
+  $('body').on('click', '.prop > .ym-delete', deleteProperty);
   // Refresh logs
   $('#btnLogRefresh').click(function()
   {

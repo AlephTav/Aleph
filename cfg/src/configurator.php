@@ -7,46 +7,49 @@ use Aleph\Cache;
 class Configurator
 { 
   private $config = null;
+  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'cache']; 
   
   public function __construct(array $config)
   {
     $this->config = $config;
+    $this->config['path']['config'] = (array)$this->config['path']['config'];
   }
 
   public function init()
   {
     if (!self::isFirstRequest()) return;
-    if (isset($_GET['info'])) 
+    if (isset($_GET['info']))
     {
       phpinfo();
       exit;
     }
-    if (isset($_GET['tests'])) 
+    if (isset($_GET['tests']))
     {
-      $file = pathinfo($this->config['path']['aleph'], PATHINFO_DIRNAME) . '/_tests/test.php';
+      $file = pathinfo(self::path($this->config['path']['aleph']), PATHINFO_DIRNAME) . '/_tests/test.php';
       if (file_exists($file)) require_once($file);
       exit;
     }
     set_time_limit(0);
-    $errors = $cfg = [];
+    $errors = [];
     // Checks existing of general files.
-    if (!file_exists($this->config['path']['aleph'])) $errors[] = 'File ' . $this->config['path']['aleph'] . ' is not found.';
-    if (!file_exists($this->config['path']['config'])) $errors[] = 'File ' . $this->config['path']['config'] . ' is not found.';
+    $path = self::path($this->config['path']['aleph']);
+    if (!file_exists($path)) $errors[] = 'File ' . $this->config['path']['aleph'] . ' is not found.';
+    foreach ($this->config['path']['config'] as $file => $editable)
+    {
+      $path = self::path($file);
+      if (!file_exists($path)) $errors[] = 'File ' . $file . ' is not found.';
+    }
     if (count($errors)) $this->show(['errors' => $errors]);
     // Initializes the framework.
-    require_once($this->config['path']['aleph']);
-    $a = \Aleph::init();
-    \Aleph::errorHandling(false);
-    // Reads config data.
-    $cfg = $a->config($this->config['path']['config'])->config();
-    // Search log directories.
-    $logs = $this->getLogDirectories();
+    $a = $this->connect();
     // Shows page.
     $this->show(['errors' => [], 
-                 'cfg' => $cfg, 
-                 'logs' => $logs,
+                 'config' => $this->config['path']['config'],
                  'classes' => $a->getClasses(),
-                 'common' => ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'cache']]);
+                 'logs' => $this->getLogDirectories(),
+                 'cfg' => $a->config(self::path(key($this->config['path']['config'])), true)->config(),
+                 'editable' => (bool)current($this->config['path']['config']),
+                 'common' => $this->common]);
   }
   
   public function process()
@@ -55,11 +58,7 @@ class Configurator
     $args = self::getArguments();
     if (empty($args['method'])) return;
     // Initializes the framework.
-    require_once($this->config['path']['aleph']);
-    $a = \Aleph::init();
-    \Aleph::errorHandling(false);
-    // Reads config data.
-    $a->config($this->config['path']['config']);
+    $a = $this->connect();
     // Sets default cache.
     $a->cache(Cache\Cache::getInstance());
     // Performs action.
@@ -82,6 +81,9 @@ class Configurator
           }
         }
         break;
+      case 'config.file':
+        $res = $this->renderConfig($this->getConfigFile($args['file']));
+        break;
       case 'config.save':
         $cfg = $args['config'];
         $cfg['debugging'] = (bool)$cfg['debugging'];
@@ -96,7 +98,7 @@ class Configurator
         {
           $cfg[$prop] = $value != '' ? json_decode($value, true) : '';
         }
-        $this->saveConfig($cfg);
+        self::saveConfig($cfg, $this->getConfigFile($args['file']));
         break;
       case 'config.restore':
         $cfg = ['debugging' => true,
@@ -116,14 +118,16 @@ class Configurator
                            'css' => 'app/inc/css',
                            'tpl' => 'app/inc/tpl',
                            'elements' => 'app/inc/tpl/elements']];
-        $this->saveConfig($cfg);
+        $file = $this->getConfigFile($args['file']);
+        self::saveConfig($cfg, $file);
+        $res = $this->renderConfig($file);
         break;
       case 'log.refresh':
-        $res = $this->render('loglist.html', ['logs' => $this->getLogDirectories()]);
+        $res = self::render('loglist.html', ['logs' => $this->getLogDirectories()]);
         break;
       case 'log.clean':
-        $this->removeFiles(\Aleph::dir('logs'), false);
-        $res = $this->render('loglist.html', ['logs' => []]);
+        self::removeFiles(\Aleph::dir('logs'), false);
+        $res = self::render('loglist.html', ['logs' => []]);
         break;
       case 'log.files':
         if (empty($args['dir'])) break;
@@ -137,21 +141,34 @@ class Configurator
         }
         sort($files);
         $files = array_reverse($files);
-        $res = $this->render('logsublist.html', ['files' => $files]);
+        $res = self::render('logsublist.html', ['files' => $files]);
         break;
       case 'log.details':
         if (empty($args['dir']) || empty($args['file'])) break;
         $file = \Aleph::dir('logs') . '/' . $args['dir'] . '/' . $args['file'];
         $res = unserialize(file_get_contents($file));
-        $res = $this->render('logdetails.html', ['log' => $res, 'file' => $args['dir'] . ' ' . $args['file']]);
+        $res = self::render('logdetails.html', ['log' => $res, 'file' => $args['dir'] . ' ' . $args['file']]);
         break;
     }
     if ($res !== false) echo $res;
   }
   
+  private function getConfigFile($n)
+  {
+    return array_keys($this->config['path']['config'])[$n];
+  }
+  
+  private function renderConfig($file)
+  {
+    return self::render('config.html', ['cfg' => \Aleph::getInstance()->config(self::path($file), true)->config(), 
+                                        'editable' => $this->config['path']['config'][$file],
+                                        'common' => $this->common]);
+  }
+  
   private function getLogDirectories()
   {
     $logs = []; $dir = \Aleph::dir('logs');
+    if (!is_dir($dir)) return [];
     foreach (scandir($dir) as $item)
     {
       if ($item == '..' || $item == '.') continue;
@@ -161,12 +178,22 @@ class Configurator
     return array_reverse($logs);
   }
   
-  private function saveConfig(array $cfg)
+  private function connect()
   {
-    if ($this->isPHPConfig())
+    require_once(self::path($this->config['path']['aleph']));
+    $a = \Aleph::init();
+    \Aleph::errorHandling(false);
+    foreach ($this->config['path']['config'] as $file => $editable) $a->config(self::path($file));
+    return $a;
+  }
+  
+  private static function saveConfig(array $cfg, $file)
+  {
+    $file = self::path($file);
+    if (self::isPHPFile($file))
     {
       $res = '';
-      $tokens = token_get_all(file_get_contents($this->config['path']['config']));
+      $tokens = token_get_all(file_get_contents($file));
       foreach (array_reverse($tokens) as $i => $token) if ($token[0] == T_RETURN) break;
       $i = count($tokens) - $i - 1;
       foreach ($tokens as $j => $token)
@@ -174,16 +201,16 @@ class Configurator
         if ($j == $i) break;
         $res .= is_array($token) ? $token[1] : $token;
       }
-      $res .= 'return ' . $this->formArray($cfg, 8) . ';';
+      $res .= 'return ' . self::formArray($cfg, 8) . ';';
     }
     else
     {
-      $res = $this->formINIFile($cfg);
+      $res = self::formINIFile($cfg);
     }
-    file_put_contents($this->config['path']['config'], $res);
+    file_put_contents($file, $res);
   }
   
-  private function formINIFile(array $a)
+  private static function formINIFile(array $a)
   {
     $tmp1 = $tmp2 = [];
     foreach ($a as $k => $v)
@@ -218,7 +245,7 @@ class Configurator
     return implode(PHP_EOL, array_merge($tmp1, $tmp2));
   }
   
-  private function formArray(array $a, $indent = 1)
+  private static function formArray(array $a, $indent = 1)
   {
     $tmp = array();
     foreach ($a as $k => $v)
@@ -226,7 +253,7 @@ class Configurator
       if (is_string($k)) $k = "'" . addcslashes($k, "'") . "'";
       if (!is_numeric($v))
       {
-        if (is_array($v)) $v = $this->formArray($v, $indent + strlen($k) + 5);
+        if (is_array($v)) $v = self::formArray($v, $indent + strlen($k) + 5);
         else if (is_string($v)) $v = "'" . addcslashes($v, "'") . "'";
         else if (is_bool($v)) $v = $v ? 'true' : 'false';
         else if ($v === null) $v = 'null';
@@ -236,27 +263,27 @@ class Configurator
     return '[' . implode(',' . PHP_EOL . str_repeat(' ', $indent), $tmp) . ']';
   }
   
-  private function removeFiles($dir, $removeDir = true)
+  private static function removeFiles($dir, $removeDir = true)
   {
     if (!is_dir($dir)) return false;
     foreach (scandir($dir) as $item)
     {
       if ($item == '..' || $item == '.') continue;
       $file = $dir . '/' . $item;
-      if (is_dir($file)) $this->removeFiles($file, true);
+      if (is_dir($file)) self::removeFiles($file, true);
       else unlink($file);   
     }
     if ($removeDir) rmdir($dir);
   }
   
-  private function show(array $vars)
+  private static function show(array $vars)
   {
     extract($vars);
     require(__DIR__ . '/../html/configurator.html');
     exit;
   }
   
-  private function render($file, array $vars)
+  private static function render($file, array $vars)
   {
     ${'(_._)'} = $file;
     extract($vars);
@@ -265,14 +292,21 @@ class Configurator
     return ob_get_clean();
   }
   
+  private static function isPHPFile($file)
+  {
+    return strtolower(pathinfo($file, PATHINFO_EXTENSION)) == 'php';
+  }
+  
+  private static function path($path)
+  {
+    if (strlen($path) == 0) return false;
+    if ($path[0] != '/') $path = '/' . $path;
+    return realpath($_SERVER['DOCUMENT_ROOT'] . $path);
+  }
+  
   private static function getArguments()
   {
     return $_REQUEST;
-  }
-  
-  private function isPHPConfig()
-  {
-    return strtolower(pathinfo($this->config['path']['config'], PATHINFO_EXTENSION)) == 'php';
   }
   
   private static function isAjaxRequest()

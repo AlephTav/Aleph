@@ -355,7 +355,7 @@ class Delegate implements IDelegate
     if ($this->type == 'function' || $this->type == 'closure') return call_user_func_array($this->method, $args);
     if ($this->type == 'control')
     {
-      if (($class = MVC\Page::$page->get($this->cid)) === false) throw new Core\Exception($this, 'ERR_DELEGATE_2', $this->cid);
+      if (($class = MVC\Page::$page->get($this->cid)) === false) throw new Exception($this, 'ERR_DELEGATE_2', $this->cid);
       if ($this->method == '__construct') return $class;
       return call_user_func_array([$class, $this->method], $args);
     }

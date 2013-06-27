@@ -47,122 +47,16 @@
         <h2>Config</h2>
         <div class="ym-form" style="display:none;">
           <div class="ym-grid">
-            <div class="ym-g33 ym-gl">
-              <div class="ym-grid">
-                <h6 class="subtitle">General Settings</h6>
-                <div class="ym-g66 ym-gl">
-                  <div class="ym-fbox-check">
-                    <span class="ym-label">Debugging</span>
-                    <input type="radio" id="debugOn" value="1" name="debug" <?=(empty($cfg['debugging']) ? '' : 'checked="checked"');?> />
-								            <label for="debugOn">On</label>
-								            <input type="radio" id="debugOff" value="0" name="debug" <?=(empty($cfg['debugging']) ? 'checked="checked"' : '');?> />
-								            <label for="debugOff">Off</label>
-                  </div>
-                </div>
-                <div class="ym-g33 ym-gr">
-                  <div class="ym-fbox-check">
-                    <span class="ym-label">Logging</span>
-                    <input type="radio" id="logOn" value="1" name="logging" <?=(empty($cfg['logging']) ? '' : 'checked="checked"');?>  />
-								            <label for="logOn">On</label>
-								            <input type="radio" id="logOff" value="0" name="logging" <?=(empty($cfg['logging']) ? 'checked="checked"' : '');?> />
-								            <label for="logOff">Off</label>
-                  </div>
-                </div>
-              </div>
-              <div class="ym-fbox-text">
-								        <label class="ym-label" for="tplDebug">Debug Info Template</label>
-								        <input type="text" id="tplDebug" name="tplDebug" value="<?=@$cfg['templateDebug'];?>" />
-							       </div>
-              <div class="ym-fbox-text">
-								        <label class="ym-label" for="tplBug">Bug Info Template</label>
-								        <input type="text" id="tplBug" name="tplBug" value="<?=@$cfg['templateBug'];?>" />
-							       </div>
-              <div class="ym-fbox-text">
-								        <label class="ym-label" for="customDebugMethod">Custom Debug Method</label>
-								        <input type="text" id="customDebugMethod" name="tplBug" value="<?=@$cfg['customDebugMethod'];?>" />
-							       </div>
-              <div class="ym-fbox-text">
-								        <label class="ym-label" for="customLogMethod">Custom Log Method</label>
-								        <input type="text" id="customLogMethod" name="tplBug" value="<?=@$cfg['customLogMethod'];?>" />
-							       </div>
-              <h6 class="subtitle">Cache Settings</h6>
-              <div class="ym-fbox-select">
-                <label for="cacheType">Type</label>
-                <select id="cacheType" name="cacheType" size="1">
-                  <option value="apc" <?=(@$cfg['cache']['type'] == 'apc' ? 'selected="selected"' : '');?>>APC</option>
-                  <option value="file" <?=(@$cfg['cache']['type'] == 'file' ? 'selected="selected"' : '');?>>File</option>
-                  <option value="memory" <?=(@$cfg['cache']['type'] == 'memory' ? 'selected="selected"' : '');?>>Memory</option>
-                </select>
-              </div>
-              <div class="ym-fbox-text cache-file">
-								        <label class="ym-label" for="cacheDirectory">Directory</label>
-								        <input type="text" id="cacheDirectory" name="cacheDirectory" value="<?=@$cfg['cache']['directory'];?>" />
-							       </div>
-              <div class="ym-fbox-text cache-file">
-								        <label class="ym-label" for="gcProbability">GC Probability</label>
-								        <input type="text" id="gcProbability" name="gcProbability" value="<?=@$cfg['cache']['gcProbability'];?>" />
-							       </div>
-              <div class="ym-fbox-check cache-memory">
-                <span class="ym-label">Compress</span>
-                <input type="radio" id="compressYes" value="1" name="compress" <?=(empty($cfg['cache']['compress']) ? '' : 'checked="checked"');?>  />
-								        <label for="compressYes">Yes</label>
-								        <input type="radio" id="compressNo" value="0" name="compress" <?=(empty($cfg['cache']['compress']) ? 'checked="checked"' : '');?> />
-								        <label for="compressNo">No</label>
-              </div>
-              <div class="ym-fbox-text cache-memory">
-                <label class="ym-label" for="memServers">Servers (json format)</label>
-                <textarea name="memServers" id="memServers" cols="30" rows="7" class="json"><?=(isset($cfg['cache']['servers']) ? json_encode($cfg['cache']['servers']) : '');?></textarea>
-              </div>
-            </div>
-            <div class="ym-g33 ym-gl">
-              <h6 class="subtitle">Directory Aliases</h6>
-              <div id="divNewAlias" class="ym-fbox-text">
-                <label class="ym-label" for="newAlias">Alias<sup class="ym-required">*</sup></label>
-                <input type="text" id="newAlias" name="newAlias" />
-                <label class="ym-label" for="newDir">Directory<sup class="ym-required">*</sup></label>
-                <input type="text" id="newDir" name="newDir" />
-                <a id="btnAddNewAlias" class="ym-button ym-add" style="float:right;" title="Add new directory alias">Add</a>
-              </div>
-              <hr />
-              <div id="aliases" class="ym-grid">
-                <? $i = -1; foreach ($cfg['dirs'] as $alias => $dir){ $i++; ?>
-                <div id="divAlias<?=$i;?>" class="ym-fbox-text alias">
-                  <label class="ym-label" for="alias<?=$i;?>">Alias<sup class="ym-required">*</sup></label>
-                  <input type="text" id="alias<?=$i;?>" name="alias<?=$i;?>" value="<?=htmlspecialchars($alias);?>" />
-                  <label class="ym-label" for="dir<?=$i;?>">Directory<sup class="ym-required">*</sup></label>
-                  <input type="text" id="dir<?=$i;?>" name="dir<?=$i;?>" value="<?=htmlspecialchars($dir);?>" />
-                  <a id="btnDeleteAlias<?=$i;?>" class="ym-button ym-delete" style="float:right;" title="Delete directory alias">Delete</a>
-                </div>
-                <?}?>
-              </div>
-            </div>
-            <div class="ym-g33 ym-gl">
-              <h6 class="subtitle">Custom Settings</h6>
-              <div id="divNewProp" class="ym-fbox-text">
-                <label class="ym-label" for="newProp">Name<sup class="ym-required">*</sup></label>
-                <input type="text" id="newProp" name="newProp" />
-                <label class="ym-label" for="newValue">Value (json format)</label>
-                <textarea id="newValue" name="newValue" rows="7"></textarea>
-                <a id="btnAddNewProp" class="ym-button ym-add" style="float:right;" title="Add new custom property">Add</a>
-              </div>
-              <hr />
-              <div id="props" class="ym-grid">
-                <? $i = -1; foreach ($cfg as $prop => $value){ if (in_array($prop, $common)) continue; $i++; ?>
-                <div id="divProp<?=$i;?>" class="ym-fbox-text prop">
-                  <label class="ym-label" for="prop<?=$i;?>">Name<sup class="ym-required">*</sup></label>
-                  <input type="text" id="prop<?=$i;?>" name="prop<?=$i;?>" value="<?=htmlspecialchars($prop);?>" />
-                  <label class="ym-label" for="value<?=$i;?>">Value (json format)</label>
-                  <textarea id="value<?=$i;?>" name="value<?=$i;?>" rows="7" class="json"><?=(isset($value) ? json_encode($value) : '');?></textarea>
-                  <a id="btnDeleteProp<?=$i;?>" class="ym-button ym-delete" style="float:right;" title="Delete custom property">Delete</a>
-                </div>
-                <?}?>
-              </div>
+            <h6>Select Config File</h6>
+            <div class="ym-fbox ym-fbox-select">
+            <select id="config">
+              <? foreach (array_keys($config) as $n => $file){ ?>
+              <option value="<?=$n;?>"><?=htmlspecialchars($file);?></option>
+              <?}?>
+            </select>
             </div>
           </div>
-          <div class="ym-fbox-button">
-            <a id="btnSave" class="ym-button ym-save" href="javascript:;" title="Save config changes">Save</a>
-            <a id="btnDefault" class="ym-button ym-spark" href="javascript:;" title="Restore default settings">Default</a>
-          </div>
+          <div id="configDetails" class="ym-grid"><? require_once(__DIR__ . '/config.html'); ?></div>
         </div>
       </div>
       <div class="box info">
@@ -227,9 +121,9 @@
         <h2>PHP Info</h2>
         <iframe src="?info" width="100%" height="800px;" style="border:none;display:none;"></iframe>
       </div>
-      <div class="box info">
+      <div id="divTests" class="box info">
         <h2>Auto Tests</h2>
-        <iframe src="?tests" width="100%" height="800px;" style="border:none;display:none;"></iframe>
+        <iframe id="tests" width="100%" height="800px;" style="border:none;display:none;"></iframe>
       </div>
     </div>
     <?}?>
