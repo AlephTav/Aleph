@@ -1067,7 +1067,7 @@ final class Aleph implements \ArrayAccess
         {
           if (!preg_match($this->mask, $item)) continue;
           $tokens = token_get_all(file_get_contents($file));
-          $namespace = null;
+          $namespace = null; $max = count($tokens);
           foreach ($tokens as $n => $token)
           {
             if ($token[0] == T_NAMESPACE) 
@@ -1075,7 +1075,9 @@ final class Aleph implements \ArrayAccess
               $ns = ''; $tks = $tokens; $k = $n;
               do
               {
-                $tkn = $tks[++$k];
+                $k++;
+                if ($k >= $max) break;
+                $tkn = $tks[$k];
                 if ($tkn[0] == T_STRING || $tkn[0] == T_NS_SEPARATOR) $ns .= $tkn[1];
               }
               while ($tkn != ';' && $tkn != '{');
@@ -1086,7 +1088,9 @@ final class Aleph implements \ArrayAccess
               $tks = $tokens; $k = $n;
               do
               {
-                $tkn = $tks[++$k];
+                $k++;
+                if ($k >= $max) break;
+                $tkn = $tks[$k];
               }
               while ($tkn[0] != T_STRING);
               $cs = strtolower('\\' . $namespace . $tkn[1]);
