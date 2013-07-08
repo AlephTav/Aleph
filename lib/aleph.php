@@ -1002,8 +1002,7 @@ final class Aleph implements \ArrayAccess
       $this->alCallback->call([$class, $classes]);
       return true;
     }
-    $cs = strtolower($class);
-    if ($cs[0] != '\\') $cs = '\\' . $cs;
+    $cs = strtolower(ltrim($class, '\\'));
     if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     if (isset($classes[$cs]) && is_file($classes[$cs]))
     {
@@ -1067,43 +1066,43 @@ final class Aleph implements \ArrayAccess
         {
           if (!preg_match($this->mask, $item)) continue;
           $tokens = token_get_all(file_get_contents($file));
-          $namespace = null; $max = count($tokens);
-          foreach ($tokens as $n => $token)
+          for ($i = 0, $max = count($tokens), $namespace = ''; $i < $max; $i++)
           {
-            if ($token[0] == T_NAMESPACE) 
+            $token = $tokens[$i];
+            if (is_string($token)) continue;
+            switch ($token[0])            
             {
-              $ns = ''; $tks = $tokens; $k = $n;
-              do
-              {
-                $k++;
-                if ($k >= $max) break;
-                $tkn = $tks[$k];
-                if ($tkn[0] == T_STRING || $tkn[0] == T_NS_SEPARATOR) $ns .= $tkn[1];
-              }
-              while ($tkn != ';' && $tkn != '{');
-              $namespace = $ns . '\\';
-            }
-            else if ($token[0] == T_CLASS || $token[0] == T_INTERFACE || (defined('T_TRAIT') && $token[0] == T_TRAIT))
-            {
-              $tks = $tokens; $k = $n;
-              do
-              {
-                $k++;
-                if ($k >= $max) break;
-                $tkn = $tks[$k];
-              }
-              while ($tkn[0] != T_STRING);
-              $cs = strtolower('\\' . $namespace . $tkn[1]);
-              if (isset($this->classes[$cs])) 
-              {
-                $normalize = function($dir)
+              case T_NAMESPACE:
+                $namespace = '';
+                for (++$i; $i < $max; $i++)
                 {
-                  return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
-                };
-                self::exception(new \Exception(self::error('Aleph::ERR_GENERAL_4', '\\' . $namespace . $tkn[1], $normalize($this->classes[$cs]), $normalize($file))));
-                exit;
-              }
-              $this->classes[$cs] = $file;
+                  $t = $tokens[$i];
+                  if (is_string($t)) break;
+                  if ($t[0] == T_STRING || $t[0] == T_NS_SEPARATOR) $namespace .= $t[1];
+                }
+                $namespace .= '\\';
+                break;
+              case T_CLASS:
+              case T_INTERFACE;
+              case T_TRAIT:
+                for (++$i; $i < $max; $i++)
+                {
+                  $t = $tokens[$i];
+                  if ($t[0] == T_STRING) break;
+                }
+                $cs = strtolower(ltrim($namespace . $t[1], '\\'));
+                if (isset($this->classes[$cs])) 
+                {
+                  $normalize = function($dir)
+                  {
+                    return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
+                  };
+                  file_put_contents($this->classmap, '<?php return [];');
+                  self::exception(new \Exception(self::error('Aleph::ERR_GENERAL_4', ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file))));
+                  exit;
+                }
+                $this->classes[$cs] = $file;
+                break;
             }
           }
         }
@@ -1121,7 +1120,7 @@ final class Aleph implements \ArrayAccess
           if ($cs == $class)
           {
             require_once($file);
-            return (class_exists($class, false) || interface_exists($class, false) || (function_exists('trait_exists') && trait_exists($class, false)));
+            return (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false));
           }
         }
       }
