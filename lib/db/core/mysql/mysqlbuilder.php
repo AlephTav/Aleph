@@ -27,40 +27,20 @@ use Aleph\Core;
 class MySQLBuilder extends SQLBuilder
 {
   const ERR_MYSQL_1 = 'Renaming DB column is not supported by MySQL.';
-
-  public function wrap($name, $isTableName = false)
-  {
-    if ($name == '') throw new Core\Exception('Aleph\DB\SQLBuilder', 'ERR_SQL_2');
-    $name = explode('.', $name);
-    foreach ($name as &$part)
-    {
-      if ($part == '*') continue;
-      $l = substr($part, 0, 1);
-      $r = substr($part, -1, 1);
-      if ($l == '`' && $r == '`') 
-      {
-        $part = str_replace('``', '`', substr($part, 1, -1));
-        $l = substr($part, 0, 1);
-        $r = substr($part, -1, 1);
-      }
-      if ($l == ' ' || $r == ' ') throw new Core\Exception('Aleph\DB\SQLBuilder', 'ERR_SQL_2');
-      $part = '`' . str_replace('`', '``', $part) . '`';
-    }
-    return implode('.', $name);
-  }
   
-  public function quote($value, $isLike = false)
-  {
-    if ($isLike) $value = str_replace('\\', '\\\\\\\\', $value);
-    else $value = str_replace('\\', '\\\\', $value);
-    return "'" . str_replace('\'', '\'\'', $value) . "'";
-  }
-  
+  /**
+   * Returns MySQL data type that mapped to PHP type.
+   *
+   * @param string $type - SQL type.
+   * @return string
+   * @access public
+   */
   public function getPHPType($type)
   {
     switch ($type)
     {
       case 'int':
+      case 'integer':
       case 'smallint':
       case 'tinyint':
       case 'mediumint':
@@ -80,17 +60,76 @@ class MySQLBuilder extends SQLBuilder
     }
     return 'string';
   }
-  
-  public function tableList($schema)
+
+  /**
+   * Quotes a table or column name for use in SQL queries.
+   *
+   * @param string $name - a column or table name.
+   * @param boolean $isTableName - determines whether table name is used.
+   * @return string
+   * @access public
+   */
+  public function wrap($name, $isTableName = false)
   {
-    return 'SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = ' . $this->quote($schema) . ' AND TABLE_TYPE = \'BASE TABLE\'';
+    if (strlen($name) == 0) throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
+    $name = explode('.', $name);
+    foreach ($name as &$part)
+    {
+      if ($part == '*') continue;
+      if (substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
+      {
+        $part = str_replace('``', '`', substr($part, 1, -1));
+      }
+      if (trim($part) == '') throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
+      $part = '`' . str_replace('`', '``', $part) . '`';
+    }
+    return implode('.', $name);
   }
   
+  /**
+   * Quotes a string value for use in a query.
+   *
+   * @param string $value
+   * @param boolean $isLike - determines whether the value is used in LIKE clause.
+   * @return string
+   * @access public
+   */
+  public function quote($value, $isLike = false)
+  {
+    return "'" . addcslashes($value, "'\x00\n\r\\\x1a" . ($isLike ? '_%' : '')) . "'";
+  }
+  
+  /**
+   * Returns SQL for getting the table list of the current database.
+   *
+   * @param string $scheme - a table scheme (database name).
+   * @return string
+   * @access public
+   */
+  public function tableList($scheme = null)
+  {
+    return 'SHOW TABLES' . ($scheme !== null ? ' FROM ' . $this->wrap($scheme, true) : '');
+  }
+  
+  /**
+   * Returns SQL for getting metadata of the specified table.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   public function tableInfo($table)
   {
     return 'SHOW CREATE TABLE ' . $this->wrap($table, true);
   }
   
+  /**
+   * Returns SQL for getting metadata of the table columns.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   public function columnsInfo($table)
   {
     return 'SHOW COLUMNS FROM ' . $this->wrap($table, true);
@@ -107,16 +146,38 @@ class MySQLBuilder extends SQLBuilder
     return 'CREATE TABLE ' . $this->wrap($table, true) . ' (' . implode(', ', $tmp) . ')' . ($options ? ' ' . $options : '');
   }
   
+  /**
+   * Returns SQL for renaming a table.
+   *
+   * @param string $oldName - old table name.
+   * @param string $newName - new table name.
+   * @return string
+   * @access public
+   */
   public function renameTable($oldName, $newName)
   {
     return 'RENAME TABLE ' . $this->wrap($oldName, true) . ' TO ' . $this->wrap($newName, true);
   }
   
+  /**
+   * Returns SQL that can be used for removing the particular table.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   public function dropTable($table)
   {
     return 'DROP TABLE ' . $this->wrap($table, true);
   }
 
+  /**
+   * Returns SQL that can be used to remove all data from a table.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   public function truncateTable($table)
   {
     return 'TRUNCATE TABLE ' . $this->wrap($table, true);

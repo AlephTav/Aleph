@@ -36,7 +36,7 @@ abstract class SQLBuilder
   /**
    * Error message templates.
    */
-  const ERR_SQL_1 = 'Database engine "[{var}]" doesn\'t exist or support.';
+  const ERR_SQL_1 = 'Database engine "[{var}]" doesn\'t exist or is not supported.';
   const ERR_SQL_2 = 'Cannot wrap empty string.';
   const ERR_SQL_3 = 'You can\'t invoke method "[{var}]" twice within the current SQL-construction.';
   
@@ -61,40 +61,108 @@ abstract class SQLBuilder
     {
       case 'mysql':
         return new MySQLBuilder();
+      case 'sqlite':
+        return new SQLiteBuilder();
     }
-    throw new Core\Exception('Aleph\DB\SQLBuilder', 'ERR_SQL_1', $engine);
+    throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_1', $engine);
   }
   
-  public function __toString()
+  /**
+   * Converts any string to Aleph\DB\SQLExpression object.
+   *
+   * @param string $sql - string to convert.
+   * @return Aleph\DB\SQLExpression
+   * @access public
+   */
+  public function exp($sql)
   {
-    try
-    {
-      return $this->build();
-    }
-    catch (\Exception $e)
-    {
-      \Aleph::exception($e);
-    }
+    return new SQLExpression($sql);
   }
   
+  /**
+   * Returns SQL data type of the particular DBMS that mapped to PHP type.
+   *
+   * @param string $type - SQL type.
+   * @return string
+   * @access public
+   */
   abstract public function getPHPType($type);
   
+  /**
+   * Quotes a table or column name for use in SQL queries.
+   *
+   * @param string $name - a column or table name.
+   * @param boolean $isTableName - determines whether table name is used.
+   * @return string
+   * @access public
+   */
   abstract public function wrap($name, $isTableName = false);
   
+  /**
+   * Quotes a string value for use in a query.
+   *
+   * @param string $value
+   * @param boolean $isLike - determines whether the value is used in LIKE clause.
+   * @return string
+   * @access public
+   */
   abstract public function quote($value, $isLike = false);
   
-  abstract public function tableList($schema);
+  /**
+   * Returns SQL for getting the table list of the current database.
+   *
+   * @param string $scheme - a table scheme (database name).
+   * @return string
+   * @access public
+   */
+  abstract public function tableList($scheme = null);
   
+  /**
+   * Returns SQL for getting metadata of the specified table.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   abstract public function tableInfo($table);
   
+  /**
+   * Returns SQL for getting metadata of the table columns.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   abstract public function columnsInfo($table);
   
   abstract public function createTable($table, array $columns, $options = null);
   
+  /**
+   * Returns SQL for renaming a table.
+   *
+   * @param string $oldName - old table name.
+   * @param string $newName - new table name.
+   * @return string
+   * @access public
+   */
   abstract public function renameTable($oldName, $newName);
 
+  /**
+   * Returns SQL that can be used for removing the particular table.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   abstract public function dropTable($table);
 
+  /**
+   * Returns SQL that can be used to remove all data from a table.
+   *
+   * @param string $table
+   * @return string
+   * @access public
+   */
   abstract public function truncateTable($table);
   
   abstract public function addColumn($table, $column, $type);
@@ -116,18 +184,6 @@ abstract class SQLBuilder
   abstract public function normalizeColumnInfo(array $info);
   
   abstract public function normalizeTableInfo(array $info);
-  
-  /**
-   * Converts any string to Aleph\DB\SQLExpression object.
-   *
-   * @param string $sql - string to convert.
-   * @return Aleph\DB\SQLExpression
-   * @access public
-   */
-  public function exp($sql)
-  {
-    return new SQLExpression($sql);
-  }
   
   public function insert($table, $columns)
   {

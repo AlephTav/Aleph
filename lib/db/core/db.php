@@ -288,11 +288,12 @@ class DB
     if ($options === null) $options = $this->options;
     if (!$dsn) throw new Core\Exception($this, 'ERR_DB_1');
     $this->disconnect();
+    // Extracting the database driver.
     do
     {
       $dsn = get_cfg_var('pdo.dsn.' . $dsn) ?: $dsn;
       $this->idsn['dsn'] = $dsn;
-      $dsn = explode(':', $dsn);
+      $dsn = explode(':', $dsn, 2);
       $this->idsn['driver'] = strtolower($dsn[0]);
       if ($this->idsn['driver'] == 'uri') 
       {
@@ -304,11 +305,19 @@ class DB
     }
     while ($this->idsn['driver'] == 'uri');
     if (empty($dsn[1])) throw new Core\Exception($this, 'ERR_DB_2');
-    $dsn = explode(';', $dsn[1]);
-    foreach ($dsn as $v)
+    if ($this->idsn['driver'] == 'sqlite')
     {
-      $v = explode('=', $v);
-      $this->idsn[strtolower(trim($v[0]))] = trim($v[1]);
+      $this->idsn['host'] = '127.0.0.1';
+      $this->idsn['dbname'] = pathinfo($dsn[1], PATHINFO_FILENAME);
+    }
+    else
+    {
+      $dsn = explode(';', $dsn[1]);
+      foreach ($dsn as $v)
+      {
+        $v = explode('=', $v);
+        if (isset($v[1])) $this->idsn[strtolower(trim($v[0]))] = trim($v[1]);
+      }
     }
     $this->idsn['username'] = $username;
     $this->idsn['password'] = $password;
@@ -688,13 +697,13 @@ class DB
    * @param string $sql - a SQL to execute.
    * @param array $data - input parameters for the SQL execution.
    * @param string $type - type execution of the query. This parameter affects format of the data returned by the method.
-   * @param integer $style - fetch mode for this SQL statement.
+   * @param integer $mode - fetch mode for this SQL statement.
    * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
    * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
    * @return mixed
    * @access public
    */
-  public function execute($sql, array $data = [], $type = self::EXEC, $style = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
+  public function execute($sql, array $data = [], $type = self::EXEC, $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
     if ($type && $type != self::EXEC && ($this->cacheExpire !== false || count($this->patterns)))
     {
@@ -725,8 +734,8 @@ class DB
       if (!is_dir($dir)) mkdir($dir, 0775, true);
       $fp = fopen($file, 'a');
       flock($fp, LOCK_EX);
-      if (fstat($fp)['size'] == 0) fputcsv($fp, ['URL', 'DSN', 'SQL', 'Type', 'Style', 'Duration', 'Timestamp', 'Rows', 'Stack']);
-      fputcsv($fp, [Net\URL::current(), $this->dsn['dsn'], isset($key) ? $key : $this->assemble($sql, $data), $type, $style, $duration, time(), $this->affectedRows, (new \Exception())->getTraceAsString()]);
+      if (fstat($fp)['size'] == 0) fputcsv($fp, ['URL', 'DSN', 'SQL', 'Type', 'Mode', 'Duration', 'Timestamp', 'Rows', 'Stack']);
+      fputcsv($fp, [Net\URL::current(), $this->dsn['dsn'], isset($key) ? $key : $this->assemble($sql, $data), $type, $mode, $duration, time(), $this->affectedRows, (new \Exception())->getTraceAsString()]);
       fflush($fp);
       flock($fp, LOCK_UN);
       fclose($fp);
@@ -745,19 +754,19 @@ class DB
         $res = $st->fetchColumn((int)$arg);
         break;
       case self::COLUMN:
-        $res = $st->fetchAll($style | \PDO::FETCH_COLUMN, (int)$arg);
+        $res = $st->fetchAll($mode | \PDO::FETCH_COLUMN, (int)$arg);
         break;
       case self::ROW:
-        $res = $st->fetch($style);
+        $res = $st->fetch($mode);
         if ($res === false) $res = [];
         break;
       case self::ROWS:
       case self::COUPLES:
-        if ($arg === null) $res = $st->fetchAll($style);
+        if ($arg === null) $res = $st->fetchAll($mode);
         else
         {
-          if ($ctorargs === null) $res = $st->fetchAll($style, $arg);
-          else $res = $st->fetchAll($style, $arg, $ctorargs);
+          if ($ctorargs === null) $res = $st->fetchAll($mode, $arg);
+          else $res = $st->fetchAll($mode, $arg, $ctorargs);
         }
         if ($type == self::COUPLES)
         {
@@ -767,7 +776,7 @@ class DB
         }
         break;
       default:
-        return new Reader($st, $style, $arg, $ctorargs);
+        return new Reader($st, $mode, $arg, $ctorargs);
     }
     if ($type && $type != self::EXEC && !empty($flag)) 
     {
@@ -810,13 +819,13 @@ class DB
    *
    * @param string $sql - SQL query to execute.
    * @param array $data - input parameters for the SQL execution.
-   * @param integer $style - fetch mode for this SQL statement.
+   * @param integer $mode - fetch mode for this SQL statement.
    * @return array
    * @access public
    */
-  public function row($sql, array $data = [], $style = \PDO::FETCH_ASSOC)
+  public function row($sql, array $data = [], $mode = \PDO::FETCH_ASSOC)
   {
-    return $this->execute($sql, $data, self::ROW, $style);
+    return $this->execute($sql, $data, self::ROW, $mode);
   }
   
   /**
@@ -824,15 +833,15 @@ class DB
    *
    * @param string $sql - SQL query to execute.
    * @param array $data - input parameters for the SQL execution.
-   * @param integer $style - fetch mode for this SQL statement.
+   * @param integer $mode - fetch mode for this SQL statement.
    * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
    * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
    * @return array
    * @access public
    */
-  public function rows($sql, array $data = [], $style = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
+  public function rows($sql, array $data = [], $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
-    return $this->execute($sql, $data, self::ROWS, $style, $arg, $ctorargs);
+    return $this->execute($sql, $data, self::ROWS, $mode, $arg, $ctorargs);
   }
   
   /**
@@ -854,13 +863,13 @@ class DB
    *
    * @param string $sql - SQL query to execute.
    * @param array $data - input parameters for the SQL execution.
-   * @param integer $style - fetch mode for this SQL statement.
+   * @param integer $mode - fetch mode for this SQL statement.
    * @return array
    * @access public
    */
-  public function groups($sql, array $data = [], $style = \PDO::FETCH_ASSOC)
+  public function groups($sql, array $data = [], $mode = \PDO::FETCH_ASSOC)
   {
-    return $this->rows($sql, $data, $style | \PDO::FETCH_GROUP);
+    return $this->rows($sql, $data, $mode | \PDO::FETCH_GROUP);
   }
   
   /**
@@ -869,15 +878,15 @@ class DB
    *
    * @param string $sql - SQL query to execute.
    * @param array $data - input parameters for the SQL execution.
-   * @param integer $style - fetch mode for this SQL statement.
+   * @param integer $mode - fetch mode for this SQL statement.
    * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
    * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
    * @return array
    * @access public
    */
-  public function couples($sql, array $data = [], $style = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
+  public function couples($sql, array $data = [], $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
-    return $this->execute($sql, $data, self::COUPLES, $style);
+    return $this->execute($sql, $data, self::COUPLES, $mode);
   }
   
   /**
@@ -885,15 +894,15 @@ class DB
    *
    * @param string $sql - SQL query to execute.
    * @param array $data - input parameters for the SQL execution.
-   * @param integer $style - fetch mode for this SQL statement.
+   * @param integer $mode - fetch mode for this SQL statement.
    * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
    * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
    * @return Aleph\DB\Reader
    * @access public
    */
-  public function query($sql, array $data = [], $style = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
+  public function query($sql, array $data = [], $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
-    return $this->execute($sql, $data, null, $style);
+    return $this->execute($sql, $data, null, $mode);
   }
   
   public function insert($table, $data, $sequenceName = null)
@@ -914,21 +923,49 @@ class DB
     return $this->getAffectedRows();
   }
 
+  /**
+   * Initiates a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
   public function beginTransaction()
   {
-    $this->__get('pdo')->beginTransaction();
+    return $this->__get('pdo')->beginTransaction();
   }
   
+  /**
+   * Commits a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
   public function commit()
   {
-    $this->__get('pdo')->commit();
+    return $this->__get('pdo')->commit();
   }
   
+  /**
+   * Rolls back a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
   public function rollBack()
   {
     $this->__get('pdo')->rollBack();
   }
   
+  /**
+   * Checks if a transaction is currently active within the driver.
+   * Returns TRUE if a transaction is currently active, and FALSE if not.
+   *
+   * @return boolean
+   * @access public
+   */
   public function inTransaction()
   {
     return $this->__get('pdo')->inTransaction();
