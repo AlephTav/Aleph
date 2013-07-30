@@ -506,11 +506,21 @@ final class Aleph implements \ArrayAccess
     $config = (self::$instance !== null) ? self::$instance->config : [];
     $debug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
     foreach (['templateDebug', 'templateBug'] as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
+    $delegateExists = false;
+    if (self::$instance instanceof \CB && (!empty($config['logging']) && !empty($config['customLogMethod']) || $isDebug && !empty($config['customDebugMethod'])))
+    {
+      $classes = self::$instance->getClasses();
+      if (isset($classes['aleph\core\delegate']) && file_exists($classes['aleph\core\delegate']))
+      {
+        require($classes['aleph\core\delegate']);
+        $delegateExists = class_exists('Aleph\Core\Delegate');
+      }
+    }
     try
     {
       if (!empty($config['logging']))
       {
-        if (!empty($config['customLogMethod']) && self::$instance instanceof \Aleph && self::$instance->load('Aleph\Core\Delegate'))
+        if (!empty($config['customLogMethod']) && $delegateExists)
         {
           self::delegate($config['customLogMethod'], $info);
         }
@@ -521,7 +531,7 @@ final class Aleph implements \ArrayAccess
       }
     }
     catch (\Exception $e){}
-    if ($debug && !empty($config['customDebugMethod']) && self::$instance instanceof \Aleph && self::$instance->load('Aleph\Core\Delegate'))
+    if ($debug && !empty($config['customDebugMethod']) && $delegateExists)
     {
       if (!self::delegate($config['customDebugMethod'], $e, $info)) return;
     }
