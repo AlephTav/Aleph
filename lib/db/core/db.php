@@ -668,6 +668,54 @@ class DB
   }
   
   /**
+   * Initiates a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function beginTransaction()
+  {
+    return $this->__get('pdo')->beginTransaction();
+  }
+  
+  /**
+   * Commits a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function commit()
+  {
+    return $this->__get('pdo')->commit();
+  }
+  
+  /**
+   * Rolls back a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function rollBack()
+  {
+    $this->__get('pdo')->rollBack();
+  }
+  
+  /**
+   * Checks if a transaction is currently active within the driver.
+   * Returns TRUE if a transaction is currently active, and FALSE if not.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function inTransaction()
+  {
+    return $this->__get('pdo')->inTransaction();
+  }
+  
+  /**
    * Adds a regular expression that determines SQL queries for caching.
    *
    * @param string $sql - the regular expression.
@@ -905,6 +953,38 @@ class DB
     return $this->execute($sql, $data, null, $mode);
   }
   
+  /**
+   * Returns the table list of the given database. If the database is not specified the current database is used.
+   *
+   * @param string $scheme - the schema (database name) of the tables.
+   * @return array
+   * @access public
+   */
+  public function getTableList($schema = null)
+  {
+    $this->connect();
+    return $this->column($this->sql->tableList($schema ?: $this->idsn['dbname']));
+  }
+  
+  public function getTableInfo($table)
+  {
+    $this->connect();
+    return $this->sql->normalizeTableInfo($this->row($this->sql->tableInfo($table)));
+  }
+  
+  /**
+   * Returns metadata of the table columns.
+   *
+   * @param string $table
+   * @return array
+   * @access public
+   */
+  public function getColumnsInfo($table)
+  {
+    $this->connect();
+    return $this->sql->normalizeColumnsInfo($this->rows($this->sql->columnsInfo($table)));
+  }
+  
   public function insert($table, $data, $sequenceName = null)
   {
     $this->execute($this->sql->insert($table, $data)->build($data), $data);
@@ -921,72 +1001,6 @@ class DB
   {
     $this->execute($this->sql->delete($table)->where($where)->build($where), $where);
     return $this->getAffectedRows();
-  }
-
-  /**
-   * Initiates a transaction.
-   * Returns TRUE on success or FALSE on failure.
-   *
-   * @return boolean
-   * @access public
-   */
-  public function beginTransaction()
-  {
-    return $this->__get('pdo')->beginTransaction();
-  }
-  
-  /**
-   * Commits a transaction.
-   * Returns TRUE on success or FALSE on failure.
-   *
-   * @return boolean
-   * @access public
-   */
-  public function commit()
-  {
-    return $this->__get('pdo')->commit();
-  }
-  
-  /**
-   * Rolls back a transaction.
-   * Returns TRUE on success or FALSE on failure.
-   *
-   * @return boolean
-   * @access public
-   */
-  public function rollBack()
-  {
-    $this->__get('pdo')->rollBack();
-  }
-  
-  /**
-   * Checks if a transaction is currently active within the driver.
-   * Returns TRUE if a transaction is currently active, and FALSE if not.
-   *
-   * @return boolean
-   * @access public
-   */
-  public function inTransaction()
-  {
-    return $this->__get('pdo')->inTransaction();
-  }
-  
-  public function getTableList($schema = null)
-  {
-    $this->connect();
-    return $this->column($this->sql->tableList($schema ?: $this->_dsn_['dbname']));
-  }
-  
-  public function getTableInfo($table)
-  {
-    $this->connect();
-    return $this->sql->normalizeTableInfo($this->row($this->sql->tableInfo($table)));
-  }
-  
-  public function getColumnsInfo($table)
-  {
-    $this->connect();
-    return $this->sql->normalizeColumnInfo($this->rows($this->sql->columnsInfo($table)));
   }
   
   protected function prepare(\PDOStatement $st, $sql, array $data)

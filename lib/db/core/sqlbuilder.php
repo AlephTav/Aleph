@@ -135,6 +135,15 @@ abstract class SQLBuilder
    */
   abstract public function columnsInfo($table);
   
+  /**
+   * Returns SQL for creating a new DB table.
+   *
+   * @param string $table - the name of the table to be created.
+   * @param array $columns - the columns of the new table.
+   * @param string $options - additional SQL fragment that will be appended to the generated SQL.
+   * @return string
+   * @access public
+   */
   abstract public function createTable($table, array $columns, $options = null);
   
   /**
@@ -165,24 +174,114 @@ abstract class SQLBuilder
    */
   abstract public function truncateTable($table);
   
+  /**
+   * Returns SQL for adding a new column to a table.
+   *
+   * @param string $table - the table that the new column will be added to.
+   * @param string $column - the name of the new column.
+   * @param string $type - the column type.
+   * @return string
+   * @access public
+   */
   abstract public function addColumn($table, $column, $type);
   
+  /**
+   * Returns SQL for renaming a column.
+   *
+   * @param string $table - the table whose column is to be renamed.
+   * @param string $oldName - the previous name of the column.
+   * @param string $newName - the new name of the column.
+   * @return string
+   * @access public   
+   */
   abstract public function renameColumn($table, $oldName, $newName);
   
+  /**
+   * Returns SQL for changing the definition of a column.
+   *
+   * @param string $table - the table whose column is to be changed.
+   * @param string $oldName - the old name of the column.
+   * @param string $newName - the new name of the column.
+   * @param string $type - the type of the new column.
+   * @return string
+   * @access public
+   */
   abstract public function changeColumn($table, $oldName, $newName, $type);
   
+  /**
+   * Returns SQL for dropping a DB column.
+   *
+   * @param string $table - the table whose column is to be dropped.
+   * @param string $column - the name of the column to be dropped.
+   * @return string
+   * @access public
+   */
   abstract public function dropColumn($table, $column);
   
+  /**
+   * Returns SQL for adding a foreign key constraint to an existing table.
+   *
+   * @param string $name - the name of the foreign key constraint.
+   * @param string $table - the table that the foreign key constraint will be added to.
+   * @param string $columns - the name of the column to that the constraint will be added on. If there are multiple columns, separate them with commas.
+   * @param string $refTable - the table that the foreign key references to.
+   * @param string $refColumns - the name of the column that the foreign key references to. If there are multiple columns, separate them with commas.
+   * @param string $delete - the ON DELETE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL
+   * @param string $update - the ON UPDATE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL
+   * @return string
+   * @access public
+   */
   abstract public function addForeignKey($name, $table, array $columns, $refTable, array $refColumns, $delete = null, $update = null);
   
+  /**
+   * Returns SQL for dropping a foreign key constraint.
+   *
+   * @param string $name - the name of the foreign key constraint to be dropped.
+   * @param string $table - the table whose foreign key is to be dropped.
+   * @return string
+   * @access public
+   */
   abstract public function dropForeignKey($name, $table);
   
-  abstract public function createIndex($name, $table, array $columns, $option = null);
+  /**
+   * Returns SQL for creating a new index.
+   *
+   * @param string $name - the index name.
+   * @param string $table - the table that the new index will be created for.
+   * @param array $columns - the columns that should be included in the index.
+   * @param string $class - the index class. For example, it can be UNIQUE, FULLTEXT and etc.
+   * @param string $type - the index type.
+   * @return string
+   * @access public
+   */
+  abstract public function createIndex($name, $table, array $columns, $class = null, $type = null);
   
+  /**
+   * Returns SQL for dropping an index.
+   *
+   * @param string $name - the name of the index to be dropped.
+   * @param string $table - the table whose index is to be dropped.
+   * @return string
+   * @access public
+   */
   abstract public function dropIndex($name, $table);
   
-  abstract public function normalizeColumnInfo(array $info);
+  /**
+   * Normalizes the metadata of the DB columns.
+   *
+   * @param array $info - the column metadata.
+   * @return array
+   * @access public
+   */
+  abstract public function normalizeColumnsInfo(array $info);
   
+  /**
+   * Normalizes the DB table metadata.
+   *
+   * @param array $info - the table metadata.
+   * @return array
+   * @access public
+   */
   abstract public function normalizeTableInfo(array $info);
   
   public function insert($table, $columns)

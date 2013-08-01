@@ -26,7 +26,10 @@ use Aleph\Core;
 
 class MySQLBuilder extends SQLBuilder
 {
-  const ERR_MYSQL_1 = 'Renaming DB column is not supported by MySQL.';
+  /**
+   * Error message templates.
+   */
+  const ERR_MYSQL_1 = 'Renaming a DB column is not supported by MySQL.';
   
   /**
    * Returns MySQL data type that mapped to PHP type.
@@ -47,7 +50,7 @@ class MySQLBuilder extends SQLBuilder
       case 'bigint':
       case 'timestamp':
       case 'year':
-        return 'integer';
+        return 'int';
       case 'double':
       case 'float':
       case 'real':
@@ -56,7 +59,7 @@ class MySQLBuilder extends SQLBuilder
       case 'bit':
       case 'boolean':
       case 'serial':
-        return 'boolean';
+        return 'bool';
     }
     return 'string';
   }
@@ -135,15 +138,24 @@ class MySQLBuilder extends SQLBuilder
     return 'SHOW COLUMNS FROM ' . $this->wrap($table, true);
   }
   
+  /**
+   * Returns SQL for creating a new DB table.
+   *
+   * @param string $table - the name of the table to be created.
+   * @param array $columns - the columns of the new table.
+   * @param string $options - additional SQL fragment that will be appended to the generated SQL.
+   * @return string
+   * @access public
+   */
   public function createTable($table, array $columns, $options = null)
   {
-    $tmp = array();
+    $tmp = [];
     foreach ($columns as $column => $type)
     {
       if (is_numeric($column)) $tmp[] = $type;
       else $tmp[] = $this->wrap($column) . ' ' . $type;
     }
-    return 'CREATE TABLE ' . $this->wrap($table, true) . ' (' . implode(', ', $tmp) . ')' . ($options ? ' ' . $options : '');
+    return 'CREATE TABLE ' . $this->wrap($table, true) . (count($tmp) ? ' (' . implode(', ', $tmp) . ')' : '') . ($options ? ' ' . $options : '');
   }
   
   /**
@@ -183,26 +195,75 @@ class MySQLBuilder extends SQLBuilder
     return 'TRUNCATE TABLE ' . $this->wrap($table, true);
   }
   
+  /**
+   * Returns SQL for adding a new column to a table.
+   *
+   * @param string $table - the table that the new column will be added to.
+   * @param string $column - the name of the new column.
+   * @param string $type - the column type.
+   * @return string
+   * @access public
+   */
   public function addColumn($table, $column, $type)
   {
     return 'ALTER TABLE ' . $this->wrap($table, true) . ' ADD ' . $this->wrap($column) . ' ' . $type;
   }
   
+  /**
+   * Returns SQL for renaming a column.
+   *
+   * @param string $table - the table whose column is to be renamed.
+   * @param string $oldName - the previous name of the column.
+   * @param string $newName - the new name of the column.
+   * @return string
+   * @access public   
+   */
   public function renameColumn($table, $oldName, $newName)
   {
     throw new Core\Exception($this, 'ERR_MYSQL_1');
   }
   
+  /**
+   * Returns SQL for changing the definition of a column.
+   *
+   * @param string $table - the table whose column is to be changed.
+   * @param string $oldName - the old name of the column.
+   * @param string $newName - the new name of the column.
+   * @param string $type - the type of the new column.
+   * @return string
+   * @access public
+   */
   public function changeColumn($table, $oldName, $newName, $type)
   {
     return 'ALTER TABLE ' . $this->wrap($table, true) . ' CHANGE ' . $this->wrap($oldName) . ' ' . $this->wrap($newName) . ' ' . $type;
   }
   
+  /**
+   * Returns SQL for dropping a DB column.
+   *
+   * @param string $table - the table whose column is to be dropped.
+   * @param string $column - the name of the column to be dropped.
+   * @return string
+   * @access public
+   */
   public function dropColumn($table, $column)
   {
     return 'ALTER TABLE ' . $this->wrap($table, true) . ' DROP COLUMN ' . $this->wrap($column);
   }
   
+  /**
+   * Returns SQL for adding a foreign key constraint to an existing table.
+   *
+   * @param string $name - the name of the foreign key constraint.
+   * @param string $table - the table that the foreign key constraint will be added to.
+   * @param string $columns - the name of the column to that the constraint will be added on. If there are multiple columns, separate them with commas.
+   * @param string $refTable - the table that the foreign key references to.
+   * @param string $refColumns - the name of the column that the foreign key references to. If there are multiple columns, separate them with commas.
+   * @param string $delete - the ON DELETE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL.
+   * @param string $update - the ON UPDATE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL.
+   * @return string
+   * @access public
+   */
   public function addForeignKey($name, $table, array $columns, $refTable, array $refColumns, $delete = null, $update = null)
   {
     foreach ($columns as &$column) $column = $this->wrap($column);
@@ -213,81 +274,117 @@ class MySQLBuilder extends SQLBuilder
     return $sql;
   }
   
+  /**
+   * Returns SQL for dropping a foreign key constraint.
+   *
+   * @param string $name - the name of the foreign key constraint to be dropped.
+   * @param string $table - the table whose foreign key is to be dropped.
+   * @return string
+   * @access public
+   */
   public function dropForeignKey($name, $table)
   {
     return 'ALTER TABLE ' . $this->wrap($table, true) . ' DROP FOREIGN KEY ' . $this->wrap($name);
   }
   
-  public function createIndex($name, $table, array $columns, $option = null)
+  /**
+   * Returns SQL for creating a new index.
+   *
+   * @param string $name - the index name.
+   * @param string $table - the table that the new index will be created for.
+   * @param array $columns - the columns that should be included in the index.
+   * @param string $class - the index class. For example, it can be UNIQUE, FULLTEXT and etc.
+   * @param string $type - the index type.
+   * @return string
+   * @access public
+   */
+  public function createIndex($name, $table, array $columns, $class = null, $type = null)
   {
-    $tmp = array();
+    $tmp = [];
     foreach ($columns as $column => $length)
     {
       if (is_string($column)) $tmp[] = $this->wrap($column) . '(' . (int)$length . ')';
       else $tmp[] = $this->wrap($length);
     }
-    return 'CREATE ' . ($option ? $option . ' ' : '') . 'INDEX ' . $this->wrap($name, true) . ' ON ' . $this->wrap($table, true) . ' (' . implode(', ' , $tmp) . ')';
+    return 'CREATE ' . ($class ? $class . ' ' : '') . 'INDEX ' . $this->wrap($name, true) . ' ON ' . $this->wrap($table, true) . ' (' . implode(', ' , $tmp) . ')' . ($type ? ' ' . $type : '');
   }
   
+  /**
+   * Returns SQL for dropping an index.
+   *
+   * @param string $name - the name of the index to be dropped.
+   * @param string $table - the table whose index is to be dropped.
+   * @return string
+   * @access public
+   */
   public function dropIndex($name, $table)
   {
     return 'DROP INDEX ' . $this->wrap($name, true) . ' ON ' . $this->wrap($table, true);
   }
   
-  public function normalizeColumnInfo(array $info)
+  /**
+   * Normalizes the metadata of the DB columns.
+   *
+   * @param array $info - the column metadata.
+   * @return array
+   * @access public
+   */
+  public function normalizeColumnsInfo(array $info)
   {
-    $tmp = array();
+    $tmp = [];
     foreach ($info as $row)
     {
-      preg_match('/.+\(([\d\w,\']+)\)/U', $row['Type'], $arr);
+      preg_match('/(.*)\((.*)\)|[^()]*/', str_replace('unsigned', '', $row['Type']), $arr);
       $column = $row['Field'];
       $tmp[$column]['column'] = $column;
-      $tmp[$column]['type'] = $type = preg_replace('/\([\d\w,\']+\)/U', '', $row['Type']);
+      $tmp[$column]['type'] = $type = isset($arr[1]) ? $arr[1] : $arr[0];
+      $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
       $tmp[$column]['isPrimaryKey'] = ($row['Key'] == 'PRI');
       $tmp[$column]['isNullable'] = ($row['Null'] != 'NO');
-      $tmp[$column]['isAutoIncrement'] = ($row['Extra'] == 'auto_increment');
-      if (substr($type, -8) == 'unsigned')
-      {
-        $tmp[$column]['type'] = trim(substr($type, 0, -8));
-        $tmp[$column]['isUnsigned'] = true;
-      }
-      else $tmp[$column]['isUnsigned'] = false;
-      $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
+      $tmp[$column]['isAutoincrement'] = ($row['Extra'] == 'auto_increment');
+      $tmp[$column]['isUnsigned'] = strpos($row['Type'], 'unsigned') !== false;
       $tmp[$column]['default'] = ($type == 'bit') ? substr($row['Default'], 2, 1) : $row['Default'];
       if ($tmp[$column]['default'] === null && !$tmp[$column]['isNullable']) $tmp[$column]['default'] = '';
       $tmp[$column]['maxLength'] = 0;
       $tmp[$column]['precision'] = 0;
       $tmp[$column]['set'] = false;
-      if (!isset($arr[1])) continue;
-      $arr = explode(',', $arr[1]);
+      if (empty($arr[2])) continue;
+      $arr = explode(',', $arr[2]);
       if ($type == 'enum' || $type == 'set') $tmp[$column]['set'] = $arr;
       else
       {
-        if (count($arr) == 1) $tmp[$column]['maxLength'] = $arr[0];
+        if (count($arr) == 1) $tmp[$column]['maxLength'] = (int)trim($arr[0]);
         else
         {
-          $tmp[$column]['maxLength'] = $arr[0];
-          $tmp[$column]['precision'] = $arr[1];
+          $tmp[$column]['maxLength'] = (int)trim($arr[0]);
+          $tmp[$column]['precision'] = (int)trim($arr[1]);
         }
       }
     }
     return $tmp;
   }
   
+  /**
+   * Normalizes the DB table metadata.
+   *
+   * @param array $info - the table metadata.
+   * @return array
+   * @access public
+   */
   public function normalizeTableInfo(array $info)
   {
     $sql = $info['Create Table'];
-    $info = array('constraints' => array(), 'keys' => array());
+    $info = ['constraints' => [], 'keys' => []];
     $clean = function($column, $smart = false)
     {
       $column = explode('.', $column);
       foreach ($column as &$col) $col = substr(trim($col), 1, -1);
       return $smart && count($column) == 1 ? $column[0] : $column;
     };
-    preg_match_all('/CONSTRAINT\s+(.+)\s+FOREIGN KEY\s+\((.+)\)\s+REFERENCES\s+(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
+    preg_match_all('/CONSTRAINT\s+(.+)\s+FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
     foreach ($matches as $k => $match)
     {
-      $actions = array();
+      $actions = [];
       if (isset($match[5]))
       {
         foreach (explode('ON', trim($match[5])) as $act)
@@ -297,9 +394,9 @@ class MySQLBuilder extends SQLBuilder
           $actions[strtolower($act[0])] = $act[1];
         }
       }
-      $info['constraints'][$clean($match[1], true)] = array('columns' => $clean($match[2]), 
-                                                            'reference' => array('table' => $clean($match[3], true), 'columns' => $clean($match[4])),
-                                                            'actions' => $actions);
+      $info['constraints'][$clean($match[1], true)] = ['columns' => $clean($match[2]), 
+                                                       'reference' => ['table' => $clean($match[3], true), 'columns' => $clean($match[4])],
+                                                       'actions' => $actions];
     }
     preg_match_all('/[^YN]+\s+KEY\s+(.+)\s*\(([^\)]+)\)/mi', $sql, $matches, PREG_SET_ORDER);
     foreach ($matches as $match)
@@ -308,7 +405,7 @@ class MySQLBuilder extends SQLBuilder
     }
     if (preg_match('/\s+ENGINE\s*=\s*([^\s]+)/mi', $sql, $match)) $info['engine'] = $match[1];
     if (preg_match('/\s+DEFAULT CHARSET\s*=\s*([^\s]+)/mi', $sql, $match)) $info['charset'] = $match[1];
-    if (preg_match('/\s+AUTO_INCREMENT\s*=\s*([^\s]+)/mi', $sql, $match)) $info['autoIncrementStartValue'] = $match[1];
+    if (preg_match('/\s+AUTO_INCREMENT\s*=\s*([^\s]+)/mi', $sql, $match)) $info['autoIncrementInitialValue'] = $match[1];
     return $info;
   }
 }
