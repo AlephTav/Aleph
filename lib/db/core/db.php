@@ -985,10 +985,22 @@ class DB
     return $this->sql->normalizeColumnsInfo($this->rows($this->sql->columnsInfo($table)));
   }
   
-  public function insert($table, $data, $sequenceName = null)
+  /**
+   * Inserts new record in the database table.
+   * Method returns the ID of the last inserted row or sequence value.
+   *
+   * @param string $table - the table name.
+   * @param mixed $data - the column metadata.
+   * @param array $options - contains additional parameters required by some DBMS:
+   * $options['updateOnKeyDuplicate'] - makes sense for MySQL DBMS. If this boolean parameter is specified and a row is inserted that would cause a duplicate value in a UNIQUE index or PRIMARY KEY, an UPDATE of the old row is performed.
+   * $options['sequenceName'] - name of the sequence object (required by PostgreSQL and Oracle DBMS).
+   * @return integer
+   * @access public
+   */
+  public function insert($table, $data, array $options = null)
   {
-    $this->execute($this->sql->insert($table, $data)->build($data), $data);
-    return $this->getLastInsertID($sequenceName);
+    $this->execute($this->sql->insert($table, $data, $options)->build($data), $data);
+    return $this->getLastInsertID(empty($options['sequenceName']) ? null : $options['sequenceName']);
   }
   
   public function update($table, $data, $where = null)

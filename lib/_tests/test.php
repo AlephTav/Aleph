@@ -8,6 +8,7 @@ $classes = ['Aleph',
             'Aleph\Core\Event',
             'Aleph\Cache\Cache',
             'Aleph\Core\Template',
+            'Aleph\DB\MySQLBuilder',
             'Aleph\Net\URL',
             'Aleph\Net\Router',
             'Aleph\Utils\PHP\Tokenizer'];

@@ -284,26 +284,42 @@ abstract class SQLBuilder
    */
   abstract public function normalizeTableInfo(array $info);
   
-  public function insert($table, $columns)
+  /**
+   * Starts to form the SQL-query of INSERT-type.
+   * Value of $columns can be one of the following possible variants:
+   * <ul>
+   * <li>A string or SQLExpression instance: <code>$sql->insert('MyTable', '(2, CURTIME())');</code></li>
+   * <li>One-dimensional associative array: <code>$sql->insert('MyTable', ['firstName' => 'John', 'lastName' => 'Smith', 'email' => 'johnsmith@gmail.com']);</code></li>
+   * <li>Multi-dimensional associative array: <code>$sql->insert('MyTable', ['column1' => [1, 2, new SQLExpression('VERSION()')], 'column2' => ['a', 'b'], 'column3' => 'foo']);</code></li>
+   * </ul>
+   * @param string $table - the table name.
+   * @param mixed $columns - the column metadata.
+   * @param array $options - additional information for some DBMS.
+   * @return self
+   * @access public
+   */
+  public function insert($table, $columns, array $options = null)
   {
     $res = $this->insertExpression($columns, $data);
-    $tmp = array();
+    $tmp = [];
     $tmp['type'] = 'insert';
     $tmp['data'] = $data;
     $tmp['table'] = $this->wrap($table, true);
     $tmp['columns'] = $res['columns'];
     $tmp['values'] = $res['values'];
+    $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
   }
   
-  public function update($table, $columns)
+  public function update($table, $columns, array $options = null)
   {
     $tmp = array();
     $tmp['type'] = 'update';
     $tmp['data'] = array();
     $tmp['table'] = $this->selectExpression($table, true);
     $tmp['columns'] = $this->updateExpression($columns, $tmp['data']);
+    $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
   }
@@ -392,6 +408,13 @@ abstract class SQLBuilder
     return $this;
   }
   
+  /**
+   * Returns completely formed SQL-query of the given type.
+   *
+   * @param mixed $data - a variable in which the data array for the SQL-query will be written.
+   * @return string
+   * @access public
+   */
   public function build(&$data = null)
   {
     $tmp = array_pop($this->sql);
@@ -405,18 +428,32 @@ abstract class SQLBuilder
     }
   }
   
+  /**
+   * Returns completed SQL-query of INSERT-type.
+   *
+   * @param array $insert - the query data.
+   * @return string
+   * @access protected
+   */
   protected function buildInsert(array $insert)
   {
     $sql = 'INSERT INTO ' . $insert['table'] . ' ';
     if (!is_array($insert['values'])) $sql .= $insert['values'];
     else 
     {
-      foreach ($insert['values'] as &$values) $values = '(' . implode(', ', $values) . ')';
-      $sql .= '(' . implode(', ', $insert['columns']) . ') VALUES ' . implode(', ', $insert['values']);
+      foreach ($insert['values'] as &$values) $values = '(' . implode(',', $values) . ')';
+      $sql .= '(' . implode(',', $insert['columns']) . ') VALUES ' . implode(',', $insert['values']);
     }
     return $sql;
   }
   
+  /**
+   * Returns completed SQL-query of UPDATE-type.
+   *
+   * @param array $update - the query data.
+   * @return string
+   * @access protected
+   */
   protected function buildUpdate(array $update)
   {
     $sql = 'UPDATE ' . implode(', ', $update['table']) . ' SET ' . $update['columns'];
@@ -449,24 +486,38 @@ abstract class SQLBuilder
     return $sql;
   }
   
+  /**
+   * Normalizes the column metadata for the INSERT-type SQL-query.
+   *
+   * @param mixed $expression - the column metadata.
+   * @param mixed $data - a variable in which the data array for the SQL-query will be written.
+   * @return array - normalized column data for query building.
+   * @access protected
+   */
   protected function insertExpression($expression, &$data)
   {
-    $data = array();
-    if (!is_array($expression)) return array('columns' => null, 'values' => (string)$expression);
-    $tmp = array('columns' => array(), 'values' => array());
-    if (!is_numeric(key($expression))) $expression = array($expression);
-    foreach ($expression as $k => $values)
+    $data = [];
+    if (!is_array($expression)) return ['columns' => null, 'values' => (string)$expression];
+    $tmp = ['columns' => [], 'values' => []]; $max = $i = 0;
+    foreach ($expression as $column => &$values) 
     {
-      $tmp['values'][$k] = array();
-      foreach ($values as $column => $value)
+      $tmp['columns'][$column] = $this->wrap($column);
+      if (!is_array($values)) $values = [$values];
+      if (count($values) > $max) $max = count($values);
+    }
+    unset($values);
+    $records = array_values($expression);
+    for ($i = 0; $i < $max; $i++)
+    {
+      foreach ($records as $j => $values)
       {
-        $tmp['columns'][$column] = $this->wrap($column);
-        if ($value instanceof self || $value instanceof SQLExpression) $tmp['values'][$k][] = (string)$value;
+        $value = empty($values[$i]) ? end($values) : $values[$i];
+        if ($value instanceof self || $value instanceof SQLExpression) $tmp['values'][$i][$j] = (string)$value;
         else 
         {
-          $tmp['values'][$k][] = '?';
+          $tmp['values'][$i][$j] = '?';
           $data[] = $value;
-        }
+        } 
       }
     }
     return $tmp;

@@ -90,7 +90,7 @@ abstract class Control extends Tags\Tag implements IControl
   
   public static function vsPush($init = false)
   {
-    $vs = self::$vs + array('globals' => Core\Template::getGlobals(), 'timestamp' => $init ? 0 : foo(new Utils\DT('now', null, 'UTC'))->getTimestamp());
+    $vs = self::$vs + array('globals' => Core\Template::getGlobals(), 'timestamp' => $init ? 0 : (new Utils\DT('now', null, 'UTC'))->getTimestamp());
     $cache = MVC\Page::$page->cache;
     $cache->set(MVC\Page::$page->getPageID() . ($init ? '_init_vs' : session_id() . '_vs'), $vs, $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), '--controls');
   }
