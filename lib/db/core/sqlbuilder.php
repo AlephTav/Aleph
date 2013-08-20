@@ -285,7 +285,7 @@ abstract class SQLBuilder
   abstract public function normalizeTableInfo(array $info);
   
   /**
-   * Starts to form the SQL-query of INSERT-type.
+   * Starts to form the SQL query of INSERT type.
    * Value of $columns can be one of the following possible variants:
    * <ul>
    * <li>A string or SQLExpression instance: <code>$sql->insert('MyTable', '(2, CURTIME())');</code></li>
@@ -312,11 +312,30 @@ abstract class SQLBuilder
     return $this;
   }
   
+  /**
+   * Starts to form the SQL query of UPDATE type.
+   * Value of $table should correspond to one of the following types:
+   * <ul>
+   * <li>A string or SQLExpression instance: <code>$sql->update('tb1 AS t1, tb2 AS t2', ['column1' => 1, 'column2' => 2]);</code></li>
+   * <li>One-dimensional mixed array: <code>$sql->update(['tb1', 'tb2' => 't2', new SQLExpression('(SELECT 5) AS t3')], ['column1' => 1, 'column2' => 2]);</code></li>
+   * </ul>
+   * Value of $columns can be one of the following possible variants:
+   * <ul>
+   * <li>A string or SQLExpression instance: <code>$sql->update('MyTable', 'expire > CURDATE()');</code></li>
+   * <li>One-dimensional associative array: <code>$sql->update('MyTable', ['column1' => 'v1', 'column2' => 'v2'])</code></li>
+   * </ul>
+   *
+   * @param string $table - the table name.
+   * @param mixed $columns - the column metadata.
+   * @param array $options - additional information for some DBMS.
+   * @return self
+   * @access public
+   */
   public function update($table, $columns, array $options = null)
   {
-    $tmp = array();
+    $tmp = [];
     $tmp['type'] = 'update';
-    $tmp['data'] = array();
+    $tmp['data'] = [];
     $tmp['table'] = $this->selectExpression($table, true);
     $tmp['columns'] = $this->updateExpression($columns, $tmp['data']);
     $tmp['options'] = $options;
@@ -324,28 +343,67 @@ abstract class SQLBuilder
     return $this;
   }
   
-  public function delete($table)
+  /**
+   * Starts to form the SQL query of DELETE type.
+   * Value of $table should correspond to one of the following types:
+   * <ul>
+   * <li>A string or SQLExpression instance: <code>$sql->delete('tb1 AS t1, tb2 AS t2');</code></li>
+   * <li>One-dimensional mixed array: <code>$sql->delete(['tb1', 'tb2' => 't2']);</code></li>
+   * </ul>
+   *
+   * @param string $table - the table name.
+   * @param array $options - additional information for some DBMS.
+   * @return self
+   * @access public
+   */
+  public function delete($table, array $options = null)
   {
-    $tmp = array();
+    $tmp = [];
     $tmp['type'] = 'delete';
-    $tmp['data'] = array();
+    $tmp['data'] = [];
     $tmp['table'] = $this->selectExpression($table, true);
+    $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
   }
   
-  public function select($table, $columns = '*', $distinct = null)
+  /**
+   * Starts to form the SQL query of SELECT type.
+   * Value of $table (or $columns) should correspond to one of the following types:
+   * <ul>
+   * <li>A string or SQLExpression instance: <code>$sql->select('tb1 AS t1, tb2 AS t2', 'column1, column2');</code></li>
+   * <li>One-dimensional mixed array: <code>$sql->select(['tb1', 'tb2' => 't2'], ['column1', 'column2' => 'foo', new SQLExpression('CONCAT(column1, column2)')]);</code></li>
+   * </ul>
+   *
+   * @param string $table - the table name.
+   * @param mixed $columns - the column metadata.
+   * @param string $distinct - additional select options for some DBMS.
+   * @param array $options - additional query information for some DBMS.
+   * @return self
+   * @access public
+   */
+  public function select($table, $columns = '*', $distinct = null, array $options = null)
   {
-    $tmp = array();
+    $tmp = [];
     $tmp['type'] = 'select';
-    $tmp['data'] = array();
+    $tmp['data'] = [];
     $tmp['distinct'] = $distinct;
     $tmp['columns'] = $this->selectExpression($columns);
     $tmp['from'] = $this->selectExpression($table, true);
+    $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
   }
   
+  /**
+   * Applies JOIN clause to the current SQL query.
+   *
+   * @param string $table - the table name.
+   * @param mixed $conditions - the JOIN clause metadata.
+   * @param string $type - the JOIN clause type.
+   * @return self
+   * @access public
+   */
   public function join($table, $conditions, $type = 'INNER')
   {
     if ($conditions == '') return $this;
@@ -356,6 +414,13 @@ abstract class SQLBuilder
     return $this;
   }
   
+  /**
+   * Applies WHERE clause to the current SQL query.
+   *
+   * @param mixed $conditions - the WHERE clause metadata.
+   * @return self
+   * @access public
+   */
   public function where($conditions)
   {
     if ($conditions == '') return $this;
@@ -366,6 +431,13 @@ abstract class SQLBuilder
     return $this;
   }
   
+  /**
+   * Applies GROUP clause to the current SQL query.
+   *
+   * @param mixed $group - the GROUP clause metadata.
+   * @return self
+   * @access public
+   */
   public function group($group)
   {
     if ($group == '') return $this;
@@ -376,6 +448,13 @@ abstract class SQLBuilder
     return $this;
   }
   
+  /**
+   * Applies HAVING clause to the current SQL query.
+   *
+   * @param mixed $conditions - the HAVING clause metadata.
+   * @return self
+   * @access public
+   */
   public function having($conditions)
   {
     if ($conditions == '') return $this;
@@ -386,22 +465,37 @@ abstract class SQLBuilder
     return $this;
   }
   
+  /**
+   * Applies ORDER clause to the current SQL query.
+   *
+   * @param mixed $order - the ORDER clause metadata.
+   * @return self
+   * @access public
+   */
   public function order($order)
   {
     if ($order == '') return $this;
     $tmp = array_pop($this->sql);
     if (isset($tmp['order'])) throw new Core\Exception($this, 'ERR_SQL_3', 'order');
-    $tmp['order'] = $this->selectExpression($order);
+    $tmp['order'] = $this->selectExpression($order, false, true);
     $this->sql[] = $tmp;
     return $this;
   }
   
+  /**
+   * Applies LIMIT clause to the current SQL query.
+   *
+   * @param integer $limit - the maximum number of rows.
+   * @param integer $offset - the row offset.
+   * @return self
+   * @access public
+   */
   public function limit($limit, $offset = null)
   {
-    if ((int)$limit == 0) return $this;
+    if ((int)$limit <= 0) return $this;
     $tmp = array_pop($this->sql);
     if (isset($tmp['limit'])) throw new Core\Exception($this, 'ERR_SQL_3', 'limit');
-    $tmp['limit'] = array();
+    $tmp['limit'] = [];
     if ($offset !== null) $tmp['limit'][] = (int)$offset;
     $tmp['limit'][] = (int)$limit;
     $this->sql[] = $tmp;
@@ -409,9 +503,9 @@ abstract class SQLBuilder
   }
   
   /**
-   * Returns completely formed SQL-query of the given type.
+   * Returns completely formed SQL query of the given type.
    *
-   * @param mixed $data - a variable in which the data array for the SQL-query will be written.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
    * @return string
    * @access public
    */
@@ -429,7 +523,7 @@ abstract class SQLBuilder
   }
   
   /**
-   * Returns completed SQL-query of INSERT-type.
+   * Returns completed SQL query of INSERT type.
    *
    * @param array $insert - the query data.
    * @return string
@@ -441,14 +535,14 @@ abstract class SQLBuilder
     if (!is_array($insert['values'])) $sql .= $insert['values'];
     else 
     {
-      foreach ($insert['values'] as &$values) $values = '(' . implode(',', $values) . ')';
-      $sql .= '(' . implode(',', $insert['columns']) . ') VALUES ' . implode(',', $insert['values']);
+      foreach ($insert['values'] as &$values) $values = '(' . implode(', ', $values) . ')';
+      $sql .= '(' . implode(', ', $insert['columns']) . ') VALUES ' . implode(', ', $insert['values']);
     }
     return $sql;
   }
   
   /**
-   * Returns completed SQL-query of UPDATE-type.
+   * Returns completed SQL query of UPDATE type.
    *
    * @param array $update - the query data.
    * @return string
@@ -457,26 +551,42 @@ abstract class SQLBuilder
   protected function buildUpdate(array $update)
   {
     $sql = 'UPDATE ' . implode(', ', $update['table']) . ' SET ' . $update['columns'];
+    if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
     if (!empty($update['where'])) $sql .= ' WHERE ' . $update['where'];
     if (!empty($select['order'])) $sql .= ' ORDER BY ' . implode(', ', $select['order']);
     if (!empty($select['limit'])) $sql .= ' LIMIT ' . implode(', ', $select['limit']);
     return $sql;
   }
   
+  /**
+   * Returns completed SQL query of DELETE type.
+   *
+   * @param array $delete - the query data.
+   * @return string
+   * @access protected
+   */
   protected function buildDelete(array $delete)
   {
     $sql = 'DELETE FROM ' . implode(', ', $delete['table']);
+    if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
     if (!empty($delete['where'])) $sql .= ' WHERE ' . $delete['where'];
     if (!empty($select['order'])) $sql .= ' ORDER BY ' . implode(', ', $select['order']);
     if (!empty($select['limit'])) $sql .= ' LIMIT ' . implode(', ', $select['limit']);
     return $sql;
   }
   
+  /**
+   * Returns completed SQL query of SELECT type.
+   *
+   * @param array $select - the query data.
+   * @return string
+   * @access protected
+   */
   protected function buildSelect(array $select)
   {
     $sql = 'SELECT ' . ($select['distinct'] ? $select['distinct'] . ' ' : '');
     $sql .= implode(', ', $select['columns']);
-    $sql .= ' FROM ' . implode(', ', $select['from']);
+    $sql .= ' FROM ' . implode(',', $select['from']);
     if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
     if (!empty($select['where'])) $sql .= ' WHERE ' . $select['where'];
     if (!empty($select['group'])) $sql .= ' GROUP BY ' . implode(', ', $select['group']);
@@ -487,10 +597,10 @@ abstract class SQLBuilder
   }
   
   /**
-   * Normalizes the column metadata for the INSERT-type SQL-query.
+   * Normalizes the column metadata for the INSERT type SQL query.
    *
    * @param mixed $expression - the column metadata.
-   * @param mixed $data - a variable in which the data array for the SQL-query will be written.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
    * @return array - normalized column data for query building.
    * @access protected
    */
@@ -523,14 +633,22 @@ abstract class SQLBuilder
     return $tmp;
   }
   
+  /**
+   * Normalizes the column metadata for the UPDATE type SQL query.
+   *
+   * @param mixed $expression - the column metadata.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string - normalized column data for query building.
+   * @access protected
+   */
   protected function updateExpression($expression, &$data)
   {
     if (!is_array($expression)) return (string)$expression;
-    $data = $tmp = array();
+    $data = $tmp = [];
     foreach ($expression as $column => $value)
     {
-      if ($value instanceof self)  $tmp[] =  $this->wrap($column) . ' = (' . (string)$value . ')';
-      else if ($value instanceof SQLExpression) $tmp[] =  $this->wrap($column) . ' = ' . (string)$value;
+      if ($value instanceof self)  $tmp[] =  $this->wrap($column) . ' = (' . $value . ')';
+      else if ($value instanceof SQLExpression) $tmp[] =  $this->wrap($column) . ' = ' . $value;
       else 
       {
         $tmp[] = $this->wrap($column) . ' = ?';
@@ -540,68 +658,70 @@ abstract class SQLBuilder
     return implode(', ', $tmp);
   }
   
-  protected function selectExpression($expression, $isTableName = false)
+  /**
+   * Normalizes the column metadata for the SELECT type SQL query.
+   *
+   * @param mixed $expression - the column metadata.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @param boolean $isOrderExpression - determines whether $expression is an order expression or not.
+   * @return array - normalized column data for query building.
+   * @access protected
+   */
+  protected function selectExpression($expression, $isTableName = false, $isOrderExpression = false)
   {
-    if ($expression == '') return array('*');
-    if ($expression instanceof self) return array('(' . (string)$expression . ')');
-    if ($expression instanceof SQLExpression) return array((string)$expression);
+    if ($expression == '') return ['*'];
+    if ($expression instanceof self) return ['(' . $expression . ')'];
+    if ($expression instanceof SQLExpression) return [(string)$expression];
     if (is_array($expression))
     {
       $tmp = array();
-      if (!is_numeric(key($expression))) $expression = array($expression);
-      foreach ($expression as $exp)
+      foreach ($expression as $k => $exp)
       {
-        if ($exp instanceof self) $tmp[] = '(' . (string)$exp . ')';
-        else if ($exp instanceof SQLExpression) $tmp[] = (string)$exp;
-        else if (is_array($exp))
+        if (is_numeric($k))
         {
-          $exp = each($exp);
-          $exp[1] = ($exp[1] == 'DESC' || $exp[1] == 'ASC') ? ' ' . $exp[1] : ' AS ' . $this->wrap($exp[1], true); 
-          if ($exp[0] instanceof self) $tmp[] = '(' . (string)$exp[0] . ')' . $exp[1];
-          else if ($exp[0] instanceof SQLExpression) $tmp[] = (string)$exp[0] . $exp[1];
-          else $tmp[] = $this->wrap($exp[0], $isTableName) . $exp[1];
+          if ($exp instanceof self) $tmp[] = '(' . $exp . ')';
+          else if ($exp instanceof SQLExpression) $tmp[] = (string)$exp;
+          else $tmp[] = $this->wrap($exp, $isTableName);
         }
         else
         {
-          $tmp[] = $this->wrap($exp, $isTableName);
+          if ($exp instanceof self || $exp instanceof SQLExpression) $exp = $isOrderExpression ? ' ' . $exp : ' AS ' . $exp;
+          else $exp = $isOrderExpression ? ' ' . $exp : ' AS ' . $this->wrap($exp, true);
+          $tmp[] = $this->wrap($k, $isTableName) . $exp;
         }
       }
       return $tmp;
     }
-    return array($this->wrap($expression, $isTableName));
+    return [$this->wrap($expression, $isTableName)];
   }
   
+  /**
+   * Normalizes the column metadata for WHERE clause of the SQL query.
+   *
+   * @param mixed $expression - the column metadata.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @param string $conjunction - conjunction SQL keyword of a WHERE clause.
+   * @return array - normalized column data for query building.
+   * @access protected
+   */
   protected function whereExpression($expression, &$data, $conjunction = null)
   {
-    if ($expression instanceof self) return '(' . (string)$expression . ')';
+    if ($expression instanceof self) return '(' . $expression . ')';
     if (!is_array($expression)) return (string)$expression;
-    $tmp = array();
-    $conj = $conjunction ?: ' AND ';
+    $tmp = [];
+    $conj = strtoupper(trim($conjunction)) ?: 'AND';
     foreach ($expression as $column => $value)
     {
-      if (is_numeric($column))
+      if (is_array($value)) 
       {
-        if (is_array($value))
-        {
-          if ($conjunction !== null)
-          {
-            $tmp[] = '(' . $this->whereExpression($value, $data, ($conjunction == ' AND ') ? ' OR ' : ' AND ') . ')';
-          }
-          else
-          {
-            $conj = ' OR ';
-            $tmp[] = '(' . $this->whereExpression($value, $data, ' AND ') . ')';
-          }
-        }
-        else
-        {
-          if ($value instanceof self) $tmp[] = '(' . $value->build() . ')';
-          else $tmp[] = (string)$value;
-        }
+        $column = strtoupper(trim($column));
+        $value = $this->whereExpression($value, $data, in_array($column, ['OR', 'AND', 'XOR', '||', '&&']) ? $column : 'AND');
+        $tmp[] = ($conj == 'AND' || $conj == 'XOR' || $conj == '&&') && ($column == 'OR' || $column == '||') ? '(' . $value . ')' : $value;
       }
+      else if (is_numeric($column)) $tmp[] = (string)$value;
       else
       {
-        if ($value instanceof self) $tmp[] = $this->wrap($column) . ' = (' . (string)$value . ')';
+        if ($value instanceof self) $tmp[] = $this->wrap($column) . ' = (' . $value . ')';
         else if ($value instanceof SQLExpression) $tmp[] = $this->wrap($column) . ' = ' . $value;
         else
         {
@@ -610,7 +730,7 @@ abstract class SQLBuilder
         }
       }
     }
-    return implode($conj, $tmp);
+    return implode(' ' . $conj . ' ', $tmp);
   }
 }
 

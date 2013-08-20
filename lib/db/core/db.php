@@ -1003,18 +1003,45 @@ class DB
     return $this->getLastInsertID(empty($options['sequenceName']) ? null : $options['sequenceName']);
   }
   
+  /**
+   * Updates existing rows in the database.
+   * Method returns the number of rows affected by this SQL statement.
+   *
+   * @param mixed $table - information about the database tables whose rows are to be updated.
+   * @param mixed $data - information about updating columns.
+   * @param mixed $where - information about conditions of the updating.
+   * @return integer
+   * @access public 
+   */
   public function update($table, $data, $where = null)
   {
     $this->execute($this->sql->update($table, $data)->where($where)->build($where), $where);
     return $this->getAffectedRows();
   }
   
+  /**
+   * Deletes existing rows in the database.
+   * Method returns the number of rows affected by this SQL statement.
+   *
+   * @param mixed $table - information about the database tables whose rows are to be deleted.
+   * @param mixed $where - information about conditions of the deleting.
+   * @return integer
+   * @access public 
+   */
   public function delete($table, $where = null)
   {
     $this->execute($this->sql->delete($table)->where($where)->build($where), $where);
     return $this->getAffectedRows();
   }
   
+  /**
+   * Prepares a SQL statement to execution.
+   *
+   * @param \PDOStatement $st - the instance of SQL statement.
+   * @param string $sql - the SQL query to be executed.
+   * @param array $data - the data for the SQL query.
+   * @access protected
+   */
   protected function prepare(\PDOStatement $st, $sql, array $data)
   {
     if (is_numeric(key($data)))
@@ -1035,6 +1062,13 @@ class DB
     }
   }
   
+  /**
+   * Combines SQL query string and data in one string.
+   *
+   * @param string $sql - the parameterized SQL query.
+   * @param array $data - the SQL data to be combined.
+   * @access protected
+   */
   protected function assemble($sql, array $data)
   {
     if (count($data) == 0) return $sql;
