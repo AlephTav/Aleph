@@ -408,4 +408,40 @@ class MySQLBuilder extends SQLBuilder
     if (preg_match('/\s+AUTO_INCREMENT\s*=\s*([^\s]+)/mi', $sql, $match)) $info['autoIncrementInitialValue'] = $match[1];
     return $info;
   }
+  
+  /**
+   * Starts to form the SQL query of INSERT type.
+   * Value of $columns can be one of the following possible variants:
+   * <ul>
+   * <li>A string or SQLExpression instance: <code>$sql->insert('MyTable', '(2, CURTIME())');</code></li>
+   * <li>One-dimensional associative array: <code>$sql->insert('MyTable', ['firstName' => 'John', 'lastName' => 'Smith', 'email' => 'johnsmith@gmail.com']);</code></li>
+   * <li>Multi-dimensional associative array: <code>$sql->insert('MyTable', ['column1' => [1, 2, new SQLExpression('VERSION()')], 'column2' => ['a', 'b'], 'column3' => 'foo']);</code></li>
+   * </ul>
+   * @param string $table - the table name.
+   * @param mixed $columns - the column metadata.
+   * @param array $options - for MySQL, you can set parameter $options['updateOnKeyDuplicate']. If this parameter is specified and a row is inserted that would cause a duplicate value in a UNIQUE index or PRIMARY KEY, an UPDATE of the old row is performed.
+   * @return self
+   * @access public
+   */
+  public function insert($table, $columns, array $options = null)
+  {
+    parent::insert($table, $columns, $options);
+    $this->sql[count($this->sql) - 1]['original'] = $columns;
+    return $this;
+  }
+  
+  /**
+   * Returns completed SQL query of INSERT type.
+   *
+   * @param array $insert - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildInsert(array $insert, &$data)
+  {
+    $sql = parent::buildInsert($insert, $data);
+    if (!empty($insert['options']['updateOnKeyDuplicate'])) $sql .= ' ON DUPLICATE KEY UPDATE ' . $this->updateExpression($insert['original'], $data);
+    return $sql;
+  }
 }

@@ -408,8 +408,8 @@ abstract class SQLBuilder
   {
     if ($conditions == '') return $this;
     $tmp = array_pop($this->sql);
-    if (isset($tmp['join'])) $tmp['join'] = array(); 
-    $tmp['join'][] = ' ' . $type . ' JOIN ' . implode(', ', $this->selectExpression($table, true)) . ' ON ' . $this->whereExpression($conditions, $tmp['data']);
+    if (isset($tmp['join'])) $tmp['join'] = []; 
+    $tmp['join'][] = ($type != '' ? ' ' . $type : '') . ' JOIN ' . implode(', ', $this->selectExpression($table, true)) . ' ON ' . $this->whereExpression($conditions, $tmp['data']);
     $this->sql[] = $tmp;
     return $this;
   }
@@ -515,10 +515,10 @@ abstract class SQLBuilder
     $data = $tmp['data'];
     if ($tmp) switch ($tmp['type'])
     {
-      case 'select': return $this->buildSelect($tmp);
-      case 'insert': return $this->buildInsert($tmp);
-      case 'update': return $this->buildUpdate($tmp);
-      case 'delete': return $this->buildDelete($tmp);
+      case 'select': return $this->buildSelect($tmp, $data);
+      case 'insert': return $this->buildInsert($tmp, $data);
+      case 'update': return $this->buildUpdate($tmp, $data);
+      case 'delete': return $this->buildDelete($tmp, $data);
     }
   }
   
@@ -526,10 +526,11 @@ abstract class SQLBuilder
    * Returns completed SQL query of INSERT type.
    *
    * @param array $insert - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
    * @return string
    * @access protected
    */
-  protected function buildInsert(array $insert)
+  protected function buildInsert(array $insert, &$data)
   {
     $sql = 'INSERT INTO ' . $insert['table'] . ' ';
     if (!is_array($insert['values'])) $sql .= $insert['values'];
@@ -545,10 +546,11 @@ abstract class SQLBuilder
    * Returns completed SQL query of UPDATE type.
    *
    * @param array $update - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
    * @return string
    * @access protected
    */
-  protected function buildUpdate(array $update)
+  protected function buildUpdate(array $update, &$data)
   {
     $sql = 'UPDATE ' . implode(', ', $update['table']) . ' SET ' . $update['columns'];
     if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
@@ -562,10 +564,11 @@ abstract class SQLBuilder
    * Returns completed SQL query of DELETE type.
    *
    * @param array $delete - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
    * @return string
    * @access protected
    */
-  protected function buildDelete(array $delete)
+  protected function buildDelete(array $delete, &$data)
   {
     $sql = 'DELETE FROM ' . implode(', ', $delete['table']);
     if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
@@ -579,10 +582,11 @@ abstract class SQLBuilder
    * Returns completed SQL query of SELECT type.
    *
    * @param array $select - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
    * @return string
    * @access protected
    */
-  protected function buildSelect(array $select)
+  protected function buildSelect(array $select, &$data)
   {
     $sql = 'SELECT ' . ($select['distinct'] ? $select['distinct'] . ' ' : '');
     $sql .= implode(', ', $select['columns']);
@@ -644,10 +648,16 @@ abstract class SQLBuilder
   protected function updateExpression($expression, &$data)
   {
     if (!is_array($expression)) return (string)$expression;
-    $data = $tmp = [];
+    $data = is_array($data) ? $data : [];
+    $tmp = [];
     foreach ($expression as $column => $value)
     {
-      if ($value instanceof self)  $tmp[] =  $this->wrap($column) . ' = (' . $value . ')';
+      if (is_numeric($column)) 
+      {
+        if ($value instanceof self) $tmp[] = '(' . (string)$value . ')';
+        else $tmp[] = (string)$value;
+      }
+      else if ($value instanceof self)  $tmp[] =  $this->wrap($column) . ' = (' . $value . ')';
       else if ($value instanceof SQLExpression) $tmp[] =  $this->wrap($column) . ' = ' . $value;
       else 
       {

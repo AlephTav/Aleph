@@ -966,6 +966,13 @@ class DB
     return $this->column($this->sql->tableList($schema ?: $this->idsn['dbname']));
   }
   
+  /**
+   * Returns the table metadata.
+   *
+   * @param string $table - the table name.
+   * @return array
+   * @access public
+   */
   public function getTableInfo($table)
   {
     $this->connect();
