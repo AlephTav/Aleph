@@ -24,177 +24,369 @@ namespace Aleph\DB;
 
 use Aleph\Core;
 
+/**
+ * AR is the base class that implements the active record design pattern.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.db
+ */
 class AR
 {
   /**
    * Error message templates.
    */
-  const ERR_AR_1 = 'None of Aleph\DB\DB instance is created. You should set a global variable with name "db" or pass the instance into constructor of Aleph\DB\AR class.';
-  const ERR_AR_2 = 'Column "[{var}]" doesn\'t exist in table "[{var}]".';
-  const ERR_AR_3 = 'Column "[{var}]" of table "[{var}]" cannot be NULL.';
-  const ERR_AR_4 = 'Column "[{var}]" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
-  const ERR_AR_5 = 'Maximum length of column "[{var}]" in table "[{var}]" cannot be more than [{var}].';
+  const ERR_AR_1 = 'The first argument (table name) of method Aleph\DB\AR::getInstance is missed.';
+  const ERR_AR_2 = 'The second argument of method Aleph\DB\AR::getInstance is wrong. It should be an instance of Aleph\DB\DB.';
+  const ERR_AR_3 = 'None of Aleph\DB\DB instance was passed to the constructor of Aleph\DB\AR class. You should set a global variable with name "db" or pass the instance to the constructor.';
+  const ERR_AR_4 = 'Column "[{var}]" doesn\'t exist in table "[{var}]".';
+  const ERR_AR_5 = 'Column "[{var}]" of table "[{var}]" cannot be NULL.';
+  const ERR_AR_6 = 'Column "[{var}]" of table "[{var}]" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
+  const ERR_AR_7 = 'Maximum length of column "[{var}]" in table "[{var}]" cannot be more than [{var}].';
   const ERR_AR_8 = 'Primary key of a row of table "[{var}]" is not filled yet. You can\'t [{var}] the row.';
   const ERR_AR_9 = 'The row in table "[{var}]" was deleted, and now, you can use this Aleph\DB\AR object only as a read-only object.';
   const ERR_AR_10 = 'Relation "[{var}]" doesn\'t exist in table "[{var}]".';
   
+  /**
+   * The default database connection object for all active record classes.
+   *
+   * @var Aleph\DB\DB $connection
+   * @access public
+   * @static
+   */
+  public static $connection = null;
+  
+  /**
+   * Lifetime (in seconds) of the table metadata cache.
+   * This property contains the default value of the cache lifetime for all instances of AR class.
+   * Caching metadata does not occur if $metaInfoExpire equals FALSE.
+   * If $metaInfoExpire is 0 the cache lifetime will equal the database cache vault lifetime.
+   *
+   * @var integer | boolean $metaInfoExpire
+   * @access public
+   * @static
+   */
   public static $metaInfoExpire = 0;
   
-  protected static $info = array();
+  /**
+   * Contains table metadata for all tables of all databases.
+   *
+   * @var array $info
+   * @access protected
+   * @static
+   */
+  protected static $info = [];
   
+  /**
+   * The instance of the database connection class.
+   *
+   * @var Aleph\DB\DB $db
+   * @access protected
+   */
   protected $db = null;
+  
+  /**
+   * The databese table name.
+   *
+   * @var string $table
+   * @access protected
+   */
   protected $table = null;
-  protected $columns = array();
-  protected $pk = array();
+  
+  /**
+   * Contains values of the table columns for the current active record.
+   *
+   * @var array $columns
+   * @access protected
+   */
+  protected $columns = [];
+  
+  /**
+   * List of the primary key columns.
+   *
+   * @var array $pk
+   * @access protected
+   */
+  protected $pk = [];
+  
+  /**
+   * Name of the auto-increment column.
+   *
+   * @var string $ai
+   * @acess protected
+   */
   protected $ai = null;
+  
+  /**
+   * Determines whether the AR object is initiated from database.
+   *
+   * @var boolean $assigned
+   * @access protected
+   */
   protected $assigned = false;
+  
+  /**
+   * Determines whether at least one column value is changed.
+   *
+   * @var boolean $changed
+   * @access protected
+   */
   protected $changed = false;
+  
+  /**
+   * Determines whether the current record is deleted.
+   *
+   * @var boolean $deleted
+   * @access protected
+   */
   protected $deleted = false;
-  
-  public static function getInstance($table, DB $db = null, $metaInfoExpire = null)
-  {
-    return (new self($table))->init($db, $metaInfoExpire);
-  }
 
-  protected function __construct($table)
+  /**
+   * Constructor. Gets all table metadata and put it into the database cache.
+   *
+   * @param string $table - the table name
+   * @param Aleph\DB\DB $db - the database connection object.
+   * @param integer | boolean $metaInfoExpire - lifetime (in seconds) of the table metadata cache.
+   * @access public
+   */
+  public function __construct(/* $table, DB $db = null, $metaInfoExpire = null */)
   {
-    $this->table = $table;
-  }
-  
-  public function init(DB $db = null, $metaInfoExpire = null)
-  {
-    if (!$db) 
+    $args = func_get_args();
+    if (empty($args[0])) throw new Core\Exception('Aleph\DB\AR::ERR_AR_1');
+    if (isset($args[1]))
     {
-      $db = \Aleph::get('db');
-      if (!$db) throw new Core\Exception($this, 'ERR_AR_1');
+      $db = $args[1];
+      if (!($db instanceof DB)) throw new Core\Exception('Aleph\DB\AR::ERR_AR_2');
+    }
+    else
+    {
+      $db = static::$connection ?: \Aleph::get('db');
+      if (!($db instanceof DB)) throw new Core\Exception($this, 'ERR_AR_3');
     }
     if (!$db->isConnected()) $db->connect();
-    $this->db = $db;
-    if (!isset(self::$info[$this->db->getDBName()][$this->table]))
+    $table = $args[0]; $dbname = $db->getDBName();
+    if (!isset(static::$info[$dbname][$table]))
     {
-      if ($metaInfoExpire === null) $metaInfoExpire = self::$metaInfoExpire;
-      if ($metaInfoExpire !== false)
+      $metaInfoExpire = !empty($args[2]) ? $args[2] : static::$metaInfoExpire;
+      if ($metaInfoExpire === false) $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
+      else
       {
         $cache = $db->getCache();
-        $key = $this->db->getDBName() . $this->table;
-        if ($cache->isExpired($key))
+        $key = 'ar' . $dbname . $table;
+        if (!$cache->isExpired($key)) $info = $cache->get($key);
+        else
         {
-          $info = array('table' => $this->db->getTableInfo($this->table), 'columns' => $this->db->getColumnsInfo($this->table));
-          $cache->set($key, $info, $metaInfoExpire ?: $cache->getVaultLifeTime(), 'db_ar_meta');
+          $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
+          $cache->set($key, $info, $metaInfoExpire ?: $cache->getVaultLifeTime(), '--ar');
         }
-        else $info = $cache->get($key);
       }
-      else $info = array('table' => $this->db->getTableInfo($this->table), 'columns' => $this->db->getColumnsInfo($this->table));
-      self::$info[$this->db->getDBName()][$this->table] = $info;
+      static::$info[$dbname][$table] = $info;
     }
-    return $this->reset();
+    $this->db = $db;
+    $this->table = $table;
+    $this->reset();
   }
   
-  public function reset()
-  {
-    $this->assigned = false;
-    $this->changed = false;
-    $this->deleted = false;
-    $this->pk = $this->columns = array();
-    foreach ($this->getInfo('columns') as $column => $data) 
-    {
-      $this->columns[$column] = $data['default'];
-      if ($data['isPrimaryKey']) $this->pk[] = $column;
-      if ($data['isAutoIncrement']) $this->ai = $column;
-    }
-    return $this;
-  }
-  
-  public function getTableName()
+  /**
+   * Returns the table name.
+   *
+   * @return string
+   * @access public
+   */
+  public function getTable()
   {
     return $this->table;
   }
   
+  /**
+   * Returns meta-information about table or its columns.
+   * Method returns FALSE if metadata for the given entity doesn't exist.
+   *
+   * @param string $entity - determines the type of needed metadata ("table" or "columns"). If this parameter is null the method returns all metadata.
+   * @return array
+   * @access public
+   */
   public function getInfo($entity = null)
   {
-    $info = self::$info[$this->db->getDBName()][$this->table];
-    return isset($info[$entity]) ? $info[$entity] : $info;
+    $info = static::$info[$this->db->getDBName()][$this->table];
+    if ($entity === null) return $info;
+    return isset($info[$entity]) ? $info[$entity] : false;
   }
   
-  protected function getColumnInfo($column, $entity = null)
+  /**
+   * Returns meta-information about the table column.
+   *
+   * @param string $column - the column name.
+   * @param string $entity - determines the type of needed metadata. If this parameter is null the method returns all metadata.
+   * @return mixed
+   * @access public
+   */
+  public function getColumnInfo($column, $entity = null)
   {
     $info = $this->getInfo('columns');
     if (!isset($info[$column])) return false;
-    return isset($info[$column][$entity]) ? $info[$column][$entity] : $info[$column];
+    if ($entity === null) return $info[$column];
+    return isset($info[$column][$entity]) ? $info[$column][$entity] : false;
   }
   
+  /**
+   * Returns TRUE if the given column is a primary key and FALSE otherwise.
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
   public function isPrimaryKey($column)
   {
     return $this->getColumnInfo($column, 'isPrimaryKey');
   }
   
-  public function isAutoIncrement($column)
+  /**
+   * Returns TRUE if the given column is an autoincrement column and FALSE otherwise.
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
+  public function isAutoincrement($column)
   {
-    return $this->getColumnInfo($column, 'isAutoIncrement');
+    return $this->getColumnInfo($column, 'isAutoincrement');
   }
   
+  /**
+   * Returns TRUE if the given column is nullable and FALSE otherwise.
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
   public function isNullable($column)
   {
     return $this->getColumnInfo($column, 'isNullable');
   }
   
+  /**
+   * Returns TRUE if the given column is unsigned and FALSE otherwise.
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
   public function isUnsigned($column)
   {
     return $this->getColumnInfo($column, 'isUnsigned');
   }
   
+  /**
+   * Returns DBMS data type of the given column.
+   *
+   * @param string $column - the column name.
+   * @return string
+   * @access public
+   */
   public function getColumnType($column)
   {
     return $this->getColumnInfo($column, 'type');
   }
   
+  /**
+   * Returns PHP data type of the given column.
+   *
+   * @param string $column - the column name.
+   * @return string
+   * @access public
+   */
+  public function getColumnPHPType($column)
+  {
+    return $this->getColumnInfo($column, 'phpType');
+  }
+  
+  /**
+   * Returns default value of the given column.
+   *
+   * @param string $column - the column name.
+   * @return mixed
+   * @access public
+   */
   public function getDefaultValue($column)
   {
     return $this->getColumnInfo($column, 'default');
   }
   
+  /**
+   * Returns maximum length of the given column.
+   *
+   * @param string $column - the column name.
+   * @return integer
+   * @access public
+   */
   public function getMaxLength($column)
   {
     return $this->getColumnInfo($column, 'maxLength');
   }
   
+  /**
+   * Returns precision of the given column.
+   *
+   * @param string $column - the column name.
+   * @return integer
+   * @access public
+   */
   public function getPrecision($column)
   {
     return $this->getColumnInfo($column, 'precision');
   }
   
-  public function getSetValues($column)
+  /**
+   * Returns enumeration values of the given column.
+   *
+   * @param string $column - the column name.
+   * @return array
+   * @access public
+   */
+  public function getEnumeration($column)
   {
     return $this->getInfo($column, 'set');
   }
   
-  public function getPHPType($column)
+  /**
+   * Converts the given string to Aleph\DB\SQLExpression object.
+   *
+   * @param string $sql - the string to convert.
+   * @return Aleph\DB\SQLExpression
+   * @access public
+   */
+  public function exp($sql)
   {
-    switch ($this->getColumnType($column))
-    {
-      case 'varchar':
-        return 'string';
-      case 'int':
-      case 'double':
-        return 'numeric';
-      case 'bit':
-        return 'boolean';
-    }
-    return false;
+    return $this->db->exp($sql);
   }
   
+  /**
+   * Returns columns' values.
+   *
+   * @return array
+   * @access public
+   */
   public function getValues()
   {
     return $this->columns;
   }
   
+  /**
+   * Sets values of the table columns.
+   *
+   * @param array $values - new columns' values.
+   * @param boolean $ignoreNonExistingColumns - determines whether it is necessary to ignore non-existing columns during setting of the new values.
+   * @return self
+   * @access public
+   */
   public function setValues(array $values, $ignoreNonExistingColumns = true)
   {
     if ($ignoreNonExistingColumns)
     {
       foreach ($values as $column => $value) 
       {
-        if (isset($this->columns[$column])) $this->__set($column, $value);
+        if ($this->__isset($column)) $this->__set($column, $value);
       }
     }
     else
@@ -204,53 +396,95 @@ class AR
     return $this;
   }
   
-  public function exp($sql)
-  {
-    return $this->db->exp($sql);
-  }
-  
+  /**
+   * Returns TRUE if the active record object was initiated from the database and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
   public function isAssigned()
   {
     return $this->assigned;
   }
   
+  /**
+   * Returns TRUE if at least one column value was changed and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
   public function isChanged()
   {
     return $this->changed;
   }
   
+  /**
+   * Returns TRUE if the current record was deleted and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
   public function isDeleted()
   {
     return $this->deleted;
   }
   
+  /**
+   * Returns TRUE if primary key columns are filled and FALSE otherwise.
+   *
+   * @param boolean $insert - if TRUE the autoincrement primary key column will be ignored.
+   * @return boolean
+   * @access public
+   */
   public function isPrimaryKeyFilled($insert = false)
   {
     foreach ($this->pk as $column)
     {
       if ($insert && $column == $this->ai) continue;
-      if ($this->getPHPType($column) == 'numeric' && strlen($this->columns[$column]) == 0) return false;
+      $type = $this->getColumnPHPType($column);
+      if (($type == 'int' || $type == 'float') && strlen($this->columns[$column]) == 0 && strlen($this->getDefaultValue($column)) == 0) return false;
     }
     return true;
   }
   
+  /**
+   * Returns TRUE if a column with the given name exists in the table and FALSE if it doesn't.
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
   public function __isset($column)
   {
     return array_key_exists($column, $this->columns);
   }
-   
+  
+  /**
+   * Returns column value.
+   *
+   * @param string $column - the column name.
+   * @return mixed
+   * @access public
+   */
   public function __get($column)
   {
-    if (!array_key_exists($column, $this->columns)) throw new Core\Exception($this, 'ERR_AR_2', $column, $this->table);
+    if (!$this->__isset($column)) throw new Core\Exception($this, 'ERR_AR_4', $column, $this->table);
     return $this->columns[$column];
   }
   
+  /**
+   * Sets column value.
+   *
+   * @param string $column - the column name.
+   * @param mixed $value - the column value.
+   * @access public
+   */
   public function __set($column, $value)
   {
     if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_9', $this->table);
-    if (!array_key_exists($column, $this->columns)) throw new Core\Exception($this, 'ERR_AR_2', $column, $this->table);
-    if ($value === null && !$this->isNullable($column)) throw new Core\Exception($this, 'ERR_AR_3', $column, $this->table);
-    if (is_array($value) || is_object($value) && !($value instanceof SQLExpression)) throw new Core\Exception($this, 'ERR_AR_4', $column);
+    if (!$this->__isset($column)) throw new Core\Exception($this, 'ERR_AR_4', $column, $this->table);
+    if ($value === null && !$this->isNullable($column)) throw new Core\Exception($this, 'ERR_AR_5', $column, $this->table);
+    if (is_array($value) || is_object($value) && !($value instanceof SQLExpression)) throw new Core\Exception($this, 'ERR_AR_6', $column, $this->table);
     if ((string)$value === (string)$this->columns[$column]) return;
     if (!($value instanceof SQLExpression))
     {
@@ -259,8 +493,9 @@ class AR
         $l = strlen($value);
         if ($l > 0)
         {
-          if ($this->getPHPType($column) == 'numeric' && strcmp((string)$value, abs($value)) != 0) $l--;
-          if ($l > $ml) throw new Core\Exception($this, 'ERR_AR_5', $column, $this->table, $ml);
+          $type = $this->getColumnPHPType($column);
+          if (($type == 'int' || $type == 'float') && strcmp((string)$value, abs($value)) != 0) $l--;
+          if ($l > $ml) throw new Core\Exception($this, 'ERR_AR_7', $column, $this->table, $ml);
         }
       }
     }
@@ -285,6 +520,21 @@ class AR
       return $this;
     }
     return $this->reset();
+  }
+  
+  public function reset()
+  {
+    $this->assigned = false;
+    $this->changed = false;
+    $this->deleted = false;
+    $this->pk = $this->columns = [];
+    foreach ($this->getInfo('columns') as $column => $data) 
+    {
+      $this->columns[$column] = null;
+      if ($data['isPrimaryKey']) $this->pk[] = $column;
+      if ($data['isAutoincrement']) $this->ai = $column;
+    }
+    return $this;
   }
   
   public function count($where = null)
