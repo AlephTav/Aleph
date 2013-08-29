@@ -43,9 +43,10 @@ class AR
   const ERR_AR_5 = 'Column "[{var}]" of table "[{var}]" cannot be NULL.';
   const ERR_AR_6 = 'Column "[{var}]" of table "[{var}]" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
   const ERR_AR_7 = 'Maximum length of column "[{var}]" in table "[{var}]" cannot be more than [{var}].';
-  const ERR_AR_8 = 'Primary key of a row of table "[{var}]" is not filled yet. You can\'t [{var}] the row.';
-  const ERR_AR_9 = 'The row in table "[{var}]" was deleted, and now, you can use this Aleph\DB\AR object only as a read-only object.';
-  const ERR_AR_10 = 'Relation "[{var}]" doesn\'t exist in table "[{var}]".';
+  const ERR_AR_8 = 'Enumeration type column "[{var}]" of table "[{var}]" has invalid value.';
+  const ERR_AR_9 = 'Primary key of a row of table "[{var}]" is not filled yet. You can\'t [{var}] the row.';
+  const ERR_AR_10 = 'The row in table "[{var}]" was deleted, and now, you can use this Aleph\DB\AR object only as a read-only object.';
+  const ERR_AR_11 = 'Relation "[{var}]" doesn\'t exist in table "[{var}]".';
   
   /**
    * The default database connection object for all active record classes.
@@ -59,14 +60,22 @@ class AR
   /**
    * Lifetime (in seconds) of the table metadata cache.
    * This property contains the default value of the cache lifetime for all instances of AR class.
-   * Caching metadata does not occur if $metaInfoExpire equals FALSE.
-   * If $metaInfoExpire is 0 the cache lifetime will equal the database cache vault lifetime.
+   * Caching metadata does not occur if $cacheExpire equals FALSE or 0.
+   * If $cacheExpire less than 0 the cache lifetime will equal the database cache vault lifetime.
    *
-   * @var integer | boolean $metaInfoExpire
+   * @var integer | boolean $cacheExpire
    * @access public
    * @static
    */
-  public static $metaInfoExpire = 0;
+  public static $cacheExpire = -1;
+  
+  /**
+   * Cache group of all cached table metadata.
+   *
+   * @var string $cacheGroup
+   * @access public
+   */
+  public static $cacheGroup = '--ar';
   
   /**
    * Contains table metadata for all tables of all databases.
@@ -146,10 +155,10 @@ class AR
    *
    * @param string $table - the table name
    * @param Aleph\DB\DB $db - the database connection object.
-   * @param integer | boolean $metaInfoExpire - lifetime (in seconds) of the table metadata cache.
+   * @param integer | boolean $cacheExpire - lifetime (in seconds) of the table metadata cache.
    * @access public
    */
-  public function __construct(/* $table, DB $db = null, $metaInfoExpire = null */)
+  public function __construct(/* $table, DB $db = null, $cacheExpire = null */)
   {
     $args = func_get_args();
     if (empty($args[0])) throw new Core\Exception('Aleph\DB\AR::ERR_AR_1');
@@ -167,8 +176,14 @@ class AR
     $table = $args[0]; $dbname = $db->getDBName();
     if (!isset(static::$info[$dbname][$table]))
     {
-      $metaInfoExpire = !empty($args[2]) ? $args[2] : static::$metaInfoExpire;
-      if ($metaInfoExpire === false) $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
+      $config = \Aleph::getInstance()['ar'];
+      if (!empty($args[2])) $cacheExpire = (int)$args[2];
+      else 
+      {
+        if (isset($config['cacheExpire'])) $cacheExpire = (int)$config['cacheExpire'];
+        else $cacheExpire = (int)static::$cacheExpire;
+      }
+      if ($cacheExpire == 0) $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
       else
       {
         $cache = $db->getCache();
@@ -177,7 +192,7 @@ class AR
         else
         {
           $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
-          $cache->set($key, $info, $metaInfoExpire ?: $cache->getVaultLifeTime(), '--ar');
+          $cache->set($key, $info, $cacheExpire > 0 ? $cacheExpire : $cache->getVaultLifeTime(), isset($config['cacheGroup']) ? $config['cacheGroup'] : static::$cacheGroup);
         }
       }
       static::$info[$dbname][$table] = $info;
@@ -346,7 +361,7 @@ class AR
    */
   public function getEnumeration($column)
   {
-    return $this->getInfo($column, 'set');
+    return $this->getColumnInfo($column, 'set');
   }
   
   /**
@@ -358,7 +373,7 @@ class AR
    */
   public function exp($sql)
   {
-    return $this->db->exp($sql);
+    return new SQLExpression($sql);
   }
   
   /**
@@ -481,20 +496,27 @@ class AR
    */
   public function __set($column, $value)
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_9', $this->table);
+    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
     if (!$this->__isset($column)) throw new Core\Exception($this, 'ERR_AR_4', $column, $this->table);
     if ($value === null && !$this->isNullable($column)) throw new Core\Exception($this, 'ERR_AR_5', $column, $this->table);
     if (is_array($value) || is_object($value) && !($value instanceof SQLExpression)) throw new Core\Exception($this, 'ERR_AR_6', $column, $this->table);
-    if ((string)$value === (string)$this->columns[$column]) return;
+    if ($value === $this->columns[$column]) return;
+    $type = $this->getColumnType($column);
+    if ($type == 'enum' && !in_array($value, $this->getEnumeration($column))) throw new Core\Exception($this, 'ERR_AR_8', $column, $this->table);
     if (!($value instanceof SQLExpression))
     {
       if (($ml = $this->getMaxLength($column)) > 0)
       {
-        $l = strlen($value);
+        $l = $type == 'bit' ? strlen(decbin($value)) : strlen($value);
         if ($l > 0)
         {
           $type = $this->getColumnPHPType($column);
-          if (($type == 'int' || $type == 'float') && strcmp((string)$value, abs($value)) != 0) $l--;
+          if ($type == 'int' || $type == 'float')
+          {
+            $value = (string)$value;
+            if ($value[0] == '+' || $value[0] == '-') $l--;
+            if (strpos($value, '.') !== false) $l--;
+          }
           if ($l > $ml) throw new Core\Exception($this, 'ERR_AR_7', $column, $this->table, $ml);
         }
       }
@@ -503,11 +525,19 @@ class AR
     $this->changed = true;
   }
   
+  /**
+   * Finds record in the table by the given criteria and assign column values to the properties of the active record object.
+   *
+   * @param mixed $where - the WHERE clause condition.
+   * @param mixed $order - the ORDER BY clause condition.
+   * @return self
+   * @access public
+   */
   public function assign($where, $order = null)
   {
     if (!is_array($where)) 
     {
-      $tmp = array();
+      $tmp = [];
       foreach ($this->pk as $column) $tmp[$column] = $where;
       $where = $tmp;
     }
@@ -522,6 +552,28 @@ class AR
     return $this->reset();
   }
   
+  /**
+   * Initializes the active record object by array values.
+   *
+   * @param array $columns - the columns' values.
+   * @return self
+   * @access public
+   */
+  public function assignFromArray(array $columns)
+  {
+    $this->setValues($columns, true);
+    $this->assigned = true;
+    $this->changed = false;
+    $this->deleted = false;
+    return $this;
+  }
+  
+  /**
+   * Resets the active record object to the initial state.
+   *
+   * @return self
+   * @access public
+   */
   public function reset()
   {
     $this->assigned = false;
@@ -530,18 +582,110 @@ class AR
     $this->pk = $this->columns = [];
     foreach ($this->getInfo('columns') as $column => $data) 
     {
-      $this->columns[$column] = null;
+      $this->columns[$column] = $data['default'];
       if ($data['isPrimaryKey']) $this->pk[] = $column;
       if ($data['isAutoincrement']) $this->ai = $column;
     }
     return $this;
   }
   
-  public function count($where = null)
+  /**
+   * Updates record in the database table if this record exists or inserts new record otherwise.
+   * Method returns numbers of affected rows.
+   *
+   * @return integer
+   * @access public
+   */
+  public function save()
   {
-    return $this->db->column($this->db->sql->select($this->table, $this->db->exp('COUNT(*)'))->where($where)->build($data), $data);
+    if ($this->assigned) return $this->update();
+    return $this->insert();
   }
   
+  /**
+   * Inserts new row to the database table.
+   * Method returns numbers of affected rows.
+   *
+   * @param array $options - contains additional parameters (for example, updateOnKeyDuplicate or sequenceName) required by some DBMS.
+   * @return integer
+   * @access public
+   */
+  public function insert(array $options = null)
+  {
+    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
+    if (!$this->isPrimaryKeyFilled(true)) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'insert');
+    $tmp = [];
+    foreach ($this->columns as $column => $value) 
+    {
+      if ($column == $this->ai && !is_object($value) && strlen($value) == 0) continue;
+      if ($this->isNullable($column) && $value === null) continue;
+      $tmp[$column] = $value;
+    }
+    $res = $this->db->insert($this->table, $tmp, $options);
+    $this->changed = false;
+    $this->assigned = true;
+    if ($this->ai) $this->columns[$this->ai] = $res;
+    return $this->db->getAffectedRows();
+  }
+  
+  /**
+   * Updates existing row (or rows) in the database table.
+   * Method returns numbers of affected rows.
+   *
+   * @param mixed $where - information about conditions of the updating.
+   * @return integer
+   * @access public
+   */
+  public function update($where = null)
+  {
+    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
+    if ($where !== null) return $this->db->update($this->table, $this->columns, $where);
+    if (!$this->changed) return;
+    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'update');
+    $this->changed = false;
+    return $this->db->update($this->table, $this->columns, $this->getWhereData());
+  }
+  
+  /**
+   * Deletes existing row (or rows) from the database table.
+   * Method returns numbers of affected rows.
+   *
+   * @param mixed $where - information about conditions of the deleting.
+   * @return integer
+   * @access public
+   */
+  public function delete($where = null)
+  {
+    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
+    if ($where !== null) return $this->db->delete($this->table, $where);
+    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'delete');
+    $this->deleted = true;
+    return $this->db->delete($this->table, $this->getWhereData());
+  }
+  
+  /**
+   * Returns total number of rows in the database table.
+   *
+   * @param mixed $where - the WHERE clause data.
+   * @return integer
+   * @access public
+   */
+  public function count($where = null)
+  {
+    return $this->db->cell($this->db->sql->select($this->table, $this->exp('COUNT(*)'))->where($where)->build($data), $data);
+  }
+  
+  /**
+   * Finds rows in the database table according to the given criteria.
+   *
+   * @param mixed $columns - the column data.
+   * @param mixed $where - the WHERE clause data.
+   * @param mixed $order - the ORDER BY clause data.
+   * @param integer $limit - the maximum number of rows.
+   * @param integer $offset - the row offset.
+   * @return array
+   * @access public
+   */
   public function select($columns = '*', $where = null, $order = null, $limit = null, $offset = null)
   {
     $sql = $this->db->sql;
@@ -550,14 +694,29 @@ class AR
     return $this->db->rows($sql, $data);
   }
   
-  public function __call($method, array $params)
+  /**
+   * Returns data related with the current database table.
+   *
+   * @param string | integer $relation - the name of the table constraint (foreign key) or its index number.
+   * @param mixed $columns - the column data.
+   * @param mixed $order - the ORDER BY clause data.
+   * @param integer $limit - the maximum number of rows.
+   * @param integer $offset - the row offset.
+   * @return array
+   * @access public
+   */
+  public function relation($relation, $columns = '*', $order = null, $limit = null, $offset = null)
   {
-    $info = $this->getInfo('table');
-    $info = $info['constraints'];
-    if (!isset($info[$method])) throw new Core\Exception($this, 'ERR_AR_10', $method, $this->table);
-    $info = $info[$method];
+    $info = $this->getInfo('table')['constraints'];
+    if (isset($info[$relation])) $info = $info[$relation];
+    else
+    {
+      $info = array_values($info);
+      if (empty($info[$relation])) throw new Core\Exception($this, 'ERR_AR_11', $relation, $this->table);
+      $info = $info[$relation];
+    }
     $sql = $this->db->sql;
-    $tmp1 = $tmp2 = array();
+    $tmp1 = $tmp2 = [];
     foreach ($this->pk as $column)
     {
       $tmp2[$this->table . '.' . $column] = $this->columns[$column];
@@ -569,63 +728,25 @@ class AR
       $tmp1[$my] = $sql->exp($sql->wrap($ref));
       $tmp2[$my] = $this->columns[$column];
     }
-    $sql->select($this->table, isset($params[0]) ? $params[0] : null);
-    $sql->join($info['reference']['table'], $tmp1);
-    $sql->where($tmp2);
-    $sql->order(isset($params[1]) ? $params[1] : null);
-    $limit = isset($params[2]) ? $params[2] : null;
-    $sql->limit($limit, isset($params[3]) ? $params[3] : null);
-    $sql = $sql->build($data);
+    $sql = $sql->select($this->table, $columns)
+               ->join($info['reference']['table'], $tmp1)
+               ->where($tmp2)
+               ->order($order)
+               ->limit($limit, $offset)
+               ->build($data);
     if ((int)$limit == 1) return $this->db->row($sql, $data);
     return $this->db->rows($sql, $data);
   }
   
-  public function save()
-  {
-    if ($this->assigned) return $this->update();
-    return $this->insert();
-  }
-  
-  public function insert($sequenceName = null)
-  {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_9', $this->table);
-    if (!$this->isPrimaryKeyFilled(true)) throw new Core\Exception($this, 'ERR_AR_8', $this->table, 'insert');
-    $tmp = array();
-    foreach ($this->columns as $column => $value) 
-    {
-      if ($column == $this->ai && !is_object($value) && strlen($value) == 0) continue;
-      if ($this->isNullable($column) && $value === null) continue;
-      $tmp[$column] = $value;
-    }
-    $res = $this->db->insert($this->table, $tmp, $sequenceName);
-    $this->changed = false;
-    $this->assigned = true;
-    if ($this->ai) $this->columns[$this->ai] = $res;
-    return $this->db->getAffectedRows();
-  }
-  
-  public function update($where = null)
-  {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_9', $this->table);
-    if ($where !== null) return $this->db->update($this->table, $this->columns, $where);
-    if (!$this->changed) return;
-    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_8', $this->table, 'update');
-    $this->changed = false;
-    return $this->db->update($this->table, $this->columns, $this->getWhereData());
-  }
-  
-  public function delete($where = null)
-  {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_9', $this->table);
-    if ($where !== null) return $this->db->delete($this->table, $where);
-    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_8', $this->table, 'delete');
-    $this->deleted = true;
-    return $this->db->delete($this->table, $this->getWhereData());
-  }
-  
+  /**
+   * Returns WHERE condition data for UPDATE or DELETE query.
+   *
+   * @return array
+   * @access private   
+   */
   private function getWhereData()
   {
-    $where = array();
+    $where = [];
     foreach ($this->pk as $column) $where[$column] = $this->columns[$column];
     return $where;
   }

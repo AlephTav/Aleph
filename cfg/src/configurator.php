@@ -7,7 +7,7 @@ use Aleph\Cache;
 class Configurator
 { 
   private $config = null;
-  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'cache']; 
+  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'cache', 'db', 'ar']; 
   
   public function __construct(array $config)
   {
@@ -76,7 +76,11 @@ class Configurator
           if (!empty($args['custom'])) $a->cache()->cleanByGroup($group);
           else
           {
-            $map = ['templates' => '--templates', 'localization' => '--localization', 'database' => '--db', 'pages' => '--pom'];
+            $map = ['templates' => '--templates',
+                    'localization' => '--localization',
+                    'database' => isset($a['db']['cacheGroup']) ? $a['db']['cacheGroup'] : '--db',
+                    'ar' => isset($a['ar']['cacheGroup']) ? $a['ar']['cacheGroup'] : '--ar',
+                    'pages' => '--pom'];
             if (isset($map[$group])) $a->cache()->cleanByGroup($map[$group]);
           }
         }
@@ -92,6 +96,9 @@ class Configurator
         {
           if ($cfg['cache']['servers'] != '') $cfg['cache']['servers'] = json_decode($cfg['cache']['servers'], true);
         }
+        $cfg['db']['logging'] = (bool)$cfg['db']['logging'];
+        if (isset($cfg['db']['cacheExpire'])) $cfg['db']['cacheExpire'] = (int)$cfg['db']['cacheExpire'];
+        if (isset($cfg['ar']['cacheExpire'])) $cfg['ar']['cacheExpire'] = (int)$cfg['ar']['cacheExpire'];
         $props = $cfg['custom'];
         unset($cfg['custom']);
         foreach ($props as $prop => $value)
@@ -117,7 +124,13 @@ class Configurator
                            'js' => 'app/inc/js',
                            'css' => 'app/inc/css',
                            'tpl' => 'app/inc/tpl',
-                           'elements' => 'app/inc/tpl/elements']];
+                           'elements' => 'app/inc/tpl/elements'],
+                'db' => ['logging' => true,
+                         'log' => 'app/tmp/sql.log',
+                         'cacheExpire' => 0,
+                         'cacheGroup' => '--db'],
+                'ar' => ['cacheExpire' => -1,
+                         'cacheGroup' => '--ar']];
         $file = $this->getConfigFile($args['file']);
         self::saveConfig($cfg, $file);
         $res = $this->renderConfig($file);

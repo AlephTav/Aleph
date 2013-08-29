@@ -64,6 +64,35 @@
     <label class="ym-label" for="memServers">Servers (json format)</label>
     <textarea name="memServers" id="memServers" cols="30" rows="7" class="json" <?=($editable ? '' : 'readonly="readonly"');?>><?=(isset($cfg['cache']['servers']) ? json_encode($cfg['cache']['servers']) : '');?></textarea>
   </div>
+  <h6 class="subtitle">Database Settings</h6>
+  <div class="ym-fbox-check">
+    <span class="ym-label">Logging</span>
+    <input type="radio" id="dbLogOn" value="1" name="dblogging" <?=(empty($cfg['db']['logging']) ? '' : 'checked="checked"');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="dbLogOn">On</label>
+				<input type="radio" id="dbLogOff" value="0" name="dblogging" <?=(empty($cfg['db']['logging']) ? 'checked="checked"' : '');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="dbLogOff">Off</label>
+  </div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="dbLogFile">SQL Log</label>
+				<input type="text" id="dbLogFile" name="dbLogFile" value="<?=@$cfg['db']['log'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="dbCacheExpire">Cache Expire (in seconds)</label>
+				<input type="text" id="dbCacheExpire" name="dbCacheExpire" value="<?=@$cfg['db']['cacheExpire'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="dbCacheGroup">Cache Group</label>
+				<input type="text" id="dbCacheGroup" name="dbCacheGroup" value="<?=@$cfg['db']['cacheGroup'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+		</div>
+  <h6 class="subtitle">Active Record Settings</h6>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="arCacheExpire">Cache Expire (in seconds)</label>
+				<input type="text" id="arCacheExpire" name="arCacheExpire" value="<?=@$cfg['ar']['cacheExpire'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="arCacheGroup">Cache Group</label>
+				<input type="text" id="arCacheGroup" name="arCacheGroup" value="<?=@$cfg['ar']['cacheGroup'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+		</div>
 </div>
 <div class="ym-g33 ym-gl">
   <h6 class="subtitle">Directory Aliases</h6>

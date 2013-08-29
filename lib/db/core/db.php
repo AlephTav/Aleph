@@ -121,23 +121,25 @@ class DB
    * @var boolean $logging
    * @access public
    */
-  public $logging = null;
+  public $logging = false;
   
   /**
-   * Query cache lifetime in seconds.
+   * Default query cache lifetime in seconds.
+   * Caching queries does not occur if $cacheExpire equals FALSE or 0.
+   * if $cacheExpire less than 0 the cache lifetime will equal the database cache vault lifetime.
    *
    * @var integer $cacheExpire
    * @access public
    */
-  public $cacheExpire = null;
+  public $cacheExpire = 0;
   
   /**
-   * Cache group of all cached query results.
+   * Default cache group of all cached query results.
    *
    * @var string $cacheGroup
    * @access public
    */
-  public $cacheGroup = null;
+  public $cacheGroup = '--db';
   
   /**
    * Default charset is used for database connection.
@@ -177,7 +179,7 @@ class DB
    * @var array $options
    * @access public
    */
-  public $options = array();
+  public $options = [];
 
   /**
    * Constructor of this class. Allows to set parameters of the default connection.
@@ -195,9 +197,9 @@ class DB
     $this->password = $password;
     $this->options = $options;
     $config = \Aleph::getInstance()['db'];
-    $this->logging = isset($config['logging']) ? (bool)$config['logging'] : false;
-    $this->cacheExpire = isset($config['cacheExpire']) ? (int)$config['cacheExpire'] : false;
-    $this->cacheGroup = isset($config['cacheGroup']) ? $config['cacheGroup'] : '--db';
+    if (isset($config['logging'])) $this->logging = (bool)$config['logging'];
+    if (isset($config['cacheExpire'])) $this->cacheExpire = (int)$config['cacheExpire'];
+    if (isset($config['cacheGroup'])) $this->cacheGroup = $config['cacheGroup'];
   }
   
   /**
@@ -753,7 +755,7 @@ class DB
    */
   public function execute($sql, array $data = [], $type = self::EXEC, $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
-    if ($type && $type != self::EXEC && ($this->cacheExpire !== false || count($this->patterns)))
+    if ($type && $type != self::EXEC && ((int)$this->cacheExpire != 0 || count($this->patterns)))
     {
       $key = $this->assemble($sql, $data);
       $flag = true;
@@ -777,13 +779,13 @@ class DB
       $duration = \Aleph::pStop($id);
       $this->affectedRows = $st->rowCount();
       $file = \Aleph::getInstance()['db'];
-      $file = isset($file['logfile']) ? $file['logfile'] : \Aleph::dir('logs') . '/sql.log';
+      $file = isset($file['log']) ? $file['log'] : \Aleph::dir('logs') . '/sql.log';
       $dir = pathinfo($file, PATHINFO_DIRNAME);
       if (!is_dir($dir)) mkdir($dir, 0775, true);
       $fp = fopen($file, 'a');
       flock($fp, LOCK_EX);
       if (fstat($fp)['size'] == 0) fputcsv($fp, ['URL', 'DSN', 'SQL', 'Type', 'Mode', 'Duration', 'Timestamp', 'Rows', 'Stack']);
-      fputcsv($fp, [Net\URL::current(), $this->dsn['dsn'], isset($key) ? $key : $this->assemble($sql, $data), $type, $mode, $duration, time(), $this->affectedRows, (new \Exception())->getTraceAsString()]);
+      fputcsv($fp, [Net\URL::current(), $this->idsn['dsn'], isset($key) ? $key : $this->assemble($sql, $data), $type, $mode, $duration, time(), $this->affectedRows, (new \Exception())->getTraceAsString()]);
       fflush($fp);
       flock($fp, LOCK_UN);
       fclose($fp);
@@ -828,7 +830,7 @@ class DB
     }
     if ($type && $type != self::EXEC && !empty($flag)) 
     {
-      if (empty($expire)) $expire = $this->cacheExpire ?: $this->getCache()->getVaultLifeTime();
+      if (empty($expire)) $expire = $this->cacheExpire > 0 ? $this->cacheExpire : $this->getCache()->getVaultLifeTime();
       $this->getCache()->set($key, $res, $expire, $this->cacheGroup);
     }
     return $res;

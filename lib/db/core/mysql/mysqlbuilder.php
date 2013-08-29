@@ -50,15 +50,16 @@ class MySQLBuilder extends SQLBuilder
       case 'bigint':
       case 'timestamp':
       case 'year':
+      case 'bit':
+      case 'serial':
         return 'int';
       case 'double':
       case 'float':
       case 'real':
       case 'decimal':
         return 'float';
-      case 'bit':
       case 'boolean':
-      case 'serial':
+      case 'bool':
         return 'bool';
     }
     return 'string';
@@ -344,15 +345,38 @@ class MySQLBuilder extends SQLBuilder
       $tmp[$column]['isAutoincrement'] = ($row['Extra'] == 'auto_increment');
       $tmp[$column]['isUnsigned'] = strpos($row['Type'], 'unsigned') !== false;
       $tmp[$column]['default'] = ($type == 'bit') ? substr($row['Default'], 2, 1) : $row['Default'];
-      if ($tmp[$column]['default'] === null && !$tmp[$column]['isNullable']) $tmp[$column]['default'] = '';
+      if ($type == 'timestamp' && $tmp[$column]['default']) $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
       $tmp[$column]['maxLength'] = 0;
       $tmp[$column]['precision'] = 0;
       $tmp[$column]['set'] = false;
       if (empty($arr[2])) continue;
-      $arr = explode(',', $arr[2]);
-      if ($type == 'enum' || $type == 'set') $tmp[$column]['set'] = $arr;
+      if ($type == 'enum' || $type == 'set') 
+      {
+        $set = [];
+        for ($i = 0, $l = strlen($arr[2]) - 1; $i <= $l; $i++)
+        {
+          $chr = $arr[2][$i];
+          if ($chr == "'") 
+          {
+            $j = $i;
+            while ($i < $l)
+            {
+              $i++;
+              $chr = $arr[2][$i];
+              if ($chr == "'")
+              {
+                if ($i < $l && $arr[2][$i + 1] == "'") $i++;
+                else break;
+              }
+            }
+            $set[] = str_replace("''", "'", substr($arr[2], $j + 1, $i - $j - 1));
+          }
+        }
+        $tmp[$column]['set'] = $set;
+      }
       else
       {
+        $arr = explode(',', $arr[2]);
         if (count($arr) == 1) $tmp[$column]['maxLength'] = (int)trim($arr[0]);
         else
         {

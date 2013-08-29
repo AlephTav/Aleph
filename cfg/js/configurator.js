@@ -85,6 +85,13 @@ $(function()
       cfg.cache.servers = $('#memServers').val();
       cfg.cache.compress = $('#compressNo').attr('checked') == 'checked' ? false : true;
     }
+    cfg['db'] = {'logging': $('#dbLogOn').attr('checked') == 'checked' ? 1 : 0};
+    if ((tmp = $('#dbLogFile').val()) != '') cfg['db']['log'] = tmp;
+    if ((tmp = $('#dbCacheExpire').val()) != '') cfg['db']['cacheExpire'] = tmp;
+    if ((tmp = $('#dbCacheGroup').val()) != '') cfg['db']['cacheGroup'] = tmp;
+    cfg['ar'] = {};
+    if ((tmp = $('#arCacheExpire').val()) != '') cfg['ar']['cacheExpire'] = tmp;
+    if ((tmp = $('#arCacheGroup').val()) != '') cfg['ar']['cacheGroup'] = tmp;
     var flag = true, first;
     $('.alias').each(function()
     {
