@@ -939,7 +939,7 @@ final class Aleph implements \ArrayAccess
       register_shutdown_function([__CLASS__, 'fatal']);
       self::errorHandling(true, E_ALL);
       if (!isset($_SERVER['DOCUMENT_ROOT'])) $_SERVER['DOCUMENT_ROOT'] = __DIR__;
-      self::$root = realpath(rtrim($_SERVER['DOCUMENT_ROOT'], '\\/'));
+      self::$root = realpath($_SERVER['DOCUMENT_ROOT']);
       self::$siteUniqueID = md5(self::$root);
       ini_set('unserialize_callback_func', 'spl_autoload_call');
       if (session_id() == '') session_start();
