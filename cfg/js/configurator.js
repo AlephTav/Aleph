@@ -16,6 +16,7 @@ $(function()
   });
   $('input[name="sqlSearchWhere"]').click(function()
   {
+    if ($('#sqlSearchModeRegExp').attr('checked') == 'checked') return;
     var val = $(this).attr('value');
     if (val == -1 || val >=4 && val <= 7)
     {
@@ -30,6 +31,38 @@ $(function()
       $('#sqlSearchOptRange').attr('disabled', 'disabled');
       $('#sqlSearchOptRange').removeAttr('checked', 'checked');
     }
+  });
+  $('input[name="sqlSearchMode"]').click(function()
+  {
+    if ($(this).val() == 'regexp')
+    {
+      $('#sqlFrom').attr('disabled', 'disabled');
+      $('#sqlTo').attr('disabled', 'disabled');
+      $('#sqlSearchOptRange').removeAttr('checked', 'checked');
+      $('#sqlSearchOptRange').attr('disabled', 'disabled');
+      $('#sqlSearchOptWord').attr('disabled', 'disabled');
+      $('#sqlSearchOptCaseSensitive').attr('disabled', 'disabled');
+    }
+    else
+    {
+      var val = $('input:checked[name="sqlSearchWhere"]').val();
+      $('#sqlSearchOptWord').removeAttr('disabled');
+      $('#sqlSearchOptCaseSensitive').removeAttr('disabled');
+      if (val == -1 || val >=4 && val <= 7)
+      {
+        $('#sqlFrom').removeAttr('disabled');
+        $('#sqlTo').removeAttr('disabled');
+        $('#sqlSearchOptRange').removeAttr('disabled');
+      } 
+    }
+  });
+  $('#sqlFrom').change(function()
+  {
+    if ($(this).val().length > 0) $('#sqlSearchOptRange').attr('checked', 'checked');
+  });
+  $('#sqlTo').change(function()
+  {
+    if ($(this).val().length > 0) $('#sqlSearchOptRange').attr('checked', 'checked');
   });
   $('h2').click(function()
   {
