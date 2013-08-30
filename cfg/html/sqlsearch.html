@@ -1,0 +1,31 @@
+<? if (isset($data['error'])){ ?>
+<table class="bordertable">
+  <tr>
+    <th style="text-align:center;color:#CD5555;"><b><?=htmlspecialchars($data['error']);?></b></td>
+  </tr>
+</table>
+<?}else if (count($data) == 0){ ?>
+<table class="bordertable">
+  <tr>
+    <th style="text-align:center;"><b>No results found</b></td>
+  </tr>
+</table>
+<?}else{ ?>
+<div class="log-sql">
+  <table class="bordertable">
+    <tr>
+      <th colspan="2" scope="row">Found <?=count($data);?> record<?=(count($data) == 1 ? '' : 's');?></th>
+    </tr>
+    <? $titles = ['URL', 'DSN', 'SQL', 'Type', 'Mode', 'Duration', 'Timestamp', 'Rows', 'Stack'];
+    foreach ($data as $i => $row){ ?>
+    <tr>
+      <th colspan="2" scope="row">Record #<?=($i + 1);?></th>
+    </tr>
+    <? foreach ($row as $j => $value){ ?>
+    <tr>
+      <th><?=$titles[$j];?></th>
+      <td><?=($j == 2 || $j == 8 ? nl2br(htmlspecialchars($value)) : htmlspecialchars($value));?></td>
+    </tr>
+    <?}}}?>
+  </table>
+</div>

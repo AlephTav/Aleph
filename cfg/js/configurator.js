@@ -14,6 +14,23 @@ $(function()
   {
     selectCacheType($(this).val());
   });
+  $('input[name="sqlSearchWhere"]').click(function()
+  {
+    var val = $(this).attr('value');
+    if (val == -1 || val >=4 && val <= 7)
+    {
+      $('#sqlFrom').removeAttr('disabled');
+      $('#sqlTo').removeAttr('disabled');
+      $('#sqlSearchOptRange').removeAttr('disabled');
+    }
+    else
+    {
+      $('#sqlFrom').attr('disabled', 'disabled');
+      $('#sqlTo').attr('disabled', 'disabled');
+      $('#sqlSearchOptRange').attr('disabled', 'disabled');
+      $('#sqlSearchOptRange').removeAttr('checked', 'checked');
+    }
+  });
   $('h2').click(function()
   {
     $(this).next().toggle();
@@ -24,23 +41,6 @@ $(function()
   });
   // Actions
   //---------------------------------------------
-  // Garbage Collector
-  $('#btnGC').click(function()
-  {
-    $.ajax({'type': 'POST', 'data': {'method': 'cache.gc'}}).done(function()
-    {
-      showMsg('Garbage Collector has been successfully run.');
-    });
-  });
-  // Cache cleanig
-  $('#btnClean').click(function()
-  {
-    var group = $('input:checked[name="cacheGroup"]').val();
-    $.ajax({'type': 'POST', 'data': {'method': 'cache.clean', 'custom': group == 'other' ? 1 : 0, 'group': group == 'other' ? $('#otherGroup').val() : group}}).done(function()
-    {
-      showMsg('Cache has been successfully cleaned.');
-    });
-  });
   // Select config file
   $('#config').change(function()
   {
@@ -195,6 +195,37 @@ $(function()
     nProps++;
   });
   $('body').on('click', '.prop > .ym-delete', deleteProperty);
+  // Garbage Collector
+  $('#btnGC').click(function()
+  {
+    $.ajax({'type': 'POST', 'data': {'method': 'cache.gc'}}).done(function()
+    {
+      showMsg('Garbage Collector has been successfully run.');
+    });
+  });
+  // Cache cleanig
+  $('#btnClean').click(function()
+  {
+    var group = $('input:checked[name="cacheGroup"]').val();
+    $.ajax({'type': 'POST', 'data': {'method': 'cache.clean', 'custom': group == 'other' ? 1 : 0, 'group': group == 'other' ? $('#otherGroup').val() : group}}).done(function()
+    {
+      showMsg('Cache has been successfully cleaned.');
+    });
+  });
+  // Search SQL Logs
+  $('#btnSearchSQL').click(function()
+  {
+    var opts = {'where': $('input:checked[name="sqlSearchWhere"]').val(),
+                'mode': $('input:checked[name="sqlSearchMode"]').val(),
+                'onlyWholeWord': $('#sqlSearchOptWord').attr('checked') == 'checked' ? 1 : 0,
+                'caseSensitive': $('#sqlSearchOptCaseSensitive').attr('checked') == 'checked' ? 1 : 0,
+                'from': $('#sqlSearchOptRange').attr('checked') == 'checked' ? $('#sqlFrom').val() : '',
+                'to': $('#sqlSearchOptRange').attr('checked') == 'checked' ? $('#sqlTo').val() : ''};
+    $.ajax({'type': 'POST', 'data': {'method': 'sql.search', 'keyword': $('#sqlLogKeyword').val(), 'options': opts}}).done(function(html)
+    {
+      $('#sqlSearchResults').html(html);
+    }); 
+  });
   // Refresh logs
   $('#btnLogRefresh').click(function()
   {

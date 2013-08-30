@@ -17,6 +17,14 @@
 
 .ym-form textarea{font-family:monospace;}
 .ym-label{font-weight:bold;}
+.ym-fbox-wrap{display:table;table-layout:fixed;width:100%;}
+.ym-fbox-wrap div.ym-fbox-check{margin:0;padding:0;}
+.ym-fbox-wrap input,.ym-fbox-wrap textarea,.ym-fbox-wrap select{width:100%;}
+.ym-fbox-wrap input[type="image"]{width:auto;}
+.ym-fbox-wrap input[type="radio"],.ym-fbox-wrap input[type="checkbox"]{display:inline;width:auto;margin-left:0;margin-right:0.5ex;}
+.ym-fbox-wrap label,.ym-fbox-wrap .ym-label{display:inline;}
+.ym-full input,.ym-full textarea,.ym-full select{width:100%;}
+.ym-full .ym-fbox-wrap{width:100%;}
 .popup{left:-1000px;position:fixed;min-width:300px;z-index:100;}
 .errbox{border:2px solid #FFFFFF;border-radius:5px 5px 5px 5px;box-shadow:0 0 3px #000000;line-height:3em;margin:20px;padding:0 20px 20px 20px;}
 .subtitle{border-bottom:1px solid #CCCCCC;}
@@ -26,6 +34,7 @@
 .log-list{margin:10px;max-height:704px;min-height:704px;overflow-x:hidden;overflow-y:auto;}
 .log-details{max-height:800px;min-height:800px;overflow-x:hidden;overflow-y:auto;}
 .log-trace{max-width:654px;overflow-x:hidden;overflow-y:auto;}
+.log-sql{max-height:800px;min-height:800px;overflow-x:hidden;overflow-y:auto;}
 .class-map{max-height:800px;min-height:800px;overflow-y:auto;}
 .bordertable{margin:0;}
 .bordertable textarea{height:300px;}

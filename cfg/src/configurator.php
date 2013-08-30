@@ -65,26 +65,6 @@ class Configurator
     $res = false;
     switch ($args['method'])
     {
-      case 'cache.gc':
-        $a->cache()->gc(100);
-        break;
-      case 'cache.clean':
-        if (empty($args['group']) || $args['group'] == 'all') $a->cache()->clean();
-        else
-        {
-          $group = $args['group'];
-          if (!empty($args['custom'])) $a->cache()->cleanByGroup($group);
-          else
-          {
-            $map = ['templates' => '--templates',
-                    'localization' => '--localization',
-                    'database' => isset($a['db']['cacheGroup']) ? $a['db']['cacheGroup'] : '--db',
-                    'ar' => isset($a['ar']['cacheGroup']) ? $a['ar']['cacheGroup'] : '--ar',
-                    'pages' => '--pom'];
-            if (isset($map[$group])) $a->cache()->cleanByGroup($map[$group]);
-          }
-        }
-        break;
       case 'config.file':
         $res = $this->renderConfig($this->getConfigFile($args['file']));
         break;
@@ -135,6 +115,29 @@ class Configurator
         self::saveConfig($cfg, $file);
         $res = $this->renderConfig($file);
         break;
+      case 'cache.gc':
+        $a->cache()->gc(100);
+        break;
+      case 'cache.clean':
+        if (empty($args['group']) || $args['group'] == 'all') $a->cache()->clean();
+        else
+        {
+          $group = $args['group'];
+          if (!empty($args['custom'])) $a->cache()->cleanByGroup($group);
+          else
+          {
+            $map = ['templates' => '--templates',
+                    'localization' => '--localization',
+                    'database' => isset($a['db']['cacheGroup']) ? $a['db']['cacheGroup'] : '--db',
+                    'ar' => isset($a['ar']['cacheGroup']) ? $a['ar']['cacheGroup'] : '--ar',
+                    'pages' => '--pom'];
+            if (isset($map[$group])) $a->cache()->cleanByGroup($map[$group]);
+          }
+        }
+        break;
+      case 'sql.search':
+        $res = self::render('sqlsearch.html', ['data' => $this->searchSQL($args['keyword'], $args['options'])]);
+        break;
       case 'log.refresh':
         $res = self::render('loglist.html', ['logs' => $this->getLogDirectories()]);
         break;
@@ -164,6 +167,56 @@ class Configurator
         break;
     }
     if ($res !== false) echo $res;
+  }
+  
+  private function searchSQL($keyword, array $options)
+  {
+    if (isset(\Aleph::getInstance()['db']['log']))
+    {
+      $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
+      if (!is_file($file)) return [];
+    }
+    $tmp = [];
+    $fh = fopen($file, 'r');
+    if (!$fh) return [];
+    fgetcsv($fh);
+    if ($keyword == '' && strlen($options['from']) == 0 && strlen($options['to']) == 0 && $options['mode'] != 'regexp')
+    {
+      while (($row = fgetcsv($fh)) !== false) $tmp[] = $row;
+    }
+    else
+    {
+      if ($options['mode'] == 'regexp' && @preg_match($keyword, '') === false) return ['error' => 'Regular expression is wrong'];
+      $isMatched = function($n, $value) use ($keyword, $options)
+      {
+        if ($options['mode'] == 'regexp') return preg_match($keyword, $value);
+        if ($n >= 4 && $n <= 7)
+        {
+          if (strlen($options['from']) == 0 && strlen($options['to']) == 0) return $keyword == $value;
+          return (strlen($options['from']) == 0 || $options['from'] <= $value) && (strlen($options['to']) == 0 || $options['to'] >= $value);
+        }
+        if ($options['onlyWholeWord']) 
+        {
+          if ($options['caseSensitive']) return (string)$keyword === (string)$value;
+          return strcasecmp($keyword, $value) == 0;
+        }
+        if ($options['caseSensitive']) return strpos($value, $keyword) !== false;
+        return strripos($value, $keyword) !== false;
+      };
+      while (($row = fgetcsv($fh)) !== false)
+      {
+        foreach ($row as $n => $value)
+        {
+          if (($options['where'] < 0 || $n == $options['where']) && $isMatched($n, $value))
+          {
+            $tmp[] = $row;
+            break;
+          }
+        }
+      }
+    }
+    fclose($fh);
+    return $tmp;
   }
   
   private function getConfigFile($n)
