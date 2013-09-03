@@ -24,6 +24,13 @@ namespace Aleph\DB;
 
 use Aleph\Core;
 
+/**
+ * Class for building MySQL queries.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.db
+ */
 class MySQLBuilder extends SQLBuilder
 {
   /**

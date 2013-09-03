@@ -171,11 +171,8 @@ class Configurator
   
   private function searchSQL($keyword, array $options)
   {
-    if (isset(\Aleph::getInstance()['db']['log']))
-    {
-      $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
-      if (!is_file($file)) return [];
-    }
+    if (isset(\Aleph::getInstance()['db']['log'])) $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
+    if (empty($file) || !is_file($file)) return [];
     $tmp = [];
     $fh = fopen($file, 'r');
     if (!$fh) return [];

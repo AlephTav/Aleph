@@ -964,7 +964,7 @@ class DB
    */
   public function getTableList($schema = null)
   {
-    $this->connect();
+    if (!$this->isConnected()) $this->connect();
     return $this->column($this->sql->tableList($schema ?: $this->idsn['dbname']));
   }
   
@@ -977,7 +977,7 @@ class DB
    */
   public function getTableInfo($table)
   {
-    $this->connect();
+    if (!$this->isConnected()) $this->connect();
     return $this->sql->normalizeTableInfo($this->row($this->sql->tableInfo($table)));
   }
   
@@ -990,7 +990,7 @@ class DB
    */
   public function getColumnsInfo($table)
   {
-    $this->connect();
+    if (!$this->isConnected()) $this->connect();
     return $this->sql->normalizeColumnsInfo($this->rows($this->sql->columnsInfo($table)));
   }
   
@@ -1008,7 +1008,7 @@ class DB
    */
   public function insert($table, $data, array $options = null)
   {
-    $this->execute($this->sql->insert($table, $data, $options)->build($data), $data);
+    $this->execute($this->__get('sql')->insert($table, $data, $options)->build($data), $data);
     return $this->getLastInsertID(empty($options['sequenceName']) ? null : $options['sequenceName']);
   }
   
@@ -1024,7 +1024,7 @@ class DB
    */
   public function update($table, $data, $where = null)
   {
-    $this->execute($this->sql->update($table, $data)->where($where)->build($where), $where);
+    $this->execute($this->__get('sql')->update($table, $data)->where($where)->build($where), $where);
     return $this->getAffectedRows();
   }
   
@@ -1039,7 +1039,7 @@ class DB
    */
   public function delete($table, $where = null)
   {
-    $this->execute($this->sql->delete($table)->where($where)->build($where), $where);
+    $this->execute($this->__get('sql')->delete($table)->where($where)->build($where), $where);
     return $this->getAffectedRows();
   }
   
