@@ -92,7 +92,7 @@ class DB
   protected $cache = null;
   
   /**
-   * Contains a number of affected rows as result of the last operation.
+   * Contains a number of affected rows as the result of the last operation.
    *
    * @var integer $affectedRows
    * @access protected
@@ -100,7 +100,7 @@ class DB
   protected $affectedRows = null;
   
   /**
-   * The mapping between PDO driver and database engines.
+   * The mapping between PDO drivers and database engines.
    *
    * @var array $engines
    * @access protected
@@ -215,21 +215,21 @@ class DB
   }
   
   /**
-   * This method is automatically called after unserialized process of an object of the class.
+   * This method is automatically called after unserialization process of an object of the class.
    *
    * @access public
    */
   public function __wakeup()
   {
-    $this->connect($this->idsn['dsn'], $this->idsn['username'], $this->idsn['password'], $this->idsn['options']);
+    if (count($this->idsn)) $this->connect($this->idsn['dsn'], $this->idsn['username'], $this->idsn['password'], $this->idsn['options']);
   }
   
   /**
-   * Returns values one of two properties: "pdo" or "sql".
-   * Value of property "pdo" is an instance of class \PDO that represents internal interface between PHP and database layer.
+   * Returns values of one of two properties: "pdo" or "sql".
+   * Value of property "pdo" is an instance of class \PDO that represents the internal interface between PHP and database layer.
    * Value of property "sql" is an instance of class Aleph\DB\SQLBuilder that provides unified way to construct complex SQL queries.
    *
-   * @param string $param - property name.
+   * @param string $param - the property name.
    * @return \PDO | Aleph\DB\SQLBuilder
    * @access public
    */
@@ -352,7 +352,7 @@ class DB
    */
   public function isConnected()
   {
-    return $this->pdo instanceof \PDO;
+    return $this->pdo !== null;
   }
 
   /** 
@@ -646,7 +646,7 @@ class DB
   /**
    * Quotes a table or column name for use in a query.
    *
-   * @param string $name - table or column name.
+   * @param string $name - the table or column name.
    * @param boolean $isTableName - determines whether the first parameter is a table name.
    * @return string
    * @access public
@@ -748,8 +748,8 @@ class DB
    * @param array $data - input parameters for the SQL execution.
    * @param string $type - type execution of the query. This parameter affects format of the data returned by the method.
    * @param integer $mode - fetch mode for this SQL statement.
-   * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
-   * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
+   * @param mixed $arg - this argument have a different meaning depending on the value of the $mode parameter.
+   * @param array $ctorargs - arguments of custom class constructor when the $mode parameter is PDO::FETCH_CLASS.
    * @return mixed
    * @access public
    */
@@ -840,7 +840,7 @@ class DB
    * Executes the SQL query and returns the value of the given column in the first row of data.
    *
    * @param string $sql - SQL query to execute.
-   * @param array $data - input parameters for the SQL execution.
+   * @param array $data - the input parameters for the SQL execution.
    * @param integer $column - 0-indexed number of the column you wish to retrieve from the row.
    * @return string - returns FALSE when a value is not found.
    * @access public
@@ -854,7 +854,7 @@ class DB
    * Executes the SQL query and returns the given column of the result.
    *
    * @param string $sql - SQL query to execute.
-   * @param array $data - input parameters for the SQL execution.
+   * @param array $data - the input parameters for the SQL execution.
    * @param integer $column - 0-indexed number of the column you wish to retrieve from the row.
    * @return array
    * @access public
@@ -868,8 +868,8 @@ class DB
    * Executes the SQL query and returns the first row of the result.
    *
    * @param string $sql - SQL query to execute.
-   * @param array $data - input parameters for the SQL execution.
-   * @param integer $mode - fetch mode for this SQL statement.
+   * @param array $data - the input parameters for the SQL execution.
+   * @param integer $mode - the fetch mode for this SQL statement.
    * @return array
    * @access public
    */
@@ -882,10 +882,10 @@ class DB
    * Executes the SQL query and returns all rows.
    *
    * @param string $sql - SQL query to execute.
-   * @param array $data - input parameters for the SQL execution.
-   * @param integer $mode - fetch mode for this SQL statement.
-   * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
-   * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
+   * @param array $data - the input parameters for the SQL execution.
+   * @param integer $mode - the fetch mode for this SQL statement.
+   * @param mixed $arg - this argument have a different meaning depending on the value of the $mode parameter.
+   * @param array $ctorargs - arguments of custom class constructor when the $mode parameter is PDO::FETCH_CLASS.
    * @return array
    * @access public
    */
@@ -899,7 +899,7 @@ class DB
    * where the first column is a key and the second column is the value.
    *
    * @param string $sql - SQL query to execute.
-   * @param array $data - input parameters for the SQL execution.
+   * @param array $data - the input parameters for the SQL execution.
    * @return array
    * @access public
    */
@@ -912,8 +912,8 @@ class DB
    * Executes the SQL query and returns all rows which grouped by values of the first column.
    *
    * @param string $sql - SQL query to execute.
-   * @param array $data - input parameters for the SQL execution.
-   * @param integer $mode - fetch mode for this SQL statement.
+   * @param array $data - the input parameters for the SQL execution.
+   * @param integer $mode - the fetch mode for this SQL statement.
    * @return array
    * @access public
    */
@@ -927,10 +927,10 @@ class DB
    * where the first column is a key and the other columns are the values.
    *
    * @param string $sql - SQL query to execute.
-   * @param array $data - input parameters for the SQL execution.
-   * @param integer $mode - fetch mode for this SQL statement.
-   * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
-   * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
+   * @param array $data - the input parameters for the SQL execution.
+   * @param integer $mode - the fetch mode for this SQL statement.
+   * @param mixed $arg - this argument have a different meaning depending on the value of the $mode parameter.
+   * @param array $ctorargs - arguments of custom class constructor when the $mode parameter is PDO::FETCH_CLASS.
    * @return array
    * @access public
    */
@@ -1074,8 +1074,9 @@ class DB
   /**
    * Combines SQL query string and data in one string.
    *
-   * @param string $sql - the parameterized SQL query.
+   * @param string $sql - the parametrized SQL query.
    * @param array $data - the SQL data to be combined.
+   * @return string
    * @access protected
    */
   protected function assemble($sql, array $data)
