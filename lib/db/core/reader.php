@@ -59,21 +59,21 @@ class Reader implements \Countable, \Iterator
    * Class constructor.
    *
    * @param PDOStatement $statement
-   * @param integer $style - fetch mode for this SQL statement.
-   * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
-   * @param array $ctorargs - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
+   * @param integer $mode - fetch mode for this SQL statement.
+   * @param mixed $arg - this argument have a different meaning depending on the value of the $mode parameter.
+   * @param array $ctorargs - arguments of custom class constructor when the $mode parameter is PDO::FETCH_CLASS.
    * @access public
    */
-  public function __construct(\PDOStatement $statement, $style = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
+  public function __construct(\PDOStatement $statement, $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
     $this->st = $statement;
-    $this->setFetchMode($style, $arg, $ctorargs);
+    $this->setFetchMode($mode, $arg, $ctorargs);
   }
   
   /**
    * Returns SQL statement for more low-level operating.
    *
-   * @return PDOStatement
+   * @return \PDOStatement
    * @access public
    */
   public function getStatement()
@@ -84,19 +84,18 @@ class Reader implements \Countable, \Iterator
   /**
    * Set the default fetch mode for this statement.
    *
-   * @param integer $mode - the fetch mode must be one of the PDO::FETCH_* constants.
-   * @param integer $colno - column number.
-   * @param string $classname - class name.
-   * @param array $ctorargs - constructor arguments.
-   * @param object $object - an instance of some class for mapping.
+   * @param integer $mode - the fetch mode should be one of the PDO::FETCH_* constants.
+   * @param mixed $arg - this argument have a different meaning depending on the value of the $mode parameter.
+   * @param array $ctorargs - arguments of custom class constructor when the $mode parameter is PDO::FETCH_CLASS.
+   * @access public
    */
-  public function setFetchMode($style = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
+  public function setFetchMode($mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
-    if ($arg === null) $this->st->setFetchMode($style);
+    if ($arg === null) $this->st->setFetchMode($mode);
     else
     {
-      if ($ctorargs === null) $this->st->setFetchMode($style, $arg);
-      else $this->st->setFetchMode($style, $arg, $ctorargs);
+      if ($ctorargs === null) $this->st->setFetchMode($mode, $arg);
+      else $this->st->setFetchMode($mode, $arg, $ctorargs);
     }
   }
   
@@ -127,6 +126,7 @@ class Reader implements \Countable, \Iterator
    * Returns the index of the current row.
    *
    * @return integer
+   * @access public
    */
   public function key()
   {
@@ -156,7 +156,7 @@ class Reader implements \Countable, \Iterator
   }
   
   /**
-   * Returns whether there is a row of data at current position.
+   * Returns whether there is a row of data at the current position.
    *
    * @return boolean
    * @access public

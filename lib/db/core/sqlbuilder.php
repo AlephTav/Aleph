@@ -774,6 +774,7 @@ class SQLExpression
   /**
    * Converts an object of this class to string.
    *
+   * @return string
    * @access public
    */
   public function __toString()
