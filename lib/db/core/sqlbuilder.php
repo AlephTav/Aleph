@@ -46,7 +46,7 @@ abstract class SQLBuilder
    * @var array $sql
    * @access protected
    */
-  protected $sql = array();
+  protected $sql = [];
 
   /**
    * Returns an instance of the builder class corresponding to the given database type.
@@ -325,7 +325,7 @@ abstract class SQLBuilder
    * <li>One-dimensional associative array: <code>$sql->update('MyTable', ['column1' => 'v1', 'column2' => 'v2'])</code></li>
    * </ul>
    *
-   * @param string $table - the table name.
+   * @param mixed $table - the table name.
    * @param mixed $columns - the column metadata.
    * @param array $options - additional information for some DBMS.
    * @return self
@@ -351,7 +351,7 @@ abstract class SQLBuilder
    * <li>One-dimensional mixed array: <code>$sql->delete(['tb1', 'tb2' => 't2']);</code></li>
    * </ul>
    *
-   * @param string $table - the table name.
+   * @param mixed $table - the table name.
    * @param array $options - additional information for some DBMS.
    * @return self
    * @access public
@@ -684,7 +684,7 @@ abstract class SQLBuilder
     if ($expression instanceof SQLExpression) return [(string)$expression];
     if (is_array($expression))
     {
-      $tmp = array();
+      $tmp = [];
       foreach ($expression as $k => $exp)
       {
         if (is_numeric($k))

@@ -259,6 +259,18 @@ $(function()
       $('#sqlSearchResults').html(html);
     }); 
   });
+  $('#btnCleanSQL').click(function()
+  {
+    showDialog('Confirmation', 'Are you sure you want to clean SQL log?', function()
+    {
+      $.ajax({'type': 'POST', 'data': {'method': 'sql.clean'}}).done(function()
+      {
+        showMsg('SQL log has been successfully cleaned.');
+        $('#sqlSearchResults').html('');
+        hideDialog();
+      });
+    });
+  });
   // Refresh logs
   $('#btnLogRefresh').click(function()
   {

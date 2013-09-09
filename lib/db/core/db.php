@@ -771,15 +771,14 @@ class DB
     }
     $st = $this->__get('pdo')->prepare($sql);
     $this->prepare($st, $sql, $data);
-    if ($this->logging)
+    if ($this->logging && isset(\Aleph::getInstance()['db']['log']))
     {
       $id = microtime(true);
       \Aleph::pStart($id);
       $st->execute();
       $duration = \Aleph::pStop($id);
       $this->affectedRows = $st->rowCount();
-      $file = \Aleph::getInstance()['db'];
-      $file = isset($file['log']) ? $file['log'] : \Aleph::dir('logs') . '/sql.log';
+      $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
       $dir = pathinfo($file, PATHINFO_DIRNAME);
       if (!is_dir($dir)) mkdir($dir, 0775, true);
       $fp = fopen($file, 'a');
@@ -1086,10 +1085,13 @@ class DB
     {
       foreach ($data as $k => $v) 
       {
-        $sql = preg_replace('/\?/', is_array($v) ? $v[0] : $v, $sql, 1);
+        $v = is_array($v) ? $v[0] : $v;
+        if (!is_numeric($v)) $v = $this->quote($v);
+        $sql = preg_replace('/\?/', $v, $sql, 1);
       }
       return $sql;
     }
+    foreach ($data as $k => &$v) if (!is_numeric($v)) $v = $this->quote($v);
     return strtr($sql, $data);
   }
 }

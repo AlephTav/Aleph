@@ -138,6 +138,13 @@ class Configurator
       case 'sql.search':
         $res = self::render('sqlsearch.html', ['data' => $this->searchSQL($args['keyword'], $args['options'])]);
         break;
+      case 'sql.clean':
+        if (isset(\Aleph::getInstance()['db']['log'])) 
+        {
+          $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
+          unlink($file);
+        }
+        break;
       case 'log.refresh':
         $res = self::render('loglist.html', ['logs' => $this->getLogDirectories()]);
         break;
