@@ -22,6 +22,8 @@
 
 namespace Aleph\Net;
 
+use Aleph\Core;
+
 /**
  * This class is the base class for all validators.
  *
@@ -31,9 +33,13 @@ namespace Aleph\Net;
  */
 abstract class Validator
 {
+  const ERR_VALIDATOR_1 = 'Invalid validator type "[{var}]". The only following types are valid: "type", "required", "compare", "regexp", "string", "number", "array", "xml" and "custom".';
+  const ERR_VALIDATOR_2 = 'The third parameter of "verify" method is invalid. You can only use the following mode values: "and", "or", "xor".';
+  const ERR_VALIDATOR_3 = 'The second parameter should only contain objects of Aleph\Net\Validator type.';
+
   /**
    * Creates and returns a validator object of the required type.
-   * Validator type can be one of the following values: "type", "required", "compare", "regexp", "string", "number", "array" and "xml".
+   * Validator type can be one of the following values: "type", "required", "compare", "regexp", "string", "number", "array", "xml" and "custom".
    *
 	  * @param string $type - the type of the validator object.
    * @param array $params - initial values to be applied to the validator properties.
@@ -68,9 +74,43 @@ abstract class Validator
       case 'xml':
         $validator = new ValidatorXML();
         break;
+      case 'json':
+        $validator = new ValidatorJSON();
+        break;
+      case 'custom':
+        $validator = new ValidatorCustom();
+        break;
+      default:
+        throw new Core\Exception('Aleph\Net\Validator::ERR_VALIDATOR_1', $type);
     }
     foreach ($params as $k => $v) $validator->{$k} = $v;
     return $validator;
+  }
+  
+  /**
+   * Verifies the value for matching with one or more validators.
+   *
+   * @param array $value - the value to be verified.
+   * @param array $validators - the validators to be matched with the given value.
+   * @param string $mode - determines the way of the calculation of the validation result for multiple validators.
+   * @return boolean
+   * @access public
+   */
+  public static function verify($value, array $validators, $mode = 'and')
+  {
+    $n = 0;
+    foreach ($validators as $validator) 
+    {
+      if (!($validator instanceof Validator)) throw new Core\Exception('Aleph\Net\Validator::ERR_VALIDATOR_3');   
+      if ($validator->validate($value)) $n++;
+    }
+    switch (strtolower($mode))
+    {
+      case 'and': return $n == count($validators);
+      case 'or': return $n > 0;
+      case 'xor': return $n == 1;
+    }
+    throw new Core\Exception('Aleph\Net\Validator::ERR_VALIDATOR_2', $mode);
   }
 
   /**

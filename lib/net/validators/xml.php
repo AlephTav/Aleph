@@ -22,43 +22,33 @@
 
 namespace Aleph\Net;
 
+use Aleph\Core;
+
 /**
- * ValidatorString validates that the given string value is of certain length.
+ * ValidatorXML compares the given xml with another xml or checks whether the given xml has the specified structure.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.net
  */
-class ValidatorString extends Validator
+class ValidatorXML extends Validator
 {
   /**
-   * The maximum length of the validating string.
-   * Null value means no maximum limit.
-   * @var integer $max
-   * @access public
-   */
-  public $max = null;
-
-  /**
-   * The minimum length of the validating string.
-   * Null value means no minimum limit.
-   * @var integer $min
-   * @access public
-   */
-  public $min = null;
-  
-  /**
-   * The encoding of the string value to be validated.
-   * This property is used only when mbstring PHP extension is enabled.
-   * The value of this property will be used as the 2nd parameter of the mb_strlen() function.
-   * If this property is not set, the internal character encoding value will be used (see function mb_internal_encoding()).
-   * If this property is FALSE, then strlen() will be used even if mbstring is enabled.
+   * XML string or path to the XML file to be compared with.
    *
-   * @var string $charset
+   * @var string $xml
    * @access public
    */
-  public $charset = false;
+  public $xml = null;
   
+  /**
+   * The XML schema which the validating XML should correspond to. 
+   *
+   * @var string $schema
+   * @access public
+   */
+  public $schema = null;
+
   /**
    * Determines whether the value can be null or empty.
    * If $allowEmpty is TRUE then validating empty value will be considered valid.
@@ -66,20 +56,38 @@ class ValidatorString extends Validator
    * @var boolean $allowEmpty
    * @access public
    */
-  public $allowEmpty = true;
-  
+  public $allowEmpty = false;
+
   /**
-   * Validates a string value. If the given value is not string, it will be converted to string.
-   * The method returns TRUE if length of the given string is in the required limits. Otherwise, the method returns FALSE.
+   * Validate an XML string.
    *
-   * @param string $entity - the value for validation.
+   * @param string $entity - the XML for validation.
    * @return boolean
    * @access public
    */
   public function validate($entity)
   {
     if ($this->allowEmpty && $this->isEmpty($entity)) return true;
-    $len = $this->charset !== false && function_exists('mb_strlen') ? mb_strlen($entity, $this->charset) : strlen($entity);
-    return ($this->min === null || $len >= $this->min) && ($this->max === null || $len <= $this->max); 
-  }
+    $dom = new \DOMDocument('1.0', 'utf-8');
+    $dom->formatOutput = true;
+    $dom->preserveWhiteSpace = false;
+    if (is_file($entity)) $dom->load($entity);
+    else $dom->loadXML($entity);
+    if ($this->schema)
+    {
+      if (is_file($this->schema)) 
+      {
+        if (!$dom->schemaValidate($this->schema)) return false;
+      }
+      else if (!$dom->schemaValidateSource($this->schema)) return false;
+    }
+    if (!$this->xml) return true;
+    $xml = $dom->saveXML();
+    $dom = new \DOMDocument('1.0', 'utf-8');
+    $dom->formatOutput = true;
+    $dom->preserveWhiteSpace = false;
+    if (is_file($this->xml)) $dom->load($this->xml);
+    else $dom->loadXML($this->xml);
+    return $xml === $dom->saveXML();
+  }  
 }

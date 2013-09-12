@@ -22,45 +22,28 @@
 
 namespace Aleph\Net;
 
+use Aleph\Core;
+
 /**
- * ValidatorRegExp validates that the given value matches to the specified regular expression pattern.
+ * ValidatorXML compares the given xml with another xml or checks whether the given xml has the specified structure.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.net
  */
-class ValidatorRegExp extends Validator
+class ValidatorCustom extends Validator
 {
-  const ERR_VALIDATOR_REGEXP_1 = 'The pattern is empty.';
-
   /**
-   * The regular expression to be matched with.
+   * The callback that will be automatically invoked as the custom validation method.
+   * This callback takes a value for validation as the first parameter and the validator object as the second one.
    *
-   * @var string $pattern
-   */
-  public $pattern = null;
-
-  /**
-   * Determines whether the value can be null or empty.
-   * If $allowEmpty is TRUE then validating empty value will be considered valid.
-   *
-   * @var boolean $allowEmpty
+   * @var mixed $callback
    * @access public
    */
-  public $allowEmpty = true;
-
-  /**
-   * Determines whether to invert the validation logic.
-   * If set to TRUE, the regular expression defined via $pattern should not match the given value.
-   *
-   * @var boolean $inversion
-   * @access public
-   */
-  public $inversion = false;
+  public $callback = null;
   
   /**
-   * Validates a value.
-   * The method returns TRUE if the given value matches the specified regular expression. Otherwise, the method returns FALSE.
+   * Validate a value via the custom validation method.
    *
    * @param string $entity - the value for validation.
    * @return boolean
@@ -68,9 +51,6 @@ class ValidatorRegExp extends Validator
    */
   public function validate($entity)
   {
-    if ($this->allowEmpty && $this->isEmpty($entity)) return true;
-    if (!$this->pattern) throw new Core\Exception($this, 'ERR_VALIDATOR_REGEXP_1');
-    if ($this->inversion) return !preg_match($this->pattern, $entity);
-    return (bool)preg_match($this->pattern, $entity);
+    return \Aleph::delegate($this->callback, $entity, $this);
   }
 }

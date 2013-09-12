@@ -23,41 +23,37 @@
 namespace Aleph\Net;
 
 /**
- * ValidatorString validates that the given string value is of certain length.
+ * ValidatorNumber validates that the given numeric value is in the specified limits.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.net
  */
-class ValidatorString extends Validator
+class ValidatorNumber extends Validator
 {
   /**
-   * The maximum length of the validating string.
-   * Null value means no maximum limit.
-   * @var integer $max
+   * The maximum value of the validating number.
+   * Null value means no maximum value.
+   * @var float $max
    * @access public
    */
   public $max = null;
 
   /**
-   * The minimum length of the validating string.
-   * Null value means no minimum limit.
-   * @var integer $min
+   * The minimum value of the validating number.
+   * Null value means no minimum value.
+   * @var float $min
    * @access public
    */
   public $min = null;
   
   /**
-   * The encoding of the string value to be validated.
-   * This property is used only when mbstring PHP extension is enabled.
-   * The value of this property will be used as the 2nd parameter of the mb_strlen() function.
-   * If this property is not set, the internal character encoding value will be used (see function mb_internal_encoding()).
-   * If this property is FALSE, then strlen() will be used even if mbstring is enabled.
+   * Determines whether the given value can only be an integer.
    *
-   * @var string $charset
+   * @var boolean $integerOnly
    * @access public
    */
-  public $charset = false;
+  public $integerOnly = false;
   
   /**
    * Determines whether the value can be null or empty.
@@ -69,17 +65,18 @@ class ValidatorString extends Validator
   public $allowEmpty = true;
   
   /**
-   * Validates a string value. If the given value is not string, it will be converted to string.
-   * The method returns TRUE if length of the given string is in the required limits. Otherwise, the method returns FALSE.
+   * Validates a number value. If the given value is not number, it will be converted to number.
+   * The method returns TRUE if value of the given number is in the required limits. Otherwise, the method returns FALSE.
    *
-   * @param string $entity - the value for validation.
+   * @param float $entity - the value for validation.
    * @return boolean
    * @access public
    */
   public function validate($entity)
   {
     if ($this->allowEmpty && $this->isEmpty($entity)) return true;
-    $len = $this->charset !== false && function_exists('mb_strlen') ? mb_strlen($entity, $this->charset) : strlen($entity);
-    return ($this->min === null || $len >= $this->min) && ($this->max === null || $len <= $this->max); 
+    if ($this->integerOnly && (string)$entity !== (string)(int)$entity) return false;
+    $entity = (float)$entity;
+    return ($this->min === null || $entity >= (float)$this->min) && ($this->max === null || $entity <= (float)$this->max); 
   }
 }
