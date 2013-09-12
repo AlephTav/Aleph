@@ -42,5 +42,5 @@ class ValidatorArray extends Validator
    * @var boolean $allowEmpty
    * @access public
    */
-  public $allowEmpty = false;
+  public $allowEmpty = true;
 }

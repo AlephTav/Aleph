@@ -56,7 +56,7 @@ class ValidatorXML extends Validator
    * @var boolean $allowEmpty
    * @access public
    */
-  public $allowEmpty = false;
+  public $allowEmpty = true;
 
   /**
    * Validate an XML string.

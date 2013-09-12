@@ -82,7 +82,7 @@ class ValidatorCompare extends Validator
    * @var boolean $allowEmpty
    * @access public   
    */
-  public $allowEmpty = false;
+  public $allowEmpty = true;
   
   /**
    * Contains the number of the successful matches of the last compare operation.
