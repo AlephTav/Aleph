@@ -561,11 +561,7 @@ class AR
    */
   public function assignFromArray(array $columns)
   {
-    $this->setValues($columns, true);
-    $this->assigned = true;
-    $this->changed = false;
-    $this->deleted = false;
-    return $this;
+    return $this->reset()->setValues($columns, true);
   }
   
   /**
