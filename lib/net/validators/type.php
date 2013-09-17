@@ -53,6 +53,8 @@ class ValidatorType extends Validator
     $type = strtolower($this->type);
     if ($type == 'float') $type == 'double';
     if ($type == 'null') $type = 'NULL';
-    return gettype($entity) == $this->type;
+    if (gettype($entity) == $this->type) return $this->reason = true;
+    $this->reason = ['code' => 0, 'reason' => 'type mismatch'];
+    return false;
   }
 }

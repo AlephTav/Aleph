@@ -43,6 +43,11 @@ class ValidatorRequired extends Validator
    */
   public function validate($entity)
   {
-    return !$this->isEmpty($entity);
+    if ($this->isEmpty($entity))
+    {
+      $this->reason = ['code' => 0, 'reason' => 'empty'];
+      return false;
+    }
+    return $this->reason = true;
   }
 }

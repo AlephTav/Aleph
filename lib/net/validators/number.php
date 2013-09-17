@@ -48,21 +48,13 @@ class ValidatorNumber extends Validator
   public $min = null;
   
   /**
-   * Determines whether the given value can only be an integer.
+   * Determines valid format (PCRE regular expression) of the given number.
+   * Null value means no format checking.
    *
-   * @var boolean $integerOnly
+   * @var string $format
    * @access public
    */
-  public $integerOnly = false;
-  
-  /**
-   * Determines whether the value can be null or empty.
-   * If $allowEmpty is TRUE then validating empty value will be considered valid.
-   *
-   * @var boolean $allowEmpty
-   * @access public
-   */
-  public $allowEmpty = true;
+  public $format = false;
   
   /**
    * Validates a number value. If the given value is not number, it will be converted to number.
@@ -74,9 +66,29 @@ class ValidatorNumber extends Validator
    */
   public function validate($entity)
   {
-    if ($this->allowEmpty && $this->isEmpty($entity)) return true;
-    if ($this->integerOnly && (string)$entity !== (string)(int)$entity) return false;
+    if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
+    if ($this->format && !preg_match($this->format, $entity)) 
+    {
+      $this->reason = ['code' => 0, 'reason' => 'invalid format'];
+      return false;
+    }
     $entity = (float)$entity;
-    return ($this->min === null || $entity >= (float)$this->min) && ($this->max === null || $entity <= (float)$this->max); 
+    if ($this->min !== null) 
+    {
+      if ($entity < (float)$this->min)
+      {
+        $this->reason = ['code' => 1, 'reason' => 'too small'];
+        return false;
+      }
+    }
+    if ($this->max !== null)
+    {
+      if ($entity > (float)$this->max)
+      {
+        $this->reason = ['code' => 2, 'reason' => 'too large'];
+        return false;
+      }
+    }
+    return $this->reason = true;
   }
 }

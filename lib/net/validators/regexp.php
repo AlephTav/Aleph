@@ -41,15 +41,6 @@ class ValidatorRegExp extends Validator
   public $pattern = null;
 
   /**
-   * Determines whether the value can be null or empty.
-   * If $allowEmpty is TRUE then validating empty value will be considered valid.
-   *
-   * @var boolean $allowEmpty
-   * @access public
-   */
-  public $allowEmpty = true;
-
-  /**
    * Determines whether to invert the validation logic.
    * If set to TRUE, the regular expression defined via $pattern should not match the given value.
    *
@@ -68,9 +59,17 @@ class ValidatorRegExp extends Validator
    */
   public function validate($entity)
   {
-    if ($this->allowEmpty && $this->isEmpty($entity)) return true;
+    if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
     if (!$this->pattern) throw new Core\Exception($this, 'ERR_VALIDATOR_REGEXP_1');
-    if ($this->inversion) return !preg_match($this->pattern, $entity);
-    return (bool)preg_match($this->pattern, $entity);
+    $this->reason = ['code' => 0, 'reason' => 'doesn\'t match'];
+    if ($this->inversion)
+    {
+      if (preg_match($this->pattern, $entity)) return false;
+    }
+    else
+    {
+      if (!preg_match($this->pattern, $entity)) return false;
+    }
+    return $this->reason = true;
   }
 }

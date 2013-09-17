@@ -25,7 +25,7 @@ namespace Aleph\Net;
 use Aleph\Core;
 
 /**
- * ValidatorXML compares the given xml with another xml or checks whether the given xml has the specified structure.
+ * ValidatorXML compares the given XML with another XML or checks whether the given XML has the specified structure.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -50,16 +50,7 @@ class ValidatorXML extends Validator
   public $schema = null;
 
   /**
-   * Determines whether the value can be null or empty.
-   * If $allowEmpty is TRUE then validating empty value will be considered valid.
-   *
-   * @var boolean $allowEmpty
-   * @access public
-   */
-  public $allowEmpty = true;
-
-  /**
-   * Validate an XML string.
+   * Validates an XML string.
    *
    * @param string $entity - the XML for validation.
    * @return boolean
@@ -67,7 +58,7 @@ class ValidatorXML extends Validator
    */
   public function validate($entity)
   {
-    if ($this->allowEmpty && $this->isEmpty($entity)) return true;
+    if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
     $dom = new \DOMDocument('1.0', 'utf-8');
     $dom->formatOutput = true;
     $dom->preserveWhiteSpace = false;
@@ -75,19 +66,30 @@ class ValidatorXML extends Validator
     else $dom->loadXML($entity);
     if ($this->schema)
     {
+      libxml_clear_errors();
       if (is_file($this->schema)) 
       {
-        if (!$dom->schemaValidate($this->schema)) return false;
+        if (!$dom->schemaValidate($this->schema)) 
+        {
+          $this->reason = ['code' => 0, 'reason' => 'invalid schema', 'details' => libxml_get_errors()];
+          return false;
+        }
       }
-      else if (!$dom->schemaValidateSource($this->schema)) return false;
+      else if (!$dom->schemaValidateSource($this->schema)) 
+      {
+        $this->reason = ['code' => 0, 'reason' => 'invalid schema', 'details' => libxml_get_errors()];
+        return false;
+      }
     }
-    if (!$this->xml) return true;
+    if (!$this->xml) return $this->reason = true;
     $xml = $dom->saveXML();
     $dom = new \DOMDocument('1.0', 'utf-8');
     $dom->formatOutput = true;
     $dom->preserveWhiteSpace = false;
     if (is_file($this->xml)) $dom->load($this->xml);
     else $dom->loadXML($this->xml);
-    return $xml === $dom->saveXML();
+    if ($xml === $dom->saveXML()) return $this->reason = true;
+    $this->reason = ['code' => 1, 'reason' => 'XML are not equal'];
+    return false;
   }  
 }

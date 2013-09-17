@@ -60,15 +60,6 @@ class ValidatorString extends Validator
   public $charset = false;
   
   /**
-   * Determines whether the value can be null or empty.
-   * If $allowEmpty is TRUE then validating empty value will be considered valid.
-   *
-   * @var boolean $allowEmpty
-   * @access public
-   */
-  public $allowEmpty = true;
-  
-  /**
    * Validates a string value. If the given value is not string, it will be converted to string.
    * The method returns TRUE if length of the given string is in the required limits. Otherwise, the method returns FALSE.
    *
@@ -78,8 +69,24 @@ class ValidatorString extends Validator
    */
   public function validate($entity)
   {
-    if ($this->allowEmpty && $this->isEmpty($entity)) return true;
+    if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
     $len = $this->charset !== false && function_exists('mb_strlen') ? mb_strlen($entity, $this->charset) : strlen($entity);
-    return ($this->min === null || $len >= $this->min) && ($this->max === null || $len <= $this->max); 
+    if ($this->min !== null)
+    {
+      if ($len < $this->min)
+      {
+        $this->reason = ['code' => 1, 'reason' => 'too short'];
+        return false;
+      }
+    }
+    if ($this->max !== null)
+    {
+      if ($len > $this->max)
+      {
+        $this->reason = ['code' => 2, 'reason' => 'too '];
+        return false;
+      }
+    }
+    return $this->reason = true;
   }
 }

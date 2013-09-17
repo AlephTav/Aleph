@@ -33,9 +33,35 @@ use Aleph\Core;
  */
 abstract class Validator
 {
+  /**
+   * Error message templates.
+   */
   const ERR_VALIDATOR_1 = 'Invalid validator type "[{var}]". The only following types are valid: "type", "required", "compare", "regexp", "string", "number", "array", "xml" and "custom".';
   const ERR_VALIDATOR_2 = 'The third parameter of "verify" method is invalid. You can only use the following mode values: "and", "or", "xor".';
   const ERR_VALIDATOR_3 = 'The second parameter should only contain objects of Aleph\Net\Validator type.';
+  
+  /**
+   * Determines whether the value can be null or empty.
+   * If $empty is TRUE then validating empty value will be considered valid.
+   *
+   * @var boolean $empty
+   * @access public
+   */
+  public $empty = true;
+  
+  /**
+   * The reason of validator failure. The reason equals TRUE if the validator returns TRUE.
+   * The structure of the reason array as follows:
+   * [
+      'code'    => ... // the reson code.
+   *  'reason'  => ... // the short reason message.
+   *  'details' => ... // the reason details. It can be omitted for some validators.
+   * ]
+   *
+   * @var array $reason
+   * @access protected
+   */
+  protected $reason = null;
 
   /**
    * Creates and returns a validator object of the required type.
@@ -93,16 +119,18 @@ abstract class Validator
    * @param array $value - the value to be verified.
    * @param array $validators - the validators to be matched with the given value.
    * @param string $mode - determines the way of the calculation of the validation result for multiple validators.
+   * @param array $result - array of the results of the validators work. Each array element contains TRUE if the appropriate validator is valid, otherwise the element contains the reason of validator failure.
    * @return boolean
    * @access public
    */
-  public static function verify($value, array $validators, $mode = 'and')
+  public static function verify($value, array $validators, $mode = 'and', &$result = null)
   {
-    $n = 0;
-    foreach ($validators as $validator) 
+    $n = 0; $result = [];
+    foreach ($validators as $key => $validator) 
     {
       if (!($validator instanceof Validator)) throw new Core\Exception('Aleph\Net\Validator::ERR_VALIDATOR_3');   
       if ($validator->validate($value)) $n++;
+      $result[$key] = $validator->getReason();
     }
     switch (strtolower($mode))
     {
@@ -111,6 +139,18 @@ abstract class Validator
       case 'xor': return $n == 1;
     }
     throw new Core\Exception('Aleph\Net\Validator::ERR_VALIDATOR_2', $mode);
+  }
+  
+  /**
+   * Returns the reason of validator failure.
+   * If the validator returns TRUE the reason will be TRUE as well.
+   *
+   * @return array
+   * @access public
+   */
+  public function getReason()
+  {
+    return $this->reason;
   }
 
   /**

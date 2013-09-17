@@ -74,34 +74,6 @@ class ValidatorCompare extends Validator
    * @access public
    */
   public $operator = '==';
-  
-  /**
-   * Determines whether the value can be null or empty.
-   * If $allowEmpty is TRUE then validating empty value will be considered valid.
-   *
-   * @var boolean $allowEmpty
-   * @access public   
-   */
-  public $allowEmpty = true;
-  
-  /**
-   * Contains the number of the successful matches of the last compare operation.
-   *
-   * @var integer $matches
-   * @access protected
-   */
-  protected $matches = 0;
-  
-  /**
-   * Returns the number of the successful matches of the last compare operation.
-   *
-   * @return integer
-   * @access public
-   */
-  public function getMatchingNumber()
-  {
-    return $this->matches;
-  }
 
   /**
    * Validates a value.
@@ -113,49 +85,71 @@ class ValidatorCompare extends Validator
    */
   public function validate($entity)
   {
-    if ($this->allowEmpty && $this->isEmpty($entity))
-    {
-      $this->matches = 0;
-      return true;
-    }
-    $n = 0;
+    if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
     $values = $this->hasMultipleValues && is_array($this->value) ? $this->value : array($this->value);
     switch ($this->operator)
     {
       case '===':
-        foreach ($values as $value) if ($value === $entity) $n++;
+        $func = function($value) use($entity) {return $value === $entity;};
         break;
       case '!==':
-        foreach ($values as $value) if ($value !== $entity) $n++;
+        $func = function($value) use($entity) {return $value !== $entity;};
         break;
       case '==':
-        foreach ($values as $value) if ($value == $entity) $n++;
+        $func = function($value) use($entity) {return $value == $entity;};
         break;
       case '!=':
-        foreach ($values as $value) if ($value != $entity) $n++;
+        $func = function($value) use($entity) {return $value != $entity;};
         break;
       case '<':
-        foreach ($values as $value) if ($value < $entity) $n++;
+        $func = function($value) use($entity) {return $value < $entity;};
         break;
       case '>':
-        foreach ($values as $value) if ($value > $entity) $n++;
+        $func = function($value) use($entity) {return $value > $entity;};
         break;
       case '<=':
-        foreach ($values as $value) if ($value <= $entity) $n++;
+        $func = function($value) use($entity) {return $value <= $entity;};
         break;
       case '>=':
-        foreach ($values as $value) if ($value >= $entity) $n++;
+        $func = function($value) use($entity) {return $value >= $entity;};
         break;
       default:
         throw new Core\Exception($this, 'ERR_VALIDATOR_COMPARE_2', $this->operator);
     }
-    $this->validValues = $n;
+    $this->reason = ['code' => 0, 'reason' => 'doesn\'t meet condition'];
     switch (strtolower($this->mode))
     {
-      case 'and': return $n == count($values);
-      case 'or': return $n > 0;
-      case 'xor': return $n == 1;
+      case 'and':
+        foreach ($values as $value) if (!$func($value)) return false;
+        break;
+      case 'or':
+        $flag = false;
+        foreach ($values as $value)
+        {
+          if ($func($value))
+          {
+            $flag = true;
+            break;
+          }
+        }
+        if (!$flag) return false;
+        break;
+      case 'xor':
+        $flag = false;
+        foreach ($values as $value)
+        {
+          if ($func($value))
+          {
+            if ($flag) return false;
+            $flag = true;
+            break;
+          }
+        }
+        if (!$flag) return false;
+        break;
+      default:
+        throw new Core\Exception($this, 'ERR_VALIDATOR_COMPARE_1', $this->mode);
     }
-    throw new Core\Exception($this, 'ERR_VALIDATOR_COMPARE_1', $this->mode);
+    return $this->reason = true;
   }
 }
