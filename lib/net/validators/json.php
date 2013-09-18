@@ -44,6 +44,10 @@ class ValidatorJSON extends Validator
   const ERR_VALIDATOR_JSON_6 = 'Property: "[{var}]". Use of "exclusiveMaximum" requires presence of "maximum".';
   const ERR_VALIDATOR_JSON_7 = 'Property: "[{var}]". Invalid "multipleOf" value, should be a number that greater than 0.';
   const ERR_VALIDATOR_JSON_8 = 'Property: "[{var}]". Invalid item values.';
+  const ERR_VALIDATOR_JSON_9 = 'Property: "[{var}]". Dependency value should either be an object or an array.';
+  const ERR_VALIDATOR_JSON_10 = 'Property: "[{var}]". Elements of "[{var}]" value should be a valid JSON Schema.';
+  const ERR_VALIDATOR_JSON_11 = 'Property: "[{var}]". Value of keyword "not" should be a valid JSON Schema.';
+  const ERR_VALIDATOR_JSON_12 = '$ref "[{var}]" should be a valid a JSON Reference.';
   
   /**
    * JSON string or path to the JSON file to be compared with.
@@ -61,6 +65,8 @@ class ValidatorJSON extends Validator
    */
   public $schema = null;
   
+  private $rootSchema = null;
+  
    /**
    * Validates a JSON string.
    *
@@ -72,15 +78,16 @@ class ValidatorJSON extends Validator
   {
     if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
     $original = $entity;
-    $entity = json_decode($entity, true);
-    if ($entity === null && $original !== null) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_1');
+    $entity = json_decode($entity);
+    if ($entity === null && strtolower($original) != 'null') throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_1');
     if ($this->schema !== null)
     {
       $schema = json_decode(is_file($this->schema) ? file_get_contents($this->schema) : $this->schema);
       if ($schema === null) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_2');
-      if (!$this->checkSchema(json_decode($entity), $schema)) return false;
+      if (!$this->checkSchema($entity, $schema)) return false;
     }
     if ($this->json === null) return $this->reason = true;
+    $entity = json_decode($entity, true);
     $original = is_file($this->json) ? file_get_contents($this->json) : $this->json;
     $json = json_decode($original, true);
     if ($json === null && $original !== null) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_3');
@@ -97,6 +104,7 @@ class ValidatorJSON extends Validator
    */
   protected function checkSchema($entity, $schema)
   {
+    $this->rootSchema = $schema;
     $this->reason = ['code' => 0, 'reason' => 'invalid schema', 'details' => null];
     return $this->checkType($entity, $schema, 'root');
   }
@@ -104,6 +112,9 @@ class ValidatorJSON extends Validator
   private function checkType($entity, $schema, $path)
   {
     if (!$this->checkEnum($entity, $schema, $path)) return false;
+    if (!$this->checkAllOf($entity, $schema, $path)) return false;
+    if (!$this->checkAnyOf($entity, $schema, $path)) return false;
+    if (!$this->checkOneOf($entity, $schema, $path)) return false;
     $types = isset($schema->type) ? strtolower($schema->type) : 'any';
     if (!is_array($types)) $types = array($types);
     $flag = false;
@@ -116,6 +127,7 @@ class ValidatorJSON extends Validator
           if (!$this->checkMinLength($entity, $schema, $path)) return false;
           if (!$this->checkMaxLength($entity, $schema, $path)) return false;
           if (!$this->checkPattern($entity, $schema, $path)) return false;
+          if (!$this->checkFormat($entity, $schema, $path)) return false;
           $flag = true;
           break;
         }
@@ -127,6 +139,7 @@ class ValidatorJSON extends Validator
           if (!$this->checkMinimum($entity, $schema, $path)) return false;
           if (!$this->checkMaximum($entity, $schema, $path)) return false;
           if (!$this->checkMultipleOf($entity, $schema, $path)) return false;
+          if (!$this->checkFormat($entity, $schema, $path)) return false;
           $flag = true;
           break;
         }
@@ -138,6 +151,7 @@ class ValidatorJSON extends Validator
           if (!$this->checkMinimum($entity, $schema, $path)) return false;
           if (!$this->checkMaximum($entity, $schema, $path)) return false;
           if (!$this->checkMultipleOf($entity, $schema, $path)) return false;
+          if (!$this->checkFormat($entity, $schema, $path)) return false;
           $flag = true;
           break;
         }
@@ -166,7 +180,12 @@ class ValidatorJSON extends Validator
       {
         if (is_object($entity))
         {
-          if (!$this->checkObject($entity, $schema, $path)) return false;
+          $properties = get_object_vars($entity);
+          if (!$this->checkMaxProperties($properties, $schema, $path)) return false;
+          if (!$this->checkMinProperties($properties, $schema, $path)) return false;
+          if (!$this->checkRequiredProperties($properties, $schema, $path)) return false;
+          if (!$this->checkProperties($properties, $schema, $path)) return false;
+          if (!$this->checkDependencies($entity, $schema, $path)) return false;
           $flag = true;
           break;
         }
@@ -309,7 +328,7 @@ class ValidatorJSON extends Validator
     {
       if (count($entity) < $schema->minItems)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should have minimum of ' . $schema->minItems . ' elements.'.
+        $this->reason['details'] = 'Property "' . $path . '" should have minimum of ' . $schema->minItems . ' elements.';
         return false;
       }
     }
@@ -322,7 +341,7 @@ class ValidatorJSON extends Validator
     {
       if (count($entity) > $schema->maxItems)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should have maximum of ' . $schema->maxItems . ' elements.'.
+        $this->reason['details'] = 'Property "' . $path . '" should have maximum of ' . $schema->maxItems . ' elements.';
         return false;
       }
     }
@@ -347,16 +366,148 @@ class ValidatorJSON extends Validator
     if (empty($schema->items)) return true;
     if (is_array($schema->items))
     {
-    
+      foreach ($entity as $key => $value)
+      {
+        if (array_key_exists($key, $schema->items)) 
+        {
+          if (!$this->checkType($value, $this->resolveRef($schema->items[$key]), $path . '[' . $key . ']')) return false;
+        }
+        else if (isset($schema->additionalItems))
+        {
+          if ($schema->additionalItems === false)
+          {
+            $this->reason['details'] = 'Property "' . $path . '[' . $key . ']" is not defined and the definition does not allow additional items.';
+            return false;
+          }
+          if (is_object($schema->additionalItems))
+          {
+            if (!$this->checkType($value, $this->resolveRef($schema->additionalItems), $path . '[' . $key . ']')) return false; 
+          }
+        }
+      }
+      return true;
     }
     else if (is_object($schema->items))
     {
       foreach ($entity as $key => $value)
       {
-        if (!$this->checkType($value, $schema->items, $path . '[' . $key . ']')) return false;
+        if (!$this->checkType($value, $this->resolveRef($schema->items), $path . '[' . $key . ']')) return false;
       }
+      return true;
     }
     throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_8', $path);
+  }
+  
+  private function checkMinProperties(array $properties, $schema, $path)
+  {
+    if (isset($schema->minProperties))
+    {
+      if (count($properties) < $schema->minProperties)
+      {
+        $this->reason['details'] = 'Object "' . $path . '" should have minimum of ' . $schema->minProperties . ' properties.';
+        return false;
+      }
+    }
+    return true; 
+  }
+  
+  private function checkMaxProperties(array $properties, $schema, $path)
+  {
+    if (isset($schema->maxProperties))
+    {
+      if (count($properties) > $schema->maxProperties)
+      {
+        $this->reason['details'] = 'Object "' . $path . '" should have maximum of ' . $schema->maxProperties . ' properties.';
+        return false;
+      }
+    }
+    return true; 
+  }
+  
+  private function checkRequiredProperties(array $properties, $schema, $path)
+  {
+    if (isset($schema->required))
+    {
+      foreach ((array)$schema->required as $property)
+      {
+        if (!array_key_exists($property, $properties))
+        {
+          $this->reason['details'] = 'Object "' . $path . '" does not have the required property "' . $property . '".';
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+  
+  private function checkProperties(array $properties, $schema, $path)
+  {
+    $validProperties = [];
+    if (isset($schema->patternProperties))
+    {
+      foreach ((array)$schema->patternProperties as $pattern => $newSchema)
+      {
+        foreach ($properties as $property => $value)
+        {
+          if (preg_match($pattern, $property) && empty($validProperties[$property])) $validProperties[$property] = $newSchema;
+        }
+      }
+    }
+    foreach ($properties as $property => $value)
+    {
+      if (isset($schema->properties) && property_exists($schema->properties, $property)) 
+      {
+        if (!$this->checkType($value, $this->resolveRef($schema->properties->{$property}), $path . '.' . $property)) return false;
+      }
+      else if (isset($validProperties[$property]))
+      {
+        if (!$this->checkType($value, $validProperties[$property], $path . '.' . $property)) return false;
+      }
+      else if (isset($schema->additionalProperties))
+      {
+        if ($schema->additionalProperties === false)
+        {
+          $this->reason['details'] = 'Property "' . $path . '.' . $key . '" is not defined and the definition does not allow additional properties.';
+          return false;
+        }
+        if (is_object($schema->additionalProperties))
+        {
+          if (!$this->checkType($value, $this->resolveRef($schema->additionalProperties), $path . '.' . $key)) return false; 
+        }
+      }
+    }
+    return true;
+  }
+  
+  private function checkDependencies($entity, $schema, $path)
+  {
+    if (isset($schema->dependencies))
+    {
+      foreach ($schema->dependencies as $property => $dependency)
+      {
+        if (!property_exists($entity, $property)) continue;
+        if (is_object($dependency))
+        {
+          if (!$this->checkType($entity, $this->resolveRef($dependency), $path)) return false;
+        }
+        else if (is_array($dependency))
+        {
+          foreach ($dependency as $prop)
+          {
+            if (!property_exists($entity, $prop))
+            {
+              $this->reason['details'] = 'Property "' . $path . '" depends on property "' . $property . '" and should have property "' . $prop . '".';
+              return false;
+            }
+          }
+        }
+        else
+        {
+          throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_9', $path);
+        }
+      }
+    }
+    return true;
   }
   
   private function checkEnum($entity, $schema, $path)
@@ -378,5 +529,144 @@ class ValidatorJSON extends Validator
     }
     $this->reason['details'] = 'Property "' . $path . '" has the value that does not match the enumeration options.';
     return false;
+  }
+  
+  private function checkAllOf($entity, $schema, $path)
+  {
+    if (isset($schema->allOf))
+    {
+      foreach ((array)$schema->allOf as $newSchema)
+      {
+        if (!is_object($newSchema)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'allOf');
+        if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) return false;
+      }
+    }
+    return true;
+  }
+  
+  private function checkAnyOf($entity, $schema, $path)
+  {
+    if (isset($schema->anyOf))
+    {
+      foreach ((array)$schema->anyOf as $newSchema)
+      {
+        if (!is_object($newSchema)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'anyOf');
+        if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) continue;
+      }
+    }
+    return true;
+  }
+  
+  private function checkOneOf($entity, $schema, $path)
+  {
+    if (isset($schema->oneOf))
+    {
+      $flag = false;
+      foreach ((array)$schema->oneOf as $newSchema)
+      {
+        if (!is_object($newSchema)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'oneOf');
+        if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) continue;
+        if ($flag)
+        {
+          $this->reason['details'] = 'Property "' . $path . '" validates successfully more than one times.';
+          return false;
+        }
+        $flag = true;
+      }
+    }
+    return true;
+  }
+  
+  private function checkNot($entity, $schema, $path)
+  {
+    if (isset($schema->not))
+    {
+      if (!is_object($schema->not)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'not');
+      if ($this->checkType($entity, $this->resolveRef($schema->not), $path)) 
+      {
+        $this->reason['details'] = 'Property "' . $path . '" should not validate successfully against the schema defined by keyword "not".';
+        return false; 
+      }
+    }
+    return true;
+  }
+  
+  private function checkFormat($entity, $schema, $path)
+  {
+    if (isset($schema->format))
+    {
+      switch (strtolower($schema->format))
+      {
+        case 'datetime':
+        case 'date-time':
+          if (!\DateTime::createFromFormat('Y-m-d\TH:i:s\Z', $entity) &&
+              !\DateTime::createFromFormat('Y-m-d\TH:i:s.u\Z', $entity) &&
+              !\DateTime::createFromFormat('Y-m-d\TH:i:sP', $entity) &&
+              !\DateTime::createFromFormat('Y-m-d\TH:i:sO', $entity))
+          {
+            $this->reason['details'] = 'Property "' . $path . '" has invalid date-time format and should have format YYYY-MM-DDThh:mm:ssZ or YYYY-MM-DDThh:mm:ss+hh:mm';
+            return false;
+          }
+          break;
+        case 'email':
+          if (filter_var($entity, FILTER_VALIDATE_EMAIL, FILTER_NULL_ON_FAILURE) === null)
+          {
+            $this->reason['details'] = 'Property "' . $path . '" has invalid email format.';
+            return false;
+          }
+          break;
+        case 'hostname':
+        case 'host-name':
+          if (!preg_match('/\A[_a-z]+\.([_a-z]+\.?)+\z/i', $entity))
+          {
+            $this->reason['details'] = 'Property "' . $path . '" has invalid hostname format.';
+            return false;
+          }
+          break;
+        case 'ip':
+        case 'ipv4':
+          if (filter_var($entity, FILTER_VALIDATE_IP, FILTER_NULL_ON_FAILURE | FILTER_FLAG_IPV4) === null)
+          {
+            $this->reason['details'] = 'Property "' . $path . '" has invalid ipv4 format.';
+            return false;
+          }
+          break;
+        case 'ipv6':
+          if (filter_var($entity, FILTER_VALIDATE_IP, FILTER_NULL_ON_FAILURE | FILTER_FLAG_IPV6) === null)
+          {
+            $this->reason['details'] = 'Property "' . $path . '" has invalid ipv6 format.';
+            return false;
+          }
+          break;
+        case 'uri':
+          if (filter_var($entity, FILTER_VALIDATE_URL, FILTER_NULL_ON_FAILURE) === null)
+          {
+            $this->reason['details'] = 'Property "' . $path . '" has invalid URI format.';
+            return false;
+          }
+          break;
+      }
+    }
+    return true;
+  }
+  
+  private function resolveRef($schema)
+  {
+    if (!property_exists($schema, '$ref') || strlen($schema->{'$ref'}) == 0) return $schema;
+    $ref = $schema->{'$ref'};
+    if ($ref[0] != '#')
+    {
+      $original = trim(file_get_contents($ref));
+      $new = json_decode($original);
+      if ($new === null && strtolower($original) != 'null') throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_12', $ref);
+    }
+    else
+    {
+      $ref = explode('/', $ref);
+      array_shift($ref);
+      $new = $this->rootSchema;
+      foreach ($ref as $property) $new = $new->{$property};
+    }
+    return $new;
   }
 }
