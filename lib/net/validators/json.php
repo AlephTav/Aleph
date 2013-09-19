@@ -26,6 +26,7 @@ use Aleph\Core;
 
 /**
  * ValidatorJSON compares the given JSON with another JSON or checks whether the given JSON has the specified structure.
+ * The logic of JSON schema validation is determined by http://json-schema.org/latest/json-schema-validation.html#anchor17 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -65,6 +66,12 @@ class ValidatorJSON extends Validator
    */
   public $schema = null;
   
+  /**
+   * The parsed JSON schema for comparison.
+   *
+   * @var \stdClass $rootSchema
+   * @access private
+   */
   private $rootSchema = null;
   
    /**
@@ -98,19 +105,33 @@ class ValidatorJSON extends Validator
   
   /**
    * Checks JSON schema of the given JSON entity.
+   * The method returns TRUE if the given JSON has the required scheme and FALSE otherwise.
    *
+   * @param mixed $entity - the JSON entity to validate.
+   * @param \stdClass $schema - the JSON schema for comparison.
    * @return boolean
    * @access protected
    */
-  protected function checkSchema($entity, $schema)
+  protected function checkSchema($entity, \stdClass $schema)
   {
     $this->rootSchema = $schema;
-    $this->reason = ['code' => 0, 'reason' => 'invalid schema', 'details' => null];
+    $this->reason = ['code' => 0, 'reason' => 'invalid schema', 'details' => []];
     return $this->checkType($entity, $schema, 'root');
   }
   
-  private function checkType($entity, $schema, $path)
+  /**
+   * Checks data type of the entity.
+   * The method returns TRUE if the entity has the required data type and FALSE otherwise.
+   *
+   * @param mixed $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkType($entity, \stdClass $schema, $path)
   {
+    if (!$this->checkFormat($entity, $schema, $path)) return false;
     if (!$this->checkEnum($entity, $schema, $path)) return false;
     if (!$this->checkAllOf($entity, $schema, $path)) return false;
     if (!$this->checkAnyOf($entity, $schema, $path)) return false;
@@ -127,7 +148,6 @@ class ValidatorJSON extends Validator
           if (!$this->checkMinLength($entity, $schema, $path)) return false;
           if (!$this->checkMaxLength($entity, $schema, $path)) return false;
           if (!$this->checkPattern($entity, $schema, $path)) return false;
-          if (!$this->checkFormat($entity, $schema, $path)) return false;
           $flag = true;
           break;
         }
@@ -139,7 +159,6 @@ class ValidatorJSON extends Validator
           if (!$this->checkMinimum($entity, $schema, $path)) return false;
           if (!$this->checkMaximum($entity, $schema, $path)) return false;
           if (!$this->checkMultipleOf($entity, $schema, $path)) return false;
-          if (!$this->checkFormat($entity, $schema, $path)) return false;
           $flag = true;
           break;
         }
@@ -151,7 +170,6 @@ class ValidatorJSON extends Validator
           if (!$this->checkMinimum($entity, $schema, $path)) return false;
           if (!$this->checkMaximum($entity, $schema, $path)) return false;
           if (!$this->checkMultipleOf($entity, $schema, $path)) return false;
-          if (!$this->checkFormat($entity, $schema, $path)) return false;
           $flag = true;
           break;
         }
@@ -210,52 +228,100 @@ class ValidatorJSON extends Validator
     }
     if (!$flag) 
     {
-      $this->reason['details'] = 'Property "' . $path . '" should be one of the following types: "string", "number", "integer", "boolean", "array", "object", "null" or "any".';
+      if (count($types) > 1) 
+      {
+        foreach ($types as &$type) $type = '"' . $type . '"';
+        $this->reason['details'][] = 'Property "' . $path . '" should be one of the following types: ' . implode(', ', $types) . '.';
+      }
+      else
+      {
+        $this->reason['details'][] = 'Property "' . $path . '" should be ' . array_pop($types) . '.';
+      }
       return false;
     }
     return true;
   }
   
-  private function checkPattern($entity, $schema, $path)
+  /**
+   * Checks matching of the entity to the given regular expression pattern.
+   * The method returns TRUE if the entity matches the required regular expression pattern and FALSE otherwise.
+   *
+   * @param string $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkPattern($entity, \stdClass $schema, $path)
   {
     if (!empty($schema->pattern))
     {
       if (!preg_match($schema->pattern, $entity))
       {
-        $this->reason['details'] = 'Property "' . $path . '" does not match pattern "' . $schema->pattern . '".';
+        $this->reason['details'][] = 'Property "' . $path . '" does not match pattern "' . $schema->pattern . '".';
         return false; 
       }
     }
     return true;
   }
   
+  /**
+   * Checks whether the length of the entity greater, or equal to, than the given minimum length.
+   * The method returns TRUE if the entity length not less of the minimum length and FALSE otherwise.
+   *
+   * @param string $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
   private function checkMinLength($entity, $schema, $path)
   {
     if (isset($schema->minLength))
     {
       if (strlen($entity) < $schema->minLength)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should be at least ' . $schema->minLength . ' characters long.';
+        $this->reason['details'][] = 'Property "' . $path . '" should be at least ' . $schema->minLength . ' characters long.';
         return false;
       }
     }
     return true;
   }
 
-  private function checkMaxLength($entity, $schema, $path)
+  /**
+   * Checks whether the length of the entity less, or equal to, than the given maximum length.
+   * The method returns TRUE if the entity length not greater of the maximum length and FALSE otherwise.
+   *
+   * @param string $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMaxLength($entity, \stdClass $schema, $path)
   {
     if (isset($schema->maxLength))
     {
       if (strlen($entity) > $schema->maxLength)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should be at most ' . $schema->maxLength . ' characters long.';
+        $this->reason['details'][] = 'Property "' . $path . '" should be at most ' . $schema->maxLength . ' characters long.';
         return false;
       }
     }
     return true;
   }
   
-  private function checkMinimum($entity, $schema, $path)
+  /**
+   * Checks whether the entity value has the minimum limit.
+   * The method returns TRUE if the entity value matches its minimum limit and FALSE otherwise.
+   *
+   * @param float | integer $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMinimum($entity, \stdClass $schema, $path)
   {
     if (isset($schema->minimum))
     {
@@ -263,13 +329,13 @@ class ValidatorJSON extends Validator
       {
         if ($entity <= $schema->minimum)
         {
-          $this->reason['details'] = 'Property "' . $path . '" should have a minimum value strictly greater than the value of ' . $schema->minimum;
+          $this->reason['details'][] = 'Property "' . $path . '" should have a minimum value strictly greater than the value of ' . $schema->minimum;
           return false;
         }
       }
       else if ($entity < $schema->minimum)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should have a minimum value greater than, or equal to, the value of ' . $schema->minimum;
+        $this->reason['details'][] = 'Property "' . $path . '" should have a minimum value greater than, or equal to, the value of ' . $schema->minimum;
         return false;
       }
     }
@@ -280,7 +346,17 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function checkMaximum($entity, $schema, $path)
+  /**
+   * Checks whether the entity value has the maximum limit.
+   * The method returns TRUE if the entity value matches its maximum limit and FALSE otherwise.
+   *
+   * @param float | integer $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMaximum($entity, \stdClass $schema, $path)
   {
     if (isset($schema->maximum))
     {
@@ -288,13 +364,13 @@ class ValidatorJSON extends Validator
       {
         if ($entity >= $schema->maximum)
         {
-          $this->reason['details'] = 'Property "' . $path . '" should have a maximum value strictly lower than the value of ' . $schema->maximum;
+          $this->reason['details'][] = 'Property "' . $path . '" should have a maximum value strictly lower than the value of ' . $schema->maximum;
           return false;
         }
       }
       else if ($entity > $schema->maximum)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should have a minimum value lower than, or equal to, the value of ' . $schema->maximum;
+        $this->reason['details'][] = 'Property "' . $path . '" should have a minimum value lower than, or equal to, the value of ' . $schema->maximum;
         return false;
       }
     }
@@ -305,7 +381,17 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function checkMultipleOf($entity, $schema, $path)
+  /**
+   * Checks whether the entity value is multiple of the given number.
+   * The method returns TRUE if the entity value is multiple of the given number and FALSE otherwise.
+   *
+   * @param float | integer $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMultipleOf($entity, \stdClass $schema, $path)
   {
     if (isset($schema->multipleOf))
     {
@@ -315,53 +401,93 @@ class ValidatorJSON extends Validator
       }
       if (fmod($entity, $schema->multipleOf) != 0)
       {
-        $this->reason['details'] = 'Property "' . $path . ' should be a multiple of ' . $schema->multipleOf;
+        $this->reason['details'][] = 'Property "' . $path . ' should be a multiple of ' . $schema->multipleOf;
         return false;
       }
     }
     return true;
   }
   
-  private function checkMinItems($entity, $schema, $path)
+  /**
+   * Checks whether the entity size greater, or equal to, than the given minimum value.
+   * The method returns TRUE if the number of the entity items not less than the given minimum value and FALSE otherwise.
+   *
+   * @param array $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMinItems(array $entity, \stdClass $schema, $path)
   {
     if (isset($schema->minItems))
     {
       if (count($entity) < $schema->minItems)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should have minimum of ' . $schema->minItems . ' elements.';
+        $this->reason['details'][] = 'Property "' . $path . '" should have minimum of ' . $schema->minItems . ' elements.';
         return false;
       }
     }
     return true;
   }
   
-  private function checkMaxItems($entity, $schema, $path)
+  /**
+   * Checks whether the entity size less, or equal to, than the given maximum value.
+   * The method returns TRUE if the number of the entity items not greater than the given maximum value and FALSE otherwise.
+   *
+   * @param array $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMaxItems(array $entity, \stdClass $schema, $path)
   {
     if (isset($schema->maxItems))
     {
       if (count($entity) > $schema->maxItems)
       {
-        $this->reason['details'] = 'Property "' . $path . '" should have maximum of ' . $schema->maxItems . ' elements.';
+        $this->reason['details'][] = 'Property "' . $path . '" should have maximum of ' . $schema->maxItems . ' elements.';
         return false;
       }
     }
     return true;
   }
   
-  private function checkUniqueItems($entity, $schema, $path)
+  /**
+   * Checks whether the entity has only unique items.
+   * The method returns TRUE if the entity has only unique items and FALSE otherwise.
+   *
+   * @param array $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkUniqueItems(array $entity, \stdClass $schema, $path)
   {
     if (isset($schema->uniqueItems) && $schema->uniqueItems)
     {
       if (count(array_unique($entity)) != count($entity))
       {
-        $this->reason['details'] = 'Property "' . $path . '" should have only unique items.';
+        $this->reason['details'][] = 'Property "' . $path . '" should have only unique items.';
         return false;
       }
     }
     return true;
   }
 
-  private function checkItems($entity, $schema, $path)
+  /**
+   * Checks whether the entity items match has the specified JSON schemes.
+   * The method returns TRUE if the entity items match the specified JSON schemes and FALSE otherwise.
+   *
+   * @param array $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkItems($entity, \stdClass $schema, $path)
   {
     if (empty($schema->items)) return true;
     if (is_array($schema->items))
@@ -376,7 +502,7 @@ class ValidatorJSON extends Validator
         {
           if ($schema->additionalItems === false)
           {
-            $this->reason['details'] = 'Property "' . $path . '[' . $key . ']" is not defined and the definition does not allow additional items.';
+            $this->reason['details'][] = 'Property "' . $path . '[' . $key . ']" is not defined and the definition does not allow additional items.';
             return false;
           }
           if (is_object($schema->additionalItems))
@@ -398,33 +524,63 @@ class ValidatorJSON extends Validator
     throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_8', $path);
   }
   
-  private function checkMinProperties(array $properties, $schema, $path)
+  /**
+   * Checks whether the number of the entity properties greater, or equal to, than the given minimum limit.
+   * The method returns TRUE if the number of the entity items not less that the given minimum limit and FALSE otherwise.
+   *
+   * @param array $properties - the entity properties.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMinProperties(array $properties, \stdClass $schema, $path)
   {
     if (isset($schema->minProperties))
     {
       if (count($properties) < $schema->minProperties)
       {
-        $this->reason['details'] = 'Object "' . $path . '" should have minimum of ' . $schema->minProperties . ' properties.';
+        $this->reason['details'][] = 'Object "' . $path . '" should have minimum of ' . $schema->minProperties . ' properties.';
         return false;
       }
     }
     return true; 
   }
   
-  private function checkMaxProperties(array $properties, $schema, $path)
+  /**
+   * Checks whether the number of the entity properties less, or equal to, than the given maximum limit.
+   * The method returns TRUE if the number of the entity items not greater that the given maximum limit and FALSE otherwise.
+   *
+   * @param array $properties - the entity properties.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkMaxProperties(array $properties, \stdClass $schema, $path)
   {
     if (isset($schema->maxProperties))
     {
       if (count($properties) > $schema->maxProperties)
       {
-        $this->reason['details'] = 'Object "' . $path . '" should have maximum of ' . $schema->maxProperties . ' properties.';
+        $this->reason['details'][] = 'Object "' . $path . '" should have maximum of ' . $schema->maxProperties . ' properties.';
         return false;
       }
     }
     return true; 
   }
   
-  private function checkRequiredProperties(array $properties, $schema, $path)
+  /**
+   * Checks whether the entity has all of the mandatory properties.
+   * The method returns TRUE if the entity has all required properties and FALSE otherwise.
+   *
+   * @param array $properties - the entity properties.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkRequiredProperties(array $properties, \stdClass $schema, $path)
   {
     if (isset($schema->required))
     {
@@ -432,7 +588,7 @@ class ValidatorJSON extends Validator
       {
         if (!array_key_exists($property, $properties))
         {
-          $this->reason['details'] = 'Object "' . $path . '" does not have the required property "' . $property . '".';
+          $this->reason['details'][] = 'Object "' . $path . '" does not have the required property "' . $property . '".';
           return false;
         }
       }
@@ -440,7 +596,17 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function checkProperties(array $properties, $schema, $path)
+  /**
+   * Checks whether the entity properties match the specified JSON schemes.
+   * The method returns TRUE if the entity properties match the specified JSON schemes and FALSE otherwise.
+   *
+   * @param array $properties - the entity properties.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkProperties(array $properties, \stdClass $schema, $path)
   {
     $validProperties = [];
     if (isset($schema->patternProperties))
@@ -461,13 +627,13 @@ class ValidatorJSON extends Validator
       }
       else if (isset($validProperties[$property]))
       {
-        if (!$this->checkType($value, $validProperties[$property], $path . '.' . $property)) return false;
+        if (!$this->checkType($value, $this->resolveRef($validProperties[$property]), $path . '.' . $property)) return false;
       }
       else if (isset($schema->additionalProperties))
       {
         if ($schema->additionalProperties === false)
         {
-          $this->reason['details'] = 'Property "' . $path . '.' . $key . '" is not defined and the definition does not allow additional properties.';
+          $this->reason['details'][] = 'Property "' . $path . '.' . $key . '" is not defined and the definition does not allow additional properties.';
           return false;
         }
         if (is_object($schema->additionalProperties))
@@ -479,7 +645,17 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function checkDependencies($entity, $schema, $path)
+  /**
+   * Checks dependencies of the entity properties.
+   * The method returns TRUE if the dependencies of the entity properties are successfully validated and FALSE otherwise.
+   *
+   * @param array $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkDependencies(\stdClass $entity, \stdClass $schema, $path)
   {
     if (isset($schema->dependencies))
     {
@@ -496,7 +672,7 @@ class ValidatorJSON extends Validator
           {
             if (!property_exists($entity, $prop))
             {
-              $this->reason['details'] = 'Property "' . $path . '" depends on property "' . $property . '" and should have property "' . $prop . '".';
+              $this->reason['details'][] = 'Property "' . $path . '" depends on property "' . $property . '" and should have property "' . $prop . '".';
               return false;
             }
           }
@@ -510,7 +686,17 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function checkEnum($entity, $schema, $path)
+  /**
+   * Checks whether the entity value is one of the given enumeration values.
+   * The method returns TRUE if the entity value is one of the enumeration values and FALSE otherwise.
+   *
+   * @param mixed $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkEnum($entity, \stdClass $schema, $path)
   {
     if (empty($schema->enum)) return true;
     if (is_object($entity))
@@ -527,11 +713,21 @@ class ValidatorJSON extends Validator
         if ($entity === $option) return true;
       }
     }
-    $this->reason['details'] = 'Property "' . $path . '" has the value that does not match the enumeration options.';
+    $this->reason['details'][] = 'Property "' . $path . '" has the value that does not match the enumeration options.';
     return false;
   }
   
-  private function checkAllOf($entity, $schema, $path)
+  /**
+   * Checks whether the entity matches all of the given JSON schemes.
+   * The method returns TRUE if the entity matches all of the given JSON schemes and FALSE otherwise.
+   *
+   * @param mixed $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkAllOf($entity, \stdClass $schema, $path)
   {
     if (isset($schema->allOf))
     {
@@ -544,7 +740,17 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function checkAnyOf($entity, $schema, $path)
+  /**
+   * Checks whether the entity matches any of the given JSON schemes.
+   * The method returns TRUE if the entity matches any of the given JSON schemes and FALSE otherwise.
+   *
+   * @param mixed $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkAnyOf($entity, \stdClass $schema, $path)
   {
     if (isset($schema->anyOf))
     {
@@ -557,7 +763,17 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function checkOneOf($entity, $schema, $path)
+  /**
+   * Checks whether the entity matches exactly one of the given JSON schemes.
+   * The method returns TRUE if the entity matches exactly one of the given JSON schemes and FALSE otherwise.
+   *
+   * @param mixed $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkOneOf($entity, \stdClass $schema, $path)
   {
     if (isset($schema->oneOf))
     {
@@ -565,33 +781,58 @@ class ValidatorJSON extends Validator
       foreach ((array)$schema->oneOf as $newSchema)
       {
         if (!is_object($newSchema)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'oneOf');
-        if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) continue;
+        if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) continue;   
         if ($flag)
         {
-          $this->reason['details'] = 'Property "' . $path . '" validates successfully more than one times.';
+          $this->reason['details'][] = 'Property "' . $path . '" validates successfully more than one times.';
           return false;
         }
         $flag = true;
+      }
+      if (!$flag)
+      {
+        $this->reason['details'][] = 'Validation of the property "' . $path . '" is failed according to value of the keyword "oneOf".';
+        return false;
       }
     }
     return true;
   }
   
-  private function checkNot($entity, $schema, $path)
+  /**
+   * Checks whether the entity does not match the given JSON schema.
+   * The method returns TRUE if the entity does not match the given JSON schema and FALSE otherwise.
+   *
+   * @param mixed $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkNot($entity, \stdClass $schema, $path)
   {
     if (isset($schema->not))
     {
       if (!is_object($schema->not)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'not');
       if ($this->checkType($entity, $this->resolveRef($schema->not), $path)) 
       {
-        $this->reason['details'] = 'Property "' . $path . '" should not validate successfully against the schema defined by keyword "not".';
+        $this->reason['details'][] = 'Property "' . $path . '" should not validate successfully against the schema defined by keyword "not".';
         return false; 
       }
     }
     return true;
   }
   
-  private function checkFormat($entity, $schema, $path)
+  /**
+   * Checks whether the entity value has the specified format.
+   * The method returns TRUE if the entity value has the specified format and FALSE otherwise.
+   *
+   * @param string $entity - the entity to check.
+   * @param \stdClass $schema - the required JSON schema.
+   * @param string $path - the property name of the entity.
+   * @return boolean
+   * @access private
+   */
+  private function checkFormat($entity, \stdClass $schema, $path)
   {
     if (isset($schema->format))
     {
@@ -604,14 +845,14 @@ class ValidatorJSON extends Validator
               !\DateTime::createFromFormat('Y-m-d\TH:i:sP', $entity) &&
               !\DateTime::createFromFormat('Y-m-d\TH:i:sO', $entity))
           {
-            $this->reason['details'] = 'Property "' . $path . '" has invalid date-time format and should have format YYYY-MM-DDThh:mm:ssZ or YYYY-MM-DDThh:mm:ss+hh:mm';
+            $this->reason['details'][] = 'Property "' . $path . '" has invalid date-time format and should have format YYYY-MM-DDThh:mm:ssZ or YYYY-MM-DDThh:mm:ss+hh:mm';
             return false;
           }
           break;
         case 'email':
-          if (filter_var($entity, FILTER_VALIDATE_EMAIL, FILTER_NULL_ON_FAILURE) === null)
+          if (filter_var($entity, FILTER_VALIDATE_EMAIL) === false)
           {
-            $this->reason['details'] = 'Property "' . $path . '" has invalid email format.';
+            $this->reason['details'][] = 'Property "' . $path . '" has invalid email format.';
             return false;
           }
           break;
@@ -619,29 +860,29 @@ class ValidatorJSON extends Validator
         case 'host-name':
           if (!preg_match('/\A[_a-z]+\.([_a-z]+\.?)+\z/i', $entity))
           {
-            $this->reason['details'] = 'Property "' . $path . '" has invalid hostname format.';
+            $this->reason['details'][] = 'Property "' . $path . '" has invalid hostname format.';
             return false;
           }
           break;
         case 'ip':
         case 'ipv4':
-          if (filter_var($entity, FILTER_VALIDATE_IP, FILTER_NULL_ON_FAILURE | FILTER_FLAG_IPV4) === null)
+          if (filter_var($entity, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) === false)
           {
-            $this->reason['details'] = 'Property "' . $path . '" has invalid ipv4 format.';
+            $this->reason['details'][] = 'Property "' . $path . '" has invalid ipv4 format.';
             return false;
           }
           break;
         case 'ipv6':
-          if (filter_var($entity, FILTER_VALIDATE_IP, FILTER_NULL_ON_FAILURE | FILTER_FLAG_IPV6) === null)
+          if (filter_var($entity, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false)
           {
-            $this->reason['details'] = 'Property "' . $path . '" has invalid ipv6 format.';
+            $this->reason['details'][] = 'Property "' . $path . '" has invalid ipv6 format.';
             return false;
           }
           break;
         case 'uri':
-          if (filter_var($entity, FILTER_VALIDATE_URL, FILTER_NULL_ON_FAILURE) === null)
+          if (filter_var($entity, FILTER_VALIDATE_URL) === false)
           {
-            $this->reason['details'] = 'Property "' . $path . '" has invalid URI format.';
+            $this->reason['details'][] = 'Property "' . $path . '" has invalid URI format.';
             return false;
           }
           break;
@@ -650,7 +891,15 @@ class ValidatorJSON extends Validator
     return true;
   }
   
-  private function resolveRef($schema)
+  /**
+   * Retrieves (and returns) new JSON scheme from the $ref property of the given JSON scheme.
+   * If the given JSON scheme does not have the $ref property the method will return the given JSON scheme.
+   *
+   * @param \stdClass $schema - the given JSON schema.
+   * @return \stdClass
+   * @access private
+   */
+  private function resolveRef(\stdClass $schema)
   {
     if (!property_exists($schema, '$ref') || strlen($schema->{'$ref'}) == 0) return $schema;
     $ref = $schema->{'$ref'};
