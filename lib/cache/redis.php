@@ -22,22 +22,21 @@
 
 namespace Aleph\Cache;
 
-use Aleph\Core;
-
 /**
- * The class intended for caching of different data using the APC extension. 
+ * The class is intended for caching of different data using the Redis extension.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.cache
  */
-class APC extends Cache
+class Redis extends Cache
 {
   /**
-   * Error message templates.
+   * The instance of \Redis class.
+   *
+   * @var \Redis $redis
    */
-  const ERR_CACHE_APC_1 = 'APC cache extension is not enabled. Set option apc.enabled to 1 in php.ini';
-  const ERR_CACHE_APC_2 = 'APC cache extension is not enabled cli. Set option apc.enable_cli to 1 in php.ini';
+  private $redis;
   
   /**
    * Checks whether the current type of cache is available or not.
@@ -48,19 +47,34 @@ class APC extends Cache
    */
   public static function isAvailable()
   {
-    return extension_loaded('apc');
+    return extension_loaded('redis');
   }
 
   /**
    * Constructor.
-   * 
+   *
+   * @param string $host - host or path to a unix domain socket for a redis connection.
+   * @param integer $port - port for a connection, optional.
+   * @param string $password - password for server authentication, optional.
    * @access public
    */
-  public function __construct()
+  public function __construct($host = null, $port = null, $password = null)
   {
-    parent::__construct();
-    if (!ini_get('apc.enabled')) throw new Core\Exception($this, 'ERR_CACHE_APC_1');
-    if (php_sapi_name() === 'cli' && !ini_get('apc.enable_cli')) throw new Core\Exception($this, 'ERR_CACHE_APC_2');
+    $this->redis = new \Redis();
+    $this->redis->connect($host ?: '127.0.0.1', $port ?: 6379);
+    if ($password) $this->redis->auth($password);
+    $this->redis->setOption(\Redis::OPT_SERIALIZER, defined('Redis::SERIALIZER_IGBINARY') ? \Redis::SERIALIZER_IGBINARY : \Redis::SERIALIZER_PHP);
+  }
+
+  /**
+   * Returns the redis object.
+   *
+   * @return \Redis
+   * @access public
+   */
+  public function getRedis()
+  {
+    return $this->redis;
   }
 
   /**
@@ -71,24 +85,24 @@ class APC extends Cache
    * @param integer $expire - cache lifetime (in seconds).
    * @param string $group - group of a data key.
    * @access public
-   */  
+   */
   public function set($key, $content, $expire, $group = '')
   {
     $expire = abs((int)$expire);
-    apc_store($key, $content, $expire);
+    $result = $this->redis->set($key, $content, $expire);
     $this->saveKey($key, $expire, $group);
   }
-   
+
   /**
-   * Returns some data perviously conserved in cache.
+   * Checks whether cache lifetime is expired or not.
    *
    * @param string $key - a data key.
-   * @return mixed
+   * @return boolean
    * @access public
    */
   public function get($key)
   {
-    return apc_fetch($key);
+    return $this->redis->get($key);
   }
 
   /**
@@ -99,8 +113,8 @@ class APC extends Cache
    * @access public
    */
   public function isExpired($key)
-  {                  
-    $flag = (apc_exists($key) === false);
+  {
+    $flag = !$this->redis->exists($key);
     if ($flag) $this->removeKey($key);
     return $flag;
   }
@@ -113,10 +127,10 @@ class APC extends Cache
    */
   public function remove($key)
   {
-    apc_delete($key);
+    $this->redis->delete($key);
     $this->removeKey($key);
   }
-   
+
   /**
    * Removes all previously conserved data from cache.
    *
@@ -124,6 +138,16 @@ class APC extends Cache
    */
   public function clean()
   {
-    apc_clear_cache('user');
+    $this->redis->flushDB();
+  }
+  
+  /**
+   * Closes the current connection with redis.
+   *
+   * @access public
+   */
+  public function __destruct()
+  {
+    $this->redis->close();
   }
 }
