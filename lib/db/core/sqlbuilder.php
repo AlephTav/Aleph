@@ -375,7 +375,7 @@ abstract class SQLBuilder
    * <li>One-dimensional mixed array: <code>$sql->select(['tb1', 'tb2' => 't2'], ['column1', 'column2' => 'foo', new SQLExpression('CONCAT(column1, column2)')]);</code></li>
    * </ul>
    *
-   * @param string $table - the table name.
+   * @param mixed $table - the table name.
    * @param mixed $columns - the column metadata.
    * @param string $distinct - additional select options for some DBMS.
    * @param array $options - additional query information for some DBMS.
@@ -672,7 +672,7 @@ abstract class SQLBuilder
    * Normalizes the column metadata for the SELECT type SQL query.
    *
    * @param mixed $expression - the column metadata.
-   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @param boolean $isTableName - determines whether $expression is a table name(s).
    * @param boolean $isOrderExpression - determines whether $expression is an order expression or not.
    * @return array - normalized column data for query building.
    * @access protected

@@ -87,6 +87,19 @@ abstract class Cache implements \ArrayAccess, \Countable
       case 'apc':
         if (!APC::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'APC');
         return new APC();
+      case 'phpredis':
+        if (!PHPRedis::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'PHPRedis');
+        return new PHPRedis(isset($params['host']) ? $params['host'] : '127.0.0.1',
+                            isset($params['port']) ? $params['port'] : 6379,
+                            isset($params['timeout']) ? $params['timeout'] : 0,
+                            isset($params['password']) ? $params['password'] : null,
+                            isset($params['database']) ? $params['database'] : 0);
+      case 'redis':
+        return new Redis(isset($params['host']) ? $params['host'] : '127.0.0.1',
+                         isset($params['port']) ? $params['port'] : 6379,
+                         isset($params['timeout']) ? $params['timeout'] : null,
+                         isset($params['password']) ? $params['password'] : null,
+                         isset($params['database']) ? $params['database'] : 0);
       case 'file':
       default:
         $cache = new File();

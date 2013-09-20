@@ -22,56 +22,65 @@
 
 namespace Aleph\Cache;
 
-use Aleph\Core;
-
 /**
- * The class is intended for caching of different data using the file system.
+ * The class is intended for caching of different data using the PHP Redis extension.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.cache
  */
-class File extends Cache
-{  
+class PHPRedis extends Cache
+{
   /**
-   * Error message templates.
-   */
-  const ERR_CACHE_FILE_1 = 'Cache directory "[{var}]" is not writable.';
-
-  /**
-   * The directory in which cache files will be stored.
+   * The instance of \Redis class.
    *
-   * @var string $dir
-   * @access private   
+   * @var \Redis $redis
    */
-  private $dir = null;
-   
-  /**
-   * Sets new directory for storing of cache files.
-   * If this directory doesn't exist it will be created.
-   *
-   * @param string $path
-   * @access public
-   */
-  public function setDirectory($path = null)
-  {
-    $dir = \Aleph::dir($path ?: 'cache');
-    if (!is_dir($dir)) mkdir($dir, 0775, true);
-    if (!is_writable($dir) && !chmod($dir, 0775)) throw new Core\Exception($this, 'ERR_CACHE_FILE_1', $dir);
-    $this->dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
-  }
+  private $redis;
   
   /**
-   * Returns the current cache directory.
+   * Checks whether the current type of cache is available or not.
    *
-   * @return string
+   * @return boolean
+   * @access public
+   * @static
+   */
+  public static function isAvailable()
+  {
+    return extension_loaded('redis');
+  }
+
+  /**
+   * Constructor.
+   *
+   * @param string $host - host or path to a unix domain socket for a redis connection.
+   * @param integer $port - port for a connection, optional.
+   * @param integer $timeout - the connection timeout, in seconds.
+   * @param string $password - password for server authentication, optional.
+   * @param integer $database - number of the redis database to use.
    * @access public
    */
-  public function getDirectory()
+  public function __construct($host = '127.0.0.1', $port = 6379, $timeout = 0, $password = null, $database = 0)
   {
-    return $this->dir;
+    parent::__construct();
+    $this->redis = new \Redis();
+    $this->redis->connect($host, $port, $timeout);
+    if ($password !== null) $this->redis->auth($password);
+    $this->redis->select($database);
+    $this->redis->setOption(\Redis::OPT_SERIALIZER, defined('Redis::SERIALIZER_IGBINARY') ? \Redis::SERIALIZER_IGBINARY : \Redis::SERIALIZER_PHP);
   }
-   
+
+  /**
+   * Returns the redis object.
+   *
+   * @return \Redis
+   * @access public
+   */
+  public function getRedis()
+  {
+    return $this->redis;
+  }
+
   /**
    * Conserves some data identified by a key into cache.
    *
@@ -80,15 +89,11 @@ class File extends Cache
    * @param integer $expire - cache lifetime (in seconds).
    * @param string $group - group of a data key.
    * @access public
-   */  
+   */
   public function set($key, $content, $expire, $group = '')
-  {          
-    if (!$this->dir) $this->setDirectory();
+  {
     $expire = abs((int)$expire);
-    $file = $this->dir . md5($key);
-    file_put_contents($file, serialize($content), LOCK_EX);
-    chmod($file, 0777);
-    touch($file, $expire + time());
+    $result = $this->redis->set($key, $content, $expire);
     $this->saveKey($key, $expire, $group);
   }
 
@@ -96,14 +101,12 @@ class File extends Cache
    * Returns some data previously conserved in cache.
    *
    * @param string $key - a data key.
-   * @return mixed
+   * @return boolean
    * @access public
    */
   public function get($key)
-  {                    
-    if (!$this->dir) $this->setDirectory();
-    $file = $this->dir . md5($key);
-    if (is_file($file)) return unserialize(file_get_contents($file));
+  {
+    return $this->redis->get($key);
   }
 
   /**
@@ -114,18 +117,10 @@ class File extends Cache
    * @access public
    */
   public function isExpired($key)
-  {                      
-    if (!$this->dir) $this->setDirectory();
-    $file = $this->dir . md5($key);
-    if (!is_file($file))
-    {
-      $this->removeKey($key);
-      return true;
-    }
-    if (filemtime($file) > time()) return false;
-    unlink($file);
-    $this->removeKey($key);
-    return true;
+  {
+    $flag = !$this->redis->exists($key);
+    if ($flag) $this->removeKey($key);
+    return $flag;
   }
 
   /**
@@ -135,13 +130,11 @@ class File extends Cache
    * @access public
    */
   public function remove($key)
-  {             
-    if (!$this->dir) $this->setDirectory();
-    $file = $this->dir . md5($key);
-    if (is_file($file)) unlink($file);
+  {
+    $this->redis->delete($key);
     $this->removeKey($key);
   }
-  
+
   /**
    * Removes all previously conserved data from cache.
    *
@@ -149,35 +142,16 @@ class File extends Cache
    */
   public function clean()
   {
-    if (!$this->dir) $this->setDirectory();
-    foreach (scandir($this->dir) as $file)
-    {
-      if ($file == '.' || $file == '..') continue; 
-      $item = $this->dir . '/' . $file;
-      if (is_file($item)) unlink($item);
-    }
+    $this->redis->flushDB();
   }
-   
+  
   /**
-   * Garbage collector that should be used for removing of expired cache data.
+   * Closes the current connection with redis.
    *
-   * @param float $probability - probability of garbage collector performing.
    * @access public
    */
-  public function gc($probability = 100)
+  public function __destruct()
   {
-    if (!$this->dir) $this->setDirectory();
-    if ((float)$probability * 1000 < rand(0, 99999)) return;
-    foreach (scandir($this->dir) as $item)
-    {
-      if ($item == '..' || $item == '.') continue;
-      $file = $this->dir . $item;
-      if (!is_file($file)) continue;
-      if (filemtime($file) < time())
-      {
-        unlink($file);
-        $this->removeKey($file);
-      }
-    }
+    $this->redis->close();
   }
 }

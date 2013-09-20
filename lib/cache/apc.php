@@ -80,7 +80,7 @@ class APC extends Cache
   }
    
   /**
-   * Returns some data perviously conserved in cache.
+   * Returns some data previously conserved in cache.
    *
    * @param string $key - a data key.
    * @return mixed
