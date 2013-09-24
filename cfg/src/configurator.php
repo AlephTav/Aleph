@@ -196,7 +196,7 @@ class Configurator
         break;
       case 'classmap.clean':
         $a->setClasses([]);
-        self::render('classmap.html', ['classes' => []]);
+        $res = self::render('classmap.html', ['classes' => []]);
         break;
     }
     if ($res !== false) echo $res;
