@@ -1050,7 +1050,7 @@ final class Aleph implements \ArrayAccess
     {
       if (file_exists($this->classmap) && (require($this->classmap)) === false)
       {
-        $seconds = 0; $timeout = isset($this->config['autoload']['timeout']) ? $this->config['autoload']['timeout'] : 900;
+        $seconds = 0; $timeout = isset($this->config['autoload']['timeout']) ? (int)$this->config['autoload']['timeout'] : 900;
         while (($classes = require($this->classmap)) === false && ++$seconds <= $timeout) sleep(1);
         if ($seconds <= $timeout)
         {

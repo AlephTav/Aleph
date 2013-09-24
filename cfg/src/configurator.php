@@ -71,6 +71,7 @@ class Configurator
         $cfg['debugging'] = (bool)$cfg['debugging'];
         $cfg['logging'] = (bool)$cfg['logging'];
         $cfg['autoload']['enabled'] = (bool)$cfg['autoload']['enabled'];
+        if (isset($cfg['autoload']['timeout']) && (int)$cfg['autoload']['timeout'] > 0) $cfg['autoload']['timeout'] = (int)$cfg['autoload']['timeout'];
         if (isset($cfg['autoload']['directories'])) 
         {
           $cfg['autoload']['directories'] = json_decode($cfg['autoload']['directories'], true);
@@ -105,6 +106,7 @@ class Configurator
                 'logging' => true,
                 'templateDebug' => 'lib/tpl/debug.tpl',
                 'autoload' => ['enabled' => true,
+                               'timeout' => 900,
                                'mask' => '/.+\.php$/i'],
                 'cache' => ['type' => 'file',
                             'directory' => 'cache',

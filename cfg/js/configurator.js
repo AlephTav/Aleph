@@ -123,6 +123,7 @@ $(function()
     cfg['autoload'] = {'enabled': $('#alYes').attr('checked') == 'checked' ? 1 : 0};
     if ((tmp = $('#alMask').val()) != '') cfg['autoload']['mask'] = tmp;
     if ((tmp = $('#alCallback').val()) != '') cfg['autoload']['callback'] = tmp;
+    if ((tmp = $('#alTimeout').val()) != '') cfg['autoload']['timeout'] = tmp;
     if ((tmp = $('#alDirectories').val()) != '') cfg['autoload']['directories'] = tmp;
     if ((tmp = $('#alExclusions').val()) != '') cfg['autoload']['exclusions'] = tmp;
     cfg['db'] = {'logging': $('#dbLogOn').attr('checked') == 'checked' ? 1 : 0};

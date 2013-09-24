@@ -44,6 +44,10 @@
 				<input type="radio" id="alNo" value="0" name="alEnabled" <?=(empty($cfg['autoload']['enabled']) ? 'checked="checked"' : '');?> <?=($editable ? '' : 'disabled="disabled"');?> />
 				<label for="alNo">No</label>
   </div>
+  <div class="ym-fbox-text">
+    <label class="ym-label" for="alTimeout">Timeout</label>
+				<input type="text" id="alTimeout" name="alTimeout" value="<?=@$cfg['autoload']['timeout'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+  </div>
   <div class="ym-fbox-text"> 
     <label class="ym-label" for="alMask">File Mask</label>
 				<input type="text" id="alMask" name="alMask" value="<?=@$cfg['autoload']['mask'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
