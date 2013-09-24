@@ -79,6 +79,7 @@ $(function()
   {
     $.ajax({'type': 'POST', 'data': {'method': 'config.file', 'file': $(this).val()}}).done(function(html)
     {
+      if (hasError(html)) return;
       $('#configDetails').html(html);
       normalizeJSON('.json');
     });
@@ -91,6 +92,7 @@ $(function()
       hideDialog(true);
       $.ajax({'type': 'POST', 'data': {'method': 'config.restore', 'file': $('#config').val()}}).done(function(html)
       {
+        if (hasError(html)) return;
         $('#configDetails').html(html);
         showMsg('Default settings have been successfully restored.');
         $('#shadow').hide();
@@ -118,6 +120,11 @@ $(function()
       cfg.cache.servers = $('#memServers').val();
       cfg.cache.compress = $('#compressNo').attr('checked') == 'checked' ? false : true;
     }
+    cfg['autoload'] = {'enabled': $('#alYes').attr('checked') == 'checked' ? 1 : 0};
+    if ((tmp = $('#alMask').val()) != '') cfg['autoload']['mask'] = tmp;
+    if ((tmp = $('#alCallback').val()) != '') cfg['autoload']['callback'] = tmp;
+    if ((tmp = $('#alDirectories').val()) != '') cfg['autoload']['directories'] = tmp;
+    if ((tmp = $('#alExclusions').val()) != '') cfg['autoload']['exclusions'] = tmp;
     cfg['db'] = {'logging': $('#dbLogOn').attr('checked') == 'checked' ? 1 : 0};
     if ((tmp = $('#dbLogFile').val()) != '') cfg['db']['log'] = tmp;
     if ((tmp = $('#dbCacheExpire').val()) != '') cfg['db']['cacheExpire'] = tmp;
@@ -160,8 +167,9 @@ $(function()
       return;
     }
     $('#shadow').show();
-    $.ajax({'type': 'POST', 'data': {'method': 'config.save', 'file': $('#config').val(), 'config': cfg}}).done(function()
+    $.ajax({'type': 'POST', 'data': {'method': 'config.save', 'file': $('#config').val(), 'config': cfg}}).done(function(html)
     {
+      if (hasError(html)) return;
       showMsg('Settings have been successfully saved.');
       $('#shadow').hide();
     });
@@ -231,8 +239,9 @@ $(function()
   // Garbage Collector
   $('#btnGC').click(function()
   {
-    $.ajax({'type': 'POST', 'data': {'method': 'cache.gc'}}).done(function()
+    $.ajax({'type': 'POST', 'data': {'method': 'cache.gc'}}).done(function(html)
     {
+      if (hasError(html)) return;
       showMsg('Garbage Collector has been successfully run.');
     });
   });
@@ -240,8 +249,9 @@ $(function()
   $('#btnClean').click(function()
   {
     var group = $('input:checked[name="cacheGroup"]').val();
-    $.ajax({'type': 'POST', 'data': {'method': 'cache.clean', 'custom': group == 'other' ? 1 : 0, 'group': group == 'other' ? $('#otherGroup').val() : group}}).done(function()
+    $.ajax({'type': 'POST', 'data': {'method': 'cache.clean', 'custom': group == 'other' ? 1 : 0, 'group': group == 'other' ? $('#otherGroup').val() : group}}).done(function(html)
     {
+      if (hasError(html)) return;
       showMsg('Cache has been successfully cleaned.');
     });
   });
@@ -263,8 +273,9 @@ $(function()
   {
     showDialog('Confirmation', 'Are you sure you want to clean SQL log?', function()
     {
-      $.ajax({'type': 'POST', 'data': {'method': 'sql.clean'}}).done(function()
+      $.ajax({'type': 'POST', 'data': {'method': 'sql.clean'}}).done(function(html)
       {
+        if (hasError(html)) return;
         showMsg('SQL log has been successfully cleaned.');
         $('#sqlSearchResults').html('');
         hideDialog();
@@ -276,6 +287,7 @@ $(function()
   {
     $.ajax({'type': 'POST', 'data': {'method': 'log.refresh'}}).done(function(html)
     {
+      if (hasError(html)) return;
       $('#logList').html(html);
       $('#logDetails').html('');
       showMsg('Log has been successfully refreshed.');
@@ -289,6 +301,7 @@ $(function()
     {
       $.ajax({'type': 'POST', 'data': {'method': 'log.clean'}}).done(function(html)
       {
+        if (hasError(html)) return;
         $('#logList').html(html);
         showMsg('Log has been successfully cleaned.');
         hideDialog();
@@ -297,6 +310,35 @@ $(function()
   });
   // Loads log files
   $('.log-dirs').click(loadLogFiles);
+  // Create the classmap.
+  $('#btnClassmapCreate').click(function()
+  {
+    showDialog('Confirmation', 'Are you sure you want to create according to the settings the new classmap?', function()
+    {
+      $('#ppDialog').hide();
+      $.ajax({'type': 'POST', 'data': {'method': 'classmap.create'}}).done(function(html)
+      {
+        if (hasError(html)) return;
+        $('#classmap').html(html);
+        showMsg('Classmap has been successfully created.');
+        $('#shadow').hide();
+      });
+    });
+  });
+  // Create the classmap.
+  $('#btnClassmapClean').click(function()
+  {
+    showDialog('Confirmation', 'Are you sure you want to clean the classmap?', function()
+    {
+      $.ajax({'type': 'POST', 'data': {'method': 'classmap.clean'}}).done(function(html)
+      {
+        if (hasError(html)) return;
+        $('#classmap').html(html);
+        showMsg('Classmap has been successfully cleaned.');
+        hideDialog();
+      });
+    });
+  });
   // Preparing
   //---------------------------------------------
   selectCacheType($('#cacheType').val());
@@ -314,7 +356,7 @@ function showMsg(msg, isError)
   $('#ppMsg').css({'left': 0, 'top': 0});
   $('#ppMsg').css({'left': $(window).width() - $('#ppMsg').width() - 20, 'top': 0});
   $('#ppMsg').fadeIn();
-  thMsg = setTimeout(function(){$('#ppMsg').fadeOut();}, 3000);
+  thMsg = setTimeout(function(){$('#ppMsg').fadeOut();}, isError ? 10000 : 3000);
 }
 
 function showDialog(subject, question, action)
@@ -330,6 +372,17 @@ function hideDialog(leftShadow)
 {
   if (!leftShadow) $('#shadow').hide();
   $('#ppDialog').hide();
+}
+
+function hasError(html)
+{
+  if (html.match(/(Fatal|Parse) error:(.*) in (.*) on line ([0-9]+)/))
+  {
+    hideDialog();
+    showMsg(html, true);
+    return true;
+  }
+  return false;
 }
 
 function normalizeJSON(selector)

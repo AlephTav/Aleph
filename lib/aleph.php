@@ -840,7 +840,7 @@ final class Aleph implements \ArrayAccess
       $dir = isset($a['dirs'][$dir]) ? $a['dirs'][$dir] : $dir;
       if (substr($dir, 0, strlen(self::$root)) != self::$root) $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
     }
-    return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
+    return str_replace(DIRECTORY_SEPARATOR == '\\' ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
   }
   
   /**
@@ -970,8 +970,7 @@ final class Aleph implements \ArrayAccess
   private function __construct()
   {
     if (!self::$instance) spl_autoload_register([$this, 'al']);
-    $this->config = [];
-    $this->classes = $this->exclusions = [];
+    $this->config = $this->classes = $this->exclusions = [];
     $this->dirs = [self::$root => true];
     $this->classmap = self::$root . '/classmap.php';
     $this->mask = '/.+\.php$/i';
@@ -1019,6 +1018,11 @@ final class Aleph implements \ArrayAccess
       require_once($classes[$cs]);
       if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     }
+    if (empty($this->config['autoload']['enabled']))
+    {
+      self::exception(new Core\Exception($this, 'ERR_GENERAL_1', $class));
+      exit;
+    }
     if ($this->find($cs) === false)
     {
       if ($auto) 
@@ -1046,9 +1050,9 @@ final class Aleph implements \ArrayAccess
     {
       if (file_exists($this->classmap) && (require($this->classmap)) === false)
       {
-        $seconds = 0;
-        while (($classes = require($this->classmap)) === false && ++$seconds <= 900) sleep(1);
-        if ($seconds <= 900)
+        $seconds = 0; $timeout = isset($this->config['autoload']['timeout']) ? $this->config['autoload']['timeout'] : 900;
+        while (($classes = require($this->classmap)) === false && ++$seconds <= $timeout) sleep(1);
+        if ($seconds <= $timeout)
         {
           if (isset($classes[$class]) && is_file($classes[$class]))
           {
@@ -1057,7 +1061,7 @@ final class Aleph implements \ArrayAccess
           }
           return false;
         }
-        // if we wait more than 15 minutes then it's probably something went wrong and we should try to perform searching again.
+        // if we wait more than $timeout seconds then it's probably something went wrong and we should try to perform searching again.
         file_put_contents($this->classmap, '<?php return [];');
       }
       else file_put_contents($this->classmap, '<?php return false;');
@@ -1070,8 +1074,8 @@ final class Aleph implements \ArrayAccess
       foreach (scandir($path) as $item)
       {
         if ($item == '.' || $item == '..' || $item == '.svn' || $item == '.hg' || $item == '.git') continue; 
-        $file = $path . '/' . $item;
-        if (isset($this->exclusions[$file]) || array_search($file, (array)$this->exclusions) !== false) continue;
+        $file = str_replace(DIRECTORY_SEPARATOR == '\\' ? '/' : '\\', DIRECTORY_SEPARATOR, $path . '/' . $item);
+        if (array_search($file, $this->exclusions) !== false) continue;
         if (is_file($file))
         {
           if (!preg_match($this->mask, $item)) continue;
@@ -1149,11 +1153,21 @@ final class Aleph implements \ArrayAccess
   public function config($param = null, $replace = false)
   {
     if ($param === null) return $this->config;
+    $initAutoload = function()
+    {
+      if (empty($this->config['autoload'])) return;
+      $config = $this->config['autoload'];
+      if (isset($config['directories'])) $this->setDirectories($config['directories']);
+      if (isset($config['exclusions'])) $this->setExclusions($config['exclusions']);
+      if (isset($config['mask'])) $this->setMask($config['mask']);
+      if (isset($config['callback'])) $this->setAutoload($config['callback']);
+    };
     if (is_array($param))
     {
       if ($replace)
       {
         $this->config = $param;
+        $initAutoload();
         return $this;
       }
       $data = $param;
@@ -1193,6 +1207,7 @@ final class Aleph implements \ArrayAccess
         $this->config[$section] = $convert($properties);
       }
     }
+    $initAutoload();
     return $this;
   }
   
@@ -1207,7 +1222,7 @@ final class Aleph implements \ArrayAccess
   {
     if ($cache === null)
     {
-      if ($this->cache === null) $this->cache = Cache\Cache::getInstance('file');
+      if ($this->cache === null) $this->cache = Cache\Cache::getInstance();
       return $this->cache;
     }
     return $this->cache = $cache;
@@ -1282,6 +1297,7 @@ final class Aleph implements \ArrayAccess
    */
   public function setExclusions(array $exclusions)
   {
+    foreach ($exclusions as &$item) $item = realpath($item);
     $this->exclusions = $exclusions;
   }
   

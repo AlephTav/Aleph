@@ -197,7 +197,7 @@
 						  	   <input type="button" id="btnSearchSQL" value="Search" title="Search SQL log records" />
             <input type="button" id="btnCleanSQL" value="Clean" title="Clean SQL log" />
 						    </div>
-          <div id="sqlSearchResults" class="ym-grid log-sql"></div>
+          <div id="sqlSearchResults" class="ym-grid"></div>
 		      </div>
       </div>
       <div class="box info">
@@ -219,7 +219,13 @@
       </div>
       <div class="box info">
         <h2>Class Map</h2>
-        <div class="ym-grid" style="display:none;"><pre class="class-map"><?=print_r($classes, true);?></pre></div>
+        <div class="ym-form" style="display:none;">
+          <div id="classmap"><? require_once(__DIR__ . '/classmap.html'); ?></div>
+          <div class="ym-fbox-button">
+							     <input type="button" id="btnClassmapCreate" value="Create" title="Create new classmap according to the settings" />
+            <input type="button" id="btnClassmapClean" value="Clean" title="Clean the classmap" />
+						    </div>
+        </div>
       </div>
       <div class="box info">
         <h2>PHP Info</h2>

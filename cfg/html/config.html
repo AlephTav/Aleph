@@ -36,6 +36,30 @@
 		  <label class="ym-label" for="customLogMethod">Custom Log Method</label>
 				<input type="text" id="customLogMethod" name="tplBug" value="<?=@$cfg['customLogMethod'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
+  <h6 class="subtitle">Autoload Settings</h6>
+  <div class="ym-fbox-check">
+    <span class="ym-label">Enabled</span>
+    <input type="radio" id="alYes" value="1" name="alEnabled" <?=(empty($cfg['autoload']['enabled']) ? '' : 'checked="checked"');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="alYes">Yes</label>
+				<input type="radio" id="alNo" value="0" name="alEnabled" <?=(empty($cfg['autoload']['enabled']) ? 'checked="checked"' : '');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="alNo">No</label>
+  </div>
+  <div class="ym-fbox-text"> 
+    <label class="ym-label" for="alMask">File Mask</label>
+				<input type="text" id="alMask" name="alMask" value="<?=@$cfg['autoload']['mask'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+  </div>
+  <div class="ym-fbox-text">
+    <label class="ym-label" for="alCallback">Callback</label>
+				<input type="text" id="alCallback" name="alCallback" value="<?=@$cfg['autoload']['callback'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
+  </div>
+  <div class="ym-fbox-text">
+    <label class="ym-label" for="alDirectories">Directories (json format)</label>
+    <textarea id="alDirectories" name="alDirectories" rows="7"><?=(isset($cfg['autoload']['directories']) ? json_encode($cfg['autoload']['directories']) : '');?></textarea>
+  </div>
+  <div class="ym-fbox-text">
+    <label class="ym-label" for="alExclusions">Exclusions (json format)</label>
+    <textarea id="alExclusions" name="alExclusions" rows="7"><?=(isset($cfg['autoload']['exclusions']) ? json_encode($cfg['autoload']['exclusions']) : '');?></textarea>
+  </div>
   <h6 class="subtitle">Cache Settings</h6>
   <div class="ym-fbox-select">
     <label for="cacheType">Type</label>

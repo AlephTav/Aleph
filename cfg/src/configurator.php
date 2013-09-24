@@ -7,7 +7,7 @@ use Aleph\Cache;
 class Configurator
 { 
   private $config = null;
-  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'cache', 'db', 'ar']; 
+  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'autoload', 'cache', 'db', 'ar']; 
   
   public function __construct(array $config)
   {
@@ -59,8 +59,6 @@ class Configurator
     if (empty($args['method'])) return;
     // Initializes the framework.
     $a = $this->connect();
-    // Sets default cache.
-    $a->cache(Cache\Cache::getInstance());
     // Performs action.
     $res = false;
     switch ($args['method'])
@@ -72,9 +70,24 @@ class Configurator
         $cfg = $args['config'];
         $cfg['debugging'] = (bool)$cfg['debugging'];
         $cfg['logging'] = (bool)$cfg['logging'];
+        $cfg['autoload']['enabled'] = (bool)$cfg['autoload']['enabled'];
+        if (isset($cfg['autoload']['directories'])) 
+        {
+          $cfg['autoload']['directories'] = json_decode($cfg['autoload']['directories'], true);
+          if (!is_array($cfg['autoload']['directories'])) unset($cfg['autoload']['directories']); 
+        }
+        if (isset($cfg['autoload']['exclusions'])) 
+        {
+          $cfg['autoload']['exclusions'] = json_decode($cfg['autoload']['exclusions'], true);
+          if (!is_array($cfg['autoload']['exclusions'])) unset($cfg['autoload']['exclusions']); 
+        }
         if ($cfg['cache']['type'] == 'memory')
         {
-          if ($cfg['cache']['servers'] != '') $cfg['cache']['servers'] = json_decode($cfg['cache']['servers'], true);
+          if (isset($cfg['cache']['servers'])) 
+          {
+            $cfg['cache']['servers'] = json_decode($cfg['cache']['servers'], true);
+            if (!is_array($cfg['cache']['servers'])) unset($cfg['cache']['servers']);
+          }
         }
         $cfg['db']['logging'] = (bool)$cfg['db']['logging'];
         if (isset($cfg['db']['cacheExpire'])) $cfg['db']['cacheExpire'] = (int)$cfg['db']['cacheExpire'];
@@ -91,6 +104,8 @@ class Configurator
         $cfg = ['debugging' => true,
                 'logging' => true,
                 'templateDebug' => 'lib/tpl/debug.tpl',
+                'autoload' => ['enabled' => true,
+                               'mask' => '/.+\.php$/i'],
                 'cache' => ['type' => 'file',
                             'directory' => 'cache',
                             'gcProbability' => 33.333],
@@ -116,14 +131,15 @@ class Configurator
         $res = $this->renderConfig($file);
         break;
       case 'cache.gc':
-        $a->cache()->gc(100);
+        Cache\Cache::getInstance()->gc(100);
         break;
       case 'cache.clean':
-        if (empty($args['group']) || $args['group'] == 'all') $a->cache()->clean();
+        $cache = Cache\Cache::getInstance();
+        if (empty($args['group']) || $args['group'] == 'all') $cache->clean();
         else
         {
           $group = $args['group'];
-          if (!empty($args['custom'])) $a->cache()->cleanByGroup($group);
+          if (!empty($args['custom'])) $cache->cleanByGroup($group);
           else
           {
             $map = ['templates' => '--templates',
@@ -131,7 +147,7 @@ class Configurator
                     'database' => isset($a['db']['cacheGroup']) ? $a['db']['cacheGroup'] : '--db',
                     'ar' => isset($a['ar']['cacheGroup']) ? $a['ar']['cacheGroup'] : '--ar',
                     'pages' => '--pom'];
-            if (isset($map[$group])) $a->cache()->cleanByGroup($map[$group]);
+            if (isset($map[$group])) $cache->cleanByGroup($map[$group]);
           }
         }
         break;
@@ -171,6 +187,14 @@ class Configurator
         $file = \Aleph::dir('logs') . '/' . $args['dir'] . '/' . $args['file'];
         $res = unserialize(file_get_contents($file));
         $res = self::render('logdetails.html', ['log' => $res, 'file' => $args['dir'] . ' ' . $args['file']]);
+        break;
+      case 'classmap.create':
+        $a->load();
+        $res = self::render('classmap.html', ['classes' => $a->getClasses()]);
+        break;
+      case 'classmap.clean':
+        $a->setClasses([]);
+        self::render('classmap.html', ['classes' => []]);
         break;
     }
     if ($res !== false) echo $res;
@@ -317,7 +341,7 @@ class Configurator
   
   private static function formArray(array $a, $indent = 1)
   {
-    $tmp = array();
+    $tmp = []; $isInteger = array_keys($a) === range(0, count($a) - 1);
     foreach ($a as $k => $v)
     {
       if (is_string($k)) $k = "'" . addcslashes($k, "'") . "'";
@@ -328,7 +352,7 @@ class Configurator
         else if (is_bool($v)) $v = $v ? 'true' : 'false';
         else if ($v === null) $v = 'null';
       }
-      $tmp[] = $k . ' => ' . $v;
+      $tmp[] = $isInteger ? $v : $k . ' => ' . $v;
     }
     return '[' . implode(',' . PHP_EOL . str_repeat(' ', $indent), $tmp) . ']';
   }

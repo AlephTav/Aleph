@@ -1,0 +1,23 @@
+<? if (count($classes)){ ?>
+  <div class="class-map">
+    <table class="bordertable">
+      <tr><th colspan="2">Classes: <?=count($classes);?></th></tr>
+      <tr>
+        <th>Class</th>
+        <th>File</th>
+      </tr>
+      <? foreach ($classes as $class => $file){ ?>
+      <tr>
+        <td><?=htmlspecialchars($class);?></td>
+        <td><?=htmlspecialchars($file);?></td>
+      </tr>
+      <?}?>
+    </table>
+  </div>
+<?}else{?>
+<table class="bordertable">
+  <tr>
+    <td colspan="2" style="text-align:center;">Classmap is empty</td>
+  </tr>
+</table>
+<?}?>
