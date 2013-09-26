@@ -617,6 +617,11 @@ abstract class SQLBuilder
     {
       $tmp['columns'][$column] = $this->wrap($column);
       if (!is_array($values)) $values = [$values];
+      else if (count($values) == 1)
+      {
+        list($val, $type) = each($values);
+        if (!is_array($val) && !is_array($type)) $values = [$values];
+      }
       if (count($values) > $max) $max = count($values);
     }
     unset($values);
@@ -724,6 +729,16 @@ abstract class SQLBuilder
     {
       if (is_array($value)) 
       {
+        if (count($value) == 1 && is_string($column))
+        {
+          list($val, $type) = each($value);
+          if (!is_array($val) && !is_array($type))
+          {
+            $data[] = $value;
+            $tmp[] = $this->wrap($column) . ' = ?';
+            continue;
+          }
+        }
         $column = strtoupper(trim($column));
         $value = $this->whereExpression($value, $data, in_array($column, ['OR', 'AND', 'XOR', '||', '&&']) ? $column : 'AND');
         $tmp[] = ($conj == 'AND' || $conj == 'XOR' || $conj == '&&') && ($column == 'OR' || $column == '||') ? '(' . $value . ')' : $value;

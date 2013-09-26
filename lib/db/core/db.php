@@ -1057,16 +1057,22 @@ class DB
       $k = 1;
       foreach ($data as $v)
       {
-        if (is_array($v)) $st->bindValue($k, $v[0], $v[1]);
-        else $st->bindValue($k, $v, self::getPDOType($v));
+        if (!is_array($v)) $st->bindValue($k, $v, self::getPDOType($v));
+        {        
+          list($value, $type) = each($v);
+          $st->bindValue($k, $value, $type);
+        }
         $k++;
       }
       return;
     }
     foreach ($data as $k => $v) 
     {
-      if (is_array($v)) $st->bindValue($k, $v[0], $v[1]);
-      else $st->bindValue($k, $v, self::getPDOType($v));
+      if (!is_array($v)) $st->bindValue($k, $v, self::getPDOType($v));
+      {
+        list($value, $type) = each($v);
+        $st->bindValue($k, $value, $type);
+      }
     }
   }
   
