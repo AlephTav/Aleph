@@ -702,7 +702,7 @@ class DB
    */
   public function rollBack()
   {
-    $this->__get('pdo')->rollBack();
+    return $this->__get('pdo')->rollBack();
   }
   
   /**
