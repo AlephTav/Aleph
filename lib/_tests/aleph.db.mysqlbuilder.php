@@ -37,6 +37,8 @@ function test_mysqlbuilder()
   if ($q !== 'INSERT INTO `tb` (`column1`, `column2`, `column3`) VALUES (?, ?, ?), (?, ?, ?), (?, ?, NOW())' || !is_array($data) || $data != ['a', 'foo', 1, 'b', 'foo', 2, 'b', 'foo']) return $error;
   $q = $sql->insert('tb', ['column1' => 1, 'column2' => new DB\SQLExpression('CURDATE()'), 'column3' => 'abc'], ['updateOnKeyDuplicate' => true])->build($data);
   if ($q !== 'INSERT INTO `tb` (`column1`, `column2`, `column3`) VALUES (?, CURDATE(), ?) ON DUPLICATE KEY UPDATE `column1` = ?, `column2` = CURDATE(), `column3` = ?' || !is_array($data) || $data != [1, 'abc', 1, 'abc']) return $error;
+  $q = $sql->insert('tb', ['c1' => [[1 => \PDO::PARAM_INT], ['a' => \PDO::PARAM_STR]], 'c2' => [2, 'b', [true => \PDO::PARAM_BOOL]], 'c3' => [1 => \PDO::PARAM_BOOL]])->build($data);
+  if ($q !== 'INSERT INTO `tb` (`c1`, `c2`, `c3`) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)' || !is_array($data) || $data !== [[1 => \PDO::PARAM_INT], 2, [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], 'b', [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], [true => \PDO::PARAM_BOOL], [1 => \PDO::PARAM_BOOL]]) return $error;
   // Checks UPDATE queries.
   $error = 'Building of UPDATE queries does not work.';
   $q = $sql->update(new DB\SQLExpression('tb AS t'), 'col1 = 1, col2 = col2 + 1')->build($data);
@@ -45,6 +47,8 @@ function test_mysqlbuilder()
   if ($q !== 'UPDATE `tb1`, `tb2` AS `t2`, `tb3` AS `t3` SET `column1` = ?, c = c + 1, `column2` = ?' || !is_array($data) || $data != [1, 'abc']) return $error;
   $q = $sql->update('tb', ['c1' => 'a', 'c2' => 'b', 'c3' => 'c'])->where(['c1' => new DB\SQLExpression('CURDATE()'), ['c2 LIKE c1', 'c3 LIKE c2'], 'or' => ['c2' => 3, new DB\SQLExpression('c3 IN (1,2,3)')]])->build($data);
   if ($q !== 'UPDATE `tb` SET `c1` = ?, `c2` = ?, `c3` = ? WHERE `c1` = CURDATE() AND c2 LIKE c1 AND c3 LIKE c2 AND (`c2` = ? OR c3 IN (1,2,3))' || !is_array($data) || $data != ['a', 'b', 'c', 3]) return $error;
+  $q = $sql->update('tb', ['c1' => [1 => \PDO::PARAM_INT], 'c2' => 'a'])->where(['or' => ['c1' => ['b' => \PDO::PARAM_STR], ['c2' => 3, 'c4' => [true => \PDO::PARAM_BOOL]]]])->build($data);
+  if ($q !== 'UPDATE `tb` SET `c1` = ?, `c2` = ? WHERE (`c1` = ? OR `c2` = ? AND `c4` = ?)' || !is_array($data) || $data != [[1 => \PDO::PARAM_INT], 'a', ['b' => \PDO::PARAM_STR], 3, [true => \PDO::PARAM_BOOL]]) return $error;
   // Checks DELETE queries.
   $error = 'Building of DELETE queries does not work.';
   $q = $sql->delete(new DB\SQLExpression('tb AS t'))->build($data);
