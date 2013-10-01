@@ -375,10 +375,43 @@ class SQLiteBuilder extends SQLBuilder
   public function normalizeTableInfo(array $info)
   {
     $sql = $info['sql'];
-    echo $sql;
     $info = ['constraints' => [], 'keys' => []];
-    preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\(([^\)]+)\)\s*(ON\s+[^,\)\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
-    print_r($matches);
+    $clean = function($column, $smart = false)
+    {
+      $column = explode('.', $column);
+      foreach ($column as &$col) if (substr($col, 0, 1) == '"') $col = substr(trim($col), 1, -1);
+      return $smart && count($column) == 1 ? $column[0] : $column;
+    };
+    $action = function($match)
+    {
+      $actions = [];
+      foreach (explode('ON', trim($match)) as $act)
+      {
+        if ($act == '') continue;
+        $act = explode(' ', trim($act));
+        $actions[strtolower($act[0])] = $act[1];
+      }
+      return $actions;
+    };
+    $n = 0;
+    preg_match_all('/[(,\r\n]\s*(.+)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
+    foreach ($matches as $k => $match)
+    {
+      $column = trim(explode(' ', $match[1])[0]);
+      if (strtolower($column) == 'constraint') continue;
+      $actions = isset($match[4]) ? $action($match[4]) : [];
+      $info['constraints'][$n++] = ['columns' => $clean($column), 
+                                    'reference' => ['table' => $clean($match[2], true), 'columns' => $clean($match[3])],
+                                    'actions' => $actions];
+    }
+    preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
+    foreach ($matches as $k => $match)
+    {
+      $actions = isset($match[6]) ? $action($match[6]) : [];
+      $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 
+                                                                                'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
+                                                                                'actions' => $actions];
+    }
     $info['engine'] = null;
     $info['charset'] = null;
     $info['autoIncrementInitialValue'] = null;
