@@ -398,7 +398,7 @@ abstract class SQLBuilder
   /**
    * Applies JOIN clause to the current SQL query.
    *
-   * @param string $table - the table name.
+   * @param mixed $table - the table name(s).
    * @param mixed $conditions - the JOIN clause metadata.
    * @param string $type - the JOIN clause type.
    * @return self
@@ -729,7 +729,8 @@ abstract class SQLBuilder
     {
       if (is_array($value)) 
       {
-        if (count($value) == 1 && is_string($column))
+        $count = count($value);
+        if ($count == 1 && is_string($column))
         {
           list($val, $type) = each($value);
           if (!is_array($val) && !is_array($type))
@@ -740,6 +741,34 @@ abstract class SQLBuilder
           }
         }
         $column = strtoupper(trim($column));
+        if ($count == 2)
+        {
+          if (in_array($column, ['>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
+          {
+            $data[] = $value[1];
+            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ?';
+            continue;
+          }
+          else if ($column == 'IN' || $column == 'NOT IN')
+          {
+            $value[1] = (array)$value[1];
+            $data = array_merge($data, $value[1]);
+            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . implode(', ', array_fill(0, count($value[1]), '?')) . ')';
+            continue;
+          }
+          else if ($column == 'IS')
+          {
+            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $value[1];
+            continue;
+          }
+        }
+        else if ($count == 3 && ($column == 'BETWEEN' || $column == 'NOT BETWEEN'))
+        {
+          $data[] = $value[1];
+          $data[] = $value[2];
+          $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ? AND ?';
+          continue;
+        }
         $value = $this->whereExpression($value, $data, in_array($column, ['OR', 'AND', 'XOR', '||', '&&']) ? $column : 'AND');
         $tmp[] = ($conj == 'AND' || $conj == 'XOR' || $conj == '&&') && ($column == 'OR' || $column == '||') ? '(' . $value . ')' : $value;
       }
