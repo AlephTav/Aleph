@@ -63,6 +63,8 @@ abstract class SQLBuilder
         return new MySQLBuilder();
       case 'sqlite':
         return new SQLiteBuilder();
+      case 'oci':
+        return new OCIBuilder();
     }
     throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_1', $engine);
   }

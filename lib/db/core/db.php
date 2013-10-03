@@ -113,7 +113,8 @@ class DB
                         'mssql' => 'MSSQL',
                         'dblib' => 'MSSQL',
                         'sqlsrv' => 'MSSQL',
-                        'oci' => 'OCI'];
+                        'oci' => 'OCI',
+                        'oci8' => 'OCI'];
   
   /**
    * if this variable is TRUE then each query execution will be logged, otherwise won't.   
@@ -307,6 +308,7 @@ class DB
     }
     while ($this->idsn['driver'] == 'uri');
     if (empty($dsn[1])) throw new Core\Exception($this, 'ERR_DB_2');
+    // Extracting the driver specific information.
     if ($this->idsn['driver'] == 'sqlite')
     {
       $this->idsn['host'] = '127.0.0.1';
@@ -321,10 +323,30 @@ class DB
         if (isset($v[1])) $this->idsn[strtolower(trim($v[0]))] = trim($v[1]);
       }
     }
+    if ($this->idsn['driver'] == 'oci' || $this->idsn['driver'] == 'oci8')
+    {
+      $v = explode('/', $this->idsn['dbname']);
+      $this->idsn['dbname'] = array_pop($v);
+      if (count($v))
+      {
+        $v = explode(':', array_pop($v));
+        if (count($v) > 1) $this->idsn['port'] = array_pop($v);
+        $this->idsn['host'] = array_pop($v);
+      }
+    }
+    // Connecting to the database.
     $this->idsn['username'] = $username;
     $this->idsn['password'] = $password;
     $this->idsn['options'] = $options;
-    $this->pdo = ($this->getEngine() == 'MSSQL') ? new MSSQL($this->idsn['dsn'], $username, $password, $options) : new \PDO($this->idsn['dsn'], $username, $password, $options);
+    switch ($this->idsn['driver'])
+    {
+      case 'oci8':
+        $this->pdo = new OCI8($this->idsn['dsn'], $username, $password, $options);
+        break;
+      default:
+        $this->pdo = ($this->getEngine() == 'MSSQL') ? new MSSQL($this->idsn['dsn'], $username, $password, $options) : new \PDO($this->idsn['dsn'], $username, $password, $options);
+        break;
+    }
     $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     if (!empty($this->charset))
     {
@@ -964,7 +986,12 @@ class DB
   public function getTableList($schema = null)
   {
     if (!$this->isConnected()) $this->connect();
-    return $this->column($this->sql->tableList($schema ?: $this->idsn['dbname']));
+    if ($schema === null)
+    {
+      if ($this->getEngine() == 'OCI') $schema = $this->idsn['username'];
+      else $schema = $this->idsn['dbname'];
+    }
+    return $this->column($this->sql->tableList($schema));
   }
   
   /**
