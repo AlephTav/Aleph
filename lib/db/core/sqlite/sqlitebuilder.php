@@ -375,7 +375,7 @@ class SQLiteBuilder extends SQLBuilder
   public function normalizeTableInfo(array $info)
   {
     $sql = $info['sql'];
-    $info = ['constraints' => [], 'keys' => []];
+    $info = ['constraints' => []];
     $clean = function($column, $smart = false)
     {
       $column = explode('.', $column);
@@ -412,9 +412,6 @@ class SQLiteBuilder extends SQLBuilder
                                                                                 'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
                                                                                 'actions' => $actions];
     }
-    $info['engine'] = null;
-    $info['charset'] = null;
-    $info['autoIncrementInitialValue'] = null;
     return $info;
   }
 }

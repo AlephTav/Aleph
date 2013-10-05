@@ -352,7 +352,7 @@ class DB
     {
       if (in_array($this->idsn['driver'], ['mysql', 'mysqli', 'pgsql'])) $this->pdo->exec('SET NAMES ' . $this->pdo->quote($this->charset));
     }
-    $this->sql = SQLBuilder::getInstance($this->getEngine());
+    $this->sql = SQLBuilder::getInstance($this->getEngine(), $this);
   }
 
   /**

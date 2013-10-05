@@ -412,22 +412,23 @@ class MySQLBuilder extends SQLBuilder
       foreach ($column as &$col) $col = substr(trim($col), 1, -1);
       return $smart && count($column) == 1 ? $column[0] : $column;
     };
-    preg_match_all('/CONSTRAINT\s+(.+)\s+FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
+    $n = 0;
+    preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
     foreach ($matches as $k => $match)
     {
       $actions = [];
-      if (isset($match[5]))
+      if (isset($match[6]))
       {
-        foreach (explode('ON', trim($match[5])) as $act)
+        foreach (explode('ON', trim($match[6])) as $act)
         {
           if ($act == '') continue;
           $act = explode(' ', trim($act));
           $actions[strtolower($act[0])] = $act[1];
         }
       }
-      $info['constraints'][$clean($match[1], true)] = ['columns' => $clean($match[2]), 
-                                                       'reference' => ['table' => $clean($match[3], true), 'columns' => $clean($match[4])],
-                                                       'actions' => $actions];
+      $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 
+                                                                                'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
+                                                                                'actions' => $actions];
     }
     preg_match_all('/[^YN]+\s+KEY\s+(.+)\s*\(([^\)]+)\)/mi', $sql, $matches, PREG_SET_ORDER);
     foreach ($matches as $match)

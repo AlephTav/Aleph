@@ -136,7 +136,12 @@ class OCIBuilder extends SQLBuilder
    */
   public function columnsInfo($table)
   {
-    return 'SELECT * FROM user_tab_cols WHERE table_name = ' . $this->quote($table);
+    return 'SELECT t1.*,
+                   (SELECT t3.constraint_type FROM all_cons_columns t2
+                    INNER JOIN all_constraints t3 ON t3.owner = t2.owner AND t3.constraint_name = t2.constraint_name
+                    WHERE t2.table_name = t1.table_name AND t2.column_name = t1.column_name AND t3.constraint_type = \'P\') AS key 
+            FROM user_tab_cols t1
+            WHERE t1.table_name = ' . $this->quote($table);
   }
   
   /**
@@ -334,7 +339,21 @@ class OCIBuilder extends SQLBuilder
   public function normalizeColumnsInfo(array $info)
   {
     $tmp = [];
-    $tmp = $info;
+    foreach ($info as $row)
+    {
+      $column = $row['COLUMN_NAME'];
+      $tmp[$column]['column'] = $column;
+      $tmp[$column]['type'] = strtolower($row['DATA_TYPE']);
+      $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
+      $tmp[$column]['isPrimaryKey'] = $row['KEY'] == 'P';
+      $tmp[$column]['isNullable'] = $row['NULLABLE'] == 'Y';
+      $tmp[$column]['isAutoincrement'] = false;
+      $tmp[$column]['isUnsigned'] = false;
+      $tmp[$column]['default'] = $row['DATA_DEFAULT'];
+      $tmp[$column]['maxLength'] = strlen($row['DATA_PRECISION']) ? (int)$row['DATA_PRECISION'] : (int)$row['DATA_LENGTH'];
+      $tmp[$column]['precision'] = (int)$row['DATA_SCALE'];
+      $tmp[$column]['set'] = false;
+    }
     return $tmp;
   }
   
@@ -348,8 +367,64 @@ class OCIBuilder extends SQLBuilder
   public function normalizeTableInfo(array $info)
   {
     $sql = stream_get_contents($info['info']);
-    $info = ['constraints' => [], 'keys' => []];
-    
+    $info = ['constraints' => []];
+    $clean = function($column, $smart = false)
+    {
+      $column = explode('.', $column);
+      foreach ($column as &$col) if (substr($col, 0, 1) == '"') $col = substr(trim($col), 1, -1);
+      return $smart && count($column) == 1 ? $column[0] : $column;
+    };
+    $n = 0;
+    preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
+    foreach ($matches as $k => $match)
+    {
+      $actions = [];
+      if (isset($match[6]))
+      {
+        foreach (explode('ON', trim($match[6])) as $act)
+        {
+          if ($act == '') continue;
+          $act = explode(' ', trim($act));
+          $actions[strtolower($act[0])] = $act[1];
+        }
+      }
+      $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 
+                                                                                'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
+                                                                                'actions' => $actions];
+    }
     return $info;
+  }
+  
+  /**
+   * Returns completed SQL query of SELECT type.
+   *
+   * @param array $select - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildSelect(array $select, &$data)
+  {
+    if ($this->db && substr($this->db->getClientVersion(), 0, 2) == '12') return parent::buildSelect($select, $data);
+    $limit = $select['limit'];
+    unset($select['limit']);
+    $sql = parent::buildSelect($select, $data);
+    $sql = 'SELECT a.*' . ($limit['offset'] !== null ? ', ROWNUM rnum' : '') . ' FROM (' . $sql . ') a';
+    if ($limit['limit'] !== null) $sql .= ' WHERE ROWNUM <= ' . (int)$limit['limit'];
+    if ($limit['offset']  !== null) $sql = 'SELECT * FROM (' . $sql . ') WHERE rnum > ' . (int)$limit['offset'];
+    return $sql;
+  }
+  
+  /**
+   * Returns LIMIT clause of the SQL statement.
+   *
+   * @param array $limit - the LIMIT data.
+   * @return string
+   * @access protected
+   */
+  protected function buildLimit(array $limit)
+  {
+    if (count($limit) == 1) return 'OFFSET ' . $limit[0] . ' ROWS';
+    return 'OFFSET ' . $limit[0] . ' ROWS FETCH NEXT ' . $limit[1] . ' ROWS ONLY';
   }
 }

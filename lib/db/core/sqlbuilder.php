@@ -41,30 +41,54 @@ abstract class SQLBuilder
   const ERR_SQL_3 = 'You can\'t invoke method "[{var}]" twice within the current SQL-construction.';
   
   /**
+   * The instance of DB class.
+   *
+   * @var Aleph\DB\DB $db
+   * @access protected
+   */
+  protected $db = null;
+  
+  /**
    * Array of data for SQL building.
    *
    * @var array $sql
    * @access protected
    */
   protected $sql = [];
+  
+  /**
+   * Constuctor.
+   *
+   * @param Aleph\DB\DB $db - the database connection object.
+   * @access public
+   */
+  public function __construct(DB $db = null)
+  {
+    $this->db = $db;
+  }
 
   /**
    * Returns an instance of the builder class corresponding to the given database type.
    *
-   * @param string $engine - database type.
+   * @param string $engine - the type of DBMS.
+   * @param Aleph\DB\DB $db - the database connection object.
    * @return Aleph\DB\SQLBuilder
    * @access public
    */
-  public static function getInstance($engine)
+  public static function getInstance($engine, DB $db = null)
   {
-    switch (strtolower($engine))
+    switch ($engine)
     {
-      case 'mysql':
-        return new MySQLBuilder();
-      case 'sqlite':
-        return new SQLiteBuilder();
-      case 'oci':
-        return new OCIBuilder();
+      case 'MySQL':
+        return new MySQLBuilder($db);
+      case 'SQLite':
+        return new SQLiteBuilder($db);
+      case 'PostgreSQL':
+        return new PostgreSQLBuilder($db);
+      case 'MSSQL':
+        return new MSSQLBuilder($db);
+      case 'OCI':
+        return new OCIBuilder($db);
     }
     throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_1', $engine);
   }
@@ -494,12 +518,9 @@ abstract class SQLBuilder
    */
   public function limit($limit, $offset = null)
   {
-    if ((int)$limit <= 0) return $this;
     $tmp = array_pop($this->sql);
     if (isset($tmp['limit'])) throw new Core\Exception($this, 'ERR_SQL_3', 'limit');
-    $tmp['limit'] = [];
-    if ($offset !== null) $tmp['limit'][] = (int)$offset;
-    $tmp['limit'][] = (int)$limit;
+    $tmp['limit'] = ['limit' => $limit, 'offset' => $offset];
     $this->sql[] = $tmp;
     return $this;
   }
@@ -555,10 +576,10 @@ abstract class SQLBuilder
   protected function buildUpdate(array $update, &$data)
   {
     $sql = 'UPDATE ' . implode(', ', $update['table']) . ' SET ' . $update['columns'];
-    if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
+    if (!empty($update['join'])) $sql .= implode(' ', $update['join']);
     if (!empty($update['where'])) $sql .= ' WHERE ' . $update['where'];
-    if (!empty($select['order'])) $sql .= ' ORDER BY ' . implode(', ', $select['order']);
-    if (!empty($select['limit'])) $sql .= ' LIMIT ' . implode(', ', $select['limit']);
+    if (!empty($update['order'])) $sql .= ' ORDER BY ' . implode(', ', $update['order']);
+    if (!empty($update['limit'])) $sql .= ' ' . $this->buildLimit($update['limit']);
     return $sql;
   }
   
@@ -573,10 +594,10 @@ abstract class SQLBuilder
   protected function buildDelete(array $delete, &$data)
   {
     $sql = 'DELETE FROM ' . implode(', ', $delete['table']);
-    if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
+    if (!empty($delete['join'])) $sql .= implode(' ', $delete['join']);
     if (!empty($delete['where'])) $sql .= ' WHERE ' . $delete['where'];
-    if (!empty($select['order'])) $sql .= ' ORDER BY ' . implode(', ', $select['order']);
-    if (!empty($select['limit'])) $sql .= ' LIMIT ' . implode(', ', $select['limit']);
+    if (!empty($delete['order'])) $sql .= ' ORDER BY ' . implode(', ', $delete['order']);
+    if (!empty($delete['limit'])) $sql .= ' ' . $this->buildLimit($delete['limit']);
     return $sql;
   }
   
@@ -598,8 +619,22 @@ abstract class SQLBuilder
     if (!empty($select['group'])) $sql .= ' GROUP BY ' . implode(', ', $select['group']);
     if (!empty($select['having'])) $sql .= ' HAVING ' . $select['having'];
     if (!empty($select['order'])) $sql .= ' ORDER BY ' . implode(', ', $select['order']);
-    if (!empty($select['limit'])) $sql .= ' LIMIT ' . implode(', ', $select['limit']);
+    if (!empty($select['limit'])) $sql .= ' ' . $this->buildLimit($select['limit']);
     return $sql;
+  }
+  
+  /**
+   * Returns LIMIT clause of the SQL statement.
+   *
+   * @param array $limit - the LIMIT data.
+   * @return string
+   * @access protected
+   */
+  protected function buildLimit(array $limit)
+  {
+    if ($limit['offset'] === null) return 'LIMIT ' . (int)$limit['limit'];
+    if ($limit['limit'] === null) return 'LIMIT ' . (int)$limit['offset'] . ', 18446744073709551610';
+    return 'LIMIT ' . (int)$limit['offset'] . ', ' . (int)$limit['limit'];
   }
   
   /**
