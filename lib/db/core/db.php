@@ -325,7 +325,8 @@ class DB
     }
     if ($this->idsn['driver'] == 'oci' || $this->idsn['driver'] == 'oci8')
     {
-      $v = explode('/', $this->idsn['dbname']);
+      $dsn = $this->idsn['dbname'];
+      $v = explode('/', $dsn);
       $this->idsn['dbname'] = array_pop($v);
       if (count($v))
       {
@@ -341,10 +342,21 @@ class DB
     switch ($this->idsn['driver'])
     {
       case 'oci8':
-        $this->pdo = new OCI8($this->idsn['dsn'], $username, $password, $options);
+        $this->pdo = new OCI8($dsn, $username, $password, isset($this->idsn['charset']) ? array_merge((array)$options, ['charset' => $this->idsn['charset']]) : $options);
         break;
       default:
-        $this->pdo = ($this->getEngine() == 'MSSQL') ? new MSSQL($this->idsn['dsn'], $username, $password, $options) : new \PDO($this->idsn['dsn'], $username, $password, $options);
+        switch ($this->engines[$this->idsn['driver']])
+        {
+          case 'MSSQL':
+            $this->pdo = new MSSQL($this->idsn['dsn'], $username, $password, $options);
+            break;
+          case 'OCI':
+            $this->pdo = new OCI($this->idsn['dsn'], $username, $password, $options);
+            break;
+          default:
+            $this->pdo = new \PDO($this->idsn['dsn'], $username, $password, $options);
+            break;
+        }
         break;
     }
     $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
@@ -1077,7 +1089,7 @@ class DB
    * @param array $data - the data for the SQL query.
    * @access protected
    */
-  protected function prepare(\PDOStatement $st, $sql, array $data)
+  protected function prepare($st, $sql, array $data)
   {
     if (is_numeric(key($data)))
     {
@@ -1085,6 +1097,7 @@ class DB
       foreach ($data as $v)
       {
         if (!is_array($v)) $st->bindValue($k, $v, self::getPDOType($v));
+        else
         {        
           list($value, $type) = each($v);
           $st->bindValue($k, $value, $type);
@@ -1096,6 +1109,7 @@ class DB
     foreach ($data as $k => $v) 
     {
       if (!is_array($v)) $st->bindValue($k, $v, self::getPDOType($v));
+      else
       {
         list($value, $type) = each($v);
         $st->bindValue($k, $value, $type);

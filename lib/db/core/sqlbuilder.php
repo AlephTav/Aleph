@@ -57,6 +57,14 @@ abstract class SQLBuilder
   protected $sql = [];
   
   /**
+   * Determines whether the named ($seq > 0) or question mark placeholder ($seq is 0 or FALSE) are used in the SQL statement.
+   *
+   * @var integer $seq
+   * @access protected
+   */
+  protected $seq = 0;
+  
+  /**
    * Constuctor.
    *
    * @param Aleph\DB\DB $db - the database connection object.
@@ -669,11 +677,7 @@ abstract class SQLBuilder
       {
         $value = empty($values[$i]) ? end($values) : $values[$i];
         if ($value instanceof self || $value instanceof SQLExpression) $tmp['values'][$i][$j] = (string)$value;
-        else 
-        {
-          $tmp['values'][$i][$j] = '?';
-          $data[] = $value;
-        } 
+        else $tmp['values'][$i][$j] = $this->addParam($value, $data);
       }
     }
     return $tmp;
@@ -701,11 +705,7 @@ abstract class SQLBuilder
       }
       else if ($value instanceof self)  $tmp[] =  $this->wrap($column) . ' = (' . $value . ')';
       else if ($value instanceof SQLExpression) $tmp[] =  $this->wrap($column) . ' = ' . $value;
-      else 
-      {
-        $tmp[] = $this->wrap($column) . ' = ?';
-        $data[] = $value;
-      }
+      else $tmp[] = $this->wrap($column) . ' = ' . $this->addParam($value, $data);
     }
     return implode(', ', $tmp);
   }
@@ -772,8 +772,7 @@ abstract class SQLBuilder
           list($val, $type) = each($value);
           if (!is_array($val) && !is_array($type))
           {
-            $data[] = $value;
-            $tmp[] = $this->wrap($column) . ' = ?';
+            $tmp[] = $this->wrap($column) . ' = ' . $this->addParam($value, $data);
             continue;
           }
         }
@@ -782,15 +781,23 @@ abstract class SQLBuilder
         {
           if (in_array($column, ['>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
           {
-            $data[] = $value[1];
-            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ?';
+            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $this->addParam($value[1], $data);
             continue;
           }
           else if ($column == 'IN' || $column == 'NOT IN')
           {
             $value[1] = (array)$value[1];
-            $data = array_merge($data, $value[1]);
-            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . implode(', ', array_fill(0, count($value[1]), '?')) . ')';
+            if ($this->seq == 0)
+            {
+              $data = array_merge($data, $value[1]);
+              $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . implode(', ', array_fill(0, count($value[1]), '?')) . ')';
+            }
+            else
+            {
+              $tmp = [];
+              foreach ($value[1] as $v) $tmp[] = $this->addParam($v, $data);
+              $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . implode(', ', $tmp) . ')';
+            }
             continue;
           }
           else if ($column == 'IS')
@@ -801,9 +808,7 @@ abstract class SQLBuilder
         }
         else if ($count == 3 && ($column == 'BETWEEN' || $column == 'NOT BETWEEN'))
         {
-          $data[] = $value[1];
-          $data[] = $value[2];
-          $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ? AND ?';
+          $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $this->addParam($value[1], $data) . ' AND ' . $this->addParam($value[2], $data);
           continue;
         }
         $value = $this->whereExpression($value, $data, in_array($column, ['OR', 'AND', 'XOR', '||', '&&']) ? $column : 'AND');
@@ -814,14 +819,22 @@ abstract class SQLBuilder
       {
         if ($value instanceof self) $tmp[] = $this->wrap($column) . ' = (' . $value . ')';
         else if ($value instanceof SQLExpression) $tmp[] = $this->wrap($column) . ' = ' . $value;
-        else
-        {
-          $data[] = $value;
-          $tmp[] = $this->wrap($column) . ' = ?';
-        }
+        else $tmp[] = $this->wrap($column) . ' = ' . $this->addParam($value, $data);
       }
     }
     return implode(' ' . $conj . ' ', $tmp);
+  }
+  
+  protected function addParam($value, array &$data)
+  {
+    if ($this->seq == 0)
+    {
+      $data[] = $value;
+      return '?';
+    }
+    $param = ':p' . $this->seq++;
+    $data[$param] = $value;
+    return $param;
   }
 }
 

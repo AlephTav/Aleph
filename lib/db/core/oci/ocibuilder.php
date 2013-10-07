@@ -39,6 +39,14 @@ class OCIBuilder extends SQLBuilder
   const ERR_OCI_1 = 'You are trying to rename column during its modifying. It\'s not possible in OCI. To rename column you should use renameColumn method.';
   
   /**
+   * Determines whether the named ($seq > 0) or question mark placeholder ($seq is 0 or FALSE) are used in the SQL statement.
+   *
+   * @var integer $seq
+   * @access protected
+   */
+  protected $seq = 1;
+  
+  /**
    * Returns OCI data type that mapped to PHP type.
    *
    * @param string $type - SQL type.

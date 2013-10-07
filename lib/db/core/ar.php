@@ -365,6 +365,17 @@ class AR
   }
   
   /**
+   * Returns the number of rows affected by the last SQL statement.
+   *
+   * @return integer
+   * @access public
+   */
+  public function getAffectedRows()
+  {
+    return $this->affectedRows;
+  }
+  
+  /**
    * Converts the given string to Aleph\DB\SQLExpression object.
    *
    * @param string $sql - the string to convert.
@@ -600,7 +611,7 @@ class AR
   
   /**
    * Inserts new row to the database table.
-   * Method returns numbers of affected rows.
+   * Method returns the ID of the last inserted row, or the last value from a sequence object, depending on the underlying driver.
    *
    * @param array $options - contains additional parameters (for example, updateOnKeyDuplicate or sequenceName) required by some DBMS.
    * @return integer
@@ -621,7 +632,7 @@ class AR
     $this->changed = false;
     $this->assigned = true;
     if ($this->ai) $this->columns[$this->ai] = $res;
-    return $this->db->getAffectedRows();
+    return $res;
   }
   
   /**
