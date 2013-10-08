@@ -100,7 +100,7 @@ class MySQLBuilder extends SQLBuilder
   /**
    * Quotes a string value for use in a query.
    *
-   * @param string $value
+   * @param string $value - the string to be quoted.
    * @param boolean $isLike - determines whether the value is used in LIKE clause.
    * @return string
    * @access public

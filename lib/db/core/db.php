@@ -238,7 +238,7 @@ class DB
   {
     if ($param == 'pdo')
     {
-      if ($this->pdo instanceof \PDO) return $this->pdo;
+      if (is_object($this->pdo)) return $this->pdo;
       $this->connect($this->dsn, $this->username, $this->password, $this->options);
       return $this->pdo;
     }
@@ -693,14 +693,14 @@ class DB
   /**
    * Quotes a string value for use in a query.
    *
-   * @param string $value
+   * @param string $value - the string to be quoted.
+   * @param integer $isLike - determines whether the value is used in LIKE clause.
    * @return string
    * @access public
    */
-  public function quote($value)
+  public function quote($value, $isLike = false)
   {
-    if (($value = $this->__get('pdo')->quote($value)) !== false) return $value;
-    return $this->__get('sql')->quote($value);
+    return $this->__get('sql')->quote($value, $isLike);
   }
   
   /**
@@ -1084,7 +1084,7 @@ class DB
   /**
    * Prepares a SQL statement to execution.
    *
-   * @param \PDOStatement $st - the instance of SQL statement.
+   * @param PDOStatement $st - the instance of SQL statement.
    * @param string $sql - the SQL query to be executed.
    * @param array $data - the data for the SQL query.
    * @access protected

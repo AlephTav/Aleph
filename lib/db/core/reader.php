@@ -64,7 +64,7 @@ class Reader implements \Countable, \Iterator
    * @param array $ctorargs - arguments of custom class constructor when the $mode parameter is PDO::FETCH_CLASS.
    * @access public
    */
-  public function __construct(\PDOStatement $statement, $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
+  public function __construct($statement, $mode = \PDO::FETCH_ASSOC, $arg = null, array $ctorargs = null)
   {
     $this->st = $statement;
     $this->setFetchMode($mode, $arg, $ctorargs);

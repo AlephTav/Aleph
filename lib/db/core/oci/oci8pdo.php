@@ -42,6 +42,14 @@ class OCI8
    * @access protected
    */
   protected $conn = null;
+  
+  /**
+   * Determines whether the autocommit mode is turned off.
+   *
+   * @var boolean $inTransaction
+   * @access protected
+   */
+  protected $inTransaction = false;
 
   /**
    * Constructor. Creates an OCI8 instance to represent a connection to the requested database.
@@ -94,6 +102,18 @@ class OCI8
   }
   
   /**
+   * Places quotes around the input string (if required) and escapes special characters within the input string.
+   *
+   * @param mixed $value - the string to be quoted.
+   * @param integer $type - provides a data type hint.
+   */
+  public function quote($value, $type = \PDO::PARAM_STR)
+  {
+    if ($type == \PDO::PARAM_INT || $type == \PDO::PARAM_BOOL) return (int)$value;
+    return "'" . str_replace("'", "''", $value) . "'";
+  }
+
+  /**
    * Returns an array of error information about the last operation performed by this database handle.
    *
    * @return array
@@ -126,7 +146,71 @@ class OCI8
    */
   public function prepare($statement, array $options = [])
   {
-    return new OCI8Statement(oci_parse($this->conn, $statement));
+    return new OCI8Statement($this, oci_parse($this->conn, $statement));
+  }
+  
+  /**
+   * Returns the last value from a sequence object.
+   *
+   * @param string $sequenceName - name of the sequence object from which the ID should be returned.
+   * @return string
+   * @access public
+   */
+  public function lastInsertId($seqname = null)
+  {
+    $st = $this->prepare('SELECT "' . $seqname . '".currval FROM dual');
+    $st->execute();
+    return $st->fetchColumn();
+  }
+  
+  /**
+   * Turns off autocommit mode. Returns always TRUE.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function beginTransaction()
+  {
+    return $this->inTransaction = true;
+  }
+  
+  /**
+   * Checks if a transaction is currently active within the driver.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function inTransaction()
+  {
+    return $this->inTransaction;
+  }
+  
+  /**
+   * Commits a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function commit()
+  {
+    if (oci_commit($this->conn) === false) return false;
+    $this->inTransaction = false; 
+    return true;
+  }
+  
+  /**
+   * Rolls back a transaction.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function rollBack()
+  {
+    if (oci_rollback($this->conn) === false) return false;
+    $this->inTransaction = false;
+    return true;
   }
 }
 
@@ -139,18 +223,144 @@ class OCI8
  */
 class OCI8Statement
 {
+  /**
+   * The database connection object.
+   *
+   * @var Aleph\DB\OCI8 $db
+   * @access protected
+   */
+  protected $db = null;
+
+  /**
+   * The identifier of the prepared statement object. 
+   *
+   * @var resource $st
+   * @access protected
+   */
   protected $st = null;
 
-  public function __construct($stid)
+  /**
+   * Constructor.
+   *
+   * @param Aleph\DB\OCI8 $db - the database connection object.
+   * @param resource $stdid - the prepared statement identifier.
+   * @access public   
+   */
+  public function __construct(OCI8 $db, $stid)
   {
     $this->st = $stid;
+    $this->db = $db;
   }
   
+  /**
+   * Binds a value to a corresponding named or question mark placeholder in the SQL statement that was used to prepare the statement.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @param mixed $parameter - the parameter identifier.
+   * @param mixed $value - the value to bind to the parameter.
+   * @param integer $type - the explicit data type for the parameter using PDO::PARAM_* constants.
+   * @return boolean
+   * @access public
+   */
   public function bindValue($parameter, $value, $type = \PDO::PARAM_STR)
   {
-    return oci_bind_by_name($this->conn, $parameter, $value, -1, $this->getOCI8Type($type));
+    return oci_bind_by_name($this->st, $parameter, $value, -1, $this->getOCI8Type($type));
   }
   
+  /**
+   * Execute the prepared statement.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @param array $parameters - an array of values with as many elements as there are bound parameters in the SQL statement being executed.
+   * @return boolean
+   * @access public
+   */
+  public function execute(array $parameters = null)
+  {
+    if ($parameters) foreach ($parameters as $k => $v) $this->bindValue($k, $v);
+    return oci_execute($this->st, $this->db->inTransaction() ? OCI_NO_AUTO_COMMIT : OCI_COMMIT_ON_SUCCESS);
+  }
+  
+  /**
+   * Returns the number of rows affected by the last DELETE, INSERT, or UPDATE statement executed by the corresponding OCI8Statement object.
+   *
+   * @return integer
+   * @access public
+   */
+  public function rowCount()
+  {
+    return oci_num_rows($this->st);
+  }
+  
+  /**
+   * Fetches multiple rows from a query into a two-dimensional array.
+   *
+   * @param integer $style - determines how OCI8 returns the rows.
+   * 
+   * @access public
+   */
+  public function fetchAll($style = \PDO::FETCH_BOTH, $arg = null, array $args = [])
+  {
+    if ($style & \PDO::FETCH_COLUMN) $s = OCI_NUM;
+    else if ($style & \PDO::FETCH_BOTH) $s = OCI_BOTH;
+    else if ($style & \PDO::FETCH_ASSOC) $s = OCI_ASSOC;
+    else if ($style & \PDO::FETCH_NUM) $s = OCI_NUM;
+    else $s = OCI_BOTH;
+    if (oci_fetch_all($this->st, $rows, 0, -1, OCI_FETCHSTATEMENT_BY_ROW + $s) === false) return false;
+    if ($style & \PDO::FETCH_COLUMN)
+    {
+      $arg = (int)$arg; $tmp = [];
+      if ($style & \PDO::FETCH_UNIQUE)
+      {
+        foreach ($rows as $row) $tmp[$row[$arg]] = true;
+        $rows = array_keys($tmp);
+      }
+      else if ($style & \PDO::FETCH_GROUP)
+      {
+        
+      }
+    }
+    return $rows;
+  }
+  
+  /**
+   * Fetches a row from a result set associated with a OCI8Statement object.
+   *
+   * @param integer $style - determines how OCI8 returns the row.
+   * @return mixed
+   * @access public
+   */
+  public function fetch($style)
+  {
+    if ($style == \PDO::FETCH_OBJ) return oci_fetch_object($this->st);
+    if ($style & \PDO::FETCH_BOTH) $style = OCI_BOTH;
+    else if ($style & \PDO::FETCH_ASSOC) $style = OCI_ASSOC;
+    else if ($style & \PDO::FETCH_NUM) $style = OCI_NUM;
+    else $style = OCI_BOTH;
+    return oci_fetch_array($this->st, $style + OCI_RETURN_NULLS);
+  }
+  
+  /**
+   * Returns a single column from the next row of a result set or FALSE if there are no more rows.
+   *
+   * @param integer $column - 0-indexed number of the column you wish to retrieve from the row.
+   * @return string
+   * @access public
+   */
+  public function fetchColumn($column = 0)
+  {
+    $row = oci_fetch_row($this->st);
+    if ($row === false) return false;
+    return array_key_exists($column, $row) ? $row[$column] : array_shift($row);
+  }
+  
+  /**
+   * Converts the given PDO data type to OCI data type.
+   *
+   * @param integer $pdoType - the PDO data type identifier.
+   * @return integer
+   * @access protected
+   */
   protected function getOCI8Type($pdoType)
   {
     switch ($pdoType)
