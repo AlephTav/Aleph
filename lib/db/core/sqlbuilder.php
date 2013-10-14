@@ -583,8 +583,9 @@ abstract class SQLBuilder
    */
   protected function buildUpdate(array $update, &$data)
   {
-    $sql = 'UPDATE ' . implode(', ', $update['table']) . ' SET ' . $update['columns'];
+    $sql = 'UPDATE ' . implode(', ', $update['table']);
     if (!empty($update['join'])) $sql .= implode(' ', $update['join']);
+    $sql .= ' SET ' . $update['columns'];
     if (!empty($update['where'])) $sql .= ' WHERE ' . $update['where'];
     if (!empty($update['order'])) $sql .= ' ORDER BY ' . implode(', ', $update['order']);
     if (!empty($update['limit'])) $sql .= ' ' . $this->buildLimit($update['limit']);

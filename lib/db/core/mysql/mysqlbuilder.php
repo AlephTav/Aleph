@@ -107,7 +107,7 @@ class MySQLBuilder extends SQLBuilder
    */
   public function quote($value, $isLike = false)
   {
-    return "'" . addcslashes($value, "'\x00\n\r\\\x1a" . ($isLike ? '_%' : '')) . "'";
+    return "'" . addcslashes($value, "\\'\n\r\t\x00\x08\x1a" . ($isLike ? '_%' : '')) . "'";
   }
   
   /**

@@ -224,6 +224,12 @@ class OCI8
 class OCI8Statement
 {
   /**
+   * Error message templates.
+   */
+  const ERR_OCI8STATEMENT_1 = 'Invalid column index.';
+  const ERR_OCI8STATEMENT_2 = 'PDO::FETCH_KEY_PAIR fetch mode requires the result set to contain exactly 2 columns.';
+
+  /**
    * The database connection object.
    *
    * @var Aleph\DB\OCI8 $db
@@ -238,6 +244,14 @@ class OCI8Statement
    * @access protected
    */
   protected $st = null;
+  
+  /**
+   * The default fetch mode.
+   *
+   * @var array $defaultFetchMode
+   * @access protected
+   */
+  protected $defaultFetchMode = [\PDO::FETCH_BOTH, null, []];
 
   /**
    * Constructor.
@@ -250,6 +264,19 @@ class OCI8Statement
   {
     $this->st = $stid;
     $this->db = $db;
+  }
+  
+  /**
+   * Changes the default fetch mode for a OCI8Statement object.
+   *
+   * @param integer $style - determines how OCI8 returns the rows.
+   * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
+   * @param array $args - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
+   * @access public
+   */
+  public function setFetchMode($style = \PDO::FETCH_BOTH, $arg = null, array $args = [])
+  {
+    $this->defaultFetchMode = [$style, $arg, $args];
   }
   
   /**
@@ -296,29 +323,79 @@ class OCI8Statement
    * Fetches multiple rows from a query into a two-dimensional array.
    *
    * @param integer $style - determines how OCI8 returns the rows.
-   * 
+   * @param mixed $arg - this argument have a different meaning depending on the value of the $style parameter.
+   * @param array $args - arguments of custom class constructor when the $style parameter is PDO::FETCH_CLASS.
    * @access public
    */
-  public function fetchAll($style = \PDO::FETCH_BOTH, $arg = null, array $args = [])
+  public function fetchAll($style = null, $arg = null, array $args = [])
   {
-    if ($style & \PDO::FETCH_COLUMN) $s = OCI_NUM;
-    else if ($style & \PDO::FETCH_BOTH) $s = OCI_BOTH;
-    else if ($style & \PDO::FETCH_ASSOC) $s = OCI_ASSOC;
-    else if ($style & \PDO::FETCH_NUM) $s = OCI_NUM;
+    if ($style === null) list($style, $arg, $args) = $this->defaultFetchMode;
+    if (($style & \PDO::FETCH_COLUMN) == \PDO::FETCH_COLUMN || $style == \PDO::FETCH_FUNC || $style == \PDO::FETCH_KEY_PAIR) $s = OCI_NUM;
+    else if (($style & \PDO::FETCH_CLASS) == \PDO::FETCH_CLASS) $s = OCI_ASSOC;
+    else if (($style & \PDO::FETCH_BOTH) == \PDO::FETCH_BOTH) $s = OCI_BOTH;
+    else if (($style & \PDO::FETCH_ASSOC) == \PDO::FETCH_ASSOC) $s = OCI_ASSOC;
+    else if (($style & \PDO::FETCH_NUM) == \PDO::FETCH_NUM) $s = OCI_NUM;
     else $s = OCI_BOTH;
     if (oci_fetch_all($this->st, $rows, 0, -1, OCI_FETCHSTATEMENT_BY_ROW + $s) === false) return false;
-    if ($style & \PDO::FETCH_COLUMN)
+    if ($style == \PDO::FETCH_FUNC)
+    {
+      $tmp = [];
+      foreach ($rows as $row) $tmp[] = call_user_func_array($arg, $row);
+      $rows = $tmp;
+    }
+    else if ($style == \PDO::FETCH_KEY_PAIR)
+    {
+      $tmp = [];
+      if (count($rows) && count($rows[0]) != 2) throw new Core\Exception($this, 'ERR_OCI8STATEMENT_2');
+      foreach ($rows as $row) $tmp[$row[0]] = $row[1];
+      $rows = $tmp;
+    }
+    else if (($style & \PDO::FETCH_COLUMN) == \PDO::FETCH_COLUMN)
     {
       $arg = (int)$arg; $tmp = [];
-      if ($style & \PDO::FETCH_UNIQUE)
+      if (($style & \PDO::FETCH_UNIQUE) == \PDO::FETCH_UNIQUE)
       {
-        foreach ($rows as $row) $tmp[$row[$arg]] = true;
-        $rows = array_keys($tmp);
+        foreach ($rows as $row) $tmp[$row[$arg]] = $row[$arg];
       }
-      else if ($style & \PDO::FETCH_GROUP)
+      else if (($style & \PDO::FETCH_GROUP) == \PDO::FETCH_GROUP)
       {
-        
+        if (count($rows))
+        {
+          $row = $rows[0]; $argn = count($row);
+          if ($argn < 2) throw new Core\Exception($this, 'ERR_OCI8STATEMENT_1');
+          $argn = $arg == $argn - 1 ? 0 : $arg + 1;
+          foreach ($rows as $row) $tmp[$row[$arg]][] = $row[$argn];
+        }
       }
+      else
+      {
+        foreach ($rows as $row) $tmp[] = $row[$arg];
+      }
+      $rows = $tmp;
+    }
+    else if (($style & \PDO::FETCH_CLASS) == \PDO::FETCH_CLASS)
+    {
+      $tmp = [];
+      $ref = new \ReflectionClass($arg);
+      foreach ($rows as $row) 
+      {
+        $class = $ref->newInstanceArgs($args);
+        foreach ($row as $k => $v)
+        {
+          if ($ref->hasProperty($k))
+          {
+            $prop = $ref->getProperty($k);
+            $prop->setAccessible(true);
+            $prop->setValue($class, $v);
+          }
+          else
+          {
+            $class->{$k} = $v;
+          }
+        }
+        $tmp[] = $class;
+      }
+      $rows = $tmp;
     }
     return $rows;
   }
@@ -330,12 +407,13 @@ class OCI8Statement
    * @return mixed
    * @access public
    */
-  public function fetch($style)
+  public function fetch($style = null)
   {
-    if ($style == \PDO::FETCH_OBJ) return oci_fetch_object($this->st);
-    if ($style & \PDO::FETCH_BOTH) $style = OCI_BOTH;
-    else if ($style & \PDO::FETCH_ASSOC) $style = OCI_ASSOC;
-    else if ($style & \PDO::FETCH_NUM) $style = OCI_NUM;
+    if ($style === null) $style = $this->defaultFetchMode[0];
+    if (($style & \PDO::FETCH_OBJ) == \PDO::FETCH_OBJ) return oci_fetch_object($this->st);
+    if (($style & \PDO::FETCH_BOTH) == \PDO::FETCH_BOTH) $style = OCI_BOTH;
+    else if (($style & \PDO::FETCH_ASSOC) == \PDO::FETCH_ASSOC) $style = OCI_ASSOC;
+    else if (($style & \PDO::FETCH_NUM) == \PDO::FETCH_NUM) $style = OCI_NUM;
     else $style = OCI_BOTH;
     return oci_fetch_array($this->st, $style + OCI_RETURN_NULLS);
   }
