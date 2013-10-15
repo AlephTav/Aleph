@@ -139,7 +139,7 @@ class Body extends Panel
     $php = array();
     $shortTags = array('br' => 1, 'hr' => 1, 'img' => 1, 'input' => 1);
     $insideHead = false; $tag = '';
-    $config = $this->a->config();
+    $config = $this->a->getConfig();
     $exe = function($code) use ($config)
     {
       return \Aleph::exe($code, array('config' => $config));

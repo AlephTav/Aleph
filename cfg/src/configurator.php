@@ -45,9 +45,9 @@ class Configurator
     // Shows page.
     $this->show(['errors' => [], 
                  'config' => $this->config['path']['config'],
-                 'classes' => $a->getClasses(),
+                 'classes' => $a->getClassMap(),
                  'logs' => $this->getLogDirectories(),
-                 'cfg' => $a->config(self::path(key($this->config['path']['config'])), true)->config(),
+                 'cfg' => $a->setConfig(self::path(key($this->config['path']['config'])), null, true),
                  'editable' => (bool)current($this->config['path']['config']),
                  'common' => $this->common]);
   }
@@ -70,7 +70,8 @@ class Configurator
         $cfg = $args['config'];
         $cfg['debugging'] = (bool)$cfg['debugging'];
         $cfg['logging'] = (bool)$cfg['logging'];
-        $cfg['autoload']['enabled'] = (bool)$cfg['autoload']['enabled'];
+        $cfg['autoload']['search'] = (bool)$cfg['autoload']['search'];
+        $cfg['autoload']['unique'] = (bool)$cfg['autoload']['unique'];
         if (isset($cfg['autoload']['timeout']) && (int)$cfg['autoload']['timeout'] > 0) $cfg['autoload']['timeout'] = (int)$cfg['autoload']['timeout'];
         if (isset($cfg['autoload']['directories'])) 
         {
@@ -105,9 +106,11 @@ class Configurator
         $cfg = ['debugging' => true,
                 'logging' => true,
                 'templateDebug' => 'lib/tpl/debug.tpl',
-                'autoload' => ['enabled' => true,
-                               'timeout' => 900,
-                               'mask' => '/.+\.php$/i'],
+                'autoload' => ['search' => true,
+                               'unique' => true,
+                               'classmap' => 'classmap.php',
+                               'timeout' => 300,
+                               'mask' => '/.+\.php\z/i'],
                 'cache' => ['type' => 'file',
                             'directory' => 'cache',
                             'gcProbability' => 33.333],
@@ -191,11 +194,11 @@ class Configurator
         $res = self::render('logdetails.html', ['log' => $res, 'file' => $args['dir'] . ' ' . $args['file']]);
         break;
       case 'classmap.create':
-        $a->load();
-        $res = self::render('classmap.html', ['classes' => $a->getClasses()]);
+        $a->createClassMap();
+        $res = self::render('classmap.html', ['classes' => $a->getClassMap()]);
         break;
       case 'classmap.clean':
-        $a->setClasses([]);
+        $a->setClassMap([]);
         $res = self::render('classmap.html', ['classes' => []]);
         break;
     }
@@ -256,7 +259,7 @@ class Configurator
   
   private function renderConfig($file)
   {
-    return self::render('config.html', ['cfg' => \Aleph::getInstance()->config(self::path($file), true)->config(), 
+    return self::render('config.html', ['cfg' => \Aleph::getInstance()->setConfig(self::path($file), null, true), 
                                         'editable' => $this->config['path']['config'][$file],
                                         'common' => $this->common]);
   }
@@ -279,7 +282,7 @@ class Configurator
     require_once(self::path($this->config['path']['aleph']));
     $a = \Aleph::init();
     \Aleph::errorHandling(false);
-    foreach ($this->config['path']['config'] as $file => $editable) $a->config(self::path($file));
+    foreach ($this->config['path']['config'] as $file => $editable) $a->setConfig(self::path($file));
     return $a;
   }
   

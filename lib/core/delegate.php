@@ -433,7 +433,7 @@ class Delegate implements IDelegate
     };
     if (is_object($this->class) || class_exists($this->class, false)) return $methodExists($this->class, $this->method);
     if (!$autoload) return false;
-    if (!\Aleph::getInstance()->load($this->class)) return false;
+    if (!\Aleph::getInstance()->loadClass($this->class)) return false;
     return $methodExists($this->class, $this->method);
   }
   

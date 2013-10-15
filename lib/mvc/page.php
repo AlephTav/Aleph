@@ -106,9 +106,9 @@ class Page implements IPage
   public function __construct($template = null, Cache\Cache $cache = null)
   {
     $this->a = \Aleph::getInstance();
-    $this->fv = $this->a->request()->data;
+    $this->fv = $this->a->getRequest()->data;
     $this->ajax = Web\Ajax::getInstance();
-    $this->cache = $cache ?: (self::$defaultCache instanceof Cache\Cache ? self::$defaultCache : $this->a->cache());
+    $this->cache = $cache ?: (self::$defaultCache instanceof Cache\Cache ? self::$defaultCache : $this->a->getCache());
     $this->template = $template;
     $this->setPageID($template);
   }

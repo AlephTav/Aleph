@@ -826,6 +826,14 @@ abstract class SQLBuilder
     return implode(' ' . $conj . ' ', $tmp);
   }
   
+  /**
+   * Adds a parameter value to the SQL statement.
+   *
+   * @param mixed $value - the value to be added.
+   * @param array $data - the SQL statement parameters to which the value will be added.
+   * @return string - part of the building SQL string.
+   * @access protected
+   */
   protected function addParam($value, array &$data)
   {
     if ($this->seq == 0)

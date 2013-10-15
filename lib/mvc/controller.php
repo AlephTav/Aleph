@@ -75,14 +75,14 @@ class Controller
     $a = \Aleph::getInstance();
     if (!empty($a['locked']))
     {
-      $cache = $cache ?: (self::$cache instanceof Cache\Cache ? self::$cache : $a->cache());
+      $cache = $cache ?: (self::$cache instanceof Cache\Cache ? self::$cache : $a->getCache());
       if (!empty($a['unlockKey']) && (isset($_REQUEST[$a['unlockKey']]) || !$cache->isExpired(\CB::getSiteUniqueID() . $a['unlockKey'])))
       {
         if (isset($_REQUEST[$a['unlockKey']])) $cache->set(\Aleph::getSiteUniqueID() . $a['unlockKey'], true, isset($a['unlockKeyExpire']) ? $a['unlockKeyExpire'] : 108000);
       }
       else
       {
-        $a->response()->stop(423, isset($a['templateLock']) ? file_get_contents(\Aleph::dir($a['templateLock'])) : self::MSG_LOCKED_RESOURCE);
+        $a->getResponse()->stop(423, isset($a['templateLock']) ? file_get_contents(\Aleph::dir($a['templateLock'])) : self::MSG_LOCKED_RESOURCE);
       }
     }
     $this->map = $map;
@@ -126,7 +126,7 @@ class Controller
     $a = \Aleph::getInstance();
     if ($page === null)
     {
-      $router = $a->router();
+      $router = $a->getRouter();
       foreach ($this->map as $resource => $info)
       {
         foreach ($info as $methods => $data)
@@ -158,9 +158,9 @@ class Controller
         if (isset($this->handlers[404]))
         {
           $this->handlers[404]->call(array($this));
-          $a->response()->stop(404);
+          $a->getResponse()->stop(404);
         }
-        $a->response()->stop(404, 'The requested page is not found.');
+        $a->getResponse()->stop(404, 'The requested page is not found.');
       }
       else
       {
@@ -175,13 +175,13 @@ class Controller
       else if (isset($this->handlers[403]))
       {
         $this->handlers[403]->call();
-        $a->response()->stop(403);
+        $a->getResponse()->stop(403);
       }
-      $a->response()->stop(403, 'Access denied.');
+      $a->getResponse()->stop(403, 'Access denied.');
     }
-    if ($a->request()->method == 'GET' && !$a->request()->isAjax)
+    if ($a->getRequest()->method == 'GET' && !$a->getRequest()->isAjax)
     {
-      if ((int)$page->expire > 0 && !isset($page->cache[$page->getPageID()])) $a->response()->stop(200, $page->cache[$page->getPageID()]);
+      if ((int)$page->expire > 0 && !isset($page->cache[$page->getPageID()])) $a->getResponse()->stop(200, $page->cache[$page->getPageID()]);
       foreach ($page->getSequenceMethods(true) as $method) $page->{$method}();
     }
     else

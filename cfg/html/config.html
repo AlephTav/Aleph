@@ -21,35 +21,46 @@
     </div>
   </div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="tplDebug">Debug Info Template</label>
+		  <label class="ym-label" for="tplDebug">Debug info template</label>
 				<input type="text" id="tplDebug" name="tplDebug" value="<?=@$cfg['templateDebug'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="tplBug">Bug Info Template</label>
+		  <label class="ym-label" for="tplBug">Bug info template</label>
 				<input type="text" id="tplBug" name="tplBug" value="<?=@$cfg['templateBug'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="customDebugMethod">Custom Debug Method</label>
+		  <label class="ym-label" for="customDebugMethod">Custom debug method</label>
 				<input type="text" id="customDebugMethod" name="tplBug" value="<?=@$cfg['customDebugMethod'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="customLogMethod">Custom Log Method</label>
+		  <label class="ym-label" for="customLogMethod">Custom log method</label>
 				<input type="text" id="customLogMethod" name="tplBug" value="<?=@$cfg['customLogMethod'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <h6 class="subtitle">Autoload Settings</h6>
   <div class="ym-fbox-check">
-    <span class="ym-label">Enabled</span>
-    <input type="radio" id="alYes" value="1" name="alEnabled" <?=(empty($cfg['autoload']['enabled']) ? '' : 'checked="checked"');?> <?=($editable ? '' : 'disabled="disabled"');?> />
-				<label for="alYes">Yes</label>
-				<input type="radio" id="alNo" value="0" name="alEnabled" <?=(empty($cfg['autoload']['enabled']) ? 'checked="checked"' : '');?> <?=($editable ? '' : 'disabled="disabled"');?> />
-				<label for="alNo">No</label>
+    <span class="ym-label">Class search enabled</span>
+    <input type="radio" id="alSearchYes" value="1" name="alSearch" <?=(empty($cfg['autoload']['search']) ? '' : 'checked="checked"');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="alSearchYes">Yes</label>
+				<input type="radio" id="alSearchNo" value="0" name="alSearch" <?=(empty($cfg['autoload']['search']) ? 'checked="checked"' : '');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="alSearchNo">No</label>
+  </div>
+  <div class="ym-fbox-check">
+    <span class="ym-label">Only unique class names are allowed</span>
+    <input type="radio" id="alUniqueYes" value="1" name="alUnique" <?=(empty($cfg['autoload']['unique']) ? '' : 'checked="checked"');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="alUniqueYes">Yes</label>
+				<input type="radio" id="alUniqueNo" value="0" name="alUnique" <?=(empty($cfg['autoload']['unique']) ? 'checked="checked"' : '');?> <?=($editable ? '' : 'disabled="disabled"');?> />
+				<label for="alUniqueNo">No</label>
+  </div>
+  <div class="ym-fbox-text">
+    <label class="ym-label" for="alClassMap">Path to the class map file</label>
+				<input type="text" id="alClassMap" name="alClassMap" value="<?=@$cfg['autoload']['classmap'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
   </div>
   <div class="ym-fbox-text">
     <label class="ym-label" for="alTimeout">Timeout (in seconds)</label>
 				<input type="text" id="alTimeout" name="alTimeout" value="<?=@$cfg['autoload']['timeout'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
   </div>
   <div class="ym-fbox-text"> 
-    <label class="ym-label" for="alMask">File Mask</label>
+    <label class="ym-label" for="alMask">File mask</label>
 				<input type="text" id="alMask" name="alMask" value="<?=@$cfg['autoload']['mask'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
   </div>
   <div class="ym-fbox-text">
@@ -58,11 +69,11 @@
   </div>
   <div class="ym-fbox-text">
     <label class="ym-label" for="alDirectories">Directories (json format)</label>
-    <textarea id="alDirectories" name="alDirectories" rows="7"><?=(isset($cfg['autoload']['directories']) ? json_encode($cfg['autoload']['directories']) : '');?></textarea>
+    <textarea id="alDirectories" name="alDirectories" rows="7" <?=($editable ? '' : 'readonly="readonly"');?>><?=(isset($cfg['autoload']['directories']) ? json_encode($cfg['autoload']['directories']) : '');?></textarea>
   </div>
   <div class="ym-fbox-text">
     <label class="ym-label" for="alExclusions">Exclusions (json format)</label>
-    <textarea id="alExclusions" name="alExclusions" rows="7"><?=(isset($cfg['autoload']['exclusions']) ? json_encode($cfg['autoload']['exclusions']) : '');?></textarea>
+    <textarea id="alExclusions" name="alExclusions" rows="7" <?=($editable ? '' : 'readonly="readonly"');?>><?=(isset($cfg['autoload']['exclusions']) ? json_encode($cfg['autoload']['exclusions']) : '');?></textarea>
   </div>
   <h6 class="subtitle">Cache Settings</h6>
   <div class="ym-fbox-select">
@@ -78,7 +89,7 @@
 				<input type="text" id="cacheDirectory" name="cacheDirectory" value="<?=@$cfg['cache']['directory'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-text cache-file" style="<?=(@$cfg['cache']['type'] == 'file' ? 'display:block;' : '');?>">
-		  <label class="ym-label" for="gcProbability">GC Probability</label>
+		  <label class="ym-label" for="gcProbability">GC probability</label>
 				<input type="text" id="gcProbability" name="gcProbability" value="<?=@$cfg['cache']['gcProbability'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-check cache-memory" style="<?=(@$cfg['cache']['type'] == 'memory' ? 'display:block;' : '');?>">
@@ -101,24 +112,24 @@
 				<label for="dbLogOff">Off</label>
   </div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="dbLogFile">SQL Log</label>
+		  <label class="ym-label" for="dbLogFile">SQL log</label>
 				<input type="text" id="dbLogFile" name="dbLogFile" value="<?=@$cfg['db']['log'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="dbCacheExpire">Cache Expire (in seconds)</label>
+		  <label class="ym-label" for="dbCacheExpire">Cache expire (in seconds)</label>
 				<input type="text" id="dbCacheExpire" name="dbCacheExpire" value="<?=@$cfg['db']['cacheExpire'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="dbCacheGroup">Cache Group</label>
+		  <label class="ym-label" for="dbCacheGroup">Cache group</label>
 				<input type="text" id="dbCacheGroup" name="dbCacheGroup" value="<?=@$cfg['db']['cacheGroup'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <h6 class="subtitle">Active Record Settings</h6>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="arCacheExpire">Cache Expire (in seconds)</label>
+		  <label class="ym-label" for="arCacheExpire">Cache expire (in seconds)</label>
 				<input type="text" id="arCacheExpire" name="arCacheExpire" value="<?=@$cfg['ar']['cacheExpire'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="arCacheGroup">Cache Group</label>
+		  <label class="ym-label" for="arCacheGroup">Cache group</label>
 				<input type="text" id="arCacheGroup" name="arCacheGroup" value="<?=@$cfg['ar']['cacheGroup'];?>" <?=($editable ? '' : 'readonly="readonly"');?> />
 		</div>
 </div>

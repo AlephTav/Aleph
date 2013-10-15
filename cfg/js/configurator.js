@@ -120,7 +120,8 @@ $(function()
       cfg.cache.servers = $('#memServers').val();
       cfg.cache.compress = $('#compressNo').attr('checked') == 'checked' ? false : true;
     }
-    cfg['autoload'] = {'enabled': $('#alYes').attr('checked') == 'checked' ? 1 : 0};
+    cfg['autoload'] = {'search': $('#alSearchYes').attr('checked') == 'checked' ? 1 : 0, 'unique': $('#alUniqueYes').attr('checked') == 'checked' ? 1 : 0};
+    if ((tmp = $('#alClassMap').val()) != '') cfg['autoload']['classmap'] = tmp;
     if ((tmp = $('#alMask').val()) != '') cfg['autoload']['mask'] = tmp;
     if ((tmp = $('#alCallback').val()) != '') cfg['autoload']['callback'] = tmp;
     if ((tmp = $('#alTimeout').val()) != '') cfg['autoload']['timeout'] = tmp;
@@ -377,10 +378,10 @@ function hideDialog(leftShadow)
 
 function hasError(html)
 {
-  if (html.match(/(Fatal|Parse) error:(.*) in (.*) on line ([0-9]+)/))
+  if (html.match(/(Fatal|Parse) error:.* in .*/))
   {
     hideDialog();
-    showMsg(html, true);
+    showMsg(html.replace(/\n/g, '<br />'), true);
     return true;
   }
   return false;

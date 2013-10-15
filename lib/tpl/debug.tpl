@@ -113,7 +113,7 @@ $convertToHTML = function($obj) use(&$convertToHTML)
 $file2class = function($file)
 {
   if ($file == '' || $file == '[Internal PHP]') return 'file-internal-php';
-  $config = \Aleph::getInstance()->config();
+  $config = \Aleph::getInstance()->getConfig();
   if (isset($config['dirs']['application']) && strpos($file, $config['dirs']['application']) === 0) return 'file-app';
   if (isset($config['dirs']['framework']) && strpos($file, $config['dirs']['framework']) === 0) return 'file-ignore';
   if ($file[0] != DIRECTORY_SEPARATOR && is_file(\Aleph::getRoot() . DIRECTORY_SEPARATOR . $file)) return 'file-root';

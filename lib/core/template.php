@@ -123,7 +123,7 @@ class Template implements \ArrayAccess
     $this->expire = (int)$expire;
     if ($this->expire > 0) 
     {
-      $this->setCache($cache ?: \Aleph::getInstance()->cache());
+      $this->setCache($cache ?: \Aleph::getInstance()->getCache());
       $this->setCacheID($cacheID);
     }
   }
@@ -136,7 +136,7 @@ class Template implements \ArrayAccess
    */
   public function getCache()
   {
-    if ($this->cache === null) $this->cache = \Aleph::getInstance()->cache();
+    if ($this->cache === null) $this->cache = \Aleph::getInstance()->getCache();
     return $this->cache;
   }
   

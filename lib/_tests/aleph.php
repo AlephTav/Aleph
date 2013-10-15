@@ -37,15 +37,15 @@ function test_registry()
 function test_config(\Aleph $a)
 {
   // Checks ini config loading.
-  $a->config(__DIR__ . '/_resources/config.ini');
-  if ($a->config() !== ['var1' => '1', 'var2' => 'a', 'var3' => [1, 2, 3], 'section1' => ['var1' => 'test'], 'section2' => ['var1' => [1, 2, 3]]]) return 'Loading of ini config is failed.';
+  $a->setConfig(__DIR__ . '/_resources/config.ini');
+  if ($a->getConfig() !== ['var1' => '1', 'var2' => 'a', 'var3' => [1, 2, 3], 'section1' => ['var1' => 'test'], 'section2' => ['var1' => [1, 2, 3]]]) return 'Loading of ini config is failed.';
   // Checks php config loading.
   $arr = ['var1' => 1, 'var2' => '2', 'var4' => [1, 2, 3 => ['var1' => 'test']], 'section1' => ['var1' => '[1,2,3]']];
-  $a->config($arr, true);
-  if ($a->config() !== $arr) return 'Loading of php config is failed.';
+  $a->setConfig($arr, null, true);
+  if ($a->getConfig() !== $arr) return 'Loading of php config is failed.';
   // Checks merging config data.
-  $a->config(__DIR__ . '/_resources/config.ini');
-  if ($a->config() !== ['var1' => '1', 'var2' => 'a', 'var4' => [1, 2, 3 => ['var1' => 'test']], 'section1' => ['var1' => 'test'], 'var3' => [1, 2, 3], 'section2' => ['var1' => [1, 2, 3]]]) return 'Merging config data is failed.';
+  $a->setConfig(__DIR__ . '/_resources/config.ini');
+  if ($a->getConfig() !== ['var1' => '1', 'var2' => 'a', 'var4' => [1, 2, 3 => ['var1' => 'test']], 'section1' => ['var1' => 'test'], 'var3' => [1, 2, 3], 'section2' => ['var1' => [1, 2, 3]]]) return 'Merging config data is failed.';
   // Checks array access to the config data.
   $res = $a['foo'] === null;
   $res &= $a['var1'] === '1';

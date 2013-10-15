@@ -48,6 +48,7 @@ final class Aleph implements \ArrayAccess
   const ERR_GENERAL_2 = 'Method "[{var}]" of class "[{var}]" doesn\'t exist.';
   const ERR_GENERAL_3 = 'Property "[{var}]" of class "[{var}]" doesn\'t exist.';
   const ERR_GENERAL_4 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
+  const ERR_GENERAL_5 = 'Path to the class map file is not set. You should define the configuration variable autoload::classmap.';
   const ERR_CONFIG_1 = 'File "[{var}]" is not correct ini file.';
 
   /**
@@ -139,60 +140,28 @@ final class Aleph implements \ArrayAccess
   private $router = null;
   
   /**
+   * Array of paths to all classes of the applcation and framework.
+   *
+   * @var array $classes
+   * @access private
+   */
+  private $classes = null;
+  
+  /**
+   * Path to the class map file.
+   *
+   * @var string $classmap
+   * @access private
+   */
+  private $classmap = null;
+  
+  /**
    * Array of configuration variables.
    *
    * @var array $config
    * @access private  
    */
   private $config = [];
-  
-  /**
-   * Array of paths to all classes of the applcation and framework.
-   *
-   * @var array $classes
-   * @access private
-   */
-  private $classes = [];
-  
-  /**
-   * Array of paths to classes to exclude them from the class searching.
-   *
-   * @var array $exclusions
-   * @access private  
-   */
-  private $exclusions = [];
-  
-  /**
-   * Direcotires for class searching.
-   *
-   * @var array $dirs
-   * @access private
-   */
-  private $dirs = [];
-  
-  /**
-   * File search mask.
-   *
-   * @var string $mask
-   * @access private
-   */
-  private $mask = null;
-  
-  /**
-   * Path to the class map file.
-   *
-   * @var string $key
-   * @access private
-   */
-  private $classmap = null;
-  
-  /**
-   * Autoload callback.
-   *
-   * @var mixed $alCallback
-   * @access private
-   */
-  private $alCallback = null;
   
   /**
    * Returns an instance of this class.
@@ -506,15 +475,16 @@ final class Aleph implements \ArrayAccess
     $config = (self::$instance !== null) ? self::$instance->config : [];
     $debug = isset($config['debugging']) ? (bool)$config['debugging'] : true;
     foreach (['templateDebug', 'templateBug'] as $var) $$var = isset($config[$var]) ? self::dir($config[$var]) : null;
-    $delegateExists = false;
-    if (self::$instance instanceof \CB && (!empty($config['logging']) && !empty($config['customLogMethod']) || $isDebug && !empty($config['customDebugMethod'])))
+    $delegateExists = class_exists('Aleph\Core\Delegate', false);
+    if (!$delegateExists && self::$instance instanceof self && (!empty($config['logging']) && !empty($config['customLogMethod']) || $debug && !empty($config['customDebugMethod'])))
     {
-      $classes = self::$instance->getClasses();
-      if (isset($classes['aleph\core\delegate']) && file_exists($classes['aleph\core\delegate']))
+      if (isset($config['autoload']['callback'])) self::$instance->al('Aleph\Core\Delegate', true);
+      else
       {
-        require($classes['aleph\core\delegate']);
-        $delegateExists = class_exists('Aleph\Core\Delegate');
+        $classes = self::$instance->getClassMap();
+        if (isset($classes['aleph\core\delegate']) && file_exists($classes['aleph\core\delegate'])) require_once($classes['aleph\core\delegate']);
       }
+      $delegateExists = class_exists('Aleph\Core\Delegate', false);
     }
     try
     {
@@ -818,7 +788,7 @@ final class Aleph implements \ArrayAccess
     ${'(_._)'} = ' ?>' . $code . '<?php '; unset($code);
     if ($vars) extract($vars);
     ob_start();
-    eval(\Aleph::ecode(${'(_._)'}));
+    eval(self::ecode(${'(_._)'}));
     $res = ob_get_clean();
     if (strpos($res, 'eval()\'d') !== false) exit($res);  
     return $res;
@@ -970,13 +940,6 @@ final class Aleph implements \ArrayAccess
   private function __construct()
   {
     if (!self::$instance) spl_autoload_register([$this, 'al']);
-    $this->config = $this->classes = $this->exclusions = [];
-    $this->dirs = [self::$root => true];
-    $this->classmap = self::$root . '/classmap.php';
-    $this->mask = '/.+\.php$/i';
-    $this->autoload = '';
-    $this->cache = null;
-    $this->router = null;
   }
   
   /**
@@ -1003,14 +966,14 @@ final class Aleph implements \ArrayAccess
    */
   private function al($class, $auto = true)
   {
-    $classes = $this->getClasses();
-    if ($auto && $this->alCallback)
+    if ($auto && isset($this->config['autoload']['callback']))
     {
-      $info = $this->alCallback->getInfo();
-      if ($info['type'] == 'class') $this->al($info['class'], false);
-      $this->alCallback->call([$class, $classes]);
-      return true;
+      $callback = $this->config['autoload']['callback'];
+      if (class_exists('Aleph\Core\Delegate', false)) return self::delegate($callback, $class);
+      if (is_callable($callback, true)) return call_user_func_array($callback, [$class]);
+      throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
     }
+    $classes = $this->getClassMap();
     $cs = strtolower(ltrim($class, '\\'));
     if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     if (isset($classes[$cs]) && is_file($classes[$cs]))
@@ -1018,40 +981,39 @@ final class Aleph implements \ArrayAccess
       require_once($classes[$cs]);
       if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     }
-    if (empty($this->config['autoload']['enabled']))
+    if (empty($this->config['autoload']['search']))
     {
-      self::exception(new Core\Exception($this, 'ERR_GENERAL_1', $class));
-      exit;
+      if (!$auto) return false;
+      throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
     }
-    if ($this->find($cs) === false)
-    {
-      if ($auto) 
-      {
-        self::exception(new Core\Exception($this, 'ERR_GENERAL_1', $class));
-        exit;
-      }
-      return false;
-    }
-    return true;
+    if ($this->find($cs)) return true;
+    if (!$auto) return false;
+    throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
   }
   
   /**
    * Finds a class or interface to include into your PHP script.
    *
    * @param string $class
-   * @param string $path
+   * @param array $options - an array of additional search parameters.
    * @return integer | boolean
    * @access private
    */
-  private function find($class = null, $path = null)
+  private function find($class = null, array $options = null)
   {
-    if ($path) $paths = [$path => true];
+    if ($options) 
+    {
+      $paths = [$options['path'] => true];
+      $exclusions = $options['exclusions'];
+    }
     else
     {
+      $classmap = empty($this->config['autoload']['classmap']) ? null : self::dir($this->config['autoload']['classmap']);
+      if (!$classmap) throw new \Exception(self::error($this, 'ERR_GENERAL_5'));
       if (file_exists($this->classmap) && (require($this->classmap)) === false)
       {
-        $seconds = 0; $timeout = isset($this->config['autoload']['timeout']) ? (int)$this->config['autoload']['timeout'] : 900;
-        while (($classes = require($this->classmap)) === false && ++$seconds <= $timeout) sleep(1);
+        $seconds = 0; $timeout = isset($this->config['autoload']['timeout']) ? (int)$this->config['autoload']['timeout'] : 300;
+        while (($classes = require($classmap)) === false && ++$seconds <= $timeout) sleep(1);
         if ($seconds <= $timeout)
         {
           if (isset($classes[$class]) && is_file($classes[$class]))
@@ -1062,10 +1024,16 @@ final class Aleph implements \ArrayAccess
           return false;
         }
         // if we wait more than $timeout seconds then it's probably something went wrong and we should try to perform searching again.
-        file_put_contents($this->classmap, '<?php return [];');
+        file_put_contents($classmap, '<?php return [];');
+        return false;
       }
-      else file_put_contents($this->classmap, '<?php return false;');
-      $paths = $this->dirs ?: [self::$root => true];
+      else 
+      {
+        file_put_contents($classmap, '<?php return false;');
+      }
+      $exclusions = empty($this->config['autoload']['exclusions']) ? [] : (array)$this->config['autoload']['exclusions'];
+      foreach ($exclusions as &$item) $item = realpath($item);
+      $paths = empty($this->config['autoload']['directories']) ? [self::$root => true] : (array)$this->config['autoload']['directories'];
       $this->classes = [];
       $first = true;
     }
@@ -1075,10 +1043,10 @@ final class Aleph implements \ArrayAccess
       {
         if ($item == '.' || $item == '..' || $item == '.svn' || $item == '.hg' || $item == '.git') continue; 
         $file = str_replace(DIRECTORY_SEPARATOR == '\\' ? '/' : '\\', DIRECTORY_SEPARATOR, $path . '/' . $item);
-        if (array_search($file, $this->exclusions) !== false) continue;
+        if (array_search($file, $exclusions) !== false) continue;
         if (is_file($file))
         {
-          if (!preg_match($this->mask, $item)) continue;
+          if (isset($this->config['autoload']['mask']) && !preg_match($this->config['autoload']['mask'], $item)) continue;
           $tokens = token_get_all(file_get_contents($file));
           for ($i = 0, $max = count($tokens), $namespace = ''; $i < $max; $i++)
           {
@@ -1105,14 +1073,14 @@ final class Aleph implements \ArrayAccess
                   if ($t[0] == T_STRING) break;
                 }
                 $cs = strtolower(ltrim($namespace . $t[1], '\\'));
-                if (isset($this->classes[$cs])) 
+                if (!empty($this->config['autoload']['unique']) && isset($this->classes[$cs])) 
                 {
                   $normalize = function($dir)
                   {
                     return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                   };
                   file_put_contents($this->classmap, '<?php return [];');
-                  self::exception(new \Exception(self::error('Aleph::ERR_GENERAL_4', ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file))));
+                  throw new \Exception(self::error($this, 'ERR_GENERAL_4', ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file)));
                   exit;
                 }
                 $this->classes[$cs] = $file;
@@ -1120,13 +1088,13 @@ final class Aleph implements \ArrayAccess
             }
           }
         }
-        else if ($isRecursion && is_dir($file)) $this->find($class, $file);
+        else if ($isRecursion && is_dir($file)) $this->find($class, ['path' => $file, 'exclusions' => $exclusions]);
       }
     }
     $flag = false;
     if (isset($first)) 
     {
-      $this->setClasses($this->classes);
+      $this->setClassMap($this->classes);
       if ($class !== null)
       {
         foreach ($this->classes as $cs => $file)
@@ -1143,48 +1111,57 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Loads or returns configuration data.
+   * Returns the configuration data or their particular part.
    *
-   * @param string | array $param
-   * @param boolean $replace
-   * @return array | self
+   * @param string $section - the group (section) of the configuration data.
+   * @return mixed
    * @access public
    */
-  public function config($param = null, $replace = false)
+  public function getConfig($section = null)
   {
-    if ($param === null) return $this->config;
-    $initAutoload = function()
-    {
-      if (empty($this->config['autoload'])) return;
-      $config = $this->config['autoload'];
-      if (isset($config['directories'])) $this->setDirectories($config['directories']);
-      if (isset($config['exclusions'])) $this->setExclusions($config['exclusions']);
-      if (isset($config['mask'])) $this->setMask($config['mask']);
-      if (isset($config['callback'])) $this->setAutoload($config['callback']);
-    };
-    if (is_array($param))
+    return $section === null ? $this->config : (empty($this->config[$section]) ? null : $this->config[$section]);
+  }
+  
+  /**
+   * Loads the configuration data.
+   *
+   * @param array | string $data - the configuration data or path to the configuration file (INI or PHP).
+   * @param string $section - the group (section) of the configuration data.
+   * @param boolean $replace - determines whether the old configuration data is replaced by new one.
+   * @return array - the newly formed config.
+   * @access public
+   */
+  public function setConfig($data, $section = null, $replace = false)
+  {
+    if (is_array($data))
     {
       if ($replace)
       {
-        $this->config = $param;
-        $initAutoload();
-        return $this;
+        if ($section === null) $this->config = $data;
+        else $this->config[$section] = $data;
+        return $this->config;
       }
-      $data = $param;
       $ini = false;
     }
     else
     {
       $ini = false;
-      if (strtolower(pathinfo($param, PATHINFO_EXTENSION)) == 'php') $data = require($param);
+      if (strtolower(pathinfo($data, PATHINFO_EXTENSION)) == 'php') $data = require($data);
       else
       {
-        $data = parse_ini_file($param, true);
-        if ($data === false) throw new Core\Exception($this, 'ERR_CONFIG_1', $param);
+        $path = $data;
+        $data = parse_ini_file($path, true);
+        if ($data === false) throw new Core\Exception($this, 'ERR_CONFIG_1', $path);
         $ini = true;
       }
     }
-    if ($replace) $this->config = [];
+    if ($section !== null) 
+    {
+      if (empty($this->config[$section])) $this->config[$section] = [];
+      $config = &$this->config[$section];
+    }
+    else $config = &$this->config;
+    if ($replace) $config = [];
     $convert = function($v) use ($ini)
     {
       if (!$ini || is_array($v) || is_object($v)) return $v;
@@ -1195,37 +1172,42 @@ final class Aleph implements \ArrayAccess
       }
       return $v;
     };
-    foreach ($data as $section => $properties)
+    foreach ($data as $sect => $properties)
     {
       if (is_array($properties)) 
       {
-        if (empty($this->config[$section]) || !is_array($this->config[$section])) $this->config[$section] = [];
-        foreach ($properties as $k => $v) $this->config[$section][$k] = $convert($v);
+        if (empty($config[$sect]) || !is_array($config[$sect])) $config[$sect] = [];
+        foreach ($properties as $k => $v) $config[$sect][$k] = $convert($v);
       }
       else 
       {
-        $this->config[$section] = $convert($properties);
+        $config[$sect] = $convert($properties);
       }
     }
-    $initAutoload();
-    return $this;
+    return $this->config;
   }
   
   /**
-   * Sets or returns the cache object.
+   * Returns the default cache object.
    *
-   * @param Aleph\Cache\Cache $cache
    * @return Aleph\Cache\Cache
    * @access public
    */
-  public function cache(Cache\Cache $cache = null)
+  public function getCache()
   {
-    if ($cache === null)
-    {
-      if ($this->cache === null) $this->cache = Cache\Cache::getInstance();
-      return $this->cache;
-    }
-    return $this->cache = $cache;
+    if ($this->cache === null) $this->cache = Cache\Cache::getInstance();
+    return $this->cache;
+  }
+  
+  /**
+   * Sets the default cache object.
+   *
+   * @param Aleph\Cache\Cache $cache
+   * @access public
+   */
+  public function setCache(Cache\Cache $cache)
+  {
+    $this->cache = $cache;
   }
   
   /**
@@ -1234,7 +1216,7 @@ final class Aleph implements \ArrayAccess
    * @return Aleph\Net\Request
    * @access public
    */
-  public function request()
+  public function getRequest()
   {
     return Net\Request::getInstance();
   }
@@ -1245,7 +1227,7 @@ final class Aleph implements \ArrayAccess
    * @return Aleph\Net\Response
    * @access public
    */
-  public function response()
+  public function getResponse()
   {
     return Net\Response::getInstance();
   }
@@ -1256,25 +1238,21 @@ final class Aleph implements \ArrayAccess
    * @return Aleph\Net\Router
    * @access public
    */
-  public function router()
+  public function getRouter()
   {
     if ($this->router === null) $this->router = new Net\Router();
     return $this->router;
   }
   
   /**
-   * Sets array of class paths.
+   * Creates the class map.
    *
-   * @param array $classes
+   * @return integer - the number of all found classes.
    * @access public
    */
-  public function setClasses(array $classes)
+  public function createClassMap()
   {
-    $code = [];
-    foreach ($classes as $class => $path) $code[] = "'" . $class . "' => '" . str_replace("'", "\'", $path) . "'";
-    file_put_contents($this->classmap, '<?php return [' . implode(',' . PHP_EOL . '              ', $code) . '];');
-    chmod($this->classmap, 0775);
-    $this->classes = $classes;
+    return $this->find();
   }
   
   /**
@@ -1283,114 +1261,45 @@ final class Aleph implements \ArrayAccess
    * @return array
    * @access public
    */
-  public function getClasses()
+  public function getClassMap()
   {
-    if (!$this->classes) $this->classes = file_exists($this->classmap) ? (array)require($this->classmap) : [];
-	   return $this->classes;
+    $classmap = empty($this->config['autoload']['classmap']) ? null : self::dir($this->config['autoload']['classmap']);
+    if ($classmap != $this->classmap)
+    {
+      $this->classmap = $classmap;
+      $this->classes = file_exists($classmap) ? (array)require($classmap) : [];
+    }
+    return $this->classes;
   }
   
   /**
-   * Sets array of files that shouldn't be included in the class searching.
+   * Sets array of class paths.
    *
-   * @param array $exclusions
+   * @param array $classes - array of paths to the class files.
+   * @param string $classmap - path to the class map file.
    * @access public
    */
-  public function setExclusions(array $exclusions)
+  public function setClassMap(array $classes, $classmap = null)
   {
-    foreach ($exclusions as &$item) $item = realpath($item);
-    $this->exclusions = $exclusions;
+    $classmap = $classmap ?: (empty($this->config['autoload']['classmap']) ? null : self::dir($this->config['autoload']['classmap']));
+    if (!$classmap) throw new Core\Exception($this, 'ERR_GENERAL_5');
+    $code = [];
+    foreach ($classes as $class => $path) $code[] = "'" . $class . "' => '" . str_replace("'", "\'", $path) . "'";
+    file_put_contents($classmap, '<?php return [' . implode(',' . PHP_EOL . '              ', $code) . '];');
+    $this->classmap = $this->config['autoload']['classmap'] = $classmap;
+    $this->classes = $classes;
   }
   
   /**
-   * Returns array of files that shouldn't be included in the class searching.
+   * Searches a single class and includes it to the script.
+   * Returns FALSE if the given class does not exist and TRUE otherwise.
    *
-   * @return array
+   * @param string $class - a class to search and include.
+   * @return boolean
    * @access public
    */
-  public function getExclusions()
+  public function loadClass($class)
   {
-    return $this->exclusions;
-  }
-  
-  /**
-   * Sets list of directories for the class searching.
-   * List of directories should be an associative array 
-   * in which its keys are directory paths and its values are boolean values 
-   * determining whether recursive search is possible (TRUE) or not (FALSE).
-   *
-   * @param array $directories
-   * @access public
-   */
-  public function setDirectories(array $directories)
-  {
-    $this->dirs = $directories;
-  }
-  
-  /**
-   * Returns list of directories for the class searching.
-   *
-   * @return array
-   * @access public
-   */
-  public function getDirectories()
-  {
-    return $this->dirs;
-  }
-  
-  /**
-   * Sets search file mask.
-   *
-   * @param string $mask
-   * @access public
-   */
-  public function setMask($mask)
-  {
-    $this->mask = $mask;
-  }
-  
-  /**
-   * Returns search file mask.
-   *
-   * @return string
-   * @access public
-   */
-  public function getMask()
-  {
-    return $this->mask;
-  }
-  
-  /**
-   * Sets autoload callback.
-   *
-   * @param mixed $callback - a delegate.
-   * @access public
-   */
-  public function setAutoload($callback)
-  {
-    $this->alCallback = new Core\Delegate($callback);
-  }
-  
-  /**
-   * Returns autoload callback.
-   *
-   * @return Aleph\Core\IDelegate
-   * @access public
-   */
-  public function getAutoload()
-  {
-    return $this->alCallback;
-  }
-  
-  /**
-   * Searches all classes of the application or only a single class.
-   *
-   * @param string $class - a single class to search and include.
-   * @return integer | boolean
-   * @access public
-   */
-  public function load($class = null)
-  {
-    if ($class === null) return $this->find();
     return $this->al($class, false);
   }
   

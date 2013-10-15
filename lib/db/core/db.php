@@ -259,7 +259,7 @@ class DB
    */
   public function getCache()
   {
-    if ($this->cache === null) $this->cache = \Aleph::getInstance()->cache();
+    if ($this->cache === null) $this->cache = \Aleph::getInstance()->getCache();
     return $this->cache;
   }
   

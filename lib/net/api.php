@@ -36,7 +36,7 @@ class API
 
   public static function process()
   {
-    \Aleph::getInstance()->config(array('customDebugMethod' => __CLASS__ . '::error'));
+    \Aleph::getInstance()->setConfig(['customDebugMethod' => __CLASS__ . '::error']);
     self::$request = Request::getInstance();
     self::$response = Response::getInstance();
     self::$response->convertOutput = true;

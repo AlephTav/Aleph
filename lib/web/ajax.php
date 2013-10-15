@@ -72,7 +72,7 @@ class Ajax
    */
   private function __construct()
   {
-    $this->request = \Aleph::getInstance()->request();
+    $this->request = \Aleph::getInstance()->getRequest();
     $this->parent = empty($this->request->data['ajax-upload']) ? '' : 'parent.';
   }
   

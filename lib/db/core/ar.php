@@ -67,7 +67,7 @@ class AR
    * @access public
    * @static
    */
-  public static $cacheExpire = -1;
+  public static $cacheExpire = null;
   
   /**
    * Cache group of all cached table metadata.
@@ -75,7 +75,7 @@ class AR
    * @var string $cacheGroup
    * @access public
    */
-  public static $cacheGroup = '--ar';
+  public static $cacheGroup = null;
   
   /**
    * Contains table metadata for all tables of all databases.
@@ -156,9 +156,10 @@ class AR
    * @param string $table - the table name
    * @param Aleph\DB\DB $db - the database connection object.
    * @param integer | boolean $cacheExpire - lifetime (in seconds) of the table metadata cache.
+   * @param string $cacheGroup - group name of the table metadata cache.
    * @access public
    */
-  public function __construct(/* $table, DB $db = null, $cacheExpire = null */)
+  public function __construct(/* $table, DB $db = null, $cacheExpire = null, $cacheGroup = null */)
   {
     $args = func_get_args();
     if (empty($args[0])) throw new Core\Exception('Aleph\DB\AR::ERR_AR_1');
@@ -178,12 +179,10 @@ class AR
     {
       $config = \Aleph::getInstance()['ar'];
       if (!empty($args[2])) $cacheExpire = (int)$args[2];
-      else 
-      {
-        if (isset($config['cacheExpire'])) $cacheExpire = (int)$config['cacheExpire'];
-        else $cacheExpire = (int)static::$cacheExpire;
-      }
-      if ($cacheExpire == 0) $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
+      else if (static::$cacheExpire !== null) $cacheExpire = (int)static::$cacheExpire;
+      else if (isset($config['cacheExpire'])) $cacheExpire = (int)$config['cacheExpire'];
+      else $cacheExpire = 0;
+      if ($cacheExpire === 0) $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
       else
       {
         $cache = $db->getCache();
@@ -192,7 +191,11 @@ class AR
         else
         {
           $info = ['table' => $db->getTableInfo($table), 'columns' => $db->getColumnsInfo($table)];
-          $cache->set($key, $info, $cacheExpire > 0 ? $cacheExpire : $cache->getVaultLifeTime(), isset($config['cacheGroup']) ? $config['cacheGroup'] : static::$cacheGroup);
+          if (!empty($args[3])) $cacheGroup = $args[3];
+          else if (static::$cacheGroup !== null) $cacheGroup = static::$cacheGroup;
+          else if (isset($config['cacheGroup'])) $cacheGroup = $config['cacheGroup'];
+          else $cacheGroup = '';
+          $cache->set($key, $info, $cacheExpire > 0 ? $cacheExpire : $cache->getVaultLifeTime(), $cacheGroup);
         }
       }
       static::$info[$dbname][$table] = $info;

@@ -174,7 +174,7 @@ namespace Aleph\Utils
     private function __construct($locale = null, Cache\Cache $cache = null)
     {
       $this->a = \aleph::getInstance();
-      $this->cache = $cache ?: $this->a->cache();
+      $this->cache = $cache ?: $this->a->getCache();
       $this->setLocale($locale ?: (substr($_SERVER['HTTP_ACCEPT_LANGUAGE'], 0, strpos($_SERVER['HTTP_ACCEPT_LANGUAGE'], ',')) ?: 'en'));
     }
 
