@@ -1027,15 +1027,17 @@ final class Aleph implements \ArrayAccess
         file_put_contents($classmap, '<?php return [];');
         return false;
       }
-      else 
+      else
       {
         file_put_contents($classmap, '<?php return false;');
       }
       $exclusions = empty($this->config['autoload']['exclusions']) ? [] : (array)$this->config['autoload']['exclusions'];
-      foreach ($exclusions as &$item) $item = realpath($item);
-      $paths = empty($this->config['autoload']['directories']) ? [self::$root => true] : (array)$this->config['autoload']['directories'];
+      foreach ($exclusions as &$item) $item = realpath(self::dir($item));
+      $paths = empty($this->config['autoload']['directories']) ? [] : (array)$this->config['autoload']['directories'];
+      foreach ($paths as &$item) $item = realpath(self::dir($item));
+      $paths = count($paths) ? $this->config['autoload']['directories'] : [self::$root => true];
       $this->classes = [];
-      $first = true;
+      $first = true; unset($item);
     }
     foreach ($paths as $path => $isRecursion)
     {
@@ -1043,7 +1045,7 @@ final class Aleph implements \ArrayAccess
       {
         if ($item == '.' || $item == '..' || $item == '.svn' || $item == '.hg' || $item == '.git') continue; 
         $file = str_replace(DIRECTORY_SEPARATOR == '\\' ? '/' : '\\', DIRECTORY_SEPARATOR, $path . '/' . $item);
-        if (array_search($file, $exclusions) !== false) continue;
+        if (in_array($file, $exclusions)) continue;
         if (is_file($file))
         {
           if (isset($this->config['autoload']['mask']) && !preg_match($this->config['autoload']['mask'], $item)) continue;
