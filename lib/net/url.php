@@ -109,7 +109,7 @@ class URL
    */
   public function __construct($url = null)
   {
-    $this->parse($url === null ? self::current() : $url);
+    $this->parse($url === null ? static::current() : $url);
   }
   
   /**
@@ -126,7 +126,22 @@ class URL
     if (isset($_SERVER['PHP_AUTH_USER'])) $url .= $_SERVER['PHP_AUTH_USER'] . ':' . $_SERVER['PHP_AUTH_PW'] . '@';
     $url .= $_SERVER['HTTP_HOST'];
     if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != 80) $url .= ':' . $_SERVER['SERVER_PORT'];
-    return $url . (isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF']);
+    $uri = '';
+    if (isset($_SERVER['X_ORIGINAL_URL'])) $uri = $_SERVER['X_ORIGINAL_URL'];
+    else if (isset($_SERVER['X_REWRITE_URL'])) $uri = $_SERVER['X_REWRITE_URL'];
+    else if (isset($_SERVER['IIS_WasUrlRewritten']) && $_SERVER['IIS_WasUrlRewritten'] == '1' && !empty($_SERVER['UNENCODED_URL'])) $uri = $_SERVER['UNENCODED_URL'];
+    else if (isset($_SERVER['REQUEST_URI'])) 
+    {
+      $uri = $_SERVER['REQUEST_URI'];
+      if (strpos($uri, $url) === 0) $uri = substr($uri, strlen($url));
+    }
+    else if (isset($_SERVER['ORIG_PATH_INFO']))
+    {
+      $uri = $_SERVER['ORIG_PATH_INFO'];
+      if (!empty($_SERVER['QUERY_STRING'])) $uri .= '?' . $_SERVER['QUERY_STRING'];
+    }
+    else if (isset($_SERVER['PHP_SELF'])) $uri = $_SERVER['PHP_SELF'];
+    return $url . $uri;
   }
   
   /**
@@ -158,7 +173,7 @@ class URL
       $this->source['user'] = urldecode($d2[0]);
       $this->source['pass'] = urldecode(isset($d2[1]) ? $d2[1] : '');
     }
-    $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), function($el){return $el != '';})) : [];
+    $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), 'strlen')) : [];
     foreach ($this->path as &$part) $part = urldecode($part);
     $this->query = $arr[7][0];
     parse_str($this->query, $this->query);
@@ -198,18 +213,18 @@ class URL
     if ($component & self::PATH)
     {
       $tmp = [];
-      foreach ($this->path as $part) if ($part != '') $tmp[] = urlencode($part);
+      foreach ($this->path as $part) if (strlen($part)) $tmp[] = urlencode($part);
       if ($component & self::HOST && count($tmp)) $url .= '/';
-      $url .= implode('/', $tmp); 
+      $url .= implode('/', $tmp);
     }
     if ($component & self::QUERY && count($this->query))
     {
-      if ($url) $url .= '?';
+      if (strlen($url) || $component & self::PATH) $url .= '?';
       $url .= http_build_query($this->query);
     }
     if ($component & self::FRAGMENT && $this->fragment)
     {
-      if ($url) $url .= '#';
+      if (strlen($url)) $url .= '#';
       $url .= urlencode($this->fragment);
     }
     return $url;

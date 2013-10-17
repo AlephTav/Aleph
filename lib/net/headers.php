@@ -47,6 +47,8 @@ class Headers
    */
   protected $contentTypeMap = ['text' => 'text/plain',
                                'html' => 'text/html',
+                               'css' => 'text/css',
+                               'js' => 'application/javascript',
                                'json' => 'application/json',
                                'xml' => 'application/xml'];
 
@@ -110,7 +112,7 @@ class Headers
    */
   public static function getRequestHeaders()
   {
-    if (self::$instance['request'] === null) self::$instance['request'] = new self('request');
+    if (self::$instance['request'] === null) self::$instance['request'] = new static('request');
     return self::$instance['request'];
   }
   
@@ -123,7 +125,7 @@ class Headers
    */
   public static function getResponseHeaders()
   {
-    if (self::$instance['response'] === null) self::$instance['response'] = new self('response');
+    if (self::$instance['response'] === null) self::$instance['response'] = new static('response');
     return self::$instance['response'];
   }
   
@@ -185,42 +187,52 @@ class Headers
   }
   
   /**
+   * Returns TRUE if the HTTP header is defined and FALSE otherwise.
+   *
+   * @param string $name - the header name.
+   */
+  public function has($name)
+  {
+    return isset($this->headers[static::normalizeHeaderName($name)]);
+  }
+  
+  /**
    * Returns value of an HTTP header.
    *
-   * @param string $name - HTTP headr name.
+   * @param string $name - the header name.
    * @return string | boolean - return FALSE if a such header doesn't exist.
    */
   public function get($name)
   {
-    $name = self::normalizeHeaderName($name);
+    $name = static::normalizeHeaderName($name);
     return isset($this->headers[$name]) ? $this->headers[$name] : false;
   }
   
   /**
    * Sets an HTTP header.
    *
-   * @param string $name - header name
-   * @param string $value - new header value
+   * @param string $name - the header name.
+   * @param string $value - new header value.
    * @access public
    */
   public function set($name, $value)
   {
-    $this->headers[self::normalizeHeaderName($name)] = $value;
+    $this->headers[static::normalizeHeaderName($name)] = (string)$value;
   }
   
   /**
    * Removes an HTTP header by its name.
    *
-   * @param string $name - HTTP header name.
+   * @param string $name - the header name.
    * @access public
    */
   public function remove($name)
   {
-    unset($this->headers[self::normalizeHeaderName($name)]);
+    unset($this->headers[static::normalizeHeaderName($name)]);
   }
   
   /**
-   * Returns content type.
+   * Returns content type header.
    *
    * @return string
    * @access public
@@ -240,5 +252,61 @@ class Headers
   {
     $type = isset($this->contentTypeMap[$type]) ? $this->contentTypeMap[$type] : $type;
     $this->headers['Content-Type'] = $type;
+  }
+  
+  /**
+   * Returns a list of content types acceptable by the client browser.
+   * If header "Accept" is not set the methods returns empty array.
+   *
+   * @return array
+   * @access public
+   */
+  public function getAcceptableContentTypes()
+  {
+    $types = $this->get('Accept');
+    if ($types === false) return [];
+    return preg_split('/\s*(?:,*("[^"]+"),*|,*(\'[^\']+\'),*|,+)\s*/', $types, 0, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+  }
+  
+  /**
+   * Returns the given date header as a DateTime instance.
+   * If the date header is not set or not parseable the method returns FALSE.
+   *
+   * @param string $name - the date header name.
+   * @return \DateTime | boolean
+   * @access public
+   */
+  public function getDate($name)
+  {
+    $name = static::normalizeHeaderName($name);
+    if (isset($this->headers[$name])) return \DateTime::createFromFormat(DATE_RFC2822, $this->headers[$name]);
+    return false;
+  }
+  
+  /**
+   * Sets value of the given date header.
+   *
+   * @param string $name - the date header name.
+   * @param string | \DateTime $date - the date header value.
+   * @access public
+   */
+  public function setDate($name, $date = 'now')
+  {
+    $date = $date instanceof \DateTime ? clone $date : new \DateTime($date);
+    $date->setTimezone(new \DateTimeZone('UTC'));
+    $this->headers[static::normalizeHeaderName($name)] = $date->format('D, d M Y H:i:s') . ' GMT';
+  }
+  
+  /**
+   * Returns the headers as a string.
+   *
+   * @return string
+   * @access public
+   */
+  public function __toString()
+  {
+    $headers = '';
+    foreach ($this->headers as $name => $value) $headers .= $name . ': ' . $value . "\r\n";
+    return $headers;
   }
 }
