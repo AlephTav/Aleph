@@ -795,10 +795,12 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Returns the full path to a directory specified by its alias.
+   * Returns the canonicalized absolute pathname of a directory specified by its alias. 
+   * The resulting path will have no symbolic link, '/./' or '/../' components and extra '/' characters.
+   * The method returns FALSE on failure, e.g. if the file or directory does not exist.
    * 
    * @param string $dir - directory alias.
-   * @return string
+   * @return string | boolean
    * @access public
    * @static
    */
@@ -808,9 +810,9 @@ final class Aleph implements \ArrayAccess
     {
       $a = self::$instance;
       $dir = isset($a['dirs'][$dir]) ? $a['dirs'][$dir] : $dir;
-      if (substr($dir, 0, strlen(self::$root)) != self::$root) $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
+      if (strpos($dir, self::$root) !== 0) $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
     }
-    return str_replace(DIRECTORY_SEPARATOR == '\\' ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
+    return realpath($dir);
   }
   
   /**
@@ -1032,12 +1034,13 @@ final class Aleph implements \ArrayAccess
         file_put_contents($classmap, '<?php return false;');
       }
       $exclusions = empty($this->config['autoload']['exclusions']) ? [] : (array)$this->config['autoload']['exclusions'];
-      foreach ($exclusions as &$item) $item = realpath(self::dir($item));
+      foreach ($exclusions as &$item) $item = self::dir($item);
+      unset($item);
       $paths = empty($this->config['autoload']['directories']) ? [] : (array)$this->config['autoload']['directories'];
-      foreach ($paths as &$item) $item = realpath(self::dir($item));
-      $paths = count($paths) ? $this->config['autoload']['directories'] : [self::$root => true];
-      $this->classes = [];
-      $first = true; unset($item);
+      $this->classes = $tmp = [];
+      foreach ($paths as $item => $flag) $tmp[self::dir($item)] = $flag;
+      $paths = count($tmp) ? $tmp : [self::$root => true];
+      $first = true;
     }
     foreach ($paths as $path => $isRecursion)
     {
