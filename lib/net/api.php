@@ -3,6 +3,7 @@
 namespace Aleph\Net;
 
 use Aleph\Core;
+    Aleph\Data\Converters;
 
 class API
 {
@@ -22,9 +23,8 @@ class API
     if (!$a['debugging']) $response->stop(500, '');
     if (static::$convertErrors)
     {
-      $response->convertOutput = true;
-      $response->headers->setContentType('json');
-      $response->stop(500, $info);
+      $response->setContentType('json', 'UTF-8');
+      $response->stop(500, json_encode($info));
     }
     return true;
   }

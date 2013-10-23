@@ -137,7 +137,7 @@ class Response
    * @var string $version
    * @access public
    */
-  public $version = '1.1';
+  public $version = null;
   
   /**
    * Status of HTTP response.
@@ -145,7 +145,7 @@ class Response
    * @var integer $status
    * @access public
    */
-  public $status = 200;
+  public $status = null;
   
   /**
    * Body of HTTP resposne.
@@ -154,14 +154,6 @@ class Response
    * @access public
    */
   public $body = null;
-  
-  /**
-   * Determines whether content of the response body needs to be converted according to content type or not.
-   *
-   * @var boolean $convertOutput
-   * @access public
-   */
-  public $convertOutput = false;
   
   /**
    * Returns an instance of this class.
@@ -184,13 +176,13 @@ class Response
   private function __clone(){}
   
   /**
-   * Constructor. Initializes all internal variables of the class.
+   * Constructor. Initializes all properties of the class with values from PHP's super globals.
    *
    * @access public
    */
   private function __construct()
   {
-    $this->headers = Headers::getResponseHeaders();
+    $this->reset();
   }
   
   /**
@@ -204,7 +196,291 @@ class Response
    */
   public static function getMessage($status)
   {
-    return isset(self::$codes[$status]) ? self::$codes[$status] : false;
+    return isset(static::$codes[$status]) ? static::$codes[$status] : false;
+  }
+  
+  /**
+   * Marks the response as "private".
+   * It makes the response ineligible for serving other clients.
+   *
+   * @access public
+   */
+  public function markAsPrivate()
+  {
+    $this->headers->removeCacheControlDirective('public');
+    $this->headers->setCacheControlDirective('private');
+  }
+
+  /**
+   * Marks the response as "public".
+   * It makes the response eligible for serving other clients.
+   *
+   * @access public
+   */
+  public function markAsPublic()
+  {
+    $this->headers->setCacheControlDirective('public');
+    $this->headers->removeCacheControlDirective('private');
+  }
+  
+  /**
+   * Modifies the response so that it conforms to the rules defined for a 304 status code.
+   * This sets the status, removes the body, and discards any headers that MUST NOT be included in 304 responses.
+   *
+   * @access public
+   */
+  public function markAsNotModified()
+  {
+    $this->status = 304;
+    $this->body = null;
+    foreach (['Allow', 'Content-Encoding', 'Content-Language', 'Content-Length', 'Content-MD5', 'Content-Type', 'Last-Modified'] as $header) $this->headers->remove($header);
+  }
+  
+  /**
+   * Returns the content type and/or response charset.
+   *
+   * @param boolean $withCharset - if TRUE the method returns an array of the following structure ['type' => ..., 'charset' => ...], otherwise only content type will be returned.
+   * @return string
+   * @access public
+   */
+  public function getContentType($withCharset = false)
+  {
+    return $this->headers->getContentType($withCharset);
+  }
+  
+  /**
+   * Sets content type header. You can use content type alias instead of some HTTP headers (that are determined by $contentTypeMap property).
+   *
+   * @param string $type - content type or its alias.
+   * @param string $charset - the content charset.
+   * @access public
+   */
+  public function setContentType($type, $charset = null)
+  {
+    $this->headers->setContentType($type, $charset);
+  }
+  
+  /**
+   * Returns the response charset.
+   * If the Content-Type header with charset is not set the method returns NULL.
+   *
+   * @return string
+   * @access public
+   */
+  public function getCharset()
+  {
+    return $this->headers->getCharset();
+  }
+  
+  /**
+   * Sets the response charset.
+   *
+   * @param string $charset - the response charset.
+   * @access public
+   */
+  public function setCharset($charset = 'UTF-8')
+  {
+    $this->headers->setCharset($charset);
+  }
+  
+  /**
+   * Returns the "Date" header of the response as a DateTime instance.
+   * If the "Date" header is not set or not parseable the method returns a DateTime object that represents the current time.
+   *
+   * @return \DateTime
+   * @access public
+   */
+  public function getDate()
+  {
+    if (false !== $date = $this->headers->getDate('Date')) return $date;
+    return new \DateTime('now', new \DateTimeZone('UTC'));
+  }
+  
+  /**
+   * Sets the "Date" header value.
+   *
+   * @param \DateTime | string $date - the "Date" header value.
+   * @access public
+   */
+  public function setDate($date = 'now')
+  {
+    $this->headers->setDate('Date', $date);
+  }
+  
+  /**
+   * Returns the value of the "Expires" header as a DateTime instance.
+   *
+   * @return \DateTime
+   * @access public
+   */
+  public function getExpires()
+  {
+    if (false !== $date = $this->headers->getDate('Expires')) return $date;
+    return \DateTime::createFromFormat(DATE_RFC2822, 'Sun, 3 Jan 1982 21:30:00 +0000');
+  }
+  
+  /**
+   * Sets the "Expires" header value.
+   * Passing null as value will remove the header.
+   *
+   * @param \DateTime | string $date - the "Expires" header value.
+   * @access public
+   */
+  public function setExpires($date = null)
+  {
+    if ($date === null) $this->headers->remove('Expires');
+    else $this->headers->setDate('Expires', $date);
+  }
+  
+  /**
+   * Returns the Last-Modified HTTP header as a DateTime instance.
+   * The method returns FALSE if the header does not exist.
+   *
+   * @return \DateTime | boolean.
+   */
+  public function getLastModified()
+  {
+    return $this->headers->getDate('Last-Modified');
+  }
+  
+  /**
+   * Sets the Last-Modified HTTP header with a DateTime instance.
+   * Passing null as value will remove the header.
+   *
+   * @param \DateTime | string $date - a \DateTime instance or null to remove the header.
+   * @access public
+   */
+  public function setLastModified($date = null)
+  {
+    if ($date === null) $this->headers->remove('Last-Modified');
+    else $this->headers->setDate('Last-Modified', $date);
+  }
+  
+  /**
+   * Returns amount of time (in seconds) since the response (or its revalidation) was generated at the origin server.
+   *
+   * @return integer
+   * @access public
+   */
+  public function getAge()
+  {
+    if (false !== $age = $this->headers->get('Age')) return (int)$age;
+    return max(time() - $this->getDate()->format('U'), 0);
+  }
+  
+  /**
+   * Returns the number of seconds after the time specified in the response's Date
+   * header when the response should no longer be considered fresh.
+   *
+   * @return integer
+   * @access public
+   */
+  public function getMaxAge()
+  {
+    if ($this->headers->hasCacheControlDirective('s-maxage')) return (int)$this->headers->getCacheControlDirective('s-maxage');
+    if ($this->headers->hasCacheControlDirective('max-age')) return (int)$this->headers->getCacheControlDirective('max-age');
+    return $this->getExpires()->format('U') - $this->getDate()->format('U');
+  }
+  
+  /**
+   * Sets the number of seconds after which the response should no longer be considered fresh.
+   * This methods sets the Cache-Control max-age directive.
+   *
+   * @param integer $value - the number of seconds.
+   * @access public
+   */
+  public function setMaxAge($value)
+  {
+    $this->headers->setCacheControlDirective('max-age', (int)$value);
+  }
+  
+  /**
+   * Sets the number of seconds after which the response should no longer be considered fresh by shared caches.
+   * This methods sets the Cache-Control s-maxage directive.
+   *
+   * @param integer $value - the number of seconds.
+   * @access public
+   */
+  public function setSharedMaxAge($value)
+  {
+    $this->markAsPublic();
+    $this->headers->setCacheControlDirective('s-maxage', (int)$value);
+  }
+  
+  /**
+   * Returns the response's time-to-live in seconds.
+   *
+   * @return integer
+   */
+  public function getTTL()
+  {
+    return $this->getMaxAge() - $this->getAge();
+  }
+  
+  /**
+   * Sets the response's time-to-live for shared caches.
+   * This method adjusts the Cache-Control/s-maxage directive.
+   *
+   * @param integer $value - the number of seconds.
+   * @access public
+   */
+  public function setTTL($value)
+  {
+    $this->setSharedMaxAge($this->getAge() + $value);
+  }
+  
+  /**
+   * Sets the response's time-to-live for private/client caches.
+   * This method adjusts the Cache-Control/max-age directive.
+   *
+   * @param integer $value - the number of seconds.
+   * @access public
+   */
+  public function setClientTTL($value)
+  {
+    $this->setMaxAge($this->getAge() + $value);
+  }
+  
+  /**
+   * Returns the literal value of the ETag HTTP header.
+   *
+   * @return string
+   * @access public
+   */
+  public function getEtag()
+  {
+    return $this->headers->get('ETag');
+  }
+
+  /**
+   * Sets the ETag value.
+   *
+   * @param string $etag - the ETag unique identifier or null to remove the header.
+   * @param boolean $weak - determines whether you want a weak ETag or not.
+   *
+   * @access public
+   */
+  public function setEtag($etag = null, $weak = false)
+  {
+    if ($etag == null) $this->headers->remove('ETag');
+    else
+    {
+      if (strlen($etag) == 0 || $etag[0] != '"') $etag = '"' . $etag . '"';
+      $this->headers->set('ETag', ($weak ? 'W/' : '') . $etag);
+    }
+  }
+  
+  /**
+   * Initializes all properties of the class with values from PHP's super globals.
+   *
+   * @access public
+   */
+  public function reset()
+  {
+    $this->headers = Headers::getResponseHeaders();
+    $this->status = 200;
+    $this->version = '1.1';
+    $this->body = null;
   }
   
   /**
@@ -214,9 +490,9 @@ class Response
    * @return self
    * @access public
    */
-  public function clear()
+  public function clean()
   {
-    $this->headers->clear();
+    $this->headers->clean();
     $this->version = '1.1';
     $this->status = 200;
     $this->body = null;
@@ -284,63 +560,19 @@ class Response
    */
   public function send()
   {  
-    if (headers_sent()) return;
-    if (empty($this->version)) $this->version = '1.1';
-    if (empty($this->status)) $this->status = 200;
-    if (empty($this->body)) $this->body = '';
-    $isBody = ($this->status < 100 || $this->status >= 200) && $this->status != 204 && $this->status != 304 && isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] != 'HEAD';
-    $body = $this->convertOutput ? $this->convert() : $this->body;
+    $request = Request::getInstance();
+    if ($this->headers->has('Transfer-Encoding')) $this->headers->remove('Content-Length');
+    if ($request->method == 'HEAD' || $this->status >= 100 && $this->status < 200 || $this->status == 204 || $this->status == 304) $this->body = null;
+    if (empty($this->version)) $this->version = empty($request->server['SERVER_PROTOCOL']) || $request->server['SERVER_PROTOCOL'] != 'HTTP/1.0' ? '1.1' : '1.0';
     if ($this->version != '1.0' && $this->version != '1.1') throw new Core\Exception($this, 'ERR_RESPONSE_1');
+    if (empty($this->status)) $this->status = 200;
     if (!isset(self::$codes[$this->status])) throw new Core\Exception($this, 'ERR_RESPONSE_2', $this->status);
-    $headers = $this->headers->getHeaders();
-    if (!$isBody)
+    if (!headers_sent())
     {
-      unset($headers['Content-Type']);
-      unset($headers['Content-Length']);
+      $headers = $this->headers->getHeaders();
+      header('HTTP/' . $this->version . ' ' . $this->status . ' ' . self::$codes[$this->status]);
+      foreach ($headers as $name => $value) header($name . ': ' . $value);
     }
-    if (substr(PHP_SAPI, 0, 3) === 'cgi') header('Status: ' . $this->status . ' ' . self::$codes[$this->status]);
-    else header('HTTP/' . $this->version . ' ' . $this->status . ' ' . self::$codes[$this->status]);
-    foreach ($headers as $name => $value) header($name . ': ' . $value);
-    \Aleph::setOutput($isBody ? $body : '');
-  }
-  
-  /**
-   * Converts response body according to the given content type.
-   *
-   * @return string
-   * @access protected
-   */
-  public function convert()
-  {
-    $type = $this->headers->get('Content-Type');
-    if ($type === false) return $this->body;
-    switch ($type)
-    {
-      case 'text/plain':
-      case 'text/html':
-        return is_scalar($this->body) ? $this->body : serialize($this->body);
-      case 'application/json':
-        return json_encode($this->body);
-      case 'application/xml':
-        $php2xml = function($data) use (&$php2xml)
-        {
-          $xml = '';
-          if (is_array($data) || is_object($data))
-          {
-            foreach ($data as $key => $value) 
-            {
-              if (is_numeric($key)) $key = 'node';
-              $xml .= '<' . $key . '>' . $php2xml($value) . '</' . $key . '>';
-            }
-          } 
-          else 
-          {
-            $xml = htmlspecialchars($data, ENT_QUOTES);
-          }
-          return $xml;
-        };
-        return '<?xml version="1.0" encoding="UTF-8" ?><nodes>' . $php2xml($this->body) . '</nodes>';
-    }
-    return $this->body;
+    \Aleph::setOutput($this->body);
   }
 }

@@ -53,6 +53,14 @@ class Headers
                                'xml' => 'application/xml'];
 
   /**
+   * Directives of the Cache Control header.
+   *
+   * @var array $cacheControl
+   * @access protected
+   */
+  protected $cacheControl = [];
+
+  /**
    * Array of instances of this class.
    * 
    * @var array $instance
@@ -217,7 +225,17 @@ class Headers
    */
   public function set($name, $value)
   {
-    $this->headers[static::normalizeHeaderName($name)] = (string)$value;
+    $name = static::normalizeHeaderName($name);
+    $this->headers[$name] = (string)$value;
+    if ($name == 'Cache-Control')
+    {
+      $this->cacheControl = [];
+      preg_match_all('#([a-zA-Z][a-zA-Z_-]*)\s*(?:=(?:"([^"]*)"|([^ \t",;]*)))?#', $value, $matches, PREG_SET_ORDER);
+      foreach ($matches as $match)
+      {
+        $this->cacheControl[strtolower($match[1])] = isset($match[3]) ? $match[3] : (isset($match[2]) ? $match[2] : true);
+      }
+    }
   }
   
   /**
@@ -228,30 +246,62 @@ class Headers
    */
   public function remove($name)
   {
-    unset($this->headers[static::normalizeHeaderName($name)]);
+    $name = static::normalizeHeaderName($name);
+    unset($this->headers[$name]);
+    if ($name == 'Cache-Control') $this->cacheControl = [];
   }
   
   /**
-   * Returns content type header.
+   * Returns the content type and/or response charset.
    *
+   * @param boolean $withCharset - if TRUE the method returns an array of the following structure ['type' => ..., 'charset' => ...], otherwise only content type will be returned.
    * @return string
    * @access public
    */
-  public function getContentType()
+  public function getContentType($withCharset = false)
   {
-    return $this->get('Content-Type');
+    if (false === $type = $this->get('Content-Type')) return false;
+    $type = explode(';', $type);
+    if (!$withCharset) return trim($type[0]);
+    $tmp = ['type' => trim($type[0]), 'charset' => null];
+    if (count($type) > 1) $tmp['charset'] = trim(explode('=', $type[1])[1]);
+    return $tmp;
   }
   
   /**
    * Sets content type header. You can use content type alias instead of some HTTP headers (that are determined by $contentTypeMap property).
    *
    * @param string $type - content type or its alias.
+   * @param string $charset - the content charset.
    * @access public
    */
-  public function setContentType($type)
+  public function setContentType($type, $charset = null)
   {
     $type = isset($this->contentTypeMap[$type]) ? $this->contentTypeMap[$type] : $type;
-    $this->headers['Content-Type'] = $type;
+    $this->headers['Content-Type'] = $type . ($charset !== null ? '; charset=' . $charset : '');
+  }
+  
+  /**
+   * Returns the response charset.
+   * If the Content-Type header with charset is not set the method returns NULL.
+   *
+   * @return string
+   * @access public
+   */
+  public function getCharset()
+  {
+    return $this->getContentType(true)['charset'];
+  }
+  
+  /**
+   * Sets the response charset.
+   *
+   * @param string $charset - the response charset.
+   * @access public
+   */
+  public function setCharset($charset = 'UTF-8')
+  {
+    $this->setContentType($this->getContentType() ?: 'text/html', $charset);
   }
   
   /**
@@ -298,6 +348,55 @@ class Headers
   }
   
   /**
+   * Checks whether the given cache control directive is set.
+   *
+   * @param string $directive - the directive name.
+   * @return boolean
+   * @access public
+   */
+  public function hasCacheControlDirective($directive)
+  {
+    return array_key_exists($directive, $this->cacheControl);
+  }
+
+  /**
+   * Returns the value of the given cache control directive.
+   * If the directive is not set the method returns NULL.
+   *
+   * @param string $directive - the directive name.
+   * @return mixed
+   * @access public
+   */
+  public function getCacheControlDirective($directive)
+  {
+    return $this->hasCacheControlDirective($directive) ? $this->cacheControl[$directive] : null;
+  }
+  
+  /**
+   * Sets the value of the given cache control directive.
+   *
+   * @param string $directive - the directive name.
+   * @param mixed $value - the directive value.
+   * @access public
+   */
+  public function setCacheControlDirective($directive, $value = true)
+  {
+    $this->cacheControl[$directive] = $value;
+    $this->headers['Cache-Control'] = $this->formCacheControlHeader();
+  }
+  
+  /**
+   * Removes the given cache control directive.
+   *
+   * @access public
+   */
+  public function removeCacheControlDirective($directive)
+  {
+    unset($this->cacheControl[$directive]);
+    $this->headers['Cache-Control'] = $this->formCacheControlHeader();
+  }
+  
+  /**
    * Returns the headers as a string.
    *
    * @return string
@@ -308,5 +407,26 @@ class Headers
     $headers = '';
     foreach ($this->headers as $name => $value) $headers .= $name . ': ' . $value . "\r\n";
     return $headers;
+  }
+  
+  /**
+   * Forms new Cache-Control header value.
+   *
+   * @return string
+   * @access protected
+   */
+  protected function formCacheControlHeader()
+  {
+    $tmp = [];
+    foreach ($this->cacheControl as $directive => $value)
+    {
+      if ($value === true) $tmp[] = $directive;
+      else 
+      {
+        if (preg_match('#[^a-zA-Z0-9._-]#', $value)) $value = '"' . $value . '"';
+        $tmp[] = $directive . '=' . $value;
+      }
+    }
+    return implode(', ', $tmp);
   }
 }
