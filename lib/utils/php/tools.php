@@ -23,7 +23,7 @@
 namespace Aleph\Utils\PHP;
 
 /**
- * Contains useful methods for variety manipulations with php code.
+ * Contains useful methods for variety manipulations with PHP code.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -32,7 +32,7 @@ namespace Aleph\Utils\PHP;
 class Tools
 {
   /**
-   * Splits full class name into array containing two elements: namespace and own class name.
+   * Splits full class name into array containing two elements of the following structure: [class namespace, own class name].
    * 
    * @param string|object $class
    * @return array
@@ -55,7 +55,7 @@ class Tools
    */       
   public static function getNamespace($class)
   {
-    return self::splitClassName($class)[0];
+    return static::splitClassName($class)[0];
   }
   
   /**
@@ -67,47 +67,7 @@ class Tools
    */       
   public static function getClassName($class)
   {
-    return self::splitClassName($class)[1];
-  }
-  
-  /**
-   * Returns token iterator for large PHP files.
-   *
-   * @param string $source - php code string or file.
-   * @return Closure - iterator object.
-   * @access public
-   * @static
-   */
-  public static function getTokenIterator($source)
-  {
-    if (is_file($source)) $source = file_get_contents($source);
-    //if (substr($source, 0, 5) == '<?php') $source = substr($source, 5);
-    $seek = 0; $line = 1; $tokens = []; $portion = '';
-    return function() use($source, &$portion, &$seek, &$line, &$tokens)
-    {
-      if (empty($source[$seek])) return false;
-      $token = ''; $n = 0;
-      do
-      {
-        $n += 16;
-        $old = $token;
-        $tkns = @token_get_all('<?php ' . substr($source, $seek, $n));
-        array_shift($tkns);
-        $token = $tkns[0];
-      }
-      while ($old != $token);
-      if (is_array($token)) 
-      {
-        $seek += strlen($token[1]);
-        $token[2] = $line;
-        $line += substr_count($token[1], "\n");
-      }
-      else 
-      {
-        $seek += strlen($token);
-      }
-      return $token;
-    };
+    return static::splitClassName($class)[1];
   }
           
   /**

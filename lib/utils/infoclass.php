@@ -38,7 +38,7 @@ class InfoClass implements \ArrayAccess
    * @var array $info
    * @access protected
    */
-  protected $info = array();
+  protected $info = [];
   
   /**
    * Number of spaces of indentation. 
@@ -95,7 +95,7 @@ class InfoClass implements \ArrayAccess
   public function getCodeProperty($property)
   {
     if (empty($this->info['properties'][$property])) return false;
-    $code = array();
+    $code = [];
     $prop = $this->info['properties'][$property];
     if ($prop['isPublic']) $code[] = 'public';
     if ($prop['isProtected']) $code[] = 'protected';
@@ -118,7 +118,7 @@ class InfoClass implements \ArrayAccess
   public function getCodeMethod($method)
   {
     if (empty($this->info['methods'][$method])) return false;
-    $code = $parameters = array();
+    $code = $parameters = [];
     $met = $this->info['methods'][$method];
     foreach ($met['arguments'] as $parameter)
     {
@@ -157,7 +157,7 @@ class InfoClass implements \ArrayAccess
   public function getCodeClass()
   {
     $info = $this->info;
-    $code = $header = $interfaces = $constants = $properties = $methods = array();
+    $code = $header = $interfaces = $constants = $properties = $methods = [];
     if ($info['comment']) $code[] = $info['comment'];
     if ($info['isFinal']) $header[] = 'final';
     if ($info['isAbstract']) $header[] = 'abstract';
@@ -267,7 +267,7 @@ class InfoClass implements \ArrayAccess
    */
   protected function extraction($class)
   {
-    $info = array();
+    $info = [];
     $class = new \ReflectionClass($class);
     $parent = $class->getParentClass();
     $info['name'] = $class->getName();
@@ -302,29 +302,29 @@ class InfoClass implements \ArrayAccess
     }
     $lines = $this->getFileContent($info['file']);
     $tokens = token_get_all('<?php ' . implode(PHP_EOL, array_slice($lines, $info['startLine'] - 1, $info['endLine'] - $info['startLine'] + 1)) . ' ?>');
-    $info['interfaces'] = array();
+    $info['interfaces'] = [];
     foreach ($class->getInterfaces() as $name => $interface)
     {
       if (!$this->interfaceInClass($tokens, $interface, $class)) continue;
-      $tmp = array();
+      $tmp = [];
       $tmp['name'] = $interface->getName();
       $tmp['shortName'] = $interface->getShortName();
       $tmp['namespace'] = $interface->getNamespaceName();
       $info['interfaces'][$name] = $tmp;
     }
-    $info['constants'] = array();
+    $info['constants'] = [];
     foreach ($class->getConstants() as $name => $constant)
     {
       if (!$this->constantInClass($tokens, $name)) continue;
       $info['constants'][$name] = $constant;
     }
-    $info['properties'] = array();
+    $info['properties'] = [];
     $defaults = $class->getDefaultProperties();
     foreach ($class->getProperties() as $property)
     {
       if ($property->getDeclaringClass()->getName() != $info['name']) continue;
       $name = $property->getName();
-      $tmp = array();
+      $tmp = [];
       $tmp['isDefault'] = $property->isDefault();
       $tmp['isPrivate'] = $property->isPrivate();
       $tmp['isProtected'] = $property->isProtected();
@@ -334,12 +334,12 @@ class InfoClass implements \ArrayAccess
       $tmp['comment'] = $property->getDocComment();
       $info['properties'][$name] = $tmp;
     }
-    $info['methods'] = array();
+    $info['methods'] = [];
     foreach ($class->getMethods() as $method)
     {
       if ($method->getDeclaringClass()->getName() != $info['name']) continue;
       $name = $method->getName();
-      $tmp = array();
+      $tmp = [];
       $tmp['isAbstract'] = $method->isAbstract();
       $tmp['isConstructor'] = $method->isConstructor();
       $tmp['isDestructor'] = $method->isDestructor();
@@ -354,19 +354,19 @@ class InfoClass implements \ArrayAccess
       $tmp['endLine'] = $method->getEndLine();
       $tmp['numberOfParameters'] = $method->getNumberOfParameters();
       $tmp['numberOfRequiredParameters'] = $method->getNumberOfRequiredParameters();
-      $tmp['arguments'] = array();
+      $tmp['arguments'] = [];
       foreach ($method->getParameters() as $parameter)
       {
         $class = $parameter->getClass();
         if ($class instanceof \ReflectionClass)
         {
-           $cls = array();
+           $cls = [];
            $cls['name'] = $class->getName();
            $cls['shortName'] = $class->getShortName();
            $cls['namespace'] = $class->getNamespaceName();
            $class = $cls;
         }
-        $arg = array();
+        $arg = [];
         $arg['name'] = $parameter->getName();
         $arg['class'] = $class ?: '';
         $arg['isDefaultValueAvailable'] = $parameter->isDefaultValueAvailable();
@@ -524,9 +524,9 @@ class InfoClass implements \ArrayAccess
     if (is_null($value)) return 'null';
     if (is_array($value))
     {
-      $tmp = array();
+      $tmp = [];
       foreach ($value as $k => $v) $tmp[] = $this->getCodeType($k) . ' => ' . $this->getCodeType($v);
-      return 'array(' . implode(', ', $tmp) . ')';
+      return '[' . implode(', ', $tmp) . ']';
     }
     return $value;
   }
@@ -540,7 +540,7 @@ class InfoClass implements \ArrayAccess
    */
   private function getFileContent($file)
   {
-    if (!is_file($file)) return array();
+    if (!is_file($file)) return [];
     return explode("\n", str_replace("\r", '', file_get_contents($file)));
   }
 }

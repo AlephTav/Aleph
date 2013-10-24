@@ -694,6 +694,11 @@ class DT
     $this->dt = clone $this->dt;
   }
   
+  public function __toString()
+  {
+    return $this->dt->format('r');
+  }
+  
   /**
    * Returns a \DateTime object associated with the Aleph\Utils\DT object.
    *
@@ -973,12 +978,12 @@ class DT
   }
   
   /**
-   * Returns \Closure object representating of date period.
+   * Returns Generator object representating of date period.
    *
    * @param string | \DateInterval $interval
-   * @param integer | Aleph\Utils\DT - the number of recurrences or Aleph\Utils\DT object.
+   * @param integer | Aleph\Utils\DT $end - the number of recurrences or Aleph\Utils\DT object.
    * @param boolean $excludeStartDate - determines whether the start date is excluded.
-   * @return \Closure
+   * @return Generator
    * @access public
    */
   public function getPeriod($interval, $end, $excludeStartDate = false)
@@ -986,33 +991,29 @@ class DT
     if (!($interval instanceof \DateInterval)) $interval = \DateInterval::createFromDateString($interval);
     if ($end instanceof DT) $end = $end->getDateTimeObject();
     else $end = (int)$end;
-    if (!$excludeStartDate) 
-    {
-      $dt = clone $this;
-      $k = 0;
-    }
+    $dt = clone $this;
+    if (!$excludeStartDate) $k = 0;
     else 
     {
-      $dt = clone $this->add($interval);
+      $dt->add($interval);
       $k = 1;
     }
     if ($end instanceof \DateTime)
     {
-      return function() use ($dt, $interval, $end)
+      while ($end->getTimestamp() >= $dt->getTimestamp())
       {
-        if ($end->getTimestamp() < $dt->getTimestamp()) return false;
-        $res = clone $dt;
+        yield clone $dt;
         $dt->add($interval);
-        return $res;
-      };
+      }
     }
-    return function() use(&$k, $dt, $interval, $end)
+    else
     {
-      if ($end < $k) return false;
-      $k++;
-      $res = clone $dt;
-      $dt->add($interval);
-      return $res;
-    };
+      while ($end >= $k)
+      {
+        yield clone $dt;
+        $dt->add($interval);
+        $k++;
+      }
+    }
   }
 }

@@ -98,7 +98,7 @@ class Tokenizer implements \Iterator
    */
   public static function parse($code)
   {
-    if (strtolower(substr($code, 0, 5)) == '<?php' || substr($code, 0, 2) == '<?') 
+    if (strtolower(substr($code, 0, 5)) == '<?php' || in_array(substr($code, 0, 2), ['<?', '<%']))
     {
       $tokens = @token_get_all($code);
     }
@@ -244,7 +244,7 @@ class Tokenizer implements \Iterator
     {
       $portion = substr($this->source, $this->seek);
     }
-    $this->tokens = self::parse($portion);
+    $this->tokens = static::parse($portion);
     array_pop($this->tokens);
     return array_shift($this->tokens);
   }
@@ -264,7 +264,7 @@ class Tokenizer implements \Iterator
     {
       $portion = substr($this->source, $this->seek);
     }
-    $this->tokens = self::parse($portion);
+    $this->tokens = static::parse($portion);
     return array_shift($this->tokens);
   }
   
@@ -281,7 +281,7 @@ class Tokenizer implements \Iterator
     {
       $n += 8;
       $old = $token;
-      $tokens = self::parse(substr($this->source, $this->seek, $n));
+      $tokens = static::parse(substr($this->source, $this->seek, $n));
       $token = $tokens[0];
     }
     while ($old != $token);

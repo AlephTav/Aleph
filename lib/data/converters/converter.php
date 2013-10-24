@@ -20,43 +20,56 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Data\Validators;
+namespace Aleph\Data\Converters;
+
+use Aleph\Core;
 
 /**
- * This validator verifies if the given value is of the specified data type.
+ * This class is the base class for all converters.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
- * @package aleph.data.validators
+ * @package aleph.data.converters
  */
-class Type extends Validator
+abstract class Converter
 {
   /**
-   * The PHP data type that the validating value should be.
-   * Valid values include "null", "string", "boolean" (or "bool"), "integer" (or "int"), "float" (or "double" or "real"), "array", "object", "resource".
+   * Error message templates.
+   */
+  const ERR_CONVERTER_1 = 'Invalid converter type "[{var}]". The only following types are valid: "type", "text".';
+
+  /**
+   * Creates and returns a converter object of the required type.
+   * Converter type can be one of the following values: "type", "text".
    *
-   * @var string $type
+	  * @param string $type - the type of the converter object.
+   * @param array $params - initial values to be applied to the converter properties.
+   * @return Aleph\Data\Converters\Converter
    * @access public
    */
-  public $type = 'string';
+  public static function getInstance($type, array $params = [])
+  {
+    switch (strtolower($type))
+    {
+      case 'type':
+        $converter = new Type();
+        break;
+      case 'text':
+        $converter = new Text();
+        break;
+      default:
+        throw new Core\Exception('Aleph\Data\Converters\Converter::ERR_CONVERTER_1', $type);
+    }
+    foreach ($params as $k => $v) $converter->{$k} = $v;
+    return $converter;
+  }
   
   /**
-   * Validates a value.
-   * The method returns TRUE if the given value has the required data type. Otherwise, the method returns FALSE.
+   * Converts the entity from one data format to another according to the specified options.
    *
-   * @param mixed $entity - the value for validation.
-   * @return boolean
+   * @param mixed $entity - the entity to convert.
+   * @return mixed - the converted data.
    * @access public
    */
-  public function validate($entity)
-  {
-    $type = strtolower($this->type);
-    if ($type == 'float' || $type == 'real') $type == 'double';
-    else if ($type == 'bool') $type = 'boolean';
-    else if ($type == 'int') $type = 'integer';
-    else if ($type == 'null') $type = 'NULL';
-    if (gettype($entity) == $type) return $this->reason = true;
-    $this->reason = ['code' => 0, 'reason' => 'type mismatch'];
-    return false;
-  }
+  abstract public function convert($entity);
 }

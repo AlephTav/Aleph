@@ -812,7 +812,21 @@ final class Aleph implements \ArrayAccess
       $dir = isset($a['dirs'][$dir]) ? $a['dirs'][$dir] : $dir;
       if (strpos($dir, self::$root) !== 0) $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
     }
-    return realpath($dir);
+    if (file_exists($dir)) return realpath($dir);
+    $unipath = strlen($dir) == 0 || $dir[0] != '/';
+    if (strpos($dir, ':') === false && $unipath) $dir = getcwd() . DIRECTORY_SEPARATOR . $dir;
+    $dir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dir);
+    $parts = array_filter(explode(DIRECTORY_SEPARATOR, $dir), 'strlen');
+    $absolutes = [];
+    foreach ($parts as $part)
+    {
+      if ('.'  == $part) continue;
+      if ('..' == $part) array_pop($absolutes);
+      else $absolutes[] = $part;
+    }
+    $dir = implode(DIRECTORY_SEPARATOR, $absolutes);
+    if (file_exists($dir) && linkinfo($dir) > 0) $dir = readlink($dir);
+    return !$unipath ? '/'. $dir : $dir;
   }
   
   /**

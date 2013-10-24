@@ -33,8 +33,14 @@ use Aleph\Core;
  */
 class DOMDocumentEx extends \DOMDocument
 {
+  /**
+   * Error message templates.
+   */
   const ERR_DOM_1 = 'DOM Element with ID = "[{var}]" is not found.';
 
+  /**
+   * Injecting modes.
+   */
   const DOM_INJECT_TOP = 'top';
   const DOM_INJECT_BOTTOM = 'bottom';
   const DOM_INJECT_AFTER = 'after';

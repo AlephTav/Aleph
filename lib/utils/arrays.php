@@ -20,43 +20,48 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Data\Validators;
+namespace Aleph\Utils;
 
 /**
- * This validator verifies if the given value is of the specified data type.
+ * Contains the set of static methods for facilitating the work with arrays.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
- * @package aleph.data.validators
+ * @package aleph.utils
  */
-class Type extends Validator
+class Arrays
 {
   /**
-   * The PHP data type that the validating value should be.
-   * Valid values include "null", "string", "boolean" (or "bool"), "integer" (or "int"), "float" (or "double" or "real"), "array", "object", "resource".
+   * Swaps the two elements of the array. The elements are determined by their index numbers.
    *
-   * @var string $type
+   * @param array $array - the array in which the two elements will be swapped.
+   * @param integer $n1 - the index number of the first element.
+   * @param integer $n2 - the index number of the second element.
    * @access public
    */
-  public $type = 'string';
+  public static function swap(array &$array, $n1, $n2)
+  {
+    $keys = array_keys($array);
+    static::aswap($array, $keys[$n1], $keys[$n2]);
+  }
   
   /**
-   * Validates a value.
-   * The method returns TRUE if the given value has the required data type. Otherwise, the method returns FALSE.
+   * Swaps the two elements of the array. The elements are determined by their keys.
    *
-   * @param mixed $entity - the value for validation.
-   * @return boolean
+   * @param array $array - the array in which the two elements will be swapped.
+   * @param integer $key1 - the key of the first element.
+   * @param integer $key2 - the key of the second element.
    * @access public
    */
-  public function validate($entity)
+  public static function aswap(array &$array, $key1, $key2)
   {
-    $type = strtolower($this->type);
-    if ($type == 'float' || $type == 'real') $type == 'double';
-    else if ($type == 'bool') $type = 'boolean';
-    else if ($type == 'int') $type = 'integer';
-    else if ($type == 'null') $type = 'NULL';
-    if (gettype($entity) == $type) return $this->reason = true;
-    $this->reason = ['code' => 0, 'reason' => 'type mismatch'];
-    return false;
+    $tmp = [];
+    foreach ($array as $key => $value)
+    {
+      if ($key == $key1) $tmp[$key2] = $array[$key2];
+      else if ($key == $key2) $tmp[$key1] = $array[$key1];
+      else $tmp[$key] = $value;
+    }
+    $array = $tmp;
   }
 }
