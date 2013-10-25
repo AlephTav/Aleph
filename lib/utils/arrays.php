@@ -64,4 +64,38 @@ class Arrays
     }
     $array = $tmp;
   }
+  
+  /**
+   * Inserts a value or an array to the input array at the specified position.
+   *
+   * @param array $array - the input array in which a value will be inserted.
+   * @param mixed $value - the inserting value.
+   * @param integer $offset - the position in the first array.
+   * @access public
+   */
+  public static function insert(array &$array, $value, $offset = 0)
+  {
+    $array = array_slice($array, 0, $offset, true) + (array)$value + array_slice($array, $offset, null, true);
+  }
+  
+  /**
+   * Completely removes the element of a multidimensional array, defined by its keys.
+   *
+   * @param array $array - the array from which an element will be removed.
+   * @param array $keys - the element keys.
+   * @access public
+   */
+  public static function unsetByKeys(array &$array, array $keys)
+  {
+    $key = array_shift($keys);
+    if (array_key_exists($key, $array))
+    {
+      if ($keys && is_array($array[$key])) 
+      {
+        static::unsetByKeys($array[$key], $keys);
+        if (!$array[$key]) unset($array[$key]);
+      }
+      else unset($array[$key]);
+    }
+  }
 }
