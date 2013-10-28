@@ -22,7 +22,8 @@
 
 namespace Aleph\Data\Converters;
 
-use Aleph\Core;
+use Aleph\Core,
+    Aleph\Utils;
 
 /**
  * This converter is intended for converting the given array to an array with another structure. 
@@ -57,6 +58,9 @@ class Collection extends Converter
    */
   public $scheme = [];
   
+  /**
+   * 
+   */
   public $separator = '.';
   
   public $anyKeyAssociative = '$';
@@ -80,22 +84,10 @@ class Collection extends Converter
   
   public function transform(array $array)
   {
-    $new = []; $separator = preg_quote($this->separator, '/');
+    $new = [];
     foreach ($this->scheme as $from => $to)
     {
-      if (is_array($to)) $keys = $to;
-      else
-      {
-        $keys = preg_split('/(?<!\\\)' . $separator . '/', $to, -1, PREG_SPLIT_NO_EMPTY);
-        foreach ($keys as &$part)
-        {
-          if ($part == $this->anyKeyAssociative) $part = ['$'];
-          else if ($part == $this->anyKeyNumeric) $part = ['*'];
-          else if ($part == '\\' . $this->anyKeyAssociative) $part = $this->$this->anyKeyAssociative;
-          else if ($part == '\\' . $this->anyKeyNumeric) $part = $this->$this->anyKeyNumeric;
-          else $part = str_replace('\\' . $this->separator, $this->separator, $part);
-        }
-      }
+      $keys = $this->getKeys($to);
       foreach ($this->getValues($array, $from) as $info)
       {
         $a = &$new;
@@ -123,41 +115,100 @@ class Collection extends Converter
     return $new;
   }
   
-  protected function getValues(array $array, $from, array $keys = null)
+  protected function reduce(array $array)
   {
-    if (!$keys) $keys = preg_split('/(?<!\\\)' . preg_quote($this->separator) . '/', $from, -1, PREG_SPLIT_NO_EMPTY);
-    $n = 0;
+    $new = [];
+    foreach ($this->scheme as $from)
+    {
+      $keys = $this->getKeys($from);
+      foreach ($this->getValues($array, $from, $keys) as $info)
+      {
+        $a = &$new;
+        foreach ($keys as $key)
+        {
+          if (is_array($key))
+          {
+            if (count($info[1]) == 0) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_3', $from, $to);
+            if ($key[0] == '*')
+            {
+              array_shift($info[1]);
+              $key = count($a);
+            }
+            else if ($key[0] == '$')
+            {
+              $key = array_shift($info[1]);
+            }
+          }
+          if (!array_key_exists($key, $a)) $a[$key] = [];
+          $a = &$a[$key];
+        }
+        $a = $info[0];
+      }
+    }
+    return $new;
+  }
+  
+  protected function exclude(array $array)
+  {
+    $tmp = $array;
+    foreach ($this->scheme as $keys)
+    {
+      foreach ($this->getValues($array, $keys, null, true) as $info)
+      {
+        Utils\Arrays::unsetByKeys($tmp, $info[1]);
+      }
+    }
+    return $tmp;
+  }
+  
+  protected function getValues(array $array, $from, array $keys = null, $allKeys = false)
+  {
+    $n = 0; $tmp = [];
+    if (!$keys) $keys = $this->getKeys($from);
     foreach ($keys as $key)
     {
-      if ($key == $this->anyKeyAssociative)
+      if (is_array($key))
       {
         if (!is_array($array)) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_4', $from);
         foreach ($array as $k => $v)
         {
           if (is_array($v))
           {
-            foreach ($this->getValues($v, $from, array_slice($keys, $n + 1)) as $value) 
+            foreach ($this->getValues($v, $from, array_slice($keys, $n + 1), $allKeys) as $value) 
             {
-              $value[1] = array_merge([$k], $value[1]);
+              $value[1] = array_merge(array_merge($tmp, [$k]), $value[1]);
               yield $value;
             }
           }
           else
           {
-            yield [$v, [$k]];
+            yield [$v, array_merge($tmp, [$k])];
           }
         }
         return;
       }
       else
       {
-        if ($key == '\\' . $this->anyKeyAssociative) $key = $this->anyKeyAssociative;
-        else $key = str_replace('\\' . $this->separator, $this->separator, $key);
         if (!is_array($array) || !array_key_exists($key, $array)) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_4', $from);
         $array = $array[$key];
+        if ($allKeys) $tmp[] = $key;
       }
       $n++;
     }
-    yield [$array, []];
+    yield [$array, $tmp];
+  }
+  
+  protected function getKeys($keys)
+  {
+    if (!is_array($keys)) $keys = preg_split('/(?<!\\\)' . preg_quote($this->separator) . '/', $keys, -1, PREG_SPLIT_NO_EMPTY);
+    foreach ($keys as &$part)
+    {
+      if ($part == $this->anyKeyAssociative) $part = ['$'];
+      else if ($part == $this->anyKeyNumeric) $part = ['*'];
+      else if ($part == '\\' . $this->anyKeyAssociative) $part = $this->$this->anyKeyAssociative;
+      else if ($part == '\\' . $this->anyKeyNumeric) $part = $this->$this->anyKeyNumeric;
+      else $part = str_replace('\\' . $this->separator, $this->separator, $part);
+    }
+    return $keys;
   }
 }
