@@ -1,9 +1,9 @@
-<? if (count($logs) == 0){ ?>
+<?php if (count($logs) == 0){ ?>
 <div>Log is empty</div>
-<?}else{?>
+<?php }else{ ?>
 <ul>
-  <? foreach ($logs as $dir){ ?>
-  <li><a class="log-dirs" href="javascript:;"><b><?=htmlspecialchars($dir);?></b></a><li>
-  <?}?>
+  <?php foreach ($logs as $dir){ ?>
+  <li><a class="log-dirs" href="javascript:;"><b><?php echo htmlspecialchars($dir); ?></b></a><li>
+  <?php } ?>
 </ul>
-<?}?>
+<?php } ?>

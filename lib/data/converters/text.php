@@ -33,6 +33,9 @@ use Aleph\Core;
  */
 class Text extends Converter
 {
+  /**
+   * Error message templates.
+   */
   const ERR_CONVERTER_TEXT_1 = 'The converting data can not be a compound type. It can be only scalar type.';
   const ERR_CONVERTER_TEXT_2 = 'Invalid input string format "[{var}]".';
   const ERR_CONVERTER_TEXT_3 = 'Invalid output data format "[{var}]".';

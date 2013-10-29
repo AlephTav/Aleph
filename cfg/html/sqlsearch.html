@@ -1,31 +1,31 @@
-<? if (isset($data['error'])){ ?>
+<?php if (isset($data['error'])){ ?>
 <table class="bordertable">
   <tr>
-    <th style="text-align:center;color:#CD5555;"><b><?=htmlspecialchars($data['error']);?></b></td>
+    <th style="text-align:center;color:#CD5555;"><b><?php echo htmlspecialchars($data['error']); ?></b></td>
   </tr>
 </table>
-<?}else if (count($data) == 0){ ?>
+<?php }else if (count($data) == 0){ ?>
 <table class="bordertable">
   <tr>
     <th style="text-align:center;"><b>No results found</b></td>
   </tr>
 </table>
-<?}else{ ?>
+<?php }else{ ?>
 <div class="log-sql">
   <table class="bordertable">
     <tr>
-      <th colspan="2" scope="row">Found <?=count($data);?> record<?=(count($data) == 1 ? '' : 's');?></th>
+      <th colspan="2" scope="row">Found <?php echo count($data); ?> record<?php echo (count($data) == 1 ? '' : 's'); ?></th>
     </tr>
-    <? $titles = ['URL', 'DSN', 'SQL', 'Type', 'Mode', 'Duration', 'Timestamp', 'Rows', 'Stack'];
+    <?php $titles = ['URL', 'DSN', 'SQL', 'Type', 'Mode', 'Duration', 'Timestamp', 'Rows', 'Stack'];
     foreach ($data as $i => $row){ ?>
     <tr>
-      <th colspan="2" scope="row">Record #<?=($i + 1);?></th>
+      <th colspan="2" scope="row">Record #<?php echo ($i + 1); ?></th>
     </tr>
-    <? foreach ($row as $j => $value){ ?>
+    <?php foreach ($row as $j => $value){ ?>
     <tr>
-      <th><?=$titles[$j];?></th>
-      <td><?=($j == 2 || $j == 8 ? nl2br(htmlspecialchars($value)) : htmlspecialchars($value));?></td>
+      <th><?php echo $titles[$j]; ?></th>
+      <td><?php echo ($j == 2 || $j == 8 ? nl2br(htmlspecialchars($value)) : htmlspecialchars($value)); ?></td>
     </tr>
-    <?}}}?>
+    <?php }}} ?>
   </table>
 </div>

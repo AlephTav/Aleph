@@ -34,14 +34,14 @@
     </div>
   </header>
   <div class="ym-wrapper">
-    <? if (count($errors)){ ?>
+    <?php if (count($errors)){ ?>
     <div class="errbox">
       <h2>Errors</h2>
-      <? foreach ($errors as $error){ ?>
-      <p class="box error"><?=htmlspecialchars($error);?></p>
-      <?}?>
+      <?php foreach ($errors as $error){ ?>
+      <p class="box error"><?php echo htmlspecialchars($error); ?></p>
+      <?php } ?>
     </div>
-    <?}else{?>
+    <?php }else{ ?>
 		  <div class="ym-wbox">
       <div class="box info" style="margin-top:0;">
         <h2>Config</h2>
@@ -50,13 +50,13 @@
             <h6>Select Config File</h6>
             <div class="ym-fbox ym-fbox-select">
             <select id="config">
-              <? foreach (array_keys($config) as $n => $file){ ?>
-              <option value="<?=$n;?>"><?=htmlspecialchars($file);?></option>
-              <?}?>
+              <?php foreach (array_keys($config) as $n => $file){ ?>
+              <option value="<?php echo $n; ?>"><?php echo htmlspecialchars($file); ?></option>
+              <?php } ?>
             </select>
             </div>
           </div>
-          <div id="configDetails" class="ym-grid"><? require_once(__DIR__ . '/config.html'); ?></div>
+          <div id="configDetails" class="ym-grid"><?php require_once(__DIR__ . '/config.html'); ?></div>
         </div>
       </div>
       <div class="box info">
@@ -197,7 +197,7 @@
 						  	   <input type="button" id="btnSearchSQL" value="Search" title="Search SQL log records" />
             <input type="button" id="btnCleanSQL" value="Clean" title="Clean SQL log" />
 						    </div>
-          <div id="sqlSearchResults" class="ym-grid"></div>
+          <div id="sqlSearchResults" class="ym-grid log-sql"></div>
 		      </div>
       </div>
       <div class="box info">
@@ -205,7 +205,7 @@
         <div class="ym-grid" style="display:none;">
           <div class="ym-g33 ym-gl">
             <div class="ym-form">
-              <nav id="logList" class="log-list ym-vlist"><? require_once(__DIR__ . '/loglist.html'); ?></nav>
+              <nav id="logList" class="log-list ym-vlist"><?php require_once(__DIR__ . '/loglist.html'); ?></nav>
               <div class="ym-fbox-button">
 							         <input type="button" id="btnLogClean" value="Clean" title="Clear log directory" />
                 <input type="button" id="btnLogRefresh" value="Refresh" title="Refresh log info" />
@@ -220,7 +220,7 @@
       <div class="box info">
         <h2>Class Map</h2>
         <div class="ym-form" style="display:none;">
-          <div id="classmap"><? require_once(__DIR__ . '/classmap.html'); ?></div>
+          <div id="classmap"><?php require_once(__DIR__ . '/classmap.html'); ?></div>
           <div class="ym-fbox-button">
 							     <input type="button" id="btnClassmapCreate" value="Create" title="Create new classmap according to the settings" />
             <input type="button" id="btnClassmapClean" value="Clean" title="Clean the classmap" />
@@ -236,14 +236,14 @@
         <iframe id="tests" width="100%" height="800px;" style="border:none;display:none;"></iframe>
       </div>
     </div>
-    <?}?>
+    <?php } ?>
   </div>
   <footer>
 	   <div class="ym-wrapper">
 		    <div class="ym-wbox">
         <div class="ym-grid">
           <div class="ym-g70 ym-gl"></div>
-			       <div class="ym-g30 ym-gr">Copyright &copy; 2012 by Aleph Tav. All Rights Reserved.</div>
+			       <div class="ym-g30 ym-gr">Copyright &copy; 2013 by Aleph Tav. All Rights Reserved.</div>
         </div>
 		    </div>
 	   </div>

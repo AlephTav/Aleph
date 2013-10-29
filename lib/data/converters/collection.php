@@ -51,7 +51,7 @@ class Collection extends Converter
   public $mode = 'transform';
   
   /**
-   * The scheme that describes the new array structure and conversion method.
+   * The scheme that describes the new array structure and conversion ways.
    *
    * @var array $scheme
    * @access public
@@ -96,15 +96,7 @@ class Collection extends Converter
           if (is_array($key))
           {
             if (count($info[1]) == 0) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_3', $from, $to);
-            if ($key[0] == '*')
-            {
-              array_shift($info[1]);
-              $key = count($a);
-            }
-            else if ($key[0] == '$')
-            {
-              $key = array_shift($info[1]);
-            }
+            $key = array_shift($info[1]);
           }
           if (!array_key_exists($key, $a)) $a[$key] = [];
           $a = &$a[$key];
@@ -129,15 +121,7 @@ class Collection extends Converter
           if (is_array($key))
           {
             if (count($info[1]) == 0) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_3', $from, $to);
-            if ($key[0] == '*')
-            {
-              array_shift($info[1]);
-              $key = count($a);
-            }
-            else if ($key[0] == '$')
-            {
-              $key = array_shift($info[1]);
-            }
+            $key = array_shift($info[1]);
           }
           if (!array_key_exists($key, $a)) $a[$key] = [];
           $a = &$a[$key];
@@ -170,20 +154,22 @@ class Collection extends Converter
       if (is_array($key))
       {
         if (!is_array($array)) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_4', $from);
+        $keys = array_slice($keys, $n + 1); $n = 0;
         foreach ($array as $k => $v)
         {
-          if (is_array($v))
+          if (is_array($v) && count($keys))
           {
-            foreach ($this->getValues($v, $from, array_slice($keys, $n + 1), $allKeys) as $value) 
+            foreach ($this->getValues($v, $from, $keys, $allKeys) as $value) 
             {
-              $value[1] = array_merge(array_merge($tmp, [$k]), $value[1]);
+              $value[1] = array_merge(array_merge($tmp, [$key[0] == '*' ? $n : $k]), $value[1]);
               yield $value;
             }
           }
           else
           {
-            yield [$v, array_merge($tmp, [$k])];
+            yield [$v, array_merge($tmp, [$key[0] == '*' ? $n : $k])];
           }
+          $n++;
         }
         return;
       }
@@ -198,6 +184,13 @@ class Collection extends Converter
     yield [$array, $tmp];
   }
   
+  /**
+   * Returns an array of the normalized keys of the converting collection.
+   *
+   * @param string | array $keys - a string or an array of the collection keys.
+   * @return array
+   * @access protected
+   */
   protected function getKeys($keys)
   {
     if (!is_array($keys)) $keys = preg_split('/(?<!\\\)' . preg_quote($this->separator) . '/', $keys, -1, PREG_SPLIT_NO_EMPTY);

@@ -36,7 +36,7 @@ abstract class Converter
   /**
    * Error message templates.
    */
-  const ERR_CONVERTER_1 = 'Invalid converter type "[{var}]". The only following types are valid: "type", "text".';
+  const ERR_CONVERTER_1 = 'Invalid converter type "[{var}]". The only following types are valid: "type", "text", "collection".';
 
   /**
    * Creates and returns a converter object of the required type.
@@ -56,6 +56,9 @@ abstract class Converter
         break;
       case 'text':
         $converter = new Text();
+        break;
+      case 'collection':
+        $converter = new Collection();
         break;
       default:
         throw new Core\Exception('Aleph\Data\Converters\Converter::ERR_CONVERTER_1', $type);

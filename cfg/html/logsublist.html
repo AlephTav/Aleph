@@ -1,5 +1,5 @@
 <ul>
-  <? foreach ($files as $file){ ?>
-  <li><a href="javascript:;"><?=htmlspecialchars($file);?></a><li>
-  <?}?>
+  <?php foreach ($files as $file){ ?>
+  <li><a href="javascript:;"><?php echo htmlspecialchars($file); ?></a><li>
+  <?php } ?>
 </ul>

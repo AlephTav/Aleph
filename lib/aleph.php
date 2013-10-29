@@ -923,6 +923,7 @@ final class Aleph implements \ArrayAccess
         return strlen(\Aleph::getOutput()) ? \Aleph::getOutput() : $output;
       });
       register_shutdown_function([__CLASS__, 'fatal']);
+      if (date_default_timezone_set(@date_default_timezone_get()) === false) date_default_timezone_set('UTC');
       self::errorHandling(true, E_ALL);
       if (!isset($_SERVER['DOCUMENT_ROOT'])) $_SERVER['DOCUMENT_ROOT'] = __DIR__;
       self::$root = realpath($_SERVER['DOCUMENT_ROOT']);
@@ -942,7 +943,6 @@ final class Aleph implements \ArrayAccess
         $_POST = array_map($func, $_POST);
         $_COOKIE = array_map($func, $_COOKIE);
       }
-      if (date_default_timezone_set(date_default_timezone_get()) === false) date_default_timezone_set('UTC');
       set_time_limit(0);
     }
     return self::$instance = new self();
