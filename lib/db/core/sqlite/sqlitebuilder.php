@@ -99,17 +99,36 @@ class SQLiteBuilder extends SQLBuilder
   }
   
   /**
-   * Quotes a string value for use in a query.
+   * Quotes a value (or an array of values) to produce a result that can be used as a properly escaped data value in an SQL statement.
    *
-   * @param string $value - the string to be quoted.
-   * @param boolean $isLike - determines whether the value is used in LIKE clause.
-   * @return string
+   * @param string | array $value - if this value is an array then all its elements will be quoted.
+   * @param string $format - determines the format of the quoted value. This value must be one of the SQLBuilder::ESCAPE_* constants.
+   * @return string | array
    * @access public
    */
-  public function quote($value, $isLike = false)
+  public function quote($value, $format = self::ESCAPE_QUOTED_VALUE)
   {
-    $value = str_replace("'", "''", $value);
-    return "'" . ($isLike ? addcslashes($value, '_%') : $value) . "'";
+    if (is_array($value))
+    {
+      foreach ($value as &$v) $v = $this->quote($v, $format);
+      return $value;
+    }
+    switch ($format)
+    {
+      case self::ESCAPE_QUOTED_VALUE:
+        return "'" . str_replace("'", "''", $value) . "'";
+      case self::ESCAPE_VALUE:
+        return str_replace("'", "''", $value);
+      case self::ESCAPE_LIKE:
+        return addcslashes(str_replace("'", "''", $value), '_%');
+      case self::ESCAPE_QUOTED_LIKE:
+        return "'%" . addcslashes(str_replace("'", "''", $value), '_%') . "%'";
+      case self::ESCAPE_LEFT_LIKE:
+        return "'%" . addcslashes(str_replace("'", "''", $value), '_%') . "'";
+      case self::ESCAPE_RIGHT_LIKE:
+        return "'" . addcslashes(str_replace("'", "''", $value), '_%') . "%'";
+    }
+    throw new Core\Exception($this, 'ERR_SQL_4', $format);
   }
   
   /**

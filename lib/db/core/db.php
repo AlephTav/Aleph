@@ -691,16 +691,16 @@ class DB
   }
 
   /**
-   * Quotes a string value for use in a query.
+   * Quotes a value (or an array of values) to produce a result that can be used as a properly escaped data value in an SQL statement.
    *
-   * @param string $value - the string to be quoted.
-   * @param integer $isLike - determines whether the value is used in LIKE clause.
-   * @return string
+   * @param string | array $value - if this value is an array then all its elements will be quoted.
+   * @param string $format - determines the format of the quoted value. This value must be one of the SQLBuilder::ESCAPE_* constants.
+   * @return string | array
    * @access public
    */
-  public function quote($value, $isLike = false)
+  public function quote($value, $format = SQLBuilder::ESCAPE_QUOTED_VALUE)
   {
-    return $this->__get('sql')->quote($value, $isLike);
+    return $this->__get('sql')->quote($value, $format);
   }
   
   /**

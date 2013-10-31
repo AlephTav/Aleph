@@ -39,6 +39,17 @@ abstract class SQLBuilder
   const ERR_SQL_1 = 'Database engine "[{var}]" doesn\'t exist or is not supported.';
   const ERR_SQL_2 = 'Cannot wrap empty string.';
   const ERR_SQL_3 = 'You can\'t invoke method "[{var}]" twice within the current SQL-construction.';
+  const ERR_SQL_4 = 'Escaping format "[{var}]" is invalid.';
+  
+  /**
+   * Formats of the quoted values.
+   */
+  const ESCAPE_VALUE = 'value';
+  const ESCAPE_QUOTED_VALUE = 'qvalue';
+  const ESCAPE_LIKE = 'like';
+  const ESCAPE_QUOTED_LIKE = 'qlike';
+  const ESCAPE_LEFT_LIKE = 'llike';
+  const ESCAPE_RIGHT_LIKE = 'rlike';
   
   /**
    * The instance of DB class.
@@ -133,14 +144,14 @@ abstract class SQLBuilder
   abstract public function wrap($name, $isTableName = false);
   
   /**
-   * Quotes a string value for use in a query.
+   * Quotes a value (or an array of values) to produce a result that can be used as a properly escaped data value in an SQL statement.
    *
-   * @param string $value
-   * @param boolean $isLike - determines whether the value is used in LIKE clause.
-   * @return string
+   * @param string | array $value - if this value is an array then all its elements will be quoted.
+   * @param string $format - determines the format of the quoted value. This value must be one of the SQLBuilder::ESCAPE_* constants.
+   * @return string | array
    * @access public
    */
-  abstract public function quote($value, $isLike = false);
+  abstract public function quote($value, $format = self::ESCAPE_QUOTED_VALUE);
   
   /**
    * Returns SQL for getting the table list of the current database.
