@@ -25,7 +25,7 @@ namespace Aleph\Data\Converters;
 use Aleph\Core;
 
 /**
- * This converter is intended for converting the given string to the specified data format. 
+ * This converter is intended for converting the given string (or, in some cases, any value) into the specified data format. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -36,9 +36,10 @@ class Text extends Converter
   /**
    * Error message templates.
    */
-  const ERR_CONVERTER_TEXT_1 = 'The converting data can not be a compound type. It can be only scalar type.';
+  const ERR_CONVERTER_TEXT_1 = 'The converting data can be a compound type only for "any" input format. In the other cases it can be only scalar type.';
   const ERR_CONVERTER_TEXT_2 = 'Invalid input string format "[{var}]".';
   const ERR_CONVERTER_TEXT_3 = 'Invalid output data format "[{var}]".';
+  const ERR_CONVERTER_TEXT_4 = 'Invalid output data format "[{var}]" for the compound type.';
 
   /**
    * The input string format.
@@ -61,21 +62,21 @@ class Text extends Converter
   /**
    * The charset of the input string.
    *
-   * @var string $inCharset
+   * @var string $inputCharset
    * @access public
    */
-  public $inCharset = 'UTF-8';
+  public $inputCharset = 'UTF-8';
   
   /**
    * The charset of the output data.
    *
-   * @var string $outCharset
+   * @var string $outputCharset
    * @access public
    */
-  public $outCharset = 'UTF-8';
+  public $outputCharset = 'UTF-8';
 
   /**
-   * Converts the given string to the specified data format according to the given character sets.
+   * Converts the given value to the specified data format according to the given character sets.
    *
    * @param mixed $entity - any data to be converted.
    * @return mixed
@@ -83,13 +84,36 @@ class Text extends Converter
    */
   public function convert($entity)
   {
-    if (!is_scalar($entity)) throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_1');
-    if (strpos($this->outCharset, $this->inCharset) === 0 && function_exists('iconv')) $entity = iconv($this->inCharset, $this->outCharset, $entity);
     $input = strtolower($this->input);
     $output = strtolower($this->output);
+    if (is_scalar($entity)) $entity = $this->convertEncoding($entity);
+    else if ($input != 'any') throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_1');
     switch ($input)
     {
       case 'any':
+        if (!is_scalar($entity))
+        {
+          switch ($output)
+          {
+            case 'any':
+            case 'unserialized':
+            case 'json-decoded':
+            case 'base64-decoded':
+            case 'uu-decoded':
+              break;
+            case 'serialized':
+              return $this->convertEncoding(serialize($entity));
+            case 'json-encoded':
+              return $this->convertEncoding(json_encode($entity));
+            case 'plain':
+            case 'base64-encoded':
+            case 'uu-encoded':
+              throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_4', $output);
+            default:
+              throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_3', $output);
+          }
+          break;
+        }
       case 'plain':
         switch ($output)
         {
@@ -231,6 +255,21 @@ class Text extends Converter
       default:
         throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_2', $input);
     }
+    return $entity;
+  }
+  
+  /**
+   * Converts the character encoding of the given string to $outputCharset from $inputCharset.
+   *
+   * @param string $entity - the string value to be converted.
+   * @return string
+   * @access protected
+   */
+  protected function convertEncoding($entity)
+  {
+    if (strpos($this->outputCharset, $this->inputCharset) !== 0) return $entity;
+    if (function_exists('iconv')) return iconv($this->inputCharset, $this->outputCharset, $entity);
+    if (function_exists('mb_convert_encoding ')) return mb_convert_encoding($entity, $this->outputCharset, $this->inputCharset);
     return $entity;
   }
 }

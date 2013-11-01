@@ -127,6 +127,18 @@ class Router
   }
   
   /**
+   * Determines whether the request has the secured HTTPS protocol.
+   *
+   * @param boolean $flag
+   * @return self
+   * @access public
+   */
+  public function ssl($flag)
+  {
+    return $this->option('ssl', (bool)$flag);
+  }
+  
+  /**
    * Removes the definite action for the given router type and HTTP methods.
    *
    * @param string $regex - a regex corresponding to the specified URL.
@@ -297,6 +309,11 @@ class Router
         {
           if (empty($urls[$data['component']])) $urls[$data['component']] = $url->build($data['component']);
           if (!preg_match($regex, $urls[$data['component']], $matches)) continue;
+          if (isset($data['ssl']))
+          {
+            if ($data['ssl'] && !$request->url->isSecured()) return $res;
+            if (!$data['ssl'] && $request->url->isSecured()) return $res;
+          }
           $flag = true;
           foreach ($data['validation'] as $param => $rgx)
           {
