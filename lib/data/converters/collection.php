@@ -52,6 +52,7 @@ class Collection extends Converter
   
   /**
    * The scheme that describes the new array structure and conversion ways.
+   * The particular scheme format depends on the value of $mode property.
    *
    * @var array $scheme
    * @access public
@@ -59,14 +60,39 @@ class Collection extends Converter
   public $scheme = [];
   
   /**
-   * 
+   * The separator of the key names in the array scheme.
+   * If some array key contains the separator symbol you should escape it via backslash.
+   *
+   * @var string $separator
+   * @access public
    */
   public $separator = '.';
   
+  /**
+   * This symbol corresponds to any elements with their keys of the transforming array in the array scheme.
+   * If some array key is the same as $anyKeyAssociative you should escape it via backslash.
+   *
+   * @var string $anyKeyAssociative
+   * @access public
+   */
   public $anyKeyAssociative = '$';
   
+  /**
+   * This symbol corresponds to any elements without their keys of the transforming array in the array scheme.
+   * If some array key is the same as $anyKeyNumeric you should escape it via backslash.
+   *
+   * @var string $anyKeyAssociative
+   * @access public
+   */
   public $anyKeyNumeric = '*';
   
+  /**
+   * Converts the given array to an array with other structure defining by the specified array scheme.
+   *
+   * @param array $entity - the array to be converted.
+   * @return array
+   * @access public
+   */
   public function convert($entity)
   {
     if (!is_array($entity)) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_1');
@@ -82,7 +108,14 @@ class Collection extends Converter
     throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_2', $this->mode);
   }
   
-  public function transform(array $array)
+  /**
+   * Changes the array structure according to the given transformation scheme.
+   *
+   * @param array $array - the array to be transformed.
+   * @return array
+   * @access protected
+   */
+  protected function transform(array $array)
   {
     $new = [];
     foreach ($this->scheme as $from => $to)
@@ -107,6 +140,13 @@ class Collection extends Converter
     return $new;
   }
   
+  /**
+   * Returns the part of the given array that determining by the array scheme.
+   *
+   * @param array $array - the array to be reduced.
+   * @return array
+   * @access protected
+   */
   protected function reduce(array $array)
   {
     $new = [];
@@ -132,6 +172,11 @@ class Collection extends Converter
     return $new;
   }
   
+  /**
+   * Removes some part of the array according to the array scheme and returns the remainder array.
+   *
+   * @param array $array - the array to be reduced.
+   */
   protected function exclude(array $array)
   {
     $tmp = $array;
@@ -145,6 +190,15 @@ class Collection extends Converter
     return $tmp;
   }
   
+  /**
+   * Sequentially returns the array elements according to their keys.
+   *
+   * @param array $array - the given array.
+   * @param string $from - an element of the array scheme that determines keys of array elements to be extracted.
+   * @param array $keys - the same as $from but parsed to an array.
+   * @param boolean $allKeys - determines whether the all keys is returned from the method or only keys captured by $anyKeyAssociative or $anyKeyNumeric.
+   * @return mixed
+   */
   protected function getValues(array $array, $from, array $keys = null, $allKeys = false)
   {
     $n = 0; $tmp = [];

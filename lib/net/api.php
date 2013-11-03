@@ -39,6 +39,13 @@ class API
    */
   const ERR_API_1 = 'Callback parameter is not set for resource "[{var}]".';
 
+  /**
+   * The map of the API methods.
+   *
+   * @var array $map
+   * @access protected
+   * @static
+   */
   protected static $map = [];
   
   /**
@@ -232,6 +239,12 @@ class API
     return $converter->convert($content);
   }
   
+  /**
+   * The batch API method allowing to perform several independent between themselves API methods at once.
+   *
+   * @return array
+   * @access protected
+   */
   protected function batch()
   {
     $result = [];
@@ -248,7 +261,21 @@ class API
     return $result;
   }
   
+  /**
+   * Automatically invokes before the API method call.
+   *
+   * @param array $resource - the part of $map which corresponds the current request.
+   * @param array $params - the values of the URL template variables.
+   * @access protected
+   */
   protected function before(array $resource, array &$params){}
   
-  protected function after(array $resource, array &$params){}
+  /**
+   * Automatically invokes after the API method call.
+   *
+   * @param array $resource - the part of $map which corresponds the current request.
+   * @param array $params - the values of the URL template variables.
+   * @access protected
+   */
+  protected function after(array $resource, array $params){}
 }

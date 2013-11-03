@@ -36,6 +36,14 @@ class Router
   // Error message templates.
   const ERR_ROUTER_1 = 'No action is defined. You should first call one of the following methods: secure(), redirect() or bind()';
   const ERR_ROUTER_2 = 'Delegate "[{var}]" is not callable.';
+  
+  /**
+   * This property is used as the cache of parsed URL templates.
+   *
+   * @var array $rex
+   * @access private
+   */
+  private static $rex = [];
 
   /**
    * Array of actions for the routing.
@@ -205,10 +213,8 @@ class Router
     };
     $data = ['action' => $action,
              'args' => [],
-             'params' => [],
              'component' => URL::ALL,
-             'validation' => [],
-             'methods' => $methods];
+             'validation' => []];
     foreach ($methods as $method) $this->acts['secure'][$method][$regex] = $data;
     $this->lact = ['secure', $regex, $methods];
     return $this;
@@ -226,30 +232,12 @@ class Router
    */
   public function redirect($regex, $redirect, $methods = '*', $callback = null)
   {
-    $params = $this->parseURLTemplate($regex, $regex);
     $methods = $this->normalizeMethods($methods);
-    $t = microtime(true); $k = 0;
-    foreach ($params as $name)
-    {
-      $redirect = str_replace('#' . $name . '#', md5($t + $k), $redirect);
-      $k++;
-    }
-    $action = function() use($t, $redirect, $callback)
-    {
-      $url = $redirect;
-      foreach (func_get_args() as $k => $arg)
-      {
-        $url = str_replace(md5($t + $k), $arg, $url);
-      }
-      if ($callback === null) \Aleph::go($url);
-      return \Aleph::delegate($callback, $url);
-    };
-    $data = ['action' => $action,
-             'args' => [],
-             'params' => $params, 
+    $data = ['args' => [],
              'component' => URL::PATH,
              'validation' => [],
-             'methods' => $methods];
+             'redirect' => $redirect,
+             'callback' => $callback];
     foreach ($methods as $method) $this->acts['redirect'][$method][$regex] = $data;
     $this->lact = ['redirect', $regex, $methods];
     return $this;
@@ -266,14 +254,11 @@ class Router
    */
   public function bind($regex, $action, $methods = '*')
   {
-    $params = $this->parseURLTemplate($regex, $regex);
     $methods = $this->normalizeMethods($methods);
     $data = ['action' => $action, 
              'args' => [],
-             'params' => $params, 
              'component' => URL::PATH,
              'validation' => [],
-             'methods' => $methods, 
              'coordinateParameterNames' => false, 
              'ignoreWrongDelegate' => false];
     foreach ($methods as $method) $this->acts['bind'][$method][$regex] = $data;
@@ -282,7 +267,7 @@ class Router
   }
   
   /**
-   * Performs all actions matching all regex URL templates.
+   * Performs all actions matching all URL templates.
    *
    * @param string | array $methods - HTTP request methods.
    * @param string | Aleph\Net\URL $url - the URL string to route.
@@ -307,13 +292,10 @@ class Router
         if (!in_array($method, $methods)) continue;
         foreach ($actions as $regex => $data)
         {
+          $this->prepareAction($type, $regex, $data);
           if (empty($urls[$data['component']])) $urls[$data['component']] = $url->build($data['component']);
           if (!preg_match($regex, $urls[$data['component']], $matches)) continue;
-          if (isset($data['ssl']))
-          {
-            if ($data['ssl'] && !$request->url->isSecured()) return $res;
-            if (!$data['ssl'] && $request->url->isSecured()) return $res;
-          }
+          if (!empty($data['ssl']) && !$url->isSecured()) return $res;
           $flag = true;
           foreach ($data['validation'] as $param => $rgx)
           {
@@ -366,6 +348,50 @@ class Router
   }
   
   /**
+   * Prepares action for performing.
+   *
+   * @param string $type - the action type. It must be one of the following values: "secure", "redirect" or "bind".
+   * @param string $regex - the URL template associated with the requested action.
+   * @param array $data - the additional data for the given action.
+   * @access private
+   */
+  private function prepareAction($type, &$regex, array &$data)
+  {
+    if ($type == 'bind') 
+    {
+      $data['params'] = $this->parseURLTemplate($regex);
+    }
+    else if ($type == 'redirect')
+    {
+      $redirect = $data['redirect'];
+      $callback = $data['callback'];
+      $params = $this->parseURLTemplate($regex);
+      $t = microtime(true); $k = 0;
+      foreach ($params as $name)
+      { 
+        $redirect = str_replace('#' . $name . '#', md5($t + $k), $redirect);
+        $k++;
+      }
+      $action = function() use($t, $redirect, $callback)
+      {
+        $url = $redirect;
+        foreach (func_get_args() as $k => $arg)
+        {
+          $url = str_replace(md5($t + $k), $arg, $url);
+        }
+        if ($callback === null) \Aleph::go($url);
+        return \Aleph::delegate($callback, $url);
+      };
+      $data['params'] = $params;
+      $data['action'] = $action;
+    }
+    else
+    {
+      $data['params'] = [];
+    }
+  }
+  
+  /**
    * Returns array of HTTP methods in canonical form (in uppercase and without spaces).
    *
    * @param string|array - HTTP methods.
@@ -382,16 +408,20 @@ class Router
   }
   
   /**
-   * Parses URL templates for the routing.
+   * Parses URL templates for the routing and returns an array of the template variables.
    *
-   * @param string $url
-   * @param string $regex
+   * @param string $regex - the given URL template to be parsed.
    * @return array
    * @access private   
    */
-  private function parseURLTemplate($url, &$regex)
+  private function parseURLTemplate(&$regex)
   {
-    $params = []; $regex = (string)$url;
+    if (isset(self::$rex[$regex]))
+    {
+      list($regex, $params) = self::$rex[$regex];
+      return $params;
+    }
+    $rx = $regex; $params = [];
     $regex = preg_replace_callback('/(?:\A|[^\\\])(?:\\\\\\\\)*#(.*?[^\\\](?:\\\\\\\\)*)(?:#|\z)/', function($matches) use (&$params)
     {
       $n = strpos($matches[1], '|');
@@ -413,6 +443,7 @@ class Router
       return substr($matches[0], 0, $n) . $p . substr($matches[0], $n + strlen($p));
     }, $regex);
     $regex = '#\A' . $regex . '\z#';
+    self::$rex[$rx] = [$regex, $params];
     return $params;
   }
   
