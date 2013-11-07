@@ -255,7 +255,7 @@ class Headers
    * Returns the content type and/or response charset.
    *
    * @param boolean $withCharset - if TRUE the method returns an array of the following structure ['type' => ..., 'charset' => ...], otherwise only content type will be returned.
-   * @return string
+   * @return array | string
    * @access public
    */
   public function getContentType($withCharset = false)

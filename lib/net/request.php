@@ -22,8 +22,6 @@
  
 namespace Aleph\Net;
 
-use Aleph\Data\Converters;
-
 /**
  * Request Class provides easier interaction with variables of the current HTTP request.
  *

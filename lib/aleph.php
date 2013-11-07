@@ -1303,7 +1303,11 @@ final class Aleph implements \ArrayAccess
     $classmap = $classmap ?: (empty($this->config['autoload']['classmap']) ? null : self::dir($this->config['autoload']['classmap']));
     if (!$classmap) throw new Core\Exception($this, 'ERR_GENERAL_5');
     $code = [];
-    foreach ($classes as $class => $path) $code[] = "'" . $class . "' => '" . str_replace("'", "\'", $path) . "'";
+    foreach ($classes as $class => $path) 
+    {
+      if (strlen($class) == 0 || !file_exists($path)) continue;
+      $code[] = "'" . strtolower($class) . "' => '" . str_replace("'", "\'", $path) . "'";
+    }
     file_put_contents($classmap, '<?php return [' . implode(',' . PHP_EOL . '              ', $code) . '];');
     $this->classmap = $this->config['autoload']['classmap'] = $classmap;
     $this->classes = $classes;
