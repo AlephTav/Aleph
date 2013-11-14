@@ -135,9 +135,9 @@ class Router
   }
   
   /**
-   * Determines whether the request has the secured HTTPS protocol.
+   * Determines whether the request should have the secured HTTPS protocol.
    *
-   * @param boolean $flag
+   * @param boolean $flag - if equals TRUE, the request is supposed to be secured.
    * @return self
    * @access public
    */

@@ -633,12 +633,12 @@ class JSON extends Validator
       {
         if ($schema->additionalProperties === false)
         {
-          $this->reason['details'][] = 'Property "' . $path . '.' . $key . '" is not defined and the definition does not allow additional properties.';
+          $this->reason['details'][] = 'Property "' . $path . '.' . $property . '" is not defined and the definition does not allow additional properties.';
           return false;
         }
         if (is_object($schema->additionalProperties))
         {
-          if (!$this->checkType($value, $this->resolveRef($schema->additionalProperties), $path . '.' . $key)) return false; 
+          if (!$this->checkType($value, $this->resolveRef($schema->additionalProperties), $path . '.' . $property)) return false; 
         }
       }
     }

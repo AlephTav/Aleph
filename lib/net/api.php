@@ -22,7 +22,7 @@
 
 namespace Aleph\Net;
 
-use Aleph\Core;
+use Aleph\Core,
     Aleph\Data\Converters;
 
 /**
@@ -131,11 +131,10 @@ class API
   public static function error(\Exception $e, array $info)
   {
     $a = \Aleph::getInstance();
-    $response = Response::getInstance();
-    if (!$a['debugging']) $response->stop(500, '');
+    if (!$a['debugging']) static::$response->stop(500, '');
     if (!static::$convertErrors) return true;
-    $response->setContentType(static::$contentType, static::$outputCharset);
-    $response->stop(500, static::convert($info));
+    static::$response->setContentType(static::$contentType, static::$outputCharset);
+    static::$response->stop(500, static::convert($info));
   }
 
   /**
@@ -208,7 +207,7 @@ class API
    */
   protected static function notFound($content = null)
   {
-    self::$response->stop(404, static::convert($content));
+    static::$response->stop(404, static::convert($content));
   }
   
   /**

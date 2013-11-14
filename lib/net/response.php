@@ -148,7 +148,7 @@ class Response
   public $status = null;
   
   /**
-   * Body of HTTP resposne.
+   * Body of HTTP response.
    *
    * @var mixed $body
    * @access public
@@ -419,7 +419,7 @@ class Response
   
   /**
    * Sets the response's time-to-live for shared caches.
-   * This method adjusts the Cache-Control/s-maxage directive.
+   * This method adjusts the Cache-Control s-maxage directive.
    *
    * @param integer $value - the number of seconds.
    * @access public
@@ -430,8 +430,8 @@ class Response
   }
   
   /**
-   * Sets the response's time-to-live for private/client caches.
-   * This method adjusts the Cache-Control/max-age directive.
+   * Sets the response's time-to-live for private client caches.
+   * This method adjusts the Cache-Control max-age directive.
    *
    * @param integer $value - the number of seconds.
    * @access public
@@ -457,7 +457,6 @@ class Response
    *
    * @param string $etag - the ETag unique identifier or null to remove the header.
    * @param boolean $weak - determines whether you want a weak ETag or not.
-   *
    * @access public
    */
   public function setEtag($etag = null, $weak = false)
