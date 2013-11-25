@@ -34,6 +34,7 @@ class Text extends Validator
   /**
    * The maximum length of the validating string.
    * Null value means no maximum limit.
+   *
    * @var integer $max
    * @access public
    */
@@ -42,6 +43,7 @@ class Text extends Validator
   /**
    * The minimum length of the validating string.
    * Null value means no minimum limit.
+   *
    * @var integer $min
    * @access public
    */

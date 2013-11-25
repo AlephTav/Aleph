@@ -26,7 +26,7 @@ use Aleph\Core;
 
 /**
  * This validator compares the given JSON with another JSON or checks whether the given JSON has the specified structure.
- * The logic of JSON schema validation is determined by http://json-schema.org/latest/json-schema-validation.html#anchor17 
+ * The logic of JSON schema validation is determined by http://json-schema.org/latest/json-schema-validation.html
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -110,9 +110,9 @@ class JSON extends Validator
    * @param mixed $entity - the JSON entity to validate.
    * @param \stdClass $schema - the JSON schema for comparison.
    * @return boolean
-   * @access protected
+   * @access private
    */
-  protected function checkSchema($entity, \stdClass $schema)
+  private function checkSchema($entity, \stdClass $schema)
   {
     $this->rootSchema = $schema;
     $this->reason = ['code' => 0, 'reason' => 'invalid schema', 'details' => []];

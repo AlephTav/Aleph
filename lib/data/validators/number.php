@@ -34,6 +34,7 @@ class Number extends Validator
   /**
    * The maximum value of the validating number.
    * Null value means no maximum value.
+   *
    * @var float $max
    * @access public
    */
@@ -42,25 +43,34 @@ class Number extends Validator
   /**
    * The minimum value of the validating number.
    * Null value means no minimum value.
+   *
    * @var float $min
    * @access public
    */
   public $min = null;
   
   /**
-   * Determines valid format (PCRE regular expression) of the given number.
+   * Determines whether the strict comparison is used.
+   *
+   * @var boolean $strict
+   * @access public
+   */
+  public $strict = false;
+  
+  /**
+   * Determines valid format (PCRE) of the given number.
    * Null value means no format checking.
    *
    * @var string $format
    * @access public
    */
-  public $format = false;
+  public $format = null;
   
   /**
    * Validates a number value. If the given value is not number, it will be converted to number.
    * The method returns TRUE if value of the given number is in the required limits. Otherwise, the method returns FALSE.
    *
-   * @param float $entity - the value for validation.
+   * @param mixed $entity - the value for validation.
    * @return boolean
    * @access public
    */
@@ -75,7 +85,7 @@ class Number extends Validator
     $entity = (float)$entity;
     if ($this->min !== null) 
     {
-      if ($entity < (float)$this->min)
+      if (!$this->strict && $entity < (float)$this->min || $this->strict && $entity <= (float)$this->min)
       {
         $this->reason = ['code' => 1, 'reason' => 'too small'];
         return false;
@@ -83,7 +93,7 @@ class Number extends Validator
     }
     if ($this->max !== null)
     {
-      if ($entity > (float)$this->max)
+      if (!$this->strict && $entity > (float)$this->max || $this->strict && $entity >= (float)$this->max)
       {
         $this->reason = ['code' => 2, 'reason' => 'too large'];
         return false;

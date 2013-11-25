@@ -65,7 +65,7 @@ abstract class Validator
 
   /**
    * Creates and returns a validator object of the required type.
-   * Validator type can be one of the following values: "type", "required", "compare", "regexp", "text", "number", "collection", "xml" and "custom".
+   * Validator type can be one of the following values: "type", "required", "compare", "regexp", "text", "number", "collection", "xml", "json" and "custom".
    *
 	  * @param string $type - the type of the validator object.
    * @param array $params - initial values to be applied to the validator properties.
@@ -116,7 +116,7 @@ abstract class Validator
   /**
    * Verifies the value for matching with one or more validators.
    *
-   * @param array $value - the value to be verified.
+   * @param mixed $value - the value to be verified.
    * @param array $validators - the validators to be matched with the given value.
    * @param string $mode - determines the way of the calculation of the validation result for multiple validators.
    * @param array $result - array of the results of the validators work. Each array element contains TRUE if the appropriate validator is valid, otherwise the element contains the reason of validator failure.

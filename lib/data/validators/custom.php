@@ -43,7 +43,7 @@ class Custom extends Validator
   public $callback = null;
   
   /**
-   * Validate a value via the custom validation method.
+   * Validates a value via the custom validation method.
    *
    * @param string $entity - the value for validation.
    * @return boolean

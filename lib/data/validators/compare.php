@@ -53,7 +53,7 @@ class Compare extends Validator
    * @var boolean $hasMultipleValues
    * @access public
    */
-  public $hasMultipleValues = true;
+  public $hasMultipleValues = false;
   
   /**
    * Determines the way of the calculation of the comparison result with multiple values.
