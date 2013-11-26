@@ -40,29 +40,18 @@ abstract class Converter
 
   /**
    * Creates and returns a converter object of the required type.
-   * Converter type can be one of the following values: "type", "text".
+   * Converter type can be one of the following values: "type", "text", "collection".
    *
 	  * @param string $type - the type of the converter object.
    * @param array $params - initial values to be applied to the converter properties.
    * @return Aleph\Data\Converters\Converter
    * @access public
    */
-  public static function getInstance($type, array $params = [])
+  final public static function getInstance($type, array $params = [])
   {
-    switch (strtolower($type))
-    {
-      case 'type':
-        $converter = new Type();
-        break;
-      case 'text':
-        $converter = new Text();
-        break;
-      case 'collection':
-        $converter = new Collection();
-        break;
-      default:
-        throw new Core\Exception('Aleph\Data\Converters\Converter::ERR_CONVERTER_1', $type);
-    }
+    $class = 'Aleph\Data\Converters\\' . $type;
+    if (!\Aleph::getInstance()->loadClass($class)) throw new Core\Exception('Aleph\Data\Converters\Converter::ERR_CONVERTER_1', $type);
+    $converter = new $class;
     foreach ($params as $k => $v) $converter->{$k} = $v;
     return $converter;
   }

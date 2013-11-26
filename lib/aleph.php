@@ -1116,17 +1116,15 @@ final class Aleph implements \ArrayAccess
       $this->setClassMap($this->classes);
       if ($class !== null)
       {
-        foreach ($this->classes as $cs => $file)
+        if (isset($this->classes[$class]))
         {
-          if ($cs == $class)
-          {
-            require_once($file);
-            return (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false));
-          }
+          require_once($this->classes[$class]);
+          return (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false));
         }
+        return false;
       }
+      return count($this->classes);
     }
-    return count($this->classes);
   }
   
   /**

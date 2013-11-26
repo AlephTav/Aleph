@@ -72,43 +72,11 @@ abstract class Validator
    * @return Aleph\Data\Validators\Validator
    * @access public
    */
-  public static function getInstance($type, array $params = [])
+  final public static function getInstance($type, array $params = [])
   {
-    switch (strtolower($type))
-    {
-      case 'type':
-        $validator = new Type();
-        break;
-      case 'required':
-        $validator = new Required();
-        break;
-      case 'compare':
-        $validator = new Compare();
-        break;
-      case 'regex':
-        $validator = new Regex();
-        break;
-      case 'text':
-        $validator = new Text();
-        break;
-      case 'number':
-        $validator = new Number();
-        break;
-      case 'collection':
-        $validator = new Collection();
-        break;
-      case 'xml':
-        $validator = new XML();
-        break;
-      case 'json':
-        $validator = new JSON();
-        break;
-      case 'custom':
-        $validator = new Custom();
-        break;
-      default:
-        throw new Core\Exception('Aleph\Data\Validators\Validator::ERR_VALIDATOR_1', $type);
-    }
+    $class = 'Aleph\Data\Validators\\' . $type;
+    if (!\Aleph::getInstance()->loadClass($class)) throw new Core\Exception('Aleph\Data\Validators\Validator::ERR_VALIDATOR_1', $type);
+    $validator = new $class;
     foreach ($params as $k => $v) $validator->{$k} = $v;
     return $validator;
   }

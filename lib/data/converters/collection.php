@@ -51,16 +51,16 @@ class Collection extends Converter
   public $mode = 'transform';
   
   /**
-   * The scheme that describes the new array structure and conversion ways.
-   * The particular scheme format depends on the value of $mode property.
+   * The schema that describes the new array structure and conversion ways.
+   * The particular schema format depends on the value of $mode property.
    *
-   * @var array $scheme
+   * @var array $schema
    * @access public
    */
-  public $scheme = [];
+  public $schema = [];
   
   /**
-   * The separator of the key names in the array scheme.
+   * The separator of the key names in the array schema.
    * If some array key contains the separator symbol you should escape it via backslash.
    *
    * @var string $separator
@@ -69,25 +69,25 @@ class Collection extends Converter
   public $separator = '.';
   
   /**
-   * This symbol corresponds to any elements with their keys of the transforming array in the array scheme.
-   * If some array key is the same as $anyKeyAssociative you should escape it via backslash.
+   * This symbol corresponds to any elements with their keys of the transforming array in the array schema.
+   * If some array key is the same as $keyAssociative you should escape it via backslash.
    *
-   * @var string $anyKeyAssociative
+   * @var string $keyAssociative
    * @access public
    */
-  public $anyKeyAssociative = '$';
+  public $keyAssociative = '$';
   
   /**
-   * This symbol corresponds to any elements without their keys of the transforming array in the array scheme.
-   * If some array key is the same as $anyKeyNumeric you should escape it via backslash.
+   * This symbol corresponds to any elements without their keys of the transforming array in the array schema.
+   * If some array key is the same as $keyNumeric you should escape it via backslash.
    *
-   * @var string $anyKeyAssociative
+   * @var string $keyAssociative
    * @access public
    */
-  public $anyKeyNumeric = '*';
+  public $keyNumeric = '*';
   
   /**
-   * Converts the given array to an array with other structure defining by the specified array scheme.
+   * Converts the given array to an array with other structure defining by the specified array schema.
    *
    * @param array $entity - the array to be converted.
    * @return array
@@ -109,7 +109,7 @@ class Collection extends Converter
   }
   
   /**
-   * Changes the array structure according to the given transformation scheme.
+   * Changes the array structure according to the given transformation schema.
    *
    * @param array $array - the array to be transformed.
    * @return array
@@ -118,7 +118,7 @@ class Collection extends Converter
   protected function transform(array $array)
   {
     $new = [];
-    foreach ($this->scheme as $from => $to)
+    foreach ($this->schema as $from => $to)
     {
       $keys = $this->getKeys($to);
       foreach ($this->getValues($array, $from) as $info)
@@ -141,7 +141,7 @@ class Collection extends Converter
   }
   
   /**
-   * Returns the part of the given array that determining by the array scheme.
+   * Returns the part of the given array that determining by the array schema.
    *
    * @param array $array - the array to be reduced.
    * @return array
@@ -150,7 +150,7 @@ class Collection extends Converter
   protected function reduce(array $array)
   {
     $new = [];
-    foreach ($this->scheme as $from)
+    foreach ($this->schema as $from)
     {
       $keys = $this->getKeys($from);
       foreach ($this->getValues($array, $from, $keys) as $info)
@@ -173,14 +173,16 @@ class Collection extends Converter
   }
   
   /**
-   * Removes some part of the array according to the array scheme and returns the remainder array.
+   * Removes some part of the array according to the array schema and returns the remainder array.
    *
    * @param array $array - the array to be reduced.
+   * @return array
+   * @access protected
    */
   protected function exclude(array $array)
   {
     $tmp = $array;
-    foreach ($this->scheme as $keys)
+    foreach ($this->schema as $keys)
     {
       foreach ($this->getValues($array, $keys, null, true) as $info)
       {
@@ -194,9 +196,9 @@ class Collection extends Converter
    * Sequentially returns the array elements according to their keys.
    *
    * @param array $array - the given array.
-   * @param string $from - an element of the array scheme that determines keys of array elements to be extracted.
+   * @param string $from - an element of the array schema that determines keys of array elements to be extracted.
    * @param array $keys - the same as $from but parsed to an array.
-   * @param boolean $allKeys - determines whether the all keys is returned from the method or only keys captured by $anyKeyAssociative or $anyKeyNumeric.
+   * @param boolean $allKeys - determines whether the all keys is returned from the method or only keys captured by $keyAssociative or $keyNumeric.
    * @return mixed
    */
   protected function getValues(array $array, $from, array $keys = null, $allKeys = false)
@@ -250,10 +252,10 @@ class Collection extends Converter
     if (!is_array($keys)) $keys = preg_split('/(?<!\\\)' . preg_quote($this->separator) . '/', $keys, -1, PREG_SPLIT_NO_EMPTY);
     foreach ($keys as &$part)
     {
-      if ($part == $this->anyKeyAssociative) $part = ['$'];
-      else if ($part == $this->anyKeyNumeric) $part = ['*'];
-      else if ($part == '\\' . $this->anyKeyAssociative) $part = $this->$this->anyKeyAssociative;
-      else if ($part == '\\' . $this->anyKeyNumeric) $part = $this->$this->anyKeyNumeric;
+      if ($part == $this->keyAssociative) $part = ['$'];
+      else if ($part == $this->keyNumeric) $part = ['*'];
+      else if ($part == '\\' . $this->keyAssociative) $part = $this->$this->keyAssociative;
+      else if ($part == '\\' . $this->keyNumeric) $part = $this->$this->keyNumeric;
       else $part = str_replace('\\' . $this->separator, $this->separator, $part);
     }
     return $keys;
