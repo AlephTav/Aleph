@@ -71,47 +71,53 @@ class Tools
   }
           
   /**
-   * Searches the occurrence of a php-code in other php-code.
-   * Returns a numeric array of two elements. 
-   * The first element is the number of the first token in the string to search. 
-   * The second element is the number of the last token in the string to search.
+   * Searches the first occurrence or all occurrences of the given PHP code in another PHP code.
+   * Returns a numeric array of two elements or FALSE if the PHP fragment is not found.
+   * The first element is the number of the first token in the haystack. 
+   * The second element is the number of the last token in the haystack.
    * 
-   * @param string $needle
-   * @param string $haystack  
-   * @return array|boolean - returns FALSE if php-fragment is not found.
+   * @param string $needle - the PHP code which we want to find.
+   * @param string $haystack  - the PHP code in which we want to find our PHP fragment.
+   * @param boolean $all - determines whether all occurrences of the PHP fragment will be found.
+   * @return array|boolean
    * @access public
    * @static                          
    */                    
-  public static function search($needle, $haystack)
+  public static function search($needle, $haystack, $all = false)
   {
-    $tokens = ['needle' => self::getTokens($needle), 'haystack' => self::getTokens($haystack)];
-    $i = $j = 0; 
-    $start = $end = -1;
-    do
+    $x = [];
+    foreach (Tokenizer::parse($needle) as $token) if (Tokenizer::isSemanticToken($token)) $x[] = $token;
+    $m = count($x);
+    if ($m == 0) return false;
+    $y = Tokenizer::parse($haystack);
+    $n = count($y) - $m;
+    if ($n < 0) return false;
+    $res = [];
+    for ($i = 0, $k = 0; $i < $n; $i++)
     {
-         $needle = self::getNextToken($tokens['needle'], $j);
-         if ($needle === false) break;
-         $haystack = self::getNextToken($tokens['haystack'], $i);
-         if ($haystack === false) break;
-         if (self::isEqual($haystack, $needle))
-         {
-            if ($start < 0) $start = $i - 1;
-            $end = $i - 1;
-         }
-         else 
-         {
-            $start = $end = -1; 
-            $j = 0;
-         }
-         $k++;
+      $token = $y[$i];
+      if (!Tokenizer::isSemanticToken($token)) continue;
+      if (Tokenizer::isEqual($x[$k], $token)) 
+      {
+        $k++;
+        if ($k == 1) $start = $i;
+        if ($k == $m) 
+        {
+          if (!$all) return [$start, $i];
+          else 
+          {
+            $res[] = [$start, $i];
+            $k = 0;
+          }
+        }
+      }
+      else $k = 0;
     }
-    while (1);
-    if ($end > 0 && $needle === false) return [$start, $end];
-    return false;
+    return $res ?: false;
   }
    
   /**
-   * Checks whether or not containing a php-code to other php-code.
+   * Checks whether the given PHP code is contained in other one.
    * 
    * @param string $needle
    * @param string $haystack
@@ -120,119 +126,35 @@ class Tools
    */       
   public static function in($needle, $haystack)
   {
-    return (self::posInCode($needle, $haystack) !== false);
+    return static::search($needle, $haystack) !== false;
   }
    
-   /**
-    * Replaces a php-code an other php-code.
-    * 
-    * @param string $search
-    * @param string $replace
-    * @param string $subject 
-    * @return string
-    * @access public
-    * @static                           
-    */       
-   public static function replaceCode($search, $replace, $subject)
-   {
-      if (($pos = self::posInCode($search, $subject)) === false) return $subject;       
-      $tokens = self::getTokens($subject);
-      for ($i = 0; $i < count($tokens); $i++)
-      {
-         if ($i == $pos[0])
-         { 
-            $i = $pos[1] + 1;
-            $code .= $replace; 
-         }
-         $code .= (is_array($tokens[$i])) ? $tokens[$i][1] : $tokens[$i];
-      }  
-      return $code;
-   }
-   
-   /**
-    * Removes a php-fragment from a php-code string.
-    * 
-    * @param string $search
-    * @param string $subject
-    * @return string
-    * @access public
-    * @static                       
-    */       
-   public static function removeCode($search, $subject)
-   {
-      return self::replaceCode($search, '', $subject);
-   }
-   
-   /**
-    * Get all the class names from a file. $file can also be a link to the file
-    *
-    * @param string $file
-    * @return array
-    * @access public
-    * @static                    
-    */
-   public static function getFullClassNames($file)
-   {
-      $tmp = array();
-      $tokens = self::getTokens(is_file($file) ? file_get_contents($file) : $file);
-      foreach ($tokens as $n => $token)
-      {
-         if ($token[0] == T_NAMESPACE) 
-         {
-            $i = $n;
-            do
-            {
-               $tkn = $tokens[++$i];
-               if ($tkn[0] == T_STRING || $tkn[0] == T_NS_SEPARATOR) $namespace .= $tkn[1];
-            }
-            while ($tkn != ';');
-            $namespace .= '\\';
-         }
-         else if ($token[0] == T_CLASS || $token[0] == T_INTERFACE) 
-         {
-            do
-            {
-               $token = $tokens[++$n];
-            }
-            while ($token[0] != T_STRING);
-            $tmp[] = '\\' . $namespace . $token[1];
-         }
-      }
-      return $tmp;
-   }
-   
-   /**
-    * Returns the next token of token array.
-    * 
-    * @param array $tokens;
-    * @param integer $pos
-    * @return array|boolean returns FALSE if the current token is the last.
-    * @access private
-    * @static                         
-    */       
-   private static function getNextToken(array $tokens, &$pos)
-   {
-      for ($i = $pos; $i < count($tokens); $i++)
-      {
-         $token = $tokens[$i];
-         if (in_array($token[0], array(T_DOC_COMMENT, T_LINE, T_COMMENT, T_WHITESPACE, T_OPEN_TAG, T_CLOSE_TAG))) continue;
-         $pos = $i + 1;
-         return $token;
-      }
-      return false;    
-   }
+  /**
+   * Replaces all occurrences of the PHP code fragment in the given PHP code string with another PHP fragment.
+   * 
+   * @param string $search - the PHP fragment being searched for.
+   * @param string $replace - the replacement PHP code that replaces found $search values.
+   * @param string $subject - the PHP code string being searched and replaced on.
+   * @return string
+   * @access public
+   * @static                           
+   */       
+  public static function replace($search, $replace, $subject)
+  {
+    
+  }
    
   /**
-   * Checks the equality of two tokens.
+   * Removes the given PHP code fragment from the PHP code string.
    * 
-   * @param string|array $token1
-   * @param string|array $token2
-   * @return boolean
-   * @access private
-   * @static                        
+   * @param string $search - the PHP fragment being searched for.
+   * @param string $subject - the PHP code string being searched and removed from.
+   * @return string
+   * @access public
+   * @static                       
    */       
-  private static function isEqual($token1, $token2)
+  public static function remove($search, $subject)
   {
-    return (is_array($token1) && is_array($token2) && $token1[1] === $token2[1] || $token1 == $token2);  
-  }  
+    return static::replace($search, '', $subject);
+  }
 }

@@ -25,7 +25,7 @@ namespace Aleph\Utils;
 use Aleph\Core;
 
 /**
- * The class is designed for extended operations with the html document as DOM.
+ * The class is extended operations with the DOM in HTML document.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -47,40 +47,42 @@ class DOMDocumentEx extends \DOMDocument
   const DOM_INJECT_BEFORE = 'before';
 
   /**
-   * Constructor.
+   * Creates a new DOMDocumentEx object.
    * 
-   * @param string $version
-   * @param string $charset
+   * @param string $version - the version number of the document as part of the XML declaration.
+   * @param string $charset - the encoding of the document as part of the XML declaration.
    * @access public
    */
-  public function __construct($version = '1.0', $charset = null)
+  public function __construct($version = '1.0', $charset = 'utf-8')
   {
-    $a = \Aleph::getInstance();
-    parent::__construct($version, $charset ?: ($a['charset'] ?: 'utf-8'));
+    parent::__construct($version, $charset);
   }
 
   /**
-   * Replaces some of the php tags in $source.
+   * The function parses the HTML contained in the string source. Unlike loading XML, HTML does not have to be well-formed to load. 
+   * This function may also be called statically to load and create a DOMDocument object.
+   * The static invocation may be used when no DOMDocument properties need to be set prior to loading.
    * 
-   * @param string $source 
+   * @param string $source - the HTML string.
    * @param integer $options - bitwise OR of the libxml option constants.
-   * @return string 
+   * @return boolean - returns TRUE on success or FALSE on failure. If called statically, returns a DOMDocument or FALSE on failure.
    * @access public
    */
   public function loadHTML($source, $options = 0)
   {
-    if (!\Aleph::isDebug()) return parent::loadHTML($source);
+    if (!\Aleph::isErrorHandlingEnabled()) return parent::loadHTML($source);
     $level = ini_get('error_reporting');
-    \Aleph::debug(true, E_ALL & ~E_NOTICE & ~E_WARNING);
+    \Aleph::errorHandling(true, E_ALL & ~E_NOTICE & ~E_WARNING);
     $res = parent::loadHTML($source, $options);
-    \Aleph::debug(true, $level);
+    \Aleph::errorHandling(true, $level);
     return $res;
   }
 
   /**
-   * Loads the html file from the link.
+   * The method parses the HTML document in the file named filename.
+   * Unlike loading XML, HTML does not have to be well-formed to load.
    * 
-   * @param string $filename
+   * @param string $filename - the path to the HTML file.
    * @param integer $options - bitwise OR of the libxml option constants.
    * @return string 
    * @access public
@@ -91,7 +93,7 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * Returns the html code of the whole node.
+   * Returns the HTML code of the root node.
    * 
    * @return string 
    * @access public
@@ -102,10 +104,11 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * Adds a node $id code $html
+   * Changes the inner HTML of the node.
+   * if the node doesn't exist the exception will be thrown.
    * 
-   * @param string $id
-   * @param string $html
+   * @param string $id - the node ID.
+   * @param string $html - the node inner HTML.
    * @access public
    */
   public function insert($id, $html)
@@ -116,10 +119,11 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * Replace a node $id code $html
+   * Replaces the node by the given HTML.
+   * if the node doesn't exist the exception will be thrown.
    * 
-   * @param string $id
-   * @param string $html
+   * @param string $id - the node ID.
+   * @param string $html - HTML for replacing.
    * @access public
    */
   public function replace($id, $html)
@@ -130,12 +134,13 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * Adds $html to the node $id. The optional parameter specifies where 
-   * to add (at the beginning or end, before or after the element).
+   * Adds HTML to the node.
+   * The optional parameter specifies where the HTML will be added: at the beginning or end, before or after the node.
+   * if the node doesn't exist the exception will be thrown.
    * 
-   * @param string $id
-   * @param string $html
-   * @param string $mode
+   * @param string $id - the node ID.
+   * @param string $html - the HTML for adding.
+   * @param string $mode - the injecting mode.
    * @access public
    */
   public function inject($id, $html, $mode = self::DOM_INJECT_TOP)
@@ -161,9 +166,9 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * Returns the html code of $node, converting the php tags.
+   * Returns the inner HTML of the given node.
    * 
-   * @param string $node
+   * @param DOMNode $node - the given node.
    * @return string 
    * @access public
    */
@@ -179,10 +184,10 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * Removes all child nodes in $node and adds a new.
+   * Sets the inner HTML of th given node.
    * 
-   * @param  \DOMNode string $node
-   * @param string $html
+   * @param \DOMNode $node - the given node.
+   * @param string $html - the node inner HTML.
    * @access public
    */
   public function setInnerHTML(\DOMNode $node, $html)
@@ -193,29 +198,28 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * Returns the html converted into a node. 
-   * If there are php tags, they will be encoded.
+   * Converts the given HTML to the node object.
+   * If HTML contains several nodes only the first one will be generated.
    * 
-   * @param string $html
-   * @return string 
+   * @param string $html - the HTML for conversion.
+   * @return string
    * @access public
    */
   public function HTMLToNode($html)
   {
-    if ($html == '') return new \DOMText('');
+    if (!preg_match('/\A<[a-zA-Z].*/', $html)) return new \DOMText($html);
     $dom = new DOMDocumentEx($this->version, $this->encoding);
     $dom->loadHTML($html);
     $node = $this->importNode($dom->documentElement->firstChild->firstChild, true);
-    if (!preg_match('/^<[a-zA-Z].*/', $html)) $node = new \DOMText($html);
     return $node;
   }
    
   /**
-   * Get the element by its ID. 
-   * Extends standard feature processing option if the returned value is null.
+   * Searches and returns an element by its ID.
+   * Returns the DOMElement or NULL if the element is not found.
    * 
-   * @param string $id
-   * @return object
+   * @param string $id - the unique id value for an element.
+   * @return DOMElement
    * @access public
    */
   public function getElementById($id)

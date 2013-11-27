@@ -88,6 +88,45 @@ class Tokenizer implements \Iterator
   private $seek = 0;
   
   /**
+   * Returns the number of tokens.
+   *
+   * @return integer
+   * @access public
+   * @static
+   */
+  public static function getTokenCount()
+  {
+    return T_NS_SEPARATOR - T_REQUIRE_ONCE + 1;
+  }
+  
+  /**
+   * Returns TRUE if the both tokens are equal and FALSE otherwise.
+   *
+   * @param mixed $token1 - the first token for comparison.
+   * @param mixed $token2 - the second token for comparison.
+   * @return
+   * @static
+   */
+  public static function isEqual($token1, $token2)
+  {
+    return is_array($token1) && is_array($token2) && $token1[0] == $token2[0] && $token1[1] === $token2[1] || $token1 === $token2;
+  }
+  
+  /**
+   * Returns TRUE if the given token is not a comment, whitespace character or an open/close tag. Otherwise, it returns FALSE.
+   *
+   * @param integer | array $token - the token info or token ID.
+   * @return boolean
+   * @access public
+   * @static
+   */
+  public static function isSemanticToken($token)
+  {
+    if (is_array($token)) $token = $token[0];
+    return $token != T_WHITESPACE && $token != T_DOC_COMMENT && $token != T_COMMENT && $token != T_OPEN_TAG && $token != T_OPEN_TAG_WITH_ECHO && $token != T_CLOSE_TAG;
+  }
+  
+  /**
    * Parses string into tokens. 
    * Returns an array of token identifiers.
    *
@@ -111,9 +150,9 @@ class Tokenizer implements \Iterator
   }
 
   /**
-   * Constructor. Sets source php code to tokenize.
+   * Constructor. Sets source PHP code to tokenize.
    *
-   * @param string $source - php code string or file path.
+   * @param string $source - PHP code string or file path.
    * @access public
    */
   public function __construct($source)
@@ -194,7 +233,7 @@ class Tokenizer implements \Iterator
   }
   
   /**
-   * Move forward to next token.
+   * Move forward to the next token.
    *
    * @access public
    */
@@ -231,6 +270,7 @@ class Tokenizer implements \Iterator
    * Extracts and parses heredoc string.
    *
    * @param array $token
+   * @return mixed
    * @access private
    */
   private function extractHeredocString(array $token)
@@ -252,6 +292,7 @@ class Tokenizer implements \Iterator
   /**
    * Extracts ans parses double quoted string.
    *
+   * @return mixed
    * @access private
    */
   private function extractDoubleQuotedString()
@@ -269,7 +310,7 @@ class Tokenizer implements \Iterator
   }
   
   /**
-   * Rteurns next token from source code.
+   * Returns the next token from the source code.
    *
    * @return mixed
    * @access private   

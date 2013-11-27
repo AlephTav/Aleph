@@ -344,5 +344,3 @@ namespace
     return \Aleph\Utils\Translate::getInstance()->text($ID, $params, $locale);
   }
 }
-
-?>
