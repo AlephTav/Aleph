@@ -749,8 +749,8 @@ abstract class SQLBuilder
         }
         else
         {
-          if ($exp instanceof self || $exp instanceof SQLExpression) $exp = $isOrderExpression ? ' ' . $exp : ' AS ' . $exp;
-          else $exp = $isOrderExpression ? ' ' . $exp : ' AS ' . $this->wrap($exp, true);
+          if ($exp instanceof self || $exp instanceof SQLExpression) $exp = $isOrderExpression ? ' ' . $exp : ' ' . $exp;
+          else $exp = $isOrderExpression ? ' ' . $exp : ' ' . $this->wrap($exp, true);
           $tmp[] = $this->wrap($k, $isTableName) . $exp;
         }
       }

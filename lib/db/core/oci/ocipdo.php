@@ -44,6 +44,7 @@ class OCI extends \PDO
    */
   public function lastInsertId($seqname = null)
   {
+    if (!$seqname) return;
     $st = $this->prepare('SELECT "' . $seqname . '".currval FROM dual');
     $st->execute();
     return $st->fetchColumn();

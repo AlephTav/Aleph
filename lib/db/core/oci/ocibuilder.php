@@ -432,6 +432,7 @@ class OCIBuilder extends SQLBuilder
   protected function buildSelect(array $select, &$data)
   {
     if ($this->db && substr($this->db->getClientVersion(), 0, 2) == '12') return parent::buildSelect($select, $data);
+    if (empty($select['limit'])) return parent::buildSelect($select, $data);
     $limit = $select['limit'];
     unset($select['limit']);
     $sql = parent::buildSelect($select, $data);
