@@ -791,7 +791,7 @@ abstract class SQLBuilder
         $column = strtoupper(trim($column));
         if ($count == 2)
         {
-          if (in_array($column, ['>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
+          if (in_array($column, ['=', '>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
           {
             $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $this->addParam($value[1], $data);
             continue;

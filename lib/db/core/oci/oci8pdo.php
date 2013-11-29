@@ -84,10 +84,7 @@ class OCI8
    * @return mixed
    * @access public
    */
-  public function getAttribute($attribute)
-  {
-  
-  }
+  public function getAttribute($attribute){}
   
   /**
    * Sets an attribute on the database handle.
@@ -96,10 +93,7 @@ class OCI8
    * @param integer $attribute - the attribute identifier.
    * @param mixed $value - the attribute value.
    */
-  public function setAttribute($attribute, $value)
-  {
-    
-  }
+  public function setAttribute($attribute, $value){}
   
   /**
    * Places quotes around the input string (if required) and escapes special characters within the input string.
@@ -158,6 +152,7 @@ class OCI8
    */
   public function lastInsertId($seqname = null)
   {
+    if (!$seqname) return;
     $st = $this->prepare('SELECT "' . $seqname . '".currval FROM dual');
     $st->execute();
     return $st->fetchColumn();

@@ -367,18 +367,24 @@ class OCIBuilder extends SQLBuilder
     $tmp = [];
     foreach ($info as $row)
     {
+      preg_match('/(.*)\((.*)\)|[^()]*/', $row['DATA_TYPE'], $arr);
       $column = $row['COLUMN_NAME'];
       $tmp[$column]['column'] = $column;
-      $tmp[$column]['type'] = strtolower($row['DATA_TYPE']);
-      $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
+      $tmp[$column]['type'] = $type = strtolower(isset($arr[1]) ? $arr[1] : $arr[0]);
+      $tmp[$column]['phpType'] = $this->getPHPType($type);
       $tmp[$column]['isPrimaryKey'] = $row['KEY'] == 'P';
       $tmp[$column]['isNullable'] = $row['NULLABLE'] == 'Y';
       $tmp[$column]['isAutoincrement'] = false;
       $tmp[$column]['isUnsigned'] = false;
-      $tmp[$column]['default'] = $row['DATA_DEFAULT'];
+      $tmp[$column]['default'] = $tmp[$column]['isNullable'] ? $row['DATA_DEFAULT'] : substr($row['DATA_DEFAULT'], 0, -1);
       $tmp[$column]['maxLength'] = strlen($row['DATA_PRECISION']) ? (int)$row['DATA_PRECISION'] : (int)$row['DATA_LENGTH'];
       $tmp[$column]['precision'] = (int)$row['DATA_SCALE'];
       $tmp[$column]['set'] = false;
+      if (strlen($tmp[$column]['default']))
+      {
+        if (($type == 'timestamp' || $type == 'datetime') && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
+        else if ($tmp[$column]['default'][0] == "'" && $tmp[$column]['default'][strlen($tmp[$column]['default']) - 1] == "'") $tmp[$column]['default'] = str_replace("''", "'", substr($tmp[$column]['default'], 1, -1));
+      }
     }
     return $tmp;
   }
@@ -392,7 +398,8 @@ class OCIBuilder extends SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
-    $sql = stream_get_contents($info['info']);
+    if (is_object($info['info'])) $sql = $info['info']->load();
+    else $sql = stream_get_contents($info['info']);
     $info = ['constraints' => []];
     $clean = function($column, $smart = false)
     {
