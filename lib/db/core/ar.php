@@ -601,7 +601,7 @@ class AR
   
   /**
    * Updates record in the database table if this record exists or inserts new record otherwise.
-   * Method returns numbers of affected rows.
+   * It returns numbers of affected rows.
    *
    * @return integer
    * @access public
@@ -614,7 +614,8 @@ class AR
   
   /**
    * Inserts new row to the database table.
-   * Method returns the ID of the last inserted row, or the last value from a sequence object, depending on the underlying driver.
+   * The method returns the ID of the last inserted row, or the last value from a sequence object, depending on the underlying driver.
+   * If a database table doesn't have the auto-incremental column or the sequence name is not passed as a parameter, the method returns NULL.
    *
    * @param array $options - contains additional parameters (for example, updateOnKeyDuplicate or sequenceName) required by some DBMS.
    * @return integer
@@ -634,13 +635,13 @@ class AR
     $res = $this->db->insert($this->table, $tmp, $options);
     $this->changed = false;
     $this->assigned = true;
-    if ($this->ai) $this->columns[$this->ai] = $res;
-    return $res;
+    if ($this->ai) return $this->columns[$this->ai] = $res;
+    return isset($options['sequenceName']) ? $res : null;
   }
   
   /**
    * Updates existing row (or rows) in the database table.
-   * Method returns numbers of affected rows.
+   * It returns numbers of affected rows.
    *
    * @param mixed $where - information about conditions of the updating.
    * @return integer
@@ -658,7 +659,7 @@ class AR
   
   /**
    * Deletes existing row (or rows) from the database table.
-   * Method returns numbers of affected rows.
+   * The method returns numbers of affected rows.
    *
    * @param mixed $where - information about conditions of the deleting.
    * @return integer
