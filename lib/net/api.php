@@ -67,7 +67,7 @@ class API
   protected static $response = null;
   
   /**
-   * The response conten type. It can be regular MIME-type or its alias (if exists).
+   * The response content type. It can be regular MIME-type or its alias (if exists).
    *
    * @var string $contentType
    * @access protected
@@ -160,7 +160,7 @@ class API
       $api = $callback->getClassObject();
       $api->before($resource, $params);
       $result = call_user_func_array([$api, $callback->getMethod()], $params);
-      $api->after($resource, $params);
+      $api->after($resource, $params, $result);
       return $result;
     };
     $router = new Router();
@@ -168,12 +168,7 @@ class API
     {
       foreach ($info as $methods => $data)
       {
-        if (isset($data['secure']))
-        {
-          $router->secure($resource, $data['secure'], $methods)
-                 ->component(empty($data['component']) ? URL::ALL : $data['component']);
-        }
-        else if (isset($data['redirect']))
+        if (isset($data['redirect']))
         {
           $router->redirect($resource, $data['redirect'], $methods)
                  ->ssl(empty($data['ssl']) ? false : $data['ssl'])
@@ -201,7 +196,7 @@ class API
    * This method is automatically called when the current request does not match any API methods ($map's callbacks).
    * The method stops the script execution and sets the response status code to 404.
    *
-   * @param string $content - the response body.
+   * @param mixed $content - the response body.
    * @access protected
    * @static
    */
@@ -274,7 +269,8 @@ class API
    *
    * @param array $resource - the part of $map which corresponds the current request.
    * @param array $params - the values of the URL template variables.
+   * @param mixed $result - the result of the API method execution.
    * @access protected
    */
-  protected function after(array $resource, array $params){}
+  protected function after(array $resource, array $params, &$result){}
 }

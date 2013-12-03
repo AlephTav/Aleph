@@ -141,7 +141,39 @@ class Tools
    */       
   public static function replace($search, $replace, $subject)
   {
-    
+    $x = [];
+    foreach (Tokenizer::parse($search) as $token) if (Tokenizer::isSemanticToken($token)) $x[] = $token;
+    $m = count($x);
+    if ($m == 0) return $subject;
+    $y = Tokenizer::parse($subject);
+    $n = count($y);
+    if ($n < 0) return $subject;
+    $res = '';
+    for ($i = 0; $i < $n; $i++)
+    {
+      $token = $y[$i];
+      if (Tokenizer::isEqual($x[0], $token))
+      {
+        $fragment = ''; $k = 1;
+        do
+        {
+          $fragment .= is_array($token) ? $token[1] : $token;
+          if ($k == $m)
+          {
+            $res .= $replace;
+            $token = $fragment = '';
+            break;
+          }
+          $i++;
+          if ($i >= $n) break;
+          $token = $y[$i];
+        }
+        while (!Tokenizer::isSemanticToken($token) || Tokenizer::isEqual($x[$k++], $token));
+        $res .= $fragment;
+      }
+      $res .= is_array($token) ? $token[1] : $token;
+    }
+    return $res;
   }
    
   /**

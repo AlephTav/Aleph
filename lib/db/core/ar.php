@@ -540,7 +540,7 @@ class AR
   }
   
   /**
-   * Finds record in the table by the given criteria and assign column values to the properties of the active record object.
+   * Finds record in the table by the given criteria and assigns column values to the properties of the active record object.
    *
    * @param mixed $where - the WHERE clause condition.
    * @param mixed $order - the ORDER BY clause condition.
@@ -549,9 +549,9 @@ class AR
    */
   public function assign($where, $order = null)
   {
+    $tmp = [];
     if (!is_array($where)) 
     {
-      $tmp = [];
       foreach ($this->pk as $column) $tmp[$column] = $where;
       $where = $tmp;
     }
@@ -603,13 +603,14 @@ class AR
    * Updates record in the database table if this record exists or inserts new record otherwise.
    * It returns numbers of affected rows.
    *
+   * @param array $options - contains additional parameters (for example, updateOnKeyDuplicate or sequenceName) required by some DBMS for row insertion.
    * @return integer
    * @access public
    */
-  public function save()
+  public function save(array $options = null)
   {
     if ($this->assigned) return $this->update();
-    return $this->insert();
+    return $this->insert($options);
   }
   
   /**
@@ -641,7 +642,7 @@ class AR
   
   /**
    * Updates existing row (or rows) in the database table.
-   * It returns numbers of affected rows.
+   * It returns the number of affected rows.
    *
    * @param mixed $where - information about conditions of the updating.
    * @return integer
@@ -649,8 +650,8 @@ class AR
    */
   public function update($where = null)
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
     if ($where !== null) return $this->db->update($this->table, $this->columns, $where);
+    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
     if (!$this->changed) return;
     if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'update');
     $this->changed = false;
@@ -667,8 +668,8 @@ class AR
    */
   public function delete($where = null)
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
     if ($where !== null) return $this->db->delete($this->table, $where);
+    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
     if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'delete');
     $this->deleted = true;
     return $this->db->delete($this->table, $this->getWhereData());
