@@ -328,6 +328,7 @@ class DB
       $dsn = $this->idsn['dbname'];
       $v = explode('/', $dsn);
       $this->idsn['dbname'] = array_pop($v);
+      if (isset($this->idsn['schema'])) $this->idsn['dbname'] = $this->idsn['schema'];
       if (count($v))
       {
         $v = explode(':', array_pop($v));
