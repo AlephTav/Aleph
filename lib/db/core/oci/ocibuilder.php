@@ -442,8 +442,9 @@ class OCIBuilder extends SQLBuilder
     if (empty($select['limit'])) return parent::buildSelect($select, $data);
     $limit = $select['limit'];
     unset($select['limit']);
+    $alias = 'a' . rand(111111, 999999);
     $sql = parent::buildSelect($select, $data);
-    $sql = 'SELECT a.*' . ($limit['offset'] !== null ? ', ROWNUM rnum' : '') . ' FROM (' . $sql . ') a';
+    $sql = 'SELECT ' . $alias . '.*' . ($limit['offset'] !== null ? ', ROWNUM rnum' : '') . ' FROM (' . $sql . ') ' . $alias;
     if ($limit['limit'] !== null) $sql .= ' WHERE ROWNUM <= ' . (int)$limit['limit'];
     if ($limit['offset']  !== null) $sql = 'SELECT * FROM (' . $sql . ') WHERE rnum > ' . (int)$limit['offset'];
     return $sql;

@@ -453,7 +453,7 @@ abstract class SQLBuilder
   {
     if ($conditions == '') return $this;
     $tmp = array_pop($this->sql);
-    if (isset($tmp['join'])) $tmp['join'] = []; 
+    if (!isset($tmp['join'])) $tmp['join'] = []; 
     $tmp['join'][] = ($type != '' ? ' ' . $type : '') . ' JOIN ' . implode(', ', $this->selectExpression($table, true)) . ' ON ' . $this->whereExpression($conditions, $tmp['data']);
     $this->sql[] = $tmp;
     return $this;
@@ -793,7 +793,9 @@ abstract class SQLBuilder
         {
           if (in_array($column, ['=', '>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
           {
-            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $this->addParam($value[1], $data);
+            if ($value[1] instanceof self) $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . $value[1] . ')';
+            else if ($value[1] instanceof SQLExpression) $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $value[1];
+            else $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $this->addParam($value[1], $data);
             continue;
           }
           else if ($column == 'IN' || $column == 'NOT IN')
