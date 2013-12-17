@@ -674,11 +674,6 @@ abstract class SQLBuilder
     {
       $tmp['columns'][$column] = $this->wrap($column);
       if (!is_array($values)) $values = [$values];
-      else if (count($values) == 1)
-      {
-        list($val, $type) = each($values);
-        if (!is_array($val) && !is_array($type)) $values = [$values];
-      }
       if (count($values) > $max) $max = count($values);
     }
     unset($values);

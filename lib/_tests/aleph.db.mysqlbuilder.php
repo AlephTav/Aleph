@@ -37,7 +37,7 @@ function test_mysqlbuilder()
   if ($q !== 'INSERT INTO `tb` (`column1`, `column2`, `column3`) VALUES (?, ?, ?), (?, ?, ?), (?, ?, NOW())' || !is_array($data) || $data != ['a', 'foo', 1, 'b', 'foo', 2, 'b', 'foo']) return $error;
   $q = $sql->insert('tb', ['column1' => 1, 'column2' => new DB\SQLExpression('CURDATE()'), 'column3' => 'abc'], ['updateOnKeyDuplicate' => true])->build($data);
   if ($q !== 'INSERT INTO `tb` (`column1`, `column2`, `column3`) VALUES (?, CURDATE(), ?) ON DUPLICATE KEY UPDATE `column1` = ?, `column2` = CURDATE(), `column3` = ?' || !is_array($data) || $data != [1, 'abc', 1, 'abc']) return $error;
-  $q = $sql->insert('tb', ['c1' => [[1 => \PDO::PARAM_INT], ['a' => \PDO::PARAM_STR]], 'c2' => [2, 'b', [true => \PDO::PARAM_BOOL]], 'c3' => [1 => \PDO::PARAM_BOOL]])->build($data);
+  $q = $sql->insert('tb', ['c1' => [[1 => \PDO::PARAM_INT], ['a' => \PDO::PARAM_STR]], 'c2' => [2, 'b', [true => \PDO::PARAM_BOOL]], 'c3' => [[1 => \PDO::PARAM_BOOL]]])->build($data);
   if ($q !== 'INSERT INTO `tb` (`c1`, `c2`, `c3`) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)' || !is_array($data) || $data !== [[1 => \PDO::PARAM_INT], 2, [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], 'b', [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], [true => \PDO::PARAM_BOOL], [1 => \PDO::PARAM_BOOL]]) return $error;
   // Checks UPDATE queries.
   $error = 'Building of UPDATE queries does not work.';

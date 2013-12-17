@@ -55,7 +55,6 @@ class MySQLBuilder extends SQLBuilder
       case 'tinyint':
       case 'mediumint':
       case 'bigint':
-      case 'timestamp':
       case 'year':
       case 'bit':
       case 'serial':
