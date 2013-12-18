@@ -551,6 +551,29 @@ class Response
   }
   
   /**
+   * Downloads the given file.
+   *
+   * @param string $path - the full path to the downloading file.
+   * @param string $filename - the name of the downloading file.
+   * @param string $contentType - the mime type of the downloading file.
+   */
+  public function download($path, $filename = null, $contentType = null)
+  {
+    if (!$filename) $filename = basename($path);
+    if (!$contentType) $contentType = function_exists('mime_content_type') ? mime_content_type($path) : 'application/octet-stream';
+    $this->body = null;
+    $this->cache(false);
+    $this->setContentType($contentType);
+    $this->headers->removeCacheControlDirective('private');
+    $this->headers->set('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    $this->headers->set('Content-Transfer-Encoding', 'binary');
+    $this->headers->set('Content-Length', filesize($path));
+    $this->send();
+    readfile($path);
+    exit;
+  }
+  
+  /**
    * Sends all HTTP response headers.
    *
    * @throws Aleph\Core\Exception with token ERR_RESPONSE_1 if new version value doesn't equal '1.0' or '1.1'

@@ -290,6 +290,23 @@ class OCI8Statement
   }
   
   /**
+   * Binds a PHP variable to a corresponding named placeholder in the SQL statement that was used to prepare the statement.
+   * Returns TRUE on success or FALSE on failure.
+   *
+   * @param mixed $parameter - the parameter identifier.
+   * @param mixed $variable - name of the PHP variable to bind to the SQL statement parameter.
+   * @param integer $type - the explicit data type for the parameter using PDO::PARAM_* constants.
+   * @param integer $length - the length of the data type. To indicate that a parameter is an OUT parameter from a stored procedure, you must explicitly set the length.
+   * @param mixed $options - the driver specific options.
+   * @return boolean
+   * @access public
+   */
+  public function bindParam($parameter, &$variable, $type = \PDO::PARAM_STR, $length = -1, $options = null)
+  {
+    return oci_bind_by_name($this->st, $parameter, $variable, $length, $this->getOCI8Type($type));
+  }
+  
+  /**
    * Execute the prepared statement.
    * Returns TRUE on success or FALSE on failure.
    *

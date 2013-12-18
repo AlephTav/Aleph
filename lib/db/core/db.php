@@ -1092,30 +1092,25 @@ class DB
    */
   protected function prepare($st, $sql, array $data)
   {
-    if (is_numeric(key($data)))
+    $bind = function($k, &$v) use($st)
     {
-      $k = 1;
-      foreach ($data as $v)
-      {
-        if (!is_array($v)) $st->bindValue($k, $v, self::getPDOType($v));
-        else
-        {        
-          list($value, $type) = each($v);
-          $st->bindValue($k, $value, $type);
-        }
-        $k++;
-      }
-      return;
-    }
-    foreach ($data as $k => $v) 
-    {
-      if (!is_array($v)) $st->bindValue($k, $v, self::getPDOType($v));
-      else
+      if (is_array($v)) 
       {
         list($value, $type) = each($v);
         $st->bindValue($k, $value, $type);
       }
+      else
+      {
+        $st->bindValue($k, $v, self::getPDOType($v));
+      }
+    };
+    if (is_numeric(key($data)))
+    {
+      $k = 1;
+      foreach ($data as $v) $bind($k++, $v);
+      return;
     }
+    foreach ($data as $k => $v) $bind($k, $v);
   }
   
   /**
