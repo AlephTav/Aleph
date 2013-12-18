@@ -1092,7 +1092,7 @@ class DB
    */
   protected function prepare($st, $sql, array $data)
   {
-    $bind = function($k, &$v) use($st)
+    $bind = function($k, $v) use($st)
     {
       if (is_array($v)) 
       {
