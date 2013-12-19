@@ -326,7 +326,7 @@ class AR
    * @return mixed
    * @access public
    */
-  public function getDefaultValue($column)
+  public function getColumnDefaultValue($column)
   {
     return $this->getColumnInfo($column, 'default');
   }
@@ -338,7 +338,7 @@ class AR
    * @return integer
    * @access public
    */
-  public function getMaxLength($column)
+  public function getColumnMaxLength($column)
   {
     return $this->getColumnInfo($column, 'maxLength');
   }
@@ -350,7 +350,7 @@ class AR
    * @return integer
    * @access public
    */
-  public function getPrecision($column)
+  public function getColumnPrecision($column)
   {
     return $this->getColumnInfo($column, 'precision');
   }
@@ -362,7 +362,7 @@ class AR
    * @return array
    * @access public
    */
-  public function getEnumeration($column)
+  public function getColumnEnumeration($column)
   {
     return $this->getColumnInfo($column, 'set');
   }
@@ -471,9 +471,55 @@ class AR
     {
       if ($insert && $column == $this->ai) continue;
       $type = $this->getColumnPHPType($column);
-      if (($type == 'int' || $type == 'float') && strlen($this->columns[$column]) == 0 && strlen($this->getDefaultValue($column)) == 0) return false;
+      if (($type == 'int' || $type == 'float') && strlen($this->columns[$column]) == 0 && strlen($this->getColumnDefaultValue($column)) == 0) return false;
     }
     return true;
+  }
+  
+  /**
+   * Returns TRUE if the given column is a numeric one. Otherwise, it returns FALSE. 
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
+  public function isNumericColumn($column)
+  {
+    $type = $this->getColumnPHPType($column);
+    return $type == 'int' || $type == 'float';
+  }
+
+  /**
+   * Returns TRUE if the given column is a text one. Otherwise, it returns FALSE. 
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
+  public function isTextColumn($column)
+  {
+    return $this->getColumnPHPType($column) == 'string';
+  }
+
+  /**
+   * Returns TRUE if the given column has one of date or time column types. Otherwise, it returns FALSE. 
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
+  public function isDTColumn($column)
+  {
+    switch ($this->getColumnType($column))
+    {
+      case 'datetime':
+      case 'timestamp':
+      case 'date':
+      case 'time':
+      case 'year':
+        return true;
+    }
+    return false;
   }
   
   /**
@@ -519,20 +565,10 @@ class AR
     if ($type == 'enum' && !in_array($value, $this->getEnumeration($column))) throw new Core\Exception($this, 'ERR_AR_8', $column, $this->table);
     if (!($value instanceof SQLExpression))
     {
-      if (($ml = $this->getMaxLength($column)) > 0)
+      if ($type == 'string' && !$this->isDTColumn($column) && ($max = $this->getMaxLength($column)) > 0)
       {
-        $l = $type == 'bit' ? strlen(decbin($value)) : strlen($value);
-        if ($l > 0)
-        {
-          $type = $this->getColumnPHPType($column);
-          if ($type == 'int' || $type == 'float')
-          {
-            $value = (string)$value;
-            if ($value[0] == '+' || $value[0] == '-') $l--;
-            if (strpos($value, '.') !== false) $l--;
-          }
-          if ($l > $ml) throw new Core\Exception($this, 'ERR_AR_7', $column, $this->table, $ml);
-        }
+        $length = $type == 'bit' ? strlen(decbin($value)) : strlen($value);
+        if ($length > $max) throw new Core\Exception($this, 'ERR_AR_7', $column, $this->table, $max);
       }
     }
     $this->columns[$column] = $value;

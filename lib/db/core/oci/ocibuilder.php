@@ -382,7 +382,7 @@ class OCIBuilder extends SQLBuilder
       $tmp[$column]['set'] = false;
       if (strlen($tmp[$column]['default']))
       {
-        if (($type == 'timestamp' || $type == 'datetime') && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
+        if (($type == 'timestamp' || $type == 'date') && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
         else if ($tmp[$column]['default'][0] == "'" && $tmp[$column]['default'][strlen($tmp[$column]['default']) - 1] == "'") $tmp[$column]['default'] = str_replace("''", "'", substr($tmp[$column]['default'], 1, -1));
       }
     }
