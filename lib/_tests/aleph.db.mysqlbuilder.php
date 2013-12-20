@@ -38,14 +38,14 @@ function test_mysqlbuilder()
   $q = $sql->insert('tb', ['column1' => 1, 'column2' => new DB\SQLExpression('CURDATE()'), 'column3' => 'abc'], ['updateOnKeyDuplicate' => true])->build($data);
   if ($q !== 'INSERT INTO `tb` (`column1`, `column2`, `column3`) VALUES (?, CURDATE(), ?) ON DUPLICATE KEY UPDATE `column1` = ?, `column2` = CURDATE(), `column3` = ?' || !is_array($data) || $data != [1, 'abc', 1, 'abc']) return $error;
   $q = $sql->insert('tb', ['c1' => [[1 => \PDO::PARAM_INT], ['a' => \PDO::PARAM_STR]], 'c2' => [2, 'b', [true => \PDO::PARAM_BOOL]], 'c3' => [[1 => \PDO::PARAM_BOOL]]])->build($data);
-  if ($q !== 'INSERT INTO `tb` (`c1`, `c2`, `c3`) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)' || !is_array($data) || $data !== [[1 => \PDO::PARAM_INT], 2, [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], 'b', [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], [true => \PDO::PARAM_BOOL], [1 => \PDO::PARAM_BOOL]]) return $error;
+  if ($q !== 'INSERT INTO `tb` (`c1`, `c2`, `c3`) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)' || !is_array($data) || $data !== [[1 => \PDO::PARAM_INT], 2, [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], 'b', [1 => \PDO::PARAM_BOOL], ['a' => \PDO::PARAM_STR], [true => \PDO::PARAM_BOOL], [1 => \PDO::PARAM_BOOL]]) return $error;  
   // Checks UPDATE queries.
   $error = 'Building of UPDATE queries does not work.';
   $q = $sql->update(new DB\SQLExpression('tb AS t'), 'col1 = 1, col2 = col2 + 1')->build($data);
   if ($q !== 'UPDATE tb AS t SET col1 = 1, col2 = col2 + 1' || !is_array($data) || count($data) != 0) return $error;
   $q = $sql->update(['tb1', 'tb2' => 't2', 'tb3' => 't3'], ['column1' => 1, new DB\SQLExpression('c = c + 1'), 'column2' => 'abc'])->build($data);
   if ($q !== 'UPDATE `tb1`, `tb2` `t2`, `tb3` `t3` SET `column1` = ?, c = c + 1, `column2` = ?' || !is_array($data) || $data != [1, 'abc']) return $error;
-  $q = $sql->update('tb', ['c1' => 'a', 'c2' => 'b', 'c3' => 'c'])->where(['c1' => new DB\SQLExpression('CURDATE()'), ['c2 LIKE c1', 'c3 LIKE c2'], 'or' => ['c2' => 3, new DB\SQLExpression('c3 IN (1,2,3)')]])->build($data);
+  $q = $sql->update('tb', ['c1' => 'a', 'c2' => 'b', 'c3' => 'c'])->where(['c1' => new DB\SQLExpression('CURDATE()'), ['c2 LIKE c1', 'c3 LIKE c2'], 'or' => ['c2' => 3, new DB\SQLExpression('c3 IN (1,2,3)')]])->build($data); 
   if ($q !== 'UPDATE `tb` SET `c1` = ?, `c2` = ?, `c3` = ? WHERE `c1` = CURDATE() AND c2 LIKE c1 AND c3 LIKE c2 AND (`c2` = ? OR c3 IN (1,2,3))' || !is_array($data) || $data != ['a', 'b', 'c', 3]) return $error;
   $q = $sql->update('tb', ['c1' => [1 => \PDO::PARAM_INT], 'c2' => 'a'])->where(['or' => ['c1' => ['b' => \PDO::PARAM_STR], ['c2' => 3, 'c4' => [true => \PDO::PARAM_BOOL]]]])->build($data);
   if ($q !== 'UPDATE `tb` SET `c1` = ?, `c2` = ? WHERE (`c1` = ? OR `c2` = ? AND `c4` = ?)' || !is_array($data) || $data != [[1 => \PDO::PARAM_INT], 'a', ['b' => \PDO::PARAM_STR], 3, [true => \PDO::PARAM_BOOL]]) return $error;
@@ -65,9 +65,24 @@ function test_mysqlbuilder()
            ->order(['t3.column' => 'DESC', 't1.name'])
            ->limit(10, 120)
            ->build($data);
-  if ($q !== 'SELECT DISTINCTROW COUNT(*) AS c, `t1`.`name`, `t2`.`name` `category` FROM `tb1` `t1`,`tb2` INNER JOIN `tb3` `t3`, `tb4` `t4` ON (`t3`.`column` = t1.column OR `t4`.`column` = tb2.column) AND t3.ID IS NOT NULL AND `t4` = ? WHERE `t1`.`column` = ? AND t3.column > 6 GROUP BY `t1`.`column`, `tb2`.`name` HAVING COUNT(*) < 10 AND `t1`.`ID` = ? ORDER BY `t3`.`column` DESC, `t1`.`name` LIMIT 120, 10' || !is_array($data) || $data != [1, 2, 3]) return $error;
+  if ($q !== 'SELECT DISTINCTROW COUNT(*) AS c, `t1`.`name`, `t2`.`name` `category` FROM `tb1` `t1`, `tb2` INNER JOIN `tb3` `t3`, `tb4` `t4` ON (`t3`.`column` = t1.column OR `t4`.`column` = tb2.column) AND t3.ID IS NOT NULL AND `t4` = ? WHERE `t1`.`column` = ? AND t3.column > 6 GROUP BY `t1`.`column`, `tb2`.`name` HAVING COUNT(*) < 10 AND `t1`.`ID` = ? ORDER BY `t3`.`column` DESC, `t1`.`name` LIMIT 120, 10' || !is_array($data) || $data != [1, 2, 3]) return $error;
   $q = $sql->select('tb')->where(['<>' => ['c1', 5], 'LIKE' => ['c2', 'a'], 'NOT IN' => ['c3', [1, 2, 3]], 'BETWEEN' => ['c4', 5, 9], 'IS' => ['c5', 'NULL']])->build($data);
   if ($q !== 'SELECT * FROM `tb` WHERE `c1` <> ? AND `c2` LIKE ? AND `c3` NOT IN (?, ?, ?) AND `c4` BETWEEN ? AND ? AND `c5` IS NULL' || !is_array($data) || $data !== [5, 'a', 1, 2, 3, 5, 9]) return $error;
+  $q = $sql->select(['tb1' => 't1', 'tb2' => 't2', 'tb3'], ['c1', 'c2', 'schema.table.c3'])
+           ->join(['tb4'], ['tb4.c1' => 1])
+           ->join(['tb5'], ['tb5.c1' => 2])
+           ->join(['tb6'], ['tb6.c1' => 3], 'LEFT')
+           ->where(['tb6.c2' => 4, 'tb5.c2' => new DB\SQLExpression('tb4.c1')])
+           ->where('c3 IS NULL', 'OR')
+           ->group(['c7', 'c8'])
+           ->group(['c9'])
+           ->having(['c3' => 5, 'c4' => 6])
+           ->having(['c6' => 7])
+           ->order(['c1' => 'DESC'])
+           ->order(['c2'])
+           ->limit(1, 10)
+           ->build($data);
+  if ($q !== 'SELECT `c1`, `c2`, `schema`.`table`.`c3` FROM `tb1` `t1`, `tb2` `t2`, `tb3` INNER JOIN `tb4` ON `tb4`.`c1` = ? INNER JOIN `tb5` ON `tb5`.`c1` = ? LEFT JOIN `tb6` ON `tb6`.`c1` = ? WHERE (`tb6`.`c2` = ? AND `tb5`.`c2` = tb4.c1) OR (c3 IS NULL) GROUP BY `c7`, `c8`, `c9` HAVING (`c3` = ? AND `c4` = ?) AND (`c6` = ?) ORDER BY `c1` DESC, `c2` LIMIT 10, 1'  || !is_array($data) || $data != [1, 2, 3, 4, 5, 6, 7]) return $error;
   return true;
 }
 

@@ -594,6 +594,14 @@ class AR
     $this->columns = $this->db->row($this->db->sql->select($this->table)->where($where)->order($order)->limit(1)->build($tmp), $tmp);
     if ($this->columns)
     {
+      if ($this->db->getEngine() == 'OCI')
+      {
+        foreach ($this->columns as &$value)
+        {
+          if (is_resource($value)) $value = stream_get_contents($value);
+          else if (is_a($value, 'OCI-Lob')) $value = $value->load();
+        }
+      }
       $this->assigned = true;
       $this->changed = false;
       $this->deleted = false;

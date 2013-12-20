@@ -345,13 +345,10 @@ abstract class SQLBuilder
    */
   public function insert($table, $columns, array $options = null)
   {
-    $res = $this->insertExpression($columns, $data);
     $tmp = [];
     $tmp['type'] = 'insert';
-    $tmp['data'] = $data;
-    $tmp['table'] = $this->wrap($table, true);
-    $tmp['columns'] = $res['columns'];
-    $tmp['values'] = $res['values'];
+    $tmp['table'] = $table;
+    $tmp['columns'] = $columns;
     $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
@@ -380,9 +377,8 @@ abstract class SQLBuilder
   {
     $tmp = [];
     $tmp['type'] = 'update';
-    $tmp['data'] = [];
-    $tmp['table'] = $this->selectExpression($table, true);
-    $tmp['columns'] = $this->updateExpression($columns, $tmp['data']);
+    $tmp['table'] = $table;
+    $tmp['columns'] = $columns;
     $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
@@ -405,8 +401,7 @@ abstract class SQLBuilder
   {
     $tmp = [];
     $tmp['type'] = 'delete';
-    $tmp['data'] = [];
-    $tmp['table'] = $this->selectExpression($table, true);
+    $tmp['table'] = $table;
     $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
@@ -431,10 +426,9 @@ abstract class SQLBuilder
   {
     $tmp = [];
     $tmp['type'] = 'select';
-    $tmp['data'] = [];
+    $tmp['table'] = $table;
     $tmp['distinct'] = $distinct;
-    $tmp['columns'] = $this->selectExpression($columns);
-    $tmp['from'] = $this->selectExpression($table, true);
+    $tmp['columns'] = $columns;
     $tmp['options'] = $options;
     $this->sql[] = $tmp;
     return $this;
@@ -451,10 +445,8 @@ abstract class SQLBuilder
    */
   public function join($table, $conditions, $type = 'INNER')
   {
-    if ($conditions == '') return $this;
     $tmp = array_pop($this->sql);
-    if (!isset($tmp['join'])) $tmp['join'] = []; 
-    $tmp['join'][] = ($type != '' ? ' ' . $type : '') . ' JOIN ' . implode(', ', $this->selectExpression($table, true)) . ' ON ' . $this->whereExpression($conditions, $tmp['data']);
+    $tmp['join'][] = ['type' => $type ?: 'INNER', 'table' => $table, 'conditions' => $conditions];
     $this->sql[] = $tmp;
     return $this;
   }
@@ -466,12 +458,10 @@ abstract class SQLBuilder
    * @return self
    * @access public
    */
-  public function where($conditions)
+  public function where($conditions, $conjunction = 'AND')
   {
-    if ($conditions == '') return $this;
     $tmp = array_pop($this->sql);
-    if (isset($tmp['where'])) throw new Core\Exception($this, 'ERR_SQL_3', 'where');
-    $tmp['where'] = $this->whereExpression($conditions, $tmp['data']);
+    $tmp['where'][] = ['conditions' => $conditions, 'conjunction' => $conjunction ?: 'AND'];
     $this->sql[] = $tmp;
     return $this;
   }
@@ -485,10 +475,8 @@ abstract class SQLBuilder
    */
   public function group($group)
   {
-    if ($group == '') return $this;
     $tmp = array_pop($this->sql);
-    if (isset($tmp['group'])) throw new Core\Exception($this, 'ERR_SQL_3', 'group');
-    $tmp['group'] = $this->selectExpression($group);
+    $tmp['group'][] = $group;
     $this->sql[] = $tmp;
     return $this;
   }
@@ -500,12 +488,10 @@ abstract class SQLBuilder
    * @return self
    * @access public
    */
-  public function having($conditions)
+  public function having($conditions, $conjunction = 'AND')
   {
-    if ($conditions == '') return $this;
     $tmp = array_pop($this->sql);
-    if (isset($tmp['having'])) throw new Core\Exception($this, 'ERR_SQL_3', 'having');
-    $tmp['having'] = $this->whereExpression($conditions, $tmp['data']);
+    $tmp['having'][] = ['conditions' => $conditions, 'conjunction' => $conjunction ?: 'AND'];
     $this->sql[] = $tmp;
     return $this;
   }
@@ -519,10 +505,8 @@ abstract class SQLBuilder
    */
   public function order($order)
   {
-    if ($order == '') return $this;
     $tmp = array_pop($this->sql);
-    if (isset($tmp['order'])) throw new Core\Exception($this, 'ERR_SQL_3', 'order');
-    $tmp['order'] = $this->selectExpression($order, false, true);
+    $tmp['order'][] = $order;
     $this->sql[] = $tmp;
     return $this;
   }
@@ -553,8 +537,8 @@ abstract class SQLBuilder
    */
   public function build(&$data = null)
   {
+    $data = [];
     $tmp = array_pop($this->sql);
-    $data = $tmp['data'];
     if ($tmp) switch ($tmp['type'])
     {
       case 'select': return $this->buildSelect($tmp, $data);
@@ -574,12 +558,13 @@ abstract class SQLBuilder
    */
   protected function buildInsert(array $insert, &$data)
   {
-    $sql = 'INSERT INTO ' . $insert['table'] . ' ';
-    if (!is_array($insert['values'])) $sql .= $insert['values'];
+    $sql = 'INSERT INTO ' . $this->wrap($insert['table'], true) . ' ';
+    $res = $this->insertExpression($insert['columns'], $data);
+    if (!is_array($res['values'])) $sql .= $res['values'];
     else 
     {
-      foreach ($insert['values'] as &$values) $values = '(' . implode(', ', $values) . ')';
-      $sql .= '(' . implode(', ', $insert['columns']) . ') VALUES ' . implode(', ', $insert['values']);
+      foreach ($res['values'] as &$values) $values = '(' . implode(', ', $values) . ')';
+      $sql .= '(' . implode(', ', $res['columns']) . ') VALUES ' . implode(', ', $res['values']);
     }
     return $sql;
   }
@@ -594,12 +579,12 @@ abstract class SQLBuilder
    */
   protected function buildUpdate(array $update, &$data)
   {
-    $sql = 'UPDATE ' . implode(', ', $update['table']);
-    if (!empty($update['join'])) $sql .= implode(' ', $update['join']);
-    $sql .= ' SET ' . $update['columns'];
-    if (!empty($update['where'])) $sql .= ' WHERE ' . $update['where'];
-    if (!empty($update['order'])) $sql .= ' ORDER BY ' . implode(', ', $update['order']);
-    if (!empty($update['limit'])) $sql .= ' ' . $this->buildLimit($update['limit']);
+    $sql = 'UPDATE ' . $this->selectExpression($update['table'], true);
+    if (!empty($update['join'])) $sql .= $this->buildJoin($update['join']);
+    $sql .= ' SET ' . $this->updateExpression($update['columns'], $data);
+    if (!empty($update['where'])) $sql .= $this->buildWhere($update['where'], $data);
+    if (!empty($update['order'])) $sql .= $this->buildOrder($update['order']);
+    if (!empty($update['limit'])) $sql .= $this->buildLimit($update['limit']);
     return $sql;
   }
   
@@ -613,11 +598,11 @@ abstract class SQLBuilder
    */
   protected function buildDelete(array $delete, &$data)
   {
-    $sql = 'DELETE FROM ' . implode(', ', $delete['table']);
-    if (!empty($delete['join'])) $sql .= implode(' ', $delete['join']);
-    if (!empty($delete['where'])) $sql .= ' WHERE ' . $delete['where'];
-    if (!empty($delete['order'])) $sql .= ' ORDER BY ' . implode(', ', $delete['order']);
-    if (!empty($delete['limit'])) $sql .= ' ' . $this->buildLimit($delete['limit']);
+    $sql = 'DELETE FROM ' . $this->selectExpression($delete['table'], true);
+    if (!empty($delete['join'])) $sql .= $this->buildJoin($delete['join']);
+    if (!empty($delete['where'])) $sql .= $this->buildWhere($delete['where'], $data);
+    if (!empty($delete['order'])) $sql .= $this->buildOrder($delete['order']);
+    if (!empty($delete['limit'])) $sql .= $this->buildLimit($delete['limit']);
     return $sql;
   }
   
@@ -631,16 +616,86 @@ abstract class SQLBuilder
    */
   protected function buildSelect(array $select, &$data)
   {
-    $sql = 'SELECT ' . ($select['distinct'] ? $select['distinct'] . ' ' : '');
-    $sql .= implode(', ', $select['columns']);
-    $sql .= ' FROM ' . implode(',', $select['from']);
-    if (!empty($select['join'])) $sql .= implode(' ', $select['join']);
-    if (!empty($select['where'])) $sql .= ' WHERE ' . $select['where'];
-    if (!empty($select['group'])) $sql .= ' GROUP BY ' . implode(', ', $select['group']);
-    if (!empty($select['having'])) $sql .= ' HAVING ' . $select['having'];
-    if (!empty($select['order'])) $sql .= ' ORDER BY ' . implode(', ', $select['order']);
-    if (!empty($select['limit'])) $sql .= ' ' . $this->buildLimit($select['limit']);
+    $sql = 'SELECT ' . ltrim($select['distinct'] . ' ') . $this->selectExpression($select['columns']) . ' FROM ' . $this->selectExpression($select['table'], true);
+    if (!empty($select['join'])) $sql .= $this->buildJoin($select['join'], $data);
+    if (!empty($select['where'])) $sql .= $this->buildWhere($select['where'], $data);
+    if (!empty($select['group'])) $sql .= $this->buildGroup($select['group']);
+    if (!empty($select['having'])) $sql .= $this->buildHaving($select['having'], $data);
+    if (!empty($select['order'])) $sql .= $this->buildOrder($select['order']);
+    if (!empty($select['limit'])) $sql .= $this->buildLimit($select['limit']);
     return $sql;
+  }
+  
+  /**
+   * Returns JOIN segment of the SQL statement.
+   *
+   * @param array $info - the array of JOIN data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildJoin(array $info, &$data)
+  {
+    foreach ($info as &$join) $join = $join['type'] . ' JOIN ' . $this->selectExpression($join['table'], true) . ' ON ' . $this->whereExpression($join['conditions'], $data);
+    return ' ' . implode(' ', $info);
+  }
+  
+  /**
+   * Returns WHERE segment of the SQL statement.
+   *
+   * @param array $info - the array of WHERE data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildWhere(array $info, &$data)
+  {
+    $sql = $this->whereExpression(array_shift($info)['conditions'], $data);
+    if (count($info)) 
+    {
+      $sql = '(' . $sql . ')';
+      foreach ($info as $where) $sql .= ' ' . $where['conjunction'] . ' (' . $this->whereExpression($where['conditions'], $data) . ')'; 
+    }
+    return ' WHERE ' . $sql;
+  }
+  
+  /**
+   * Returns GROUP BY segment of the SQL statement.
+   *
+   * @param array $info - the array of ORDER data.
+   * @return string
+   * @access protected
+   */
+  protected function buildGroup(array $info)
+  {
+    foreach ($info as &$group) $group = $this->selectExpression($group);
+    return ' GROUP BY ' . implode(', ', $info);
+  }
+  
+  /**
+   * Returns HAVING segment of the SQL statement.
+   *
+   * @param array $info - the array of HAVING data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildHaving(array $info, &$data)
+  {
+    return ' HAVING ' . substr($this->buildWhere($info, $data), 7);
+  }
+  
+  /**
+   * Returns ORDER BY segment of the SQL statement.
+   *
+   * @param array $info - the array of ORDER data.
+   * @return string
+   * @access protected
+   */
+  protected function buildOrder(array $info)
+  {
+    foreach ($info as &$order) $order = $this->selectExpression($order, false, true);
+    return ' ORDER BY ' . implode(', ', $info);
   }
   
   /**
@@ -654,7 +709,7 @@ abstract class SQLBuilder
   {
     if ($limit['offset'] === null) return 'LIMIT ' . (int)$limit['limit'];
     if ($limit['limit'] === null) return 'LIMIT ' . (int)$limit['offset'] . ', 18446744073709551610';
-    return 'LIMIT ' . (int)$limit['offset'] . ', ' . (int)$limit['limit'];
+    return ' LIMIT ' . (int)$limit['offset'] . ', ' . (int)$limit['limit'];
   }
   
   /**
@@ -723,14 +778,14 @@ abstract class SQLBuilder
    * @param mixed $expression - the column metadata.
    * @param boolean $isTableName - determines whether $expression is a table name(s).
    * @param boolean $isOrderExpression - determines whether $expression is an order expression or not.
-   * @return array - normalized column data for query building.
+   * @return string - normalized column data for query building.
    * @access protected
    */
   protected function selectExpression($expression, $isTableName = false, $isOrderExpression = false)
   {
-    if ($expression == '') return ['*'];
-    if ($expression instanceof self) return ['(' . $expression . ')'];
-    if ($expression instanceof SQLExpression) return [(string)$expression];
+    if ($expression == '') return '*';
+    if ($expression instanceof self) return '(' . $expression . ')';
+    if ($expression instanceof SQLExpression) return (string)$expression;
     if (is_array($expression))
     {
       $tmp = [];
@@ -749,9 +804,9 @@ abstract class SQLBuilder
           $tmp[] = $this->wrap($k, $isTableName) . $exp;
         }
       }
-      return $tmp;
+      return implode(', ', $tmp);
     }
-    return [$this->wrap($expression, $isTableName)];
+    return $this->wrap($expression, $isTableName);
   }
   
   /**
@@ -760,7 +815,7 @@ abstract class SQLBuilder
    * @param mixed $expression - the column metadata.
    * @param mixed $data - a variable in which the data array for the SQL query will be written.
    * @param string $conjunction - conjunction SQL keyword of a WHERE clause.
-   * @return array - normalized column data for query building.
+   * @return string - normalized column data for query building.
    * @access protected
    */
   protected function whereExpression($expression, &$data, $conjunction = null)
