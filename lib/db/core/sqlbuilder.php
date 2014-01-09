@@ -829,52 +829,52 @@ abstract class SQLBuilder
       if (is_array($value)) 
       {
         $count = count($value);
-        if ($count == 1 && is_string($column))
+        if ($count == 1 && is_string($column) && !is_array(current($value)))
         {
-          list($val, $type) = each($value);
-          if (!is_array($val) && !is_array($type))
+          $tmp[] = $this->wrap($column) . ' = ' . $this->addParam($value, $data);
+          continue;
+        }
+        if (isset($value[0]) && !is_array($value[0]))
+        {
+          $operator = strtoupper(trim($value[0]));
+          if ($count == 2)
           {
-            $tmp[] = $this->wrap($column) . ' = ' . $this->addParam($value, $data);
+            if (in_array($operator, ['=', '>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
+            {
+              if ($value[1] instanceof self) $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . $value[1] . ')';
+              else if ($value[1] instanceof SQLExpression) $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $value[1];
+              else $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $this->addParam($value[1], $data);
+              continue;
+            }
+            else if ($operator == 'IN' || $operator == 'NOT IN')
+            {
+              $value[1] = (array)$value[1];
+              if ($this->seq == 0)
+              {
+                $data = array_merge($data, $value[1]);
+                $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . implode(', ', array_fill(0, count($value[1]), '?')) . ')';
+              }
+              else
+              {
+                $tmp = [];
+                foreach ($value[1] as $v) $tmp[] = $this->addParam($v, $data);
+                $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . implode(', ', $tmp) . ')';
+              }
+              continue;
+            }
+            else if ($value[0] == 'IS')
+            {
+              $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $value[1];
+              continue;
+            }
+          }
+          else if ($count == 3 && ($operator == 'BETWEEN' || $operator == 'NOT BETWEEN'))
+          {
+            $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $this->addParam($value[1], $data) . ' AND ' . $this->addParam($value[2], $data);
             continue;
           }
         }
         $column = strtoupper(trim($column));
-        if ($count == 2)
-        {
-          if (in_array($column, ['=', '>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
-          {
-            if ($value[1] instanceof self) $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . $value[1] . ')';
-            else if ($value[1] instanceof SQLExpression) $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $value[1];
-            else $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $this->addParam($value[1], $data);
-            continue;
-          }
-          else if ($column == 'IN' || $column == 'NOT IN')
-          {
-            $value[1] = (array)$value[1];
-            if ($this->seq == 0)
-            {
-              $data = array_merge($data, $value[1]);
-              $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . implode(', ', array_fill(0, count($value[1]), '?')) . ')';
-            }
-            else
-            {
-              $tmp = [];
-              foreach ($value[1] as $v) $tmp[] = $this->addParam($v, $data);
-              $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' (' . implode(', ', $tmp) . ')';
-            }
-            continue;
-          }
-          else if ($column == 'IS')
-          {
-            $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $value[1];
-            continue;
-          }
-        }
-        else if ($count == 3 && ($column == 'BETWEEN' || $column == 'NOT BETWEEN'))
-        {
-          $tmp[] = $this->wrap($value[0]) . ' ' . $column . ' ' . $this->addParam($value[1], $data) . ' AND ' . $this->addParam($value[2], $data);
-          continue;
-        }
         $value = $this->whereExpression($value, $data, in_array($column, ['OR', 'AND', 'XOR', '||', '&&']) ? $column : 'AND');
         $tmp[] = ($conj == 'AND' || $conj == 'XOR' || $conj == '&&') && ($column == 'OR' || $column == '||') ? '(' . $value . ')' : $value;
       }

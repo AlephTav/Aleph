@@ -66,7 +66,7 @@ function test_mysqlbuilder()
            ->limit(10, 120)
            ->build($data);
   if ($q !== 'SELECT DISTINCTROW COUNT(*) AS c, `t1`.`name`, `t2`.`name` `category` FROM `tb1` `t1`, `tb2` INNER JOIN `tb3` `t3`, `tb4` `t4` ON (`t3`.`column` = t1.column OR `t4`.`column` = tb2.column) AND t3.ID IS NOT NULL AND `t4` = ? WHERE `t1`.`column` = ? AND t3.column > 6 GROUP BY `t1`.`column`, `tb2`.`name` HAVING COUNT(*) < 10 AND `t1`.`ID` = ? ORDER BY `t3`.`column` DESC, `t1`.`name` LIMIT 120, 10' || !is_array($data) || $data != [1, 2, 3]) return $error;
-  $q = $sql->select('tb')->where(['<>' => ['c1', 5], 'LIKE' => ['c2', 'a'], 'NOT IN' => ['c3', [1, 2, 3]], 'BETWEEN' => ['c4', 5, 9], 'IS' => ['c5', 'NULL']])->build($data);
+  $q = $sql->select('tb')->where(['c1' => ['<>', 5], 'c2' => ['LIKE', 'a'], 'c3' => ['NOT IN', [1, 2, 3]], 'c4' => ['BETWEEN', 5, 9], 'c5' => ['IS', 'NULL']])->build($data);
   if ($q !== 'SELECT * FROM `tb` WHERE `c1` <> ? AND `c2` LIKE ? AND `c3` NOT IN (?, ?, ?) AND `c4` BETWEEN ? AND ? AND `c5` IS NULL' || !is_array($data) || $data !== [5, 'a', 1, 2, 3, 5, 9]) return $error;
   $q = $sql->select(['tb1' => 't1', 'tb2' => 't2', 'tb3'], ['c1', 'c2', 'schema.table.c3'])
            ->join(['tb4'], ['tb4.c1' => 1])
