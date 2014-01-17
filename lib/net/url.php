@@ -122,7 +122,7 @@ class URL
   public static function current()
   {
     if (!isset($_SERVER['HTTP_HOST'])) return false;
-    $url = empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off' ? 'http://' : 'https://';
+    $url = (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') && (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https') ? 'http://' : 'https://';
     if (isset($_SERVER['PHP_AUTH_USER'])) $url .= $_SERVER['PHP_AUTH_USER'] . ':' . $_SERVER['PHP_AUTH_PW'] . '@';
     $url .= $_SERVER['HTTP_HOST'];
     if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != 80) $url .= ':' . $_SERVER['SERVER_PORT'];
