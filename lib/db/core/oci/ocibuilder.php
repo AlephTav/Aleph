@@ -165,7 +165,7 @@ class OCIBuilder extends SQLBuilder
     return 'SELECT t1.*,
                    (SELECT t3.constraint_type FROM all_cons_columns t2
                     INNER JOIN all_constraints t3 ON t3.owner = t2.owner AND t3.constraint_name = t2.constraint_name
-                    WHERE t2.table_name = t1.table_name AND t2.column_name = t1.column_name AND t3.constraint_type = \'P\') AS key 
+                    WHERE t2.table_name = t1.table_name AND t2.column_name = t1.column_name AND t3.constraint_type = \'P\' GROUP BY t3.constraint_type) AS key 
             FROM user_tab_cols t1
             WHERE t1.table_name = ' . $this->quote($table);
   }
@@ -426,6 +426,35 @@ class OCIBuilder extends SQLBuilder
                                                                                 'actions' => $actions];
     }
     return $info;
+  }
+  
+  /**
+   * Returns completed SQL query of INSERT type.
+   *
+   * @param array $insert - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildInsert(array $insert, &$data)
+  {
+    $res = $this->insertExpression($insert['columns'], $data);
+    if (!is_array($res['values'])) $sql .= $res['values'];
+    else if (count($res['values']) == 1)
+    {
+      $sql = 'INSERT INTO ' . $this->wrap($insert['table'], true) . ' ';
+      foreach ($res['values'] as &$values) $values = '(' . implode(', ', $values) . ')';
+      $sql .= '(' . implode(', ', $res['columns']) . ') VALUES ' . implode(', ', $res['values']);
+    }
+    else
+    {
+      $sql = 'INSERT ALL';
+      $tb = $this->wrap($insert['table'], true);
+      $cols = '(' . implode(', ', $res['columns']) . ')';
+      foreach ($res['values'] as $values) $sql .= ' INTO ' . $tb . ' ' . $cols . ' VALUES (' . implode(', ', $values) . ')';
+      $sql .= ' SELECT 1 FROM DUAL';
+    }
+    return $sql;
   }
   
   /**
