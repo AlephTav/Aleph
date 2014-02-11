@@ -49,8 +49,8 @@ class Arrays
    * Swaps the two elements of the array. The elements are determined by their keys.
    *
    * @param array $array - the array in which the two elements will be swapped.
-   * @param integer $key1 - the key of the first element.
-   * @param integer $key2 - the key of the second element.
+   * @param mixed $key1 - the key of the first element.
+   * @param mixed $key2 - the key of the second element.
    * @access public
    */
   public static function aswap(array &$array, $key1, $key2)

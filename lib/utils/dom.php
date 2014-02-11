@@ -37,6 +37,7 @@ class DOMDocumentEx extends \DOMDocument
    * Error message templates.
    */
   const ERR_DOM_1 = 'DOM Element with ID = "[{var}]" is not found.';
+  const ERR_DOM_2 = 'Injecting mode "[{var}]" is invalid.';
 
   /**
    * Injecting modes.
@@ -59,13 +60,11 @@ class DOMDocumentEx extends \DOMDocument
   }
 
   /**
-   * The function parses the HTML contained in the string source. Unlike loading XML, HTML does not have to be well-formed to load. 
-   * This function may also be called statically to load and create a DOMDocument object.
-   * The static invocation may be used when no DOMDocument properties need to be set prior to loading.
+   * The function parses the HTML contained in the string source. Unlike loading XML, HTML does not have to be well-formed to load.
    * 
    * @param string $source - the HTML string.
    * @param integer $options - bitwise OR of the libxml option constants.
-   * @return boolean - returns TRUE on success or FALSE on failure. If called statically, returns a DOMDocument or FALSE on failure.
+   * @return boolean - returns TRUE on success or FALSE on failure.
    * @access public
    */
   public function loadHTML($source, $options = 0)
@@ -73,6 +72,7 @@ class DOMDocumentEx extends \DOMDocument
     if (!\Aleph::isErrorHandlingEnabled()) return parent::loadHTML($source);
     $level = ini_get('error_reporting');
     \Aleph::errorHandling(true, E_ALL & ~E_NOTICE & ~E_WARNING);
+    mb_convert_encoding($source, 'HTML-ENTITIES', $this->encoding);
     $res = parent::loadHTML($source, $options);
     \Aleph::errorHandling(true, $level);
     return $res;
@@ -84,53 +84,133 @@ class DOMDocumentEx extends \DOMDocument
    * 
    * @param string $filename - the path to the HTML file.
    * @param integer $options - bitwise OR of the libxml option constants.
-   * @return string 
+   * @return boolean - returns TRUE on success or FALSE on failure.
    * @access public
    */
   public function loadHTMLFile($filename, $options = 0)
   {
     return $this->loadHTML(file_get_contents($filename), $options);
   }
-
+  
   /**
-   * Returns the HTML code of the root node.
+   * Returns HTML of the give node.
+   * The method returns HTML of the root node if $node is not defined.
+   *
+   * @param DOMNode $node - the given node.
+   * @return string
+   * @access public
+   */
+  public function getHTML(\DOMNode $node = null)
+  {
+    $node = $node ?: $this->documentElement;
+    if (!$node) return '';
+    if (!$node->parentNode) 
+    {
+      $parent = $this->createElement('root');
+      $parent->appendChild($node);
+      return $this->getInnerHTML($parent);
+    }
+    return $this->getInnerHTML($node->parentNode);
+  }
+  
+  /**
+   * Sets the HTML of the given node.
+   * If $node is not defined HTML of the entire document will be set.
+   *
+   * @param DOMNode $node - the given node.
+   * @return DOMNode - returns the given node object.
+   * @access public
+   */
+  public function setHTML($html, \DOMNode $node = null)
+  {
+    $node = $node ?: $this->documentElement;
+    if (!$node) 
+    {
+      parent::loadHTML('<html></html>');
+      $node = $this->documentElement;
+    }
+    else if (!$node->parentNode)
+    {
+      return $this->HTMLToNode($html);
+    }
+    return $this->setInnerHTML($html, $node->parentNode);
+  }
+  
+  /**
+   * Returns the inner HTML of the given node.
+   * The method returns inner HTML of the root node if $node is not defined.
    * 
+   * @param DOMNode $node - the given node.
    * @return string 
    * @access public
    */
-  public function getHTML()
+  public function getInnerHTML(\DOMNode $node = null)
   {
-    return $this->getInnerHTML($this->documentElement->firstChild);
+    $node = $node ?: $this->documentElement;
+    if (!$node) return '';
+    $html = '';
+    foreach ($node->childNodes as $child)
+    {
+      $html .= $child->ownerDocument->saveHTML($child);
+    }
+    return $html;
+  }
+
+  /**
+   * Sets the inner HTML of the given node.
+   * If $node is not defined inner HTML of the root node will be set.
+   * 
+   * @param DOMNode $node - the given node.
+   * @param string $html - the node inner HTML.
+   * @return DOMNode - returns the given node object.
+   * @access public
+   */
+  public function setInnerHTML($html, \DOMNode $node = null)
+  {
+    $node = $node ?: $this->documentElement;
+    if (!$node) 
+    {
+      parent::loadHTML('<html></html>');
+      $node = $this->documentElement;
+    }
+    $node->nodeValue = '';
+    if ($node instanceof \DOMDocument) $node->removeChild($this->documentElement);
+    else foreach ($node->childNodes as $child) $node->removeChild($child);
+    $node->appendChild($this->HTMLToNode($html));
+    return $node;
   }
 
   /**
    * Changes the inner HTML of the node.
    * if the node doesn't exist the exception will be thrown.
    * 
-   * @param string $id - the node ID.
+   * @param string|DOMNode $id - the node ID or node object.
    * @param string $html - the node inner HTML.
+   * @return DOMNode - returns object of the changed node.
    * @access public
    */
   public function insert($id, $html)
   {
-    $el = $this->getElementById($id);
-    if ($el === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
-    $this->setInnerHTML($el, $html);
+    $node = $id instanceof \DOMNode ? $id : $this->getElementById($id);
+    if ($node === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    return $this->setInnerHTML($html, $node);
   }
 
   /**
    * Replaces the node by the given HTML.
    * if the node doesn't exist the exception will be thrown.
    * 
-   * @param string $id - the node ID.
+   * @param string|DOMNode $id - the node ID or node object.
    * @param string $html - HTML for replacing.
+   * @return DOMNode - returns object of the changed node.
    * @access public
    */
   public function replace($id, $html)
   {
-    $el = $this->getElementById($id);
-    if ($el === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
-    $el->parentNode->replaceChild($this->HTMLToNode($html), $el);
+    $node = $id instanceof \DOMNode ? $id : $this->getElementById($id);
+    if ($node === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    $node->parentNode->replaceChild($new = $this->HTMLToNode($html), $node);
+    return $new;
   }
 
   /**
@@ -138,87 +218,60 @@ class DOMDocumentEx extends \DOMDocument
    * The optional parameter specifies where the HTML will be added: at the beginning or end, before or after the node.
    * if the node doesn't exist the exception will be thrown.
    * 
-   * @param string $id - the node ID.
+   * @param string|DOMNode $id - the node ID or node object.
    * @param string $html - the HTML for adding.
    * @param string $mode - the injecting mode.
+   * @return DOMNode - returns object of the changed node.
    * @access public
    */
   public function inject($id, $html, $mode = self::DOM_INJECT_TOP)
   {
-    $el = $this->getElementById($id);
-    if ($el === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    $old = $id instanceof \DOMNode ? $id : $this->getElementById($id);
+    if ($old === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
     $node = $this->HTMLToNode($html);
     switch ($mode)
     {
       case self::DOM_INJECT_TOP:
-        $el->firstChild ? $el->insertBefore($node, $el->firstChild) : $el->appendChild($node);
-        break;
+        $old->firstChild ? $old->insertBefore($node, $old->firstChild) : $old->appendChild($node);
+        return $old;
       case self::DOM_INJECT_BOTTOM:
-        $el->appendChild($node);
-        break;
+        $old->appendChild($node);
+        return $old;
       case self::DOM_INJECT_BEFORE:
-        if ($el->parentNode) $el->parentNode->insertBefore($node, $el);
-        break;
+        if ($old->parentNode) $old->parentNode->insertBefore($node, $old);
+        return $old->parentNode;
       case self::DOM_INJECT_AFTER:
-        if ($el->parentNode) $el->nextSibling ? $el->parentNode->insertBefore($node, $el->nextSibling) : $el->parentNode->appendChild($node);
-        break;
+        if ($old->parentNode) $old->nextSibling ? $old->parentNode->insertBefore($node, $old->nextSibling) : $old->parentNode->appendChild($node);
+        return $old->parentNode;
     }
-  }
-
-  /**
-   * Returns the inner HTML of the given node.
-   * 
-   * @param DOMNode $node - the given node.
-   * @return string 
-   * @access public
-   */
-  public function getInnerHTML(\DOMNode $node)
-  {
-    foreach ($node->childNodes as $child)
-    {
-      $dom = new \DOMDocument();
-      $dom->appendChild($dom->importNode($child, true));
-      $html .= trim($dom->saveHTML());
-    }
-    return $html;
-  }
-
-  /**
-   * Sets the inner HTML of th given node.
-   * 
-   * @param \DOMNode $node - the given node.
-   * @param string $html - the node inner HTML.
-   * @access public
-   */
-  public function setInnerHTML(\DOMNode $node, $html)
-  {
-    $node->nodeValue = '';
-    foreach ($node->childNodes as $child) $node->removeChild($child);
-    $node->appendChild($this->HTMLToNode($html));
+    throw new Core\Exception($this, 'ERR_DOM_2', $mode);
   }
 
   /**
    * Converts the given HTML to the node object.
-   * If HTML contains several nodes only the first one will be generated.
+   * If HTML contains several elements only the first one will be converted to node.
    * 
    * @param string $html - the HTML for conversion.
-   * @return string
+   * @return DOMNode
    * @access public
    */
   public function HTMLToNode($html)
   {
-    if (!preg_match('/\A<[a-zA-Z].*/', $html)) return new \DOMText($html);
+    if (!preg_match('/\A<([^> ]*)/', $html, $tag)) return new \DOMText($html);
+    $tag = strtolower($tag[1]);
     $dom = new DOMDocumentEx($this->version, $this->encoding);
     $dom->loadHTML($html);
-    $node = $this->importNode($dom->documentElement->firstChild->firstChild, true);
-    return $node;
+    if ($tag == 'html') $node = $dom->documentElement;
+    else if ($tag == 'body' || $tag == 'head') $node = $dom->documentElement->firstChild;
+    else $node = $dom->documentElement->firstChild->firstChild;
+    return $this->importNode($node, true);
   }
    
   /**
    * Searches and returns an element by its ID.
    * Returns the DOMElement or NULL if the element is not found.
    * 
-   * @param string $id - the unique id value for an element.
+   * @param string $id - the unique ID of the element.
    * @return DOMElement
    * @access public
    */

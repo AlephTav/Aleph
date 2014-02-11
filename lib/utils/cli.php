@@ -48,7 +48,7 @@ class CLI
     foreach ($options as $opt)
     {
       if (!is_array($opt)) $opts[$opt] = $opt;
-      else foreach ($opt as $o) $opts[$o] = $opt; 
+      else foreach ($opt as $o) $opts[$o] = $o; 
     }
     for ($i = 1; $i < $argc; $i++)
     {
