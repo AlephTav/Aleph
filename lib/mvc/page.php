@@ -25,7 +25,7 @@ namespace Aleph\MVC;
 use Aleph\Core,
     Aleph\Cache,
     Aleph\Web,
-    Aleph\Web\UI\POM;
+    Aleph\Web\POM;
 
 interface IPage
 {
@@ -44,7 +44,7 @@ class Page implements IPage
 {
   const ERR_PAGE_1 = 'Incorrect page ID.';
 
-  public static $page = null;
+  public static $current = null;
 
   public static $defaultCache = null;
   
@@ -84,7 +84,7 @@ class Page implements IPage
    */
   protected $a = null;
   
-  protected $fv = null;
+  protected $request = null;
   
   protected $template = null;
 
@@ -98,15 +98,15 @@ class Page implements IPage
   
   protected $pageID = null;
   
-  protected $ajaxPermissions = array('Aleph\MVC\\', 'Aleph\Web\UI\POM\\');
+  protected $ajaxPermissions = ['Aleph\MVC\\', 'Aleph\Web\UI\POM\\'];
   
-  protected $sequenceMethods = array('first' => array('parse', 'init', 'load', 'render', 'unload'),
-                                     'next' => array('assign', 'load', 'process', 'unload'));
+  protected $sequenceMethods = ['first' => ['parse', 'init', 'load', 'render', 'unload'],
+                                'after' => ['assign', 'load', 'process', 'unload']];
   
   public function __construct($template = null, Cache\Cache $cache = null)
   {
     $this->a = \Aleph::getInstance();
-    $this->fv = $this->a->getRequest()->data;
+    $this->request = Net\Request::getInstance();
     $this->ajax = Web\Ajax::getInstance();
     $this->cache = $cache ?: (self::$defaultCache instanceof Cache\Cache ? self::$defaultCache : $this->a->getCache());
     $this->template = $template;
@@ -131,16 +131,16 @@ class Page implements IPage
   
   public function getSequenceMethods($first = true)
   {
-    return $this->sequenceMethods[$first ? 'first' : 'next'];
+    return $this->sequenceMethods[$first ? 'first' : 'after'];
   }
   
-  public function get($cid, $isRecursion = true)
+  public function get($id, $isRecursion = true)
   {
-    return $this->body->get($cid, $isRecursion);
+    return $this->body->get($id, $isRecursion);
   }
 
   /**
-   * Checks accessability of a page.
+   * Checks accessibility of a page.
    *
    * @return boolean
    * @access public
@@ -152,17 +152,17 @@ class Page implements IPage
   
   public function init()
   {
-    $this->body->invokeMethod('init');
+    $this->body->init();
   }
 
   public function load()
   {
-    $this->body->invokeMethod('load');
+    $this->body->load();
   }
   
   public function unload()
   {
-    $this->body->invokeMethod('unload');
+    $this->body->unload();
   }
 
   /**
@@ -195,7 +195,7 @@ class Page implements IPage
       \Aleph::reload();
     }
     POM\Control::vsPull();
-    POM\Control::vsMerge(empty($this->fv['ajax-vs']) ? array() : json_decode((string)$this->fv['ajax-vs'], true));
+    POM\Control::vsMerge(empty($this->fv['ajax-vs']) ? [] : json_decode((string)$this->fv['ajax-vs'], true));
     $this->body = POM\Control::vsGet($this->pageID);
   }
 

@@ -131,24 +131,26 @@ class Controller
       {
         foreach ($info as $methods => $data)
         {
-          if (isset($data['secure']))
+          if (isset($data['bind']))
           {
-            $router->secure($resource, $data['secure'], $methods)
-                   ->component(empty($data['component']) ? Net\URL::ALL : $data['component']);
+            $router->bind($resource, $data['callback'], $methods)
+                   ->ssl(empty($data['ssl']) ? false : $data['ssl'])
+                   ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
+                   ->validation(empty($data['validation']) ? [] : $data['validation'])
+                   ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
+                   ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames']);
           }
           else if (isset($data['redirect']))
           {
             $router->redirect($resource, $data['redirect'], $methods)
+                   ->ssl(empty($data['ssl']) ? false : $data['ssl'])
                    ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
-                   ->validation(empty($data['validation']) ? array() : $data['validation']);
+                   ->validation(empty($data['validation']) ? [] : $data['validation']);
           }
           else
           {
-            $router->bind($resource, $data['callback'], $methods)
-                   ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
-                   ->validation(empty($data['validation']) ? array() : $data['validation'])
-                   ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
-                   ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames']);
+            $router->secure($resource, $data['secure'], $methods)
+                   ->component(empty($data['component']) ? Net\URL::ALL : $data['component']);
           }
         }
       }
@@ -157,7 +159,7 @@ class Controller
       {
         if (isset($this->handlers[404]))
         {
-          $this->handlers[404]->call(array($this));
+          $this->handlers[404]->call([$this]);
           $a->getResponse()->stop(404);
         }
         $a->getResponse()->stop(404, 'The requested page is not found.');

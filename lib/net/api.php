@@ -168,21 +168,23 @@ class API
     {
       foreach ($info as $methods => $data)
       {
-        if (isset($data['redirect']))
-        {
-          $router->redirect($resource, $data['redirect'], $methods)
-                 ->ssl(empty($data['ssl']) ? false : $data['ssl'])
-                 ->component(empty($data['component']) ? URL::PATH : $data['component']);
-        }
-        else
+        if (isset($data['bind']))
         {
           $router->bind($resource, $process, $methods)
                  ->ssl(empty($data['ssl']) ? false : $data['ssl'])
                  ->component(empty($data['component']) ? URL::PATH : $data['component'])
                  ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
                  ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames'])
+                 ->validation(empty($data['validation']) ? [] : $data['validation'])
                  ->args(['resource' => $data])
                  ->extra('params');
+        }
+        else
+        {
+          $router->redirect($resource, $data['redirect'], $methods)
+                 ->ssl(empty($data['ssl']) ? false : $data['ssl'])
+                 ->component(empty($data['component']) ? URL::PATH : $data['component'])
+                 ->validation(empty($data['validation']) ? [] : $data['validation']);
         }
       }
     }
