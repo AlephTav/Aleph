@@ -913,7 +913,7 @@ class DT extends \DateTime
       $dt->add($interval);
       $k = 1;
     }
-    if ($end instanceof \DateTime)
+    if ($end instanceof \DateTimeInterface)
     {
       while ($end->getTimestamp() >= $dt->getTimestamp())
       {
