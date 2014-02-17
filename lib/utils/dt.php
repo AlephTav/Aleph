@@ -29,20 +29,12 @@ namespace Aleph\Utils;
  * @version 1.0.3
  * @package aleph.utils
  */
-class DT
-{
-  /**
-   * Instance of class \DateTime being responsible for representation of date and time.
-   *
-   * @var \DateTime
-   * @access protected
-   */
-  protected $dt = null;
-  
+class DT extends \DateTime
+{ 
   /**
    * Validates the specified date format.
    * Method returns TRUE if the given string is a correct date formatted according to the specified format and FALSE otherwise.
-   * If the date format is not specified the method will try to compare the given date with one of the possible formats.
+   * If the date format is not specified the method will try to match the given date with one of the possible formats.
    *
    * @param string $date - string representing the date.
    * @param string $format - date format string.
@@ -213,6 +205,7 @@ class DT
   
   /**
    * Returns unix timestamp for the given date formatted to the specified format.
+   * If the date format is not specified the method will try to parse the date from one of the suitable formats.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -229,6 +222,7 @@ class DT
 
   /**
    * Converts the given date from one format to another.
+   * If the input date format is not specified the method will try to parse the date from one of the suitable formats.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -238,14 +232,15 @@ class DT
    * @access public
    * @static
    */
-  public static function format($date, $out, $in = null)
+  public static function date2date($date, $out, $in = null)
   {
     $dt = $in !== null ? date_create_from_format($in, $date) : date_create($date);
     return ($dt) ? $dt->format($out) : false;
   }
   
   /**
-   * Converts the given date from specified format to the sql date format.
+   * Converts the given date from the specified format to the MySQL date format ("Y-m-d" or "Y-m-d H:i:s").
+   * If the input date format is not specified the method will try to parse the date from one of the suitable formats.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -257,11 +252,11 @@ class DT
    */
   public static function date2sql($date, $format = null, $shortFormat = false)
   {
-    return self::format($date, $shortFormat ? 'Y-m-d' : 'Y-m-d H:i:s', $format);
+    return self::date2date($date, $shortFormat ? 'Y-m-d' : 'Y-m-d H:i:s', $format);
   }
 
   /**
-   * Converts the given date from sql date format to the given format.
+   * Converts the given date from the MySQL date format ("Y-m-d" or "Y-m-d H:i:s") to the specified format.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -273,7 +268,7 @@ class DT
    */
   public static function sql2date($date, $format, $shortFormat = false)
   {
-    return self::format($date, $format, $shortFormat ? 'Y-m-d' : 'Y-m-d H:i:s');
+    return self::date2date($date, $format, $shortFormat ? 'Y-m-d' : 'Y-m-d H:i:s');
   }
   
   /**
@@ -288,7 +283,7 @@ class DT
    */
   public static function date2atom($date, $format = null)
   {
-    return self::format($date, \DateTime::ATOM, $format);
+    return self::date2date($date, \DateTime::ATOM, $format);
   }
   
   /**
@@ -303,11 +298,12 @@ class DT
    */
   public static function atom2date($date, $format)
   {
-    return self::format($date, $format, \DateTime::ATOM);
+    return self::date2date($date, $format, \DateTime::ATOM);
   }
   
   /**
    * Converts the given date from specified format to the RSS date format.
+   * If the input date format is not specified the method will try to parse the date from one of the suitable formats.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -318,7 +314,7 @@ class DT
    */
   public static function date2rss($date, $format = null)
   {
-    return self::format($date, \DateTime::RSS, $format);
+    return self::date2date($date, \DateTime::RSS, $format);
   }
   
   /**
@@ -333,11 +329,12 @@ class DT
    */
   public static function rss2date($date, $format)
   {
-    return self::format($date, $format, \DateTime::RSS);
+    return self::date2date($date, $format, \DateTime::RSS);
   }
   
   /**
    * Converts the given date from specified format to the cookie date format.
+   * If the input date format is not specified the method will try to parse the date from one of the suitable formats.
    * The method returns FALSE if the given date is not valid.
    *
    * @param string $date - string representing the date.
@@ -348,7 +345,7 @@ class DT
    */
   public static function date2cookie($date, $format = null)
   {
-    return self::format($date, \DateTime::COOKIE, $format);
+    return self::date2date($date, \DateTime::COOKIE, $format);
   }
   
   /**
@@ -363,7 +360,7 @@ class DT
    */
   public static function cookie2date($date, $format)
   {
-    return self::format($date, $format, \DateTime::COOKIE);
+    return self::date2date($date, $format, \DateTime::COOKIE);
   }
   
   /**
@@ -391,8 +388,7 @@ class DT
   }
   
   /**
-   * Computes the difference  between two dates given in the same format within the date components.
-   * The value of component of a date may be as one of following values: second, minute, hour, day, week, month, year.
+   * Computes the difference between two dates given in the same format within the date components.
    * The method returns difference between dates in days by default.
    * The method returns FALSE if the given dates are not valid.
    *
@@ -422,8 +418,9 @@ class DT
   
   /**
    * Calculates the difference between the two dates given in the same format.
-   * This method returns array of the following elements: second, minute, hour, day.
-   * The method returns FALSE if the given dates are not valid.
+   * If the specific date format is not set the method will try to parse dates into one of the suitable formats.
+   * The method returns array of the following elements: second, minute, hour, day 
+   * and returns FALSE if the given dates are not valid.
    *
    * @param string $date1 - string representing the first date.
    * @param string $date2 - string representing the second date.
@@ -438,7 +435,7 @@ class DT
     $v2 = self::timestamp($date2, $format);
     if ($v1 === false || $v2 === false) return false;
     $d = $v2 - $v1;
-    $res = array();
+    $res = [];
     $res['day'] = floor($d / 86400);
     $d %= 86400;
     $res['hour'] = floor($d / 3600);
@@ -449,7 +446,7 @@ class DT
   }
   
   /**
-   * Returns the time elapsed since the specified date.
+   * Returns text representation of the time elapsed since the specified date.
    *
    * @param string | \DateTime $date - the start date.
    * @param string | \DateTime $now - the current date.
@@ -461,7 +458,7 @@ class DT
   {
     $dt = new DT($date, $format);
     $interval = $dt->diff(new DT($now, $format));
-    $parts = array('y' => 'year', 'm' => 'month', 'd' => 'day', 'h' => 'hour', 'i' => 'minute', 's' => 'second');
+    $parts = ['y' => 'year', 'm' => 'month', 'd' => 'day', 'h' => 'hour', 'i' => 'minute', 's' => 'second'];
     foreach ($parts as $part => $name)
     {
       if ($interval->{$part} > 0)
@@ -485,8 +482,7 @@ class DT
    */
   public static function now($format, $timezone = null)
   {
-    $dt = new DT();
-    return $dt->getDate($format, $timezone);
+    return (new DT('now'))->getDate($format, $timezone);
   }
   
   /**
@@ -500,9 +496,7 @@ class DT
    */
   public static function tomorrow($format, $timezone = null)
   {
-    $dt = new DT();
-    $dt->addDay();
-    return $dt->getDate($format, $timezone);
+    return (new DT('tomorrow'))->getDate($format, $timezone);
   }
   
   /**
@@ -516,9 +510,7 @@ class DT
    */
   public static function yesterday($format, $timezone = null)
   {
-    $dt = new DT();
-    $dt->addDay(-1);
-    return $dt->getDate($format, $timezone);
+    return (new DT('yesterday'))->getDate($format, $timezone);
   }
   
   /**
@@ -558,16 +550,15 @@ class DT
    */
   public static function getTimeZoneAbbreviation($timezone)
   {
-    $dt = new \DateTime('now', $timezone instanceof \DateTimeZone ? $timezone : new \DateTimeZone($timezone)); 
-    return $dt->format('T');
+    return (new \DateTime('now', $timezone instanceof \DateTimeZone ? $timezone : new \DateTimeZone($timezone)))->format('T');
   }
   
   /**
    * Returns numerical index array with all timezone identifiers.
    * If $combine is TRUE the method returns associated array with keys which are time zones.
    *
-   * @param boolean $combine
-   * @param \DateTimeZone $what - one of \DateTimeZone class constants.
+   * @param boolean $combine - determines whether the method returns an associative array.
+   * @param integer $what - one of \DateTimeZone class constants.
    * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to \DateTimeZone::PER_COUNTRY.
    * @return array
    * @access public
@@ -584,7 +575,7 @@ class DT
    * Returns list (associative array) of timezones in GMT format.
    *
    * @param array $replacement - can be used to replace some timezone names by others.
-   * @param \DateTimeZone $what - one of \DateTimeZone class constants.
+   * @param integer $what - one of \DateTimeZone class constants.
    * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to \DateTimeZone::PER_COUNTRY.
    * @return array
    * @access public
@@ -592,7 +583,7 @@ class DT
    */
   public static function getGMTTimeZoneList(array $replacement = null, $what = \DateTimeZone::ALL, $country = null)
   {
-    $list = array();
+    $list = [];
     foreach (\DateTimeZone::listIdentifiers($what, $country) as $zone)
     {
       $tz = new \DateTimeZone($zone);
@@ -622,18 +613,18 @@ class DT
   /**
    * Returns timezone string in GMT format.
    *
-   * @param string $timezone - timezone key.
+   * @param string | \DateTimeZone $timezone - timezone name or object.
    * @return string
    * @access public
    * @static
    */
   public static function getGMTTimeZone($timezone)
   {
-    $tz = new \DateTimeZone($timezone);
+    $tz = $timezone instanceof \DateTimeZone ? $timezone : new \DateTimeZone($timezone);
     $offset = $tz->getOffset(new \DateTime('now', $tz));
     $hours = str_pad(intval(abs($offset) / 3600), 2, '0', STR_PAD_LEFT);
     $minutes = str_pad(intval(abs($offset) % 3600 / 60), 2, '0', STR_PAD_LEFT);
-    $tz = explode('/', str_replace('_', ' ', $zone));
+    $tz = explode('/', str_replace('_', ' ', $timezone));
     array_shift($tz);
     $tz = implode(' - ', $tz);
     return '(GMT' . ($offset >= 0 ? '+' : '-') . $hours . ':' . $minutes . ') ' . $tz;
@@ -670,55 +661,58 @@ class DT
    */
   public function __construct($date = 'now', $format = null, $timezone = null)
   {
-    if ($date instanceof \DateTime) $this->dt = clone $date;
+    if ($date instanceof \DateTime) 
+    {
+      parent::__construct();
+      $this->setTimestamp($date->getTimestamp());
+      $this->setTimezone($date->getTimezone());
+    }
     else if ($timezone === null)
     {
-      if ($format === null) $this->dt = new \DateTime($date);
-      else $this->dt = date_create_from_format($format, $date);
+      if ($format === null) parent::__construct($date);
+      else 
+      {
+        parent::__construct();
+        $this->setTimestamp(date_create_from_format($format, $date)->getTimestamp());
+      }
     }
     else
     {
       $timezone = $timezone instanceof \DateTimeZone ? $timezone : new \DateTimeZone($timezone);
-      if ($format === null) $this->dt = new \DateTime($date, $timezone);
-      else $this->dt = date_create_from_format($format, $date, $timezone);
+      if ($format === null) parent::__construct($date, $timezone);
+      else 
+      {
+        parent::__construct();
+        $dt = date_create_from_format($format, $date, $timezone);
+        $this->setTimestamp($dt->getTimestamp());
+        $this->setTimezone($dt->getTimezone());
+      }
     }
   }
   
   /**
-   * Clones an object of Aleph\Utils\DT class.
+   * Returns string representation of the date time object.
+   * The method returns date in format RFC 2822.
    *
+   * @return string
    * @access public
    */
-  public function __clone()
-  {
-    $this->dt = clone $this->dt;
-  }
-  
   public function __toString()
   {
-    return $this->dt->format('r');
+    return $this->format('r');
   }
   
   /**
-   * Returns a \DateTime object associated with the Aleph\Utils\DT object.
+   * Sets the time zone for the Aleph\Utils\DT object.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
-   * @return \DateTime
+   * @param string | \DateTimeZone $timezone
+   * @return self
    * @access public
    */
-  public function getDateTimeObject()
+  public function setTimezone($timezone)
   {
-    return $this->dt;
-  }
-  
-  /**
-   * Returns the timezone offset expressed in seconds from UTC on success or FALSE on failure.
-   *
-   * @return integer
-   * @access public
-   */
-  public function getOffset()
-  {
-    return $this->dt->getOffset();
+    return parent::setTimezone($timezone instanceof \DateTimeZone ? $timezone : new \DateTimeZone($timezone));
   }
   
   /**
@@ -730,115 +724,36 @@ class DT
    */
   public function getTimestamp($timezone = null)
   {
-    if ($timezone === null) return $this->dt->getTimestamp();
-    $tz = $this->dt->getTimezone();
+    if ($timezone === null) return parent::getTimestamp();
+    $tz = $this->getTimezone();
+    $date = parent::getTimestamp() - $this->getOffset();
     $this->setTimezone($timezone);
-    $date = $this->dt->getTimestamp();
+    $date += $this->getOffset();
     $this->setTimezone($tz);
     return $date;
   }
   
   /**
-   * Sets the date and time based on an Unix timestamp.
+   * Returns date formatted according to the given format and specified timezone.
    *
-   * @param integer $timestamp
-   * @return self
-   * @access
-   */
-  public function setTimestamp($timestamp)
-  {
-    $this->dt->setTimestamp($timestamp);
-    return $this;
-  }
-  
-  /**
-   * Returns a \DateTimeZone object on success or FALSE on failure.
-   *
-   * @return \DateTimeZone
-   * @access public
-   */
-  public function getTimezone()
-  {
-    return $this->dt->getTimezone();
-  }
-  
-  /**
-   * Sets the time zone for the Aleph\Utils\DT object.
-   *
-   * @param string | \DateTimeZone $timezone
-   * @return self
-   * @access public
-   */
-  public function setTimezone($timezone)
-  {
-    $this->dt->setTimezone($timezone instanceof \DateTimeZone ? $timezone : new \DateTimeZone($timezone));
-    return $this;
-  }
-  
-  /**
-   * Returns the date formatted to the given format for the specified time zone.
-   *
-   * @param string $format
-   * @param string | \DateTimeZone $timezone
+   * @param string $format - format accepted by date().
+   * @param string | \DateTimeZone $timezone - timezone of the output date.
    * @return string
    * @access public
    */
-  public function getDate($format, $timezone = null)
+  public function format($format, $timezone = null)
   {
-    if ($timezone === null) return $this->dt->format($format);
-    $tz = $this->dt->getTimezone();
+    if ($timezone === null) return parent::format($format);
+    $tz = $this->getTimezone();
     $this->setTimezone($timezone);
-    $date = $this->dt->format($format);
+    $date = parent::format($format);
     $this->setTimezone($tz);
     return $date;
-  }
-  
-  /**
-   * Sets the date.
-   *
-   * @param integer $year
-   * @param integer $month
-   * @param integer $day
-   * @return self
-   * @access public
-   */
-  public function setDate($year, $month, $day)
-  {
-    $this->dt->setDate($year, $month, $day);
-    return $this;
-  }
-  
-  /**
-   * Sets the time.
-   *
-   * @param integer $hour
-   * @param integer $minute
-   * @param integer $second
-   * @return self
-   * @access public
-   */
-  public function setTime($hour, $minute, $second = 0)
-  {
-    $this->dt->setTime($hour, $minute, $second);
-    return $this;
-  }
-
-  /**
-   * Alters the timestamp of a Aleph\Utils\DT object by incrementing or decrementing in a format accepted by strtotime(). 
-   *
-   * @param string $format
-   * @return self
-   * @access public
-   * @link http://php.net/manual/en/datetime.modify.php
-   */
-  public function modify($format)
-  {
-    $this->dt->modify($format);
-    return $this;
   }
   
   /**
    * Adds an amount of days, months, years, hours, minutes and seconds to a Aleph\Utils\DT object.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param string | \DateInterval - a \DateInterval object or interval string.
    * @return self
@@ -847,12 +762,12 @@ class DT
    */
   public function add($interval)
   {
-    $this->dt->add($interval instanceof \DateInterval ? $interval : \DateInterval::createFromDateString($interval));
-    return $this;
+    return parent::add($interval instanceof \DateInterval ? $interval : \DateInterval::createFromDateString($interval));
   }
   
   /**
    * Subtracts an amount of days, months, years, hours, minutes and seconds from a Aleph\Utils\DT object.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param string | \DateInterval - a \DateInterval object or interval string.
    * @return self
@@ -861,12 +776,12 @@ class DT
    */
   public function sub($interval)
   {
-    $this->dt->sub($interval instanceof \DateInterval ? $interval : \DateInterval::createFromDateString($interval));
-    return $this;
+    return parent::sub($interval instanceof \DateInterval ? $interval : \DateInterval::createFromDateString($interval));
   }
 
   /**
    * Adds an amount of days to a Aleph\Utils\DT object. The amount of days can be negative.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param integer $day
    * @return self
@@ -874,12 +789,12 @@ class DT
    */
   public function addDay($day = 1)
   {
-    $this->dt->modify(($day > 0 ? '+' : '-') . abs($day) . ' day');
-    return $this;
+    return $this->modify(($day > 0 ? '+' : '-') . abs($day) . ' day');
   }
 
   /**
    * Adds an amount of months to a Aleph\Utils\DT object. The amount of months can as well be negative.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param integer $month
    * @return self
@@ -887,12 +802,12 @@ class DT
    */
   public function addMonth($month = 1)
   {
-    $this->dt->modify(($month > 0 ? '+' : '-') . abs($month) . ' month');
-    return $this;
+    return $this->modify(($month > 0 ? '+' : '-') . abs($month) . ' month');
   }
 
   /**
    * Adds an amount of years to a Aleph\Utils\DT object. The amount of years might as well be negative.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param integer $year
    * @return self
@@ -900,12 +815,12 @@ class DT
    */
   public function addYear($year = 1)
   {
-    $this->dt->modify(($year > 0 ? '+' : '-') . abs($year) . ' year');
-    return $this;
+    return $this->modify(($year > 0 ? '+' : '-') . abs($year) . ' year');
   }
 
   /**
    * Adds an amount of hours to a Aleph\Utils\DT object. The amount of hours might as well be negative.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param integer $hour
    * @return self
@@ -913,12 +828,12 @@ class DT
    */
   public function addHour($hour = 1)
   {
-    $this->dt->modify(($hour > 0 ? '+' : '-') . abs($hour) . ' hour');
-    return $this;
+    return $this->modify(($hour > 0 ? '+' : '-') . abs($hour) . ' hour');
   }
 
   /**
    * Adds an amount of minutes to a Aleph\Utils\DT object. The amount of minutes  might as well be negative.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param integer $minute
    * @return self
@@ -926,12 +841,12 @@ class DT
    */
   public function addMinute($minute = 1)
   {
-    $this->dt->modify(($minute > 0 ? '+' : '-') . abs($minute) . ' minute');
-    return $this;
+    return $this->modify(($minute > 0 ? '+' : '-') . abs($minute) . ' minute');
   }
 
   /**
    * Adds an amount of seconds to a Aleph\Utils\DT object. The amount of seconds might as well be negative.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
    * @param integer $second
    * @return self
@@ -939,21 +854,21 @@ class DT
    */
   public function addSecond($second = 1)
   {
-    $this->dt->modify(($second > 0 ? '+' : '-') . abs($second) . ' second');
-    return $this;
+    return $this->modify(($second > 0 ? '+' : '-') . abs($second) . ' second');
   }
   
   /**
    * Returns the difference between two Aleph\Utils\DT objects.
+   * Returns the DT object for method chaining or FALSE on failure.
    *
-   * @param Aleph\Utils\DT $date - the date to compare to.
+   * @param mixed $date - the date to compare to.
    * @param boolean $absolute - determines whether to return absolute difference.
    * @return \DateInterval
    * @access public
    */
-  public function diff(DT $date, $absolute = false)
+  public function diff($date, $absolute = false)
   {
-    return $this->dt->diff($date->getDateTimeObject(), $absolute);
+    return parent::diff($date instanceof DT ? $date : new DT(), $absolute);
   }
   
   /**
@@ -962,14 +877,15 @@ class DT
    * The method returns -1 if the second date smaller than the first date.
    * The method returns 0 if the both dates are equal.
    *
-   * @param Aleph\Utils\DT $date - the date to compare to.
-   * @param string | \DateTimeZone $timezone
+   * @param mixed $date - the date to compare to.
+   * @param string | \DateTimeZone $timezone - timezone of the given dates.
    * @return integer
    * @access public
    * @static
    */
-  public function cmp(DT $date, $timezone = null)
+  public function cmp($date, $timezone = null)
   {
+    if (!($date instanceof DT)) $date = new DT($date);
     $v1 = $this->getTimestamp($timezone);
     $v2 = $date->getTimestamp($timezone);
     if ($v2 > $v1) return 1;
@@ -978,10 +894,10 @@ class DT
   }
   
   /**
-   * Returns Generator object representating of date period.
+   * Returns Generator object representing of date period.
    *
-   * @param string | \DateInterval $interval
-   * @param integer | Aleph\Utils\DT $end - the number of recurrences or Aleph\Utils\DT object.
+   * @param string | \DateInterval $interval - the interval between recurrences within the period.
+   * @param integer | \DateTimeInterface $end - the number of recurrences or \DateTimeInterface object.
    * @param boolean $excludeStartDate - determines whether the start date is excluded.
    * @return Generator
    * @access public
@@ -989,8 +905,7 @@ class DT
   public function getPeriod($interval, $end, $excludeStartDate = false)
   {
     if (!($interval instanceof \DateInterval)) $interval = \DateInterval::createFromDateString($interval);
-    if ($end instanceof DT) $end = $end->getDateTimeObject();
-    else $end = (int)$end;
+    if (!($end instanceof \DateTimeInterface)) $end = (int)$end;
     $dt = clone $this;
     if (!$excludeStartDate) $k = 0;
     else 
