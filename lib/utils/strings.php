@@ -23,7 +23,7 @@
 namespace Aleph\Utils;
 
 /**
- * Contains the set of static methods for facilitating the work with strings.
+ * Contains the set of static methods for simplifying the work with strings.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
@@ -32,14 +32,14 @@ namespace Aleph\Utils;
 class Strings
 {
   /**
-   * Shortens a large text.
+   * Cuts a large text.
    *
    * @param string $string - the large text.
    * @param integer $length - length of the shortened text.
-   * @param boolean $word - shortens till nearest word right.
-   * @param boolean $stripTags - checks whether HTML and PHP tags will be deleted or not.
-   * @param string $allowableTags - tags, which must not be deleted.
-   * @retun string - the shortened text
+   * @param boolean $word - determines need to reduce the given string to the nearest word to the right.
+   * @param boolean $stripTags - determines whether HTML and PHP tags will be deleted or not.
+   * @param string $allowableTags - specifies tags which should not be stripped.
+   * @return string - the shortened text.
    * @access public
    * @static
    */
