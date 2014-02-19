@@ -22,52 +22,203 @@
 
 namespace Aleph\Utils;
 
+/**
+ * Easy to use class that enables to crop, scale and rotate any image.
+ * You can also use this class to get general information about an image.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.3
+ * @package aleph.utils
+ */
 class Picture
 {
+  /**
+   * Scaling modes.
+   */
   const PIC_MANUAL = 0;
   const PIC_AUTOWIDTH = 1;
   const PIC_AUTOHEIGHT = 2;
   const PIC_AUTO = 3;
 
+  /**
+   * The image resource identifier.
+   *
+   * @var resource $img
+   * @access protected
+   */
   protected $img = null;
   
+  /**
+   * The image information.
+   *
+   * @var array $info
+   * @access protected
+   */
   protected $info = [];
+  
+  /**
+   * Returns a color identifier representing the color composed of the given RGB components and the transparency parameter alpha.
+   * The colors parameters are integers between 0 and 255 or hexadecimals between 0x00 and 0xFF.
+   *
+   * @param integer $red - value of red component.
+   * @param integer $green - value of green component.
+   * @param integer $blue - value of blue component.
+   * @param float $alpha - a value between 0 and 1. 0 indicates completely opaque while 1 indicates completely transparent.
+   * @return integer
+   * @access public
+   * @static
+   */
+  public static function rgb2int($red, $green, $blue, $alpha = 0)
+  {
+    $c = abs((float)$alpha);
+    if ($c > 1) $c = 1;
+    $c = floor(127 * $alpha);
+    $c <<= 8;
+    $c += abs((int)$red) % 256;
+    $c <<= 8;
+    $c += abs((int)$green) % 256;
+    $c <<= 8;
+    $c += abs((int)$blue) % 256;
+    return $c;
+  }
 
+  /**
+   * Constructor. Reads information about the specified image.
+   *
+   * @param string $image - full path to the image file.
+   * @access public
+   */
   public function __construct($image)
   {
     $this->readImageInfo($image);
   }
   
+  /**
+   * Returns TRUE if the given image uses the RGB color model and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public   
+   */
+  public function isRGB()
+  {
+    return $this->info['channels'] == 3;
+  }
+  
+  /**
+   * Returns TRUE if the given image uses the CMYK color model and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public   
+   */
+  public function isCMYK()
+  {
+    return $this->info['channels'] == 4;
+  }
+  
+  /**
+   * Returns the image width.
+   *
+   * @return integer
+   * @access public
+   */
   public function getWidth()
   {
     return $this->info['width'];
   }
   
+  /**
+   * Return the image height.
+   *
+   * @return integer
+   * @access public
+   */
   public function getHeight()
   {
     return $this->info['height'];
   }
   
+  /**
+   * Returns suitable extension of the image file.
+   *
+   * @param boolean $includeDot - determines whether to prepend a dot to the extension or not.
+   * @return string
+   * @access public
+   */
   public function getExtension($includeDot = false)
   {
     return str_replace('jpeg', 'jpg', image_type_to_extension($this->info['type'], $includeDot));
   }
   
+  /**
+   * Returns size (in bytes) of the image.
+   *
+   * @return string
+   * @access public
+   */
   public function getSize()
   {
     return $this->info['size'];
   }
   
+  /**
+   * Returns mime type of the image.
+   *
+   * @return string
+   * @access public
+   */
   public function getMimeType()
   {
     return $this->info['mime'];
   }
   
+  /**
+   * Returns number of bits for each color of the image.
+   *
+   * @return integer
+   * @access public
+   */
+  public function getColorDepth()
+  {
+    return $this->info['bits'];
+  }
+  
+  /**
+   * Returns an image resource identifier.
+   *
+   * @return resource
+   * @access public
+   */
   public function getResource()
   {
     if (!is_resource($this->img)) 
     {
-      $this->img = $this->info['create']($this->info['image']);
+      switch ($this->info['mime'])
+      {
+         case 'image/png':
+           $this->img = imagecreatefrompng($this->info['image']);
+           break;
+         case 'image/gif':
+           $this->img = imagecreatefromgif($this->info['image']);
+           break;
+         case 'image/webp':
+           $this->img = imagecreatefromwebp($this->info['image']);
+           break;
+         case 'image/wbmp':
+         case 'image/vnd.wap.wbmp':
+           $this->img = imagecreatefromwbmp($this->info['image']);
+           break;
+         case 'image/xbm':
+         case 'image/x-xbitmap':
+           $this->img = imagecreatefromxbm($this->info['image']);
+           break;
+         case 'image/xpm':
+         case 'image/x-xpixmap':
+           $this->img = imagecreatefromxpm($this->info['image']);
+           break;
+         default:
+           $this->img = imagecreatefromjpeg($this->info['image']);
+           break;
+      }
       if ($this->info['type'] == IMAGETYPE_PNG || $this->info['type'] == IMAGETYPE_GIF)
       {
         imagealphablending($this->img, false);
@@ -97,7 +248,7 @@ class Picture
   
   /**
    * Crop the image using the given coordinates and size.
-   * Return cropped image resource on success or FALSE on failure.
+   * Returns resource of the cropped image on success or FALSE on failure.
    *
    * @param integer $left - the X coordinate of the image fragment.
    * @param integer $top - the Y coordinate of the image fragment.
@@ -135,10 +286,15 @@ class Picture
   
   /**
    * Scale an image using the given new width and height.
+   * Returns resource of the scaled image on success or FALSE on failure.
    *
-   * @param integer $width - new width of the image.
-   * @param integer $height - new height of the image.
-   * @param integer $mode - 
+   * @param integer $width - new width of the image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOWIDTH.
+   * @param integer $height - new height of the image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOWIDTH.
+   * @param integer $mode - the scaling mode.
+   * @param integer $maxWidth - the upper limit of the width of the scaling image.
+   * @param integer $maxHeight - the upper limit of the height of the scaling image.
+   * @return resource|boolean
+   * @access public
    */
   public function scale($width, $height, $mode = self::PIC_AUTO, $maxWidth = null, $maxHeight = null)
   {
@@ -153,6 +309,16 @@ class Picture
     return false;
   }
 
+  /**
+   * Saves the changed image to a new file.
+   * The method returns TRUE on success or FALSE on failure.
+   *
+   * @param string $filename - new image file.
+   * @param string $type - type of the saving image. Valid values are "png", "jpg", "jpeg", "gif", "wbmp", "xbm", "webp". The default value is "png".
+   * @param array $options - array of additional options for different image types.
+   * @return boolean
+   * @access public
+   */
   public function save($filename = null, $type = null, array $options = null)
   {
     $filename = $filename ?: $this->info['image'];
@@ -181,6 +347,12 @@ class Picture
     }
   }
   
+  /**
+   * Reads information about an image.
+   *
+   * @param string $image - specifies the image file you wish to retrieve information about.
+   * @access protected
+   */
   protected function readImageInfo($image)
   {
     $info = getimagesize($image);
@@ -189,37 +361,26 @@ class Picture
     $this->info['height'] = $info[1];
     $this->info['type'] = $info[2];
     $this->info['mime'] = $info['mime'];
-    $this->info['size'] = filesize($image);    
-    switch ($info['mime'])
-    {
-       case 'image/png':
-         $this->info['create'] = 'imagecreatefrompng';
-         break;
-       case 'image/gif':
-         $this->info['create'] = 'imagecreatefromgif';
-         break;
-       case 'image/webp':
-         $this->info['create'] = 'imagecreatefromwebp';
-         break;
-       case 'image/wbmp':
-       case 'image/vnd.wap.wbmp':
-         $this->info['create'] = 'imagecreatefromwbmp';
-         break;
-       case 'image/xbm':
-       case 'image/x-xbitmap':
-         $this->info['create'] = 'imagecreatefromxbm';
-         break;
-       case 'image/xpm':
-       case 'image/x-xpixmap':
-         $this->info['create'] = 'imagecreatefromxpm';
-         break;
-       default:
-         $this->info['create'] = 'imagecreatefromjpeg';
-         break;
-    }
+    $this->info['bits'] = $info['bits'];
+    $this->info['size'] = filesize($image);
+    $this->info['channels'] = isset($info['channels']) ? $info['channels'] : 0;
   }
 
-  protected function getRightSize($mode, $dstWidth, $dstHeight, $srcWidth, $srcHeight, $maxWidth, $maxHeight)
+  /**
+   * Returns new width and height for scaling image according to the specified scale mode.
+   * New dimension of the image is returned as a two-element numeric array in which the first element is the width and the second one is the height.
+   *
+   * @param integer $mode - the scaling mode.
+   * @param integer $dstWidth - the desired width of the scaling image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOWIDTH.
+   * @param integer $dstHeight - the desired height of the scaling image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOHEIGHT.
+   * @param integer $srcWidth - real width of the image.
+   * @param integer $srcHeight - real height of the image.
+   * @param integer $maxWidth - the upper limit of the width of the scaling image.
+   * @param integer $maxHeight - the upper limit of the height of the scaling image.
+   * @return array
+   * @access protected
+   */
+  protected function getRightSize($mode, $dstWidth, $dstHeight, $srcWidth, $srcHeight, $maxWidth = 0, $maxHeight = 0)
   {
     switch ($mode)
     {
