@@ -33,7 +33,7 @@ namespace Aleph\Utils;
 class Picture
 {
   /**
-   * Scaling modes.
+   * resizing modes.
    */
   const PIC_MANUAL = 0;
   const PIC_AUTOWIDTH = 1;
@@ -255,19 +255,13 @@ class Picture
    * @param integer $width - the width of the image fragment.
    * @param integer $height - the height of the image fragment.
    * @param integer $bgcolor - the background color of the uncovered zone of the cropped image.
+   * @param boolean $fixedSize - determines whether the crop has fixed size even if it is out of image limits.
    * @return resource|boolean
    * @access public
    */
-  public function crop($left, $top, $width, $height, $bgcolor = 0)
+  public function crop($left, $top, $width, $height, $bgcolor = 0, $fixedSize = true)
   {
     $img = $this->getResource();
-    $new = imagecreatetruecolor($width, $height);
-    if ($this->info['type'] == IMAGETYPE_PNG || $this->info['type'] == IMAGETYPE_GIF)
-    {
-      imagealphablending($new, false);
-      imagesavealpha($new, true);
-      imagefilledrectangle($new, 0, 0, $width, $height, $bgcolor);
-    }
     $w = imagesx($img);
     $h = imagesy($img);
     $width = abs($width);
@@ -280,23 +274,36 @@ class Picture
     if ($y < 0) $y = 0;
     if ($right >= $w) $right = $w - 1;
     if ($bottom >= $h) $bottom = $h - 1;
+    if (!$fixedSize)
+    {
+      $left = $top = 0;
+      $width = $right - $x + 1;
+      $height = $bottom - $y + 1;
+    }
+    $new = imagecreatetruecolor($width, $height);
+    if ($this->info['type'] == IMAGETYPE_PNG || $this->info['type'] == IMAGETYPE_GIF)
+    {
+      imagealphablending($new, false);
+      imagesavealpha($new, true);
+      imagefilledrectangle($new, 0, 0, $width, $height, $bgcolor);
+    }
     if (false !== $res = imagecopy($new, $img, $left < 0 ? -$left : 0, $top < 0 ? -$top : 0, $x, $y, $right - $x + 1, $bottom - $y + 1)) return $this->img = $new;
     return false;
   }
   
   /**
-   * Scale an image using the given new width and height.
-   * Returns resource of the scaled image on success or FALSE on failure.
+   * Resizes an image using the given new width and height.
+   * Returns resource of the resized image on success or FALSE on failure.
    *
-   * @param integer $width - new width of the image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOWIDTH.
-   * @param integer $height - new height of the image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOWIDTH.
-   * @param integer $mode - the scaling mode.
-   * @param integer $maxWidth - the upper limit of the width of the scaling image.
-   * @param integer $maxHeight - the upper limit of the height of the scaling image.
+   * @param integer $width - new width of the image. This parameter is ignored if the resizing mode is PIC_AUTO or PIC_AUTOWIDTH.
+   * @param integer $height - new height of the image. This parameter is ignored if the resizing mode is PIC_AUTO or PIC_AUTOWIDTH.
+   * @param integer $mode - the resizing mode.
+   * @param integer $maxWidth - the upper limit of the width of the resizing image.
+   * @param integer $maxHeight - the upper limit of the height of the resizing image.
    * @return resource|boolean
    * @access public
    */
-  public function scale($width, $height, $mode = self::PIC_AUTO, $maxWidth = null, $maxHeight = null)
+  public function resize($width, $height, $mode = self::PIC_AUTO, $maxWidth = null, $maxHeight = null)
   {
     $img = $this->getResource();
     $w = imagesx($img);
@@ -367,16 +374,16 @@ class Picture
   }
 
   /**
-   * Returns new width and height for scaling image according to the specified scale mode.
+   * Returns new width and height for resizing image according to the specified scale mode.
    * New dimension of the image is returned as a two-element numeric array in which the first element is the width and the second one is the height.
    *
-   * @param integer $mode - the scaling mode.
-   * @param integer $dstWidth - the desired width of the scaling image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOWIDTH.
-   * @param integer $dstHeight - the desired height of the scaling image. This parameter is ignored if the scaling mode is PIC_AUTO or PIC_AUTOHEIGHT.
+   * @param integer $mode - the resizing mode.
+   * @param integer $dstWidth - the desired width of the resizing image. This parameter is ignored if the resizing mode is PIC_AUTO or PIC_AUTOWIDTH.
+   * @param integer $dstHeight - the desired height of the resizing image. This parameter is ignored if the resizing mode is PIC_AUTO or PIC_AUTOHEIGHT.
    * @param integer $srcWidth - real width of the image.
    * @param integer $srcHeight - real height of the image.
-   * @param integer $maxWidth - the upper limit of the width of the scaling image.
-   * @param integer $maxHeight - the upper limit of the height of the scaling image.
+   * @param integer $maxWidth - the upper limit of the width of the resizing image.
+   * @param integer $maxHeight - the upper limit of the height of the resizing image.
    * @return array
    * @access protected
    */
