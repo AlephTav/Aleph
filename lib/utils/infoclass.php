@@ -33,7 +33,7 @@ namespace Aleph\Utils;
 class InfoClass implements \ArrayAccess
 {
   /**
-   *  Information about the class.
+   * Information about the class.
    *
    * @var array $info
    * @access protected
@@ -187,10 +187,11 @@ class InfoClass implements \ArrayAccess
   }
   
   /**
-   * Saves code definition of the class to file where it is defined.
-   * The method returns FALSE if impossible to rewrite code and NULL otherwise.
+   * Saves code definition of the class to file where it is defined or to new file.
+   * The method returns FALSE if impossible to rewrite code and the number of bytes that were written to the file otherwise.
    *
-   * @param string $file - the file to save the class definition. 
+   * @param string $file - the file to save the class definition.
+   * @return boolean|integer
    * @access public
    */
   public function save($file = null)
@@ -200,15 +201,14 @@ class InfoClass implements \ArrayAccess
       $code = '<?php' . PHP_EOL . PHP_EOL;
       if ($this->info['inNamespace']) $code .= 'namespace ' . $this->info['namespace'] . ';' . PHP_EOL . PHP_EOL;
       $code .= $this->getCodeClass() . PHP_EOL . PHP_EOL . '?>';
-      file_put_contents($file, $code);
-      return;
+      return file_put_contents($file, $code);
     }
     if ($this->info['isInternal']) return false;
     $lines = $this->getFileContent($this->info['file']);
     $code = implode(PHP_EOL, array_slice($lines, 0, $this->info['startLine'] - 1));
     $code .= PHP_EOL . $this->getCodeClass();
     $code .= implode(PHP_EOL, array_slice($lines, $this->info['endLine']));
-    file_put_contents($this->info['file'], $code);
+    return file_put_contents($this->info['file'], $code);
   }
   
   /**
