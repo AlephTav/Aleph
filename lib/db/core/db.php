@@ -810,7 +810,7 @@ class DB
     {
       $id = microtime(true);
       \Aleph::pStart($id);
-      $st->execute();
+      $res = $st->execute();
       $duration = \Aleph::pStop($id);
       $this->affectedRows = $st->rowCount();
       $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
@@ -826,9 +826,10 @@ class DB
     }
     else
     {
-      $st->execute();
+      $res = $st->execute();
       $this->affectedRows = $st->rowCount();
     }
+    if ($res === false) return false;
     switch ($type)
     {
       case self::EXEC:

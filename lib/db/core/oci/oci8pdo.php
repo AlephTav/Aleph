@@ -50,6 +50,14 @@ class OCI8
    * @access protected
    */
   protected $inTransaction = false;
+  
+  /**
+   * Database connection attributes.
+   *
+   * @var array $attributes
+   * @access protected
+   */
+  protected $attributes = [\PDO::ATTR_ERRMODE => \PDO::ERRMODE_EXCEPTION];
 
   /**
    * Constructor. Creates an OCI8 instance to represent a connection to the requested database.
@@ -79,12 +87,16 @@ class OCI8
   
   /**
    * Returns the value of a database connection attribute.
+   * An unsuccessful call returns null.
    *
    * @param integer $attribute - the attribute identifier.
    * @return mixed
    * @access public
    */
-  public function getAttribute($attribute){}
+  public function getAttribute($attribute)
+  {
+    return isset($this->attributes[$attribute]) ? $this->attributes[$attribute] : null;
+  }
   
   /**
    * Sets an attribute on the database handle.
@@ -93,7 +105,12 @@ class OCI8
    * @param integer $attribute - the attribute identifier.
    * @param mixed $value - the attribute value.
    */
-  public function setAttribute($attribute, $value){}
+  public function setAttribute($attribute, $value)
+  {
+    if (!isset($this->attributes[$attribute])) return false;
+    $this->attributes[$attribute] = $value;
+    return true;
+  }
   
   /**
    * Places quotes around the input string (if required) and escapes special characters within the input string.
@@ -227,7 +244,7 @@ class OCI8Statement
   /**
    * The database connection object.
    *
-   * @var Aleph\DB\OCI8 $db
+   * @var ClickBlocks\DB\OCI8 $db
    * @access protected
    */
   protected $db = null;
@@ -251,7 +268,7 @@ class OCI8Statement
   /**
    * Constructor.
    *
-   * @param Aleph\DB\OCI8 $db - the database connection object.
+   * @param ClickBlocks\DB\OCI8 $db - the database connection object.
    * @param resource $stdid - the prepared statement identifier.
    * @access public   
    */
@@ -317,7 +334,16 @@ class OCI8Statement
   public function execute(array $parameters = null)
   {
     if ($parameters) foreach ($parameters as $k => $v) $this->bindValue($k, $v);
-    return oci_execute($this->st, $this->db->inTransaction() ? OCI_NO_AUTO_COMMIT : OCI_COMMIT_ON_SUCCESS);
+    $errMode = $this->db->getAttribute(\PDO::ATTR_ERRMODE);
+    if ($errMode != \PDO::ERRMODE_WARNING && \Aleph::isErrorHandlingEnabled())
+    {
+      $errorLevel = ini_get('error_reporting');
+      \Aleph::errorHandling(true, E_ALL & ~E_WARNING);
+    }
+    $res = oci_execute($this->st, $this->db->inTransaction() ? OCI_NO_AUTO_COMMIT : OCI_COMMIT_ON_SUCCESS);
+    if ($errMode != \PDO::ERRMODE_WARNING && \Aleph::isErrorHandlingEnabled()) \Aleph::errorHandling(true, $errorLevel);
+    if ($res === false && $errMode == \PDO::ERRMODE_EXCEPTION) throw new \Exception(oci_error($this->st)['message']);
+    return $res;
   }
   
   /**

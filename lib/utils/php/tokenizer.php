@@ -104,7 +104,7 @@ class Tokenizer implements \Iterator
    *
    * @param mixed $token1 - the first token for comparison.
    * @param mixed $token2 - the second token for comparison.
-   * @return
+   * @return boolean
    * @static
    */
   public static function isEqual($token1, $token2)
@@ -115,7 +115,7 @@ class Tokenizer implements \Iterator
   /**
    * Returns TRUE if the given token is not a comment, whitespace character or an open/close tag. Otherwise, it returns FALSE.
    *
-   * @param integer | array $token - the token info or token ID.
+   * @param mixed $token - the token info or token ID.
    * @return boolean
    * @access public
    * @static
@@ -159,6 +159,7 @@ class Tokenizer implements \Iterator
   {
     $this->source = is_file($source) ? file_get_contents($source) : $source;
     $this->length = strlen($this->source);
+    $this->next();
   }
   
   /**
@@ -176,18 +177,21 @@ class Tokenizer implements \Iterator
   
   /**
    * Returns the current token and move forward to next one.
+   * Returns FALSE if the internal pointer points beyond the end of the tokens list.
    *
    * @return mixed
    * @access public
    */
   public function token()
   {
+    $token = $this->token;
     $this->next();
-    return $this->token;
+    return $token;
   }
   
   /**
    * Returns the current token.
+   * Returns FALSE if the internal pointer points beyond the end of the tokens list.
    *
    * @return mixed
    * @access public
@@ -199,7 +203,7 @@ class Tokenizer implements \Iterator
   
   /**
    * Return the position of the current token.
-   * Returns integer on success, or NULL on failure.
+   * Returns positive integer on success, or -1 on failure.
    *
    * @return integer
    * @access public
@@ -233,7 +237,7 @@ class Tokenizer implements \Iterator
   }
   
   /**
-   * Move forward to the next token.
+   * Moves forward to the next token.
    *
    * @access public
    */

@@ -73,8 +73,8 @@ class Tools
   /**
    * Searches the first occurrence or all occurrences of the given PHP code in another PHP code.
    * Returns a numeric array of two elements or FALSE if the PHP fragment is not found.
-   * The first element is the number of the first token in the haystack. 
-   * The second element is the number of the last token in the haystack.
+   * The first element is the index of the first token in the haystack. 
+   * The second element is the index of the last token in the haystack.
    * 
    * @param string $needle - the PHP code which we want to find.
    * @param string $haystack  - the PHP code in which we want to find our PHP fragment.
@@ -119,8 +119,8 @@ class Tools
   /**
    * Checks whether the given PHP code is contained in other one.
    * 
-   * @param string $needle
-   * @param string $haystack
+   * @param string $needle - the PHP code which we want to find.
+   * @param string $haystack  - the PHP code in which we want to find our PHP fragment.
    * @return boolean
    * @static                    
    */       
