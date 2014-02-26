@@ -966,13 +966,6 @@ final class Aleph implements \ArrayAccess
   private function __clone(){}
   
   /**
-   * Private __wakeup() method prevents unserialization of this object.
-   *
-   * @access private
-   */
-  private function __wakeup(){}
-  
-  /**
    * Autoloads classes, interfaces and traits.
    *
    * @param string $class
