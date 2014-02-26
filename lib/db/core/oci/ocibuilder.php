@@ -488,7 +488,7 @@ class OCIBuilder extends SQLBuilder
    */
   protected function buildLimit(array $limit)
   {
-    if (count($limit) == 1) return 'OFFSET ' . $limit[0] . ' ROWS';
-    return 'OFFSET ' . $limit[0] . ' ROWS FETCH NEXT ' . $limit[1] . ' ROWS ONLY';
+    if (count($limit) == 1) return ' OFFSET ' . $limit[0] . ' ROWS';
+    return ' OFFSET ' . $limit[0] . ' ROWS FETCH NEXT ' . $limit[1] . ' ROWS ONLY';
   }
 }

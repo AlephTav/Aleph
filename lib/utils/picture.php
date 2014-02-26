@@ -268,7 +268,7 @@ class Picture
     $height = abs($height);
     $right = $left + $width - 1;
     $bottom = $top + $height - 1;
-    if ($right < 0 || $bottom < 0 || $left >= $w || $top >= $h) return $this->img = $new;
+    if ($right < 0 || $bottom < 0 || $left >= $w || $top >= $h) return $this->img = $this->createNewImage($width, $height, $bgcolor);
     $x = $left; $y = $top;
     if ($x < 0) $x = 0;
     if ($y < 0) $y = 0;
@@ -280,13 +280,7 @@ class Picture
       $width = $right - $x + 1;
       $height = $bottom - $y + 1;
     }
-    $new = imagecreatetruecolor($width, $height);
-    if ($this->info['type'] == IMAGETYPE_PNG || $this->info['type'] == IMAGETYPE_GIF)
-    {
-      imagealphablending($new, false);
-      imagesavealpha($new, true);
-      imagefilledrectangle($new, 0, 0, $width, $height, $bgcolor);
-    }
+    $new = $this->createNewImage($width, $height, $bgcolor);
     if (false !== $res = imagecopy($new, $img, $left < 0 ? -$left : 0, $top < 0 ? -$top : 0, $x, $y, $right - $x + 1, $bottom - $y + 1)) return $this->img = $new;
     return false;
   }
@@ -309,9 +303,7 @@ class Picture
     $w = imagesx($img);
     $h = imagesy($img);
     list($width, $height) = $this->getRightSize($mode, $width, $height, $w, $h, $maxWidth, $maxHeight);
-    $new = imagecreatetruecolor($width, $height);
-    imagealphablending($new, false);
-    imagesavealpha($new, true);
+    $new = $this->createNewImage($width, $height);
     if (false !== $res = imagecopyresampled($new, $img, 0, 0, 0, 0, $width, $height, $w, $h)) return $this->img = $new;
     return false;
   }
@@ -342,7 +334,7 @@ class Picture
         return imagepng($this->img, $filename, isset($options['quality']) ? $options['quality'] : null, isset($options['filters']) ? $options['filters'] : null); 
       case 'jpeg':
       case 'jpg':
-        return imagejpeg($this->img, $filename, isset($options['quality']) ? $options['quality'] : null);
+        return imagejpeg($this->img, $filename, isset($options['quality']) ? $options['quality'] : 100);
       case 'gif':
         return imagegif($this->img, $filename);
       case 'wbmp':
@@ -426,5 +418,26 @@ class Picture
         break;
     }
     return [(int)$w, (int)$h];
+  }
+  
+  /**
+   * Creates the new true color image of the given size and color.
+   *
+   * @param integer $width - the width of the new image.
+   * @param integer $height - the height of the new image.
+   * @param integer $bgcolor - the image background color.
+   * @return resource
+   * @access protected
+   */
+  protected function createNewImage($width, $height, $bgcolor = null)
+  {
+    $new = imagecreatetruecolor($width, $height);
+    if ($this->info['type'] == IMAGETYPE_PNG || $this->info['type'] == IMAGETYPE_GIF)
+    {
+      imagealphablending($new, false);
+      imagesavealpha($new, true);
+    }
+    if ($bgcolor !== null) imagefilledrectangle($new, 0, 0, $width, $height, $bgcolor);
+    return $new;
   }
 }

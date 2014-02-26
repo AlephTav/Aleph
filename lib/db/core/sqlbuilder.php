@@ -707,8 +707,8 @@ abstract class SQLBuilder
    */
   protected function buildLimit(array $limit)
   {
-    if ($limit['offset'] === null) return 'LIMIT ' . (int)$limit['limit'];
-    if ($limit['limit'] === null) return 'LIMIT ' . (int)$limit['offset'] . ', 18446744073709551610';
+    if ($limit['offset'] === null) return ' LIMIT ' . (int)$limit['limit'];
+    if ($limit['limit'] === null) return ' LIMIT ' . (int)$limit['offset'] . ', 18446744073709551610';
     return ' LIMIT ' . (int)$limit['offset'] . ', ' . (int)$limit['limit'];
   }
   

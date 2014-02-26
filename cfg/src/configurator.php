@@ -37,7 +37,13 @@ class Configurator
     foreach ($this->config['path']['config'] as $file => $editable)
     {
       $path = self::path($file);
-      if (!file_exists($path)) $errors[] = 'File ' . $file . ' is not found.';
+      if (!file_exists($path))
+      {
+        $pinfo = pathinfo($path);
+        if (!file_exists($pinfo['dirname'])) mkdir($pinfo['dirname'], 07775, true);
+        if (strtolower($pinfo['extension']) == 'php') file_put_contents($path, '<?php return [];');
+        else file_put_contents($path, '');
+      }
     }
     if (count($errors)) $this->show(['errors' => $errors]);
     // Initializes the framework.
@@ -400,7 +406,7 @@ class Configurator
   {
     if (strlen($path) == 0) return false;
     if ($path[0] != '/') $path = '/' . $path;
-    return realpath($_SERVER['DOCUMENT_ROOT'] . $path);
+    return $_SERVER['DOCUMENT_ROOT'] . $path;
   }
   
   private static function getArguments()
