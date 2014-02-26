@@ -159,7 +159,7 @@ class Tokenizer implements \Iterator
   {
     $this->source = is_file($source) ? file_get_contents($source) : $source;
     $this->length = strlen($this->source);
-    $this->next();
+    $this->reset();
   }
   
   /**
@@ -173,6 +173,7 @@ class Tokenizer implements \Iterator
     $this->seek = 0;
     $this->line = 1;
     $this->tokens = [];
+    $this->next();
   }
   
   /**
@@ -233,7 +234,6 @@ class Tokenizer implements \Iterator
   public function rewind()
   {
     $this->reset();
-    $this->next();
   }
   
   /**
