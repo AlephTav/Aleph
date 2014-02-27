@@ -392,7 +392,7 @@ class Template implements \ArrayAccess
         else $parts[] = [$part, false];
       }
       foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
-      $cache->set($hash, $parts, $this->expire, '--templates');
+      $cache->set($hash, $parts, $this->expire, 'templates');
     }
     else
     {

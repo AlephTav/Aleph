@@ -140,7 +140,7 @@ class DB
    * @var string $cacheGroup
    * @access public
    */
-  public $cacheGroup = '--db';
+  public $cacheGroup = 'db';
   
   /**
    * Default charset is used for database connection.

@@ -38,11 +38,11 @@ function test_router()
   $res = $router->route('GET', 'category/my_category/123#!345');
   if ($res['success'] !== true || $res['result'] !== 'post/123_my_category/%21345') return 'Method redirect() doesn\'t work.';
   // Checks secure() method.
-  $url = new URL();
+  $url = new URL(PHP_SAPI === 'cli' ? 'http://myhost.com/test/url' : null);
   $router->secure('/^http.*/', true, '*', function($url){return $url;});
   $res = $router->route('POST', $url);
   $url->secure(true);
-  if ($res['success'] !== true || $res['result'] !== $url->build()) return 'Method secure() doesn\'t work.';
+  if ($res['success'] !== true || PHP_SAPI !== 'cli' && $res['result'] !== $url->build()) return 'Method secure() doesn\'t work.';
   return true;
 }
 
