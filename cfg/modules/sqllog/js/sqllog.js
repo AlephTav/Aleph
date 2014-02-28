@@ -65,9 +65,11 @@ cfg.addModule('sqllog',
                   'caseSensitive': $('#sqlSearchOptCaseSensitive').attr('checked') == 'checked' ? 1 : 0,
                   'from': $('#sqlSearchOptRange').attr('checked') == 'checked' ? $('#sqlFrom').val() : '',
                   'to': $('#sqlSearchOptRange').attr('checked') == 'checked' ? $('#sqlTo').val() : ''};
+      $('#shadow').show();
       $.ajax({'type': 'POST', 'data': {'module': 'sqllog', 'command': 'search', 'args': {'keyword': $('#sqlLogKeyword').val(), 'options': opts}}}).done(function(html)
       {
         $('#sqlSearchResults').html(html);
+        $('#shadow').hide();
       }); 
     });
     // Clean SQL log.

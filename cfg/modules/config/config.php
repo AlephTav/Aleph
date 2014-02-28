@@ -147,10 +147,14 @@ class Config extends Module
   
   public function getData()
   {
+    $a = Configurator::getAleph();
+    $current = $a->getConfig();
+    $cfg = $a->setConfig(key(Configurator::getConfigs()), null, true);
+    $a->setConfig($current, null, true);
     $data = ['configs' => array_keys(Configurator::getConfigs()),
              'editable' => (bool)current(Configurator::getConfigs()),
              'common' => $this->common,
-             'cfg' => Configurator::getAleph()->setConfig(key(Configurator::getConfigs()), null, true)];
+             'cfg' => $cfg];
     return ['js' => 'config/js/config.js', 'html' => 'config/html/config.html', 'data' => $data];
   }
   

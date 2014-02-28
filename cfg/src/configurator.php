@@ -8,9 +8,8 @@ final class Configurator
 {
   const CORE_PATH = '/lib/aleph.php';
 
-  public static $configs = [];
-  
   private static $instance = null;
+  private static $configs = [];
   private static $modules = [];
   private static $aleph = null;
   
