@@ -82,15 +82,17 @@
       <option value="apc" <?php echo (@$cfg['cache']['type'] == 'apc' ? 'selected="selected"' : ''); ?>>APC</option>
       <option value="file" <?php echo (@$cfg['cache']['type'] == 'file' ? 'selected="selected"' : ''); ?>>File</option>
       <option value="memory" <?php echo (@$cfg['cache']['type'] == 'memory' ? 'selected="selected"' : ''); ?>>Memory</option>
+      <option value="phpredis" <?php echo (@$cfg['cache']['type'] == 'phpredis' ? 'selected="selected"' : ''); ?>>PHPRedis</option>
+      <option value="redis" <?php echo (@$cfg['cache']['type'] == 'redis' ? 'selected="selected"' : ''); ?>>Redis</option>
     </select>
   </div>
   <div class="ym-fbox-text cache-file" style="<?php echo (@$cfg['cache']['type'] == 'file' ? 'display:block;' : ''); ?>">
 		  <label class="ym-label" for="cacheDirectory">Directory</label>
-				<input type="text" id="cacheDirectory" name="cacheDirectory" value="<?php echo @$cfg['cache']['directory']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+				<input type="text" id="cacheDirectory" name="cacheDirectory" value="<?php echo (empty($cfg['cache']['directory']) ? 'cache' : $cfg['cache']['directory']); ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>
   <div class="ym-fbox-text cache-file" style="<?php echo (@$cfg['cache']['type'] == 'file' ? 'display:block;' : ''); ?>">
 		  <label class="ym-label" for="gcProbability">GC probability</label>
-				<input type="text" id="gcProbability" name="gcProbability" value="<?php echo @$cfg['cache']['gcProbability']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+				<input type="text" id="gcProbability" name="gcProbability" value="<?php echo (empty($cfg['cache']['gcProbability']) ? 33.333 : $cfg['cache']['gcProbability']); ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>
   <div class="ym-fbox-check cache-memory" style="<?php echo (@$cfg['cache']['type'] == 'memory' ? 'display:block;' : ''); ?>">
     <span class="ym-label">Compress</span>
@@ -103,6 +105,26 @@
     <label class="ym-label" for="memServers">Servers (json format)</label>
     <textarea name="memServers" id="memServers" cols="30" rows="7" class="json" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['cache']['servers']) ? json_encode($cfg['cache']['servers']) : ''); ?></textarea>
   </div>
+  <div class="ym-fbox-text cache-redis" style="<?php echo (@$cfg['cache']['type'] == 'redis' || @$cfg['cache']['type'] == 'phpredis' ? 'display:block;' : ''); ?>">
+		  <label class="ym-label" for="redisHost">Host</label>
+				<input type="text" id="redisHost" name="redisHost" value="<?php echo (empty($cfg['cache']['host']) ? '127.0.0.1' : $cfg['cache']['host']); ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text cache-redis" style="<?php echo (@$cfg['cache']['type'] == 'redis' || @$cfg['cache']['type'] == 'phpredis' ? 'display:block;' : ''); ?>">
+		  <label class="ym-label" for="redisPort">Port</label>
+				<input type="text" id="redisPort" name="redisPort" value="<?php echo (empty($cfg['cache']['port']) ? 6379 : $cfg['cache']['port']); ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text cache-redis" style="<?php echo (@$cfg['cache']['type'] == 'redis' || @$cfg['cache']['type'] == 'phpredis' ? 'display:block;' : ''); ?>">
+		  <label class="ym-label" for="redisTimeout">Timeout</label>
+				<input type="text" id="redisTimeout" name="redisTimeout" value="<?php echo intval(@$cfg['cache']['timeout']); ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text cache-redis" style="<?php echo (@$cfg['cache']['type'] == 'redis' || @$cfg['cache']['type'] == 'phpredis' ? 'display:block;' : ''); ?>">
+		  <label class="ym-label" for="redisDatabase">Database</label>
+				<input type="text" id="redisDatabase" name="redisDatabase" value="<?php echo intval(@$cfg['cache']['database']); ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text cache-redis" style="<?php echo (@$cfg['cache']['type'] == 'redis' || @$cfg['cache']['type'] == 'phpredis' ? 'display:block;' : ''); ?>">
+		  <label class="ym-label" for="redisPassword">Password</label>
+				<input type="text" id="redisPassword" name="redisPassword" value="<?php echo @$cfg['cache']['password']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
   <h6 class="subtitle">Database Settings</h6>
   <div class="ym-fbox-check">
     <span class="ym-label">Logging</span>

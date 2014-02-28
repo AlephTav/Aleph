@@ -1,0 +1,41 @@
+<div class="box info">
+  <h2>Cache</h2>
+  <div class="ym-form" style="display:none;">
+    <div class="ym-fbox-check">
+      <div>
+        <span class="ym-label">Cache Groups</span>
+								<input type="radio" id="groupAll" value="" name="cacheGroup" checked="checked" />
+								<label for="groupAll">All</label>
+						</div>
+      <div>
+						  <input type="radio" id="groupTemplates" value="templates" name="cacheGroup" />
+						  <label for="groupTemplates">Templates</label>
+						</div>
+      <div>
+						  <input type="radio" id="groupLocalization" value="localization" name="cacheGroup" />
+						  <label for="groupLocalization">Localization</label>
+						</div>
+      <div>
+						  <input type="radio" id="groupDatabase" value="db" name="cacheGroup" />
+								<label for="groupDatabase">Database</label>
+						</div>
+      <div>
+						  <input type="radio" id="groupActiveRecord" value="ar" name="cacheGroup" />
+								<label for="groupActiveRecord">Active Record</label>
+						</div>
+      <div>
+						  <input type="radio" id="groupPages" value="pom" name="cacheGroup" />
+								<label for="groupPages">Pages</label>
+						</div>
+      <div>
+						  <input type="radio" id="groupOther" value="other" name="cacheGroup" />
+								<label for="groupOther">Other</label>
+        <div class="ym-fbox-text"><input type="text" id="otherGroup" disabled="disabled" /></div>
+						</div>
+				</div>
+    <div class="ym-fbox-button">
+				  <input type="button" id="btnClean" value="Clean" title="Clear group cache" />
+      <input type="button" id="btnGC" value="Run GC" title="Run garbage collector" />
+				</div>
+  </div>
+</div>

@@ -14,6 +14,9 @@
 	 <script src="/cfg/js/shCore.js" type="text/javascript"></script>
 	 <script src="/cfg/js/shBrushPhp.js" type="text/javascript"></script>
   <script src="/cfg/js/configurator.js" type="text/javascript"></script>
+  <?php if (isset($modules)) foreach ($modules as $module){ if (empty($module['js'])) continue; ?>
+  <script src="<?php echo htmlspecialchars('/cfg/modules/' . $module['js']); ?>" type="text/javascript"></script>
+  <?php } ?>
 </head>
 <body>
   <div id="shadow" class="shadow"></div>
@@ -23,7 +26,7 @@
     <div class="box warning"><p id="question"></p></div>
     <div>
       <a id="btnYes" class="ym-button ym-gr" href="javascript:;">Yes</a>
-      <a id="btnNo" class="ym-button ym-gr" href="javascript:;" onclick="hideDialog();">No</a>
+      <a id="btnNo" class="ym-button ym-gr" href="javascript:;" onclick="cfg.hideDialog();">No</a>
     </div>
   </div>
   <header>
@@ -43,198 +46,7 @@
     </div>
     <?php }else{ ?>
 		  <div class="ym-wbox">
-      <div class="box info" style="margin-top:0;">
-        <h2>Config</h2>
-        <div class="ym-form" style="display:none;">
-          <div class="ym-grid">
-            <h6>Select Config File</h6>
-            <div class="ym-fbox ym-fbox-select">
-            <select id="config">
-              <?php foreach (array_keys($config) as $n => $file){ ?>
-              <option value="<?php echo $n; ?>"><?php echo htmlspecialchars($file); ?></option>
-              <?php } ?>
-            </select>
-            </div>
-          </div>
-          <div id="configDetails" class="ym-grid"><?php require_once(__DIR__ . '/config.html'); ?></div>
-        </div>
-      </div>
-      <div class="box info">
-        <h2>Cache</h2>
-        <div class="ym-form" style="display:none;">
-          <div class="ym-fbox-check">
-            <div>
-              <span class="ym-label">Cache Groups</span>
-								      <input type="radio" id="groupAll" value="all" name="cacheGroup" checked="checked" />
-								      <label for="groupAll">All</label>
-							     </div>
-            <div>
-								      <input type="radio" id="groupTemplates" value="templates" name="cacheGroup" />
-								      <label for="groupTemplates">Templates</label>
-							     </div>
-            <div>
-								      <input type="radio" id="groupLocalization" value="localization" name="cacheGroup" />
-								      <label for="groupLocalization">Localization</label>
-							     </div>
-            <div>
-								      <input type="radio" id="groupDatabase" value="database" name="cacheGroup" />
-								      <label for="groupDatabase">Database</label>
-							     </div>
-            <div>
-								      <input type="radio" id="groupActiveRecord" value="ar" name="cacheGroup" />
-								      <label for="groupActiveRecord">Active Record</label>
-							     </div>
-            <div>
-								      <input type="radio" id="groupPages" value="pages" name="cacheGroup" />
-								      <label for="groupPages">Pages</label>
-							     </div>
-            <div>
-								      <input type="radio" id="groupOther" value="other" name="cacheGroup" />
-								      <label for="groupOther">Other</label>
-              <div class="ym-fbox-text"><input type="text" id="otherGroup" disabled="disabled" /></div>
-							     </div>
-						    </div>
-          <div class="ym-fbox-button">
-							     <input type="button" id="btnClean" value="Clean" title="Clear group cache" />
-            <input type="button" id="btnGC" value="Run GC" title="Run garbage collector" />
-						    </div>
-        </div>
-      </div>
-      <div class="box info">
-        <h2>SQL Logs</h2>
-        <div class="ym-form" style="display:none;">
-          <div class="ym-fbox ym-fbox-text">
-		          <label class="ym-label" for="sqlLogKeyword">Search keyword</label>
-				        <input type="text" id="sqlLogKeyword" name="sqlLogKeyword" />
-          </div>
-          <div class="ym-grid">
-            <div class="ym-g33 ym-gl">
-              <div class="ym-fbox ym-fbox-text">
-                <span class="ym-label">Where to search</span>
-                <div class="ym-fbox-wrap">
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereAll" checked="checked" name="sqlSearchWhere" value="-1" />
-									           <label for="sqlSearchWhereAll">All</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereURL" name="sqlSearchWhere" value="0" />
-									           <label for="sqlSearchWhereURL">URL</label>
-								          </div>
-								          <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereDSN" name="sqlSearchWhere" value="1" />
-									           <label for="sqlSearchWhereDSN">DSN</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereSQL" name="sqlSearchWhere" value="2" />
-									           <label for="sqlSearchWhereSQL">SQL</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereType" name="sqlSearchWhere" value="3" />
-									           <label for="sqlSearchWhereType">Type</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereMode" name="sqlSearchWhere" value="4" />
-									           <label for="sqlSearchWhereMode">Mode</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereDuration" name="sqlSearchWhere" value="5" />
-									           <label for="sqlSearchWhereDuration">Duration</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereTimestamp" name="sqlSearchWhere" value="6" />
-									           <label for="sqlSearchWhereTimestamp">Timestamp</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereRows" name="sqlSearchWhere" value="7" />
-									           <label for="sqlSearchWhereRows">Rows</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchWhereStack" name="sqlSearchWhere" value="8" />
-									           <label for="sqlSearchWhereStack">Stack</label>
-								          </div>
-							         </div>
-              </div>
-            </div>
-            <div class="ym-g33 ym-gl">
-              <div class="ym-fbox ym-fbox-text">
-                <span class="ym-label">Search mode</span>
-                <div class="ym-fbox-wrap">
-								          <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchModeRegular" name="sqlSearchMode" checked="checked" value="regular" />
-									           <label for="sqlSearchModeRegular">Regular</label>
-								          </div>
-								          <div class="ym-fbox-check">
-									           <input type="radio" id="sqlSearchModeRegExp" name="sqlSearchMode" value="regexp" />
-									           <label for="sqlSearchModeRegExp">Regular expression</label>
-								          </div>
-							         </div>
-              </div>
-            </div>
-            <div class="ym-g33 ym-gl">
-              <div class="ym-fbox ym-fbox-text">
-                <span class="ym-label">Search options</span>
-                <div class="ym-fbox-wrap">
-								          <div class="ym-fbox-check">
-									           <input type="checkbox" id="sqlSearchOptWord" name="sqlSearchOptWord" value="word" />
-									           <label for="sqlSearchOptWord">Only whole word</label>
-								          </div>
-								          <div class="ym-fbox-check">
-									           <input type="checkbox" id="sqlSearchOptCaseSensitive" name="sqlSearchOptCaseSensitive" value="casesensitive" />
-									           <label for="sqlSearchOptCaseSensitive">Case sensitive</label>
-								          </div>
-                  <div class="ym-fbox-check">
-									           <input type="checkbox" id="sqlSearchOptRange" name="sqlSearchOptRange" value="range" />									          
-                    <label for="sqlFrom">From</label>
-                    <input type="text" id="sqlFrom" style="width:100px;" maxlength="20" />
-                    <label for="sqlTo">to</label>
-                    <input type="text" id="sqlTo" style="width:100px;" maxlength="20" />
-								          </div>
-							         </div>
-              </div>
-            </div>
-          </div>
-          <div class="ym-fbox-button">
-						  	   <input type="button" id="btnSearchSQL" value="Search" title="Search SQL log records" />
-            <input type="button" id="btnCleanSQL" value="Clean" title="Clean SQL log" />
-						    </div>
-          <div id="sqlSearchResults" class="ym-grid log-sql"></div>
-		      </div>
-      </div>
-      <div class="box info">
-        <h2>Error/Custom Logs</h2>
-        <div class="ym-grid" style="display:none;">
-          <div class="ym-g33 ym-gl">
-            <div class="ym-form">
-              <nav id="logList" class="log-list ym-vlist"><?php require_once(__DIR__ . '/loglist.html'); ?></nav>
-              <div class="ym-fbox-button">
-							         <input type="button" id="btnLogClean" value="Clean" title="Clear log directory" />
-                <input type="button" id="btnLogRefresh" value="Refresh" title="Refresh log info" />
-						        </div>
-            </div>
-          </div>
-          <div class="ym-g66 ym-gl">
-            <div id="logDetails" class="log-details ym-form"></div>
-          </div>
-        </div>
-      </div>
-      <div class="box info">
-        <h2>Class Map</h2>
-        <div class="ym-form" style="display:none;">
-          <div id="classmap"><?php require_once(__DIR__ . '/classmap.html'); ?></div>
-          <div class="ym-fbox-button">
-							     <input type="button" id="btnClassmapCreate" value="Create" title="Create new classmap according to the settings" />
-            <input type="button" id="btnClassmapClean" value="Clean" title="Clean the classmap" />
-						    </div>
-        </div>
-      </div>
-      <div class="box info">
-        <h2>PHP Info</h2>
-        <iframe src="?info" width="100%" height="800px;" style="border:none;display:none;"></iframe>
-      </div>
-      <div id="divTests" class="box info">
-        <h2>Auto Tests</h2>
-        <iframe id="tests" width="100%" height="800px;" style="border:none;display:none;"></iframe>
-      </div>
+      <?php foreach ($modules as $module){ $data = @$module['data']; require_once(__DIR__ . '/../modules/' . $module['html']); } ?>
     </div>
     <?php } ?>
   </div>
@@ -248,5 +60,6 @@
 		    </div>
 	   </div>
   </footer>
+  <script type="text/javascript">cfg.init();</script>
 </body>
 </html>

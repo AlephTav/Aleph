@@ -1,0 +1,17 @@
+<div class="box info">
+  <h2>Error/Custom Logs</h2>
+  <div class="ym-grid" style="display:none;">
+    <div class="ym-g33 ym-gl">
+      <div class="ym-form">
+        <nav id="logList" class="log-list ym-vlist"><?php $logs = $data['logs']; require_once(__DIR__ . '/list.html'); ?></nav>
+        <div class="ym-fbox-button">
+							   <input type="button" id="btnLogClean" value="Clean" title="Clear log directory" />
+          <input type="button" id="btnLogShow" value="Refresh" title="Refresh log info" />
+						  </div>
+      </div>
+    </div>
+    <div class="ym-g66 ym-gl">
+      <div id="logDetails" class="log-details ym-form"></div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,16 @@
+<div class="box info" style="margin-top:0;">
+  <h2>Config</h2>
+  <div class="ym-form" style="display:none;">
+    <div class="ym-grid">
+      <h6>Select Config File</h6>
+      <div class="ym-fbox ym-fbox-select">
+        <select id="config">
+          <?php foreach ($data['configs'] as $n => $file){ ?>
+          <option value="<?php echo $n; ?>"><?php echo htmlspecialchars(substr($file, strlen($_SERVER['DOCUMENT_ROOT']) + 1)); ?></option>
+          <?php } ?>
+        </select>
+      </div>
+    </div>
+    <div id="configDetails" class="ym-grid"><?php $cfg = $data['cfg']; $editable = $data['editable']; $common = $data['common']; require_once(__DIR__ . '/settings.html'); ?></div>
+  </div>
+</div>

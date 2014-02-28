@@ -1,0 +1,100 @@
+<div class="box info">
+  <h2>SQL Logs</h2>
+  <div class="ym-form" style="display:none;">
+    <div class="ym-fbox ym-fbox-text">
+		    <label class="ym-label" for="sqlLogKeyword">Search keyword</label>
+				  <input type="text" id="sqlLogKeyword" name="sqlLogKeyword" />
+    </div>
+    <div class="ym-grid">
+      <div class="ym-g33 ym-gl">
+        <div class="ym-fbox ym-fbox-text">
+          <span class="ym-label">Where to search</span>
+          <div class="ym-fbox-wrap">
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereAll" checked="checked" name="sqlSearchWhere" value="-1" />
+									     <label for="sqlSearchWhereAll">All</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereURL" name="sqlSearchWhere" value="0" />
+									     <label for="sqlSearchWhereURL">URL</label>
+								    </div>
+								    <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereDSN" name="sqlSearchWhere" value="1" />
+									     <label for="sqlSearchWhereDSN">DSN</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereSQL" name="sqlSearchWhere" value="2" />
+									     <label for="sqlSearchWhereSQL">SQL</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereType" name="sqlSearchWhere" value="3" />
+									     <label for="sqlSearchWhereType">Type</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereMode" name="sqlSearchWhere" value="4" />
+									     <label for="sqlSearchWhereMode">Mode</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereDuration" name="sqlSearchWhere" value="5" />
+									     <label for="sqlSearchWhereDuration">Duration</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereTimestamp" name="sqlSearchWhere" value="6" />
+									     <label for="sqlSearchWhereTimestamp">Timestamp</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereRows" name="sqlSearchWhere" value="7" />
+									     <label for="sqlSearchWhereRows">Rows</label>
+								    </div>
+            <div class="ym-fbox-check">
+									     <input type="radio" id="sqlSearchWhereStack" name="sqlSearchWhere" value="8" />
+									     <label for="sqlSearchWhereStack">Stack</label>
+								    </div>
+							   </div>
+        </div>
+      </div>
+      <div class="ym-g33 ym-gl">
+        <div class="ym-fbox ym-fbox-text">
+          <span class="ym-label">Search mode</span>
+          <div class="ym-fbox-wrap">
+						      <div class="ym-fbox-check">
+						        <input type="radio" id="sqlSearchModeRegular" name="sqlSearchMode" checked="checked" value="regular" />
+						        <label for="sqlSearchModeRegular">Regular</label>
+						      </div>
+						      <div class="ym-fbox-check">
+						        <input type="radio" id="sqlSearchModeRegExp" name="sqlSearchMode" value="regexp" />
+						        <label for="sqlSearchModeRegExp">Regular expression</label>
+						      </div>
+							   </div>
+        </div>
+      </div>
+      <div class="ym-g33 ym-gl">
+        <div class="ym-fbox ym-fbox-text">
+          <span class="ym-label">Search options</span>
+          <div class="ym-fbox-wrap">
+								    <div class="ym-fbox-check">
+								      <input type="checkbox" id="sqlSearchOptWord" name="sqlSearchOptWord" value="word" />
+								      <label for="sqlSearchOptWord">Only whole word</label>
+								    </div>
+								    <div class="ym-fbox-check">
+								      <input type="checkbox" id="sqlSearchOptCaseSensitive" name="sqlSearchOptCaseSensitive" value="casesensitive" />
+								      <label for="sqlSearchOptCaseSensitive">Case sensitive</label>
+								    </div>
+            <div class="ym-fbox-check">
+								      <input type="checkbox" id="sqlSearchOptRange" name="sqlSearchOptRange" value="range" />									          
+              <label for="sqlFrom">From</label>
+              <input type="text" id="sqlFrom" style="width:100px;" maxlength="20" />
+              <label for="sqlTo">to</label>
+              <input type="text" id="sqlTo" style="width:100px;" maxlength="20" />
+								    </div>
+							   </div>
+        </div>
+      </div>
+    </div>
+    <div class="ym-fbox-button">
+				  <input type="button" id="btnSearchSQL" value="Search" title="Search SQL log records" />
+      <input type="button" id="btnCleanSQL" value="Clean" title="Clean SQL log" />
+				</div>
+    <div id="sqlSearchResults" class="ym-grid log-sql"></div>
+		</div>
+</div>
