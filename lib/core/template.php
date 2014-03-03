@@ -32,15 +32,30 @@ use Aleph\Cache;
  * @package aleph.core
  */
 class Template implements \ArrayAccess
-{
+{  
   /**
-   * Global template variables.
+   * Unique cache identifier of template.
    *
-   * @var array $globals
-   * @access protedted
-   * @static
+   * @var string $cacheID
+   * @access public
    */
-  protected static $globals = [];
+  public $cacheID = null;
+  
+  /**
+   * Cache expiration time of template.
+   *
+   * @var integer $cacheExpire
+   * @access public
+   */
+  public $cacheExpire = 0;
+  
+  /**
+   * Name of the cache group.
+   *
+   * @var string $cacheGroup
+   * @access public
+   */
+  public $cacheGroup = 'templates';
   
   /**
    * An instance of Aleph\Cache\Cache class.
@@ -49,22 +64,6 @@ class Template implements \ArrayAccess
    * @access protected
    */
   protected $cache = null;
-  
-  /**
-   * Unique cache identifier of template.
-   *
-   * @var string $cacheID
-   * @access protected
-   */
-  protected $cacheID = null;
-  
-  /**
-   * Cache expiration time of template.
-   *
-   * @var integer $expire
-   * @access protected
-   */
-  protected $expire = 0;
 
   /**
    * Template variables.
@@ -81,6 +80,15 @@ class Template implements \ArrayAccess
    * @access protected
    */
   protected $template = null;
+  
+  /**
+   * Global template variables.
+   *
+   * @var array $globals
+   * @access protedted
+   * @static
+   */
+  protected static $globals = [];
   
   /**
    * Returns array of global template variables.
@@ -120,11 +128,11 @@ class Template implements \ArrayAccess
   public function __construct($template = null, $expire = 0, $cacheID = null, Cache\Cache $cache = null)
   {
     $this->template = $template;
-    $this->expire = (int)$expire;
-    if ($this->expire > 0) 
+    $this->cacheExpire = (int)$expire;
+    if ($this->cacheExpire > 0) 
     {
       $this->setCache($cache ?: \Aleph::getInstance()->getCache());
-      $this->setCacheID($cacheID);
+      $this->cacheID = $cacheID;
     }
   }
   
@@ -152,50 +160,6 @@ class Template implements \ArrayAccess
   }
   
   /**
-   * Returns unique cache identifier of template.
-   *
-   * @return string
-   * @access public
-   */
-  public function getCacheID()
-  {
-    return $this->cacheID;
-  }
-  
-  /**
-   * Sets unique cache identifier of template.
-   *
-   * @param string $cacheID
-   * @access public
-   */
-  public function setCacheID($cacheID)
-  {
-    $this->cacheID = $cacheID;
-  }
-  
-  /**
-   * Returns cache expiration time.
-   *
-   * @return integer
-   * access public
-   */
-  public function getExpirationTime()
-  {
-    return $this->expire;
-  }
-  
-  /**
-   * Sets cache expiration time (in seconds).
-   *
-   * @param integer $expire
-   * @access public
-   */
-  public function setExpirationTime($expire)
-  {
-    $this->expire = $expire;
-  }
-  
-  /**
    * Checks whether or not a template cache lifetime is expired.
    *
    * @return boolean
@@ -203,7 +167,7 @@ class Template implements \ArrayAccess
    */
   public function isExpired()
   {
-    if ((int)$this->expire <= 0) return true;
+    if ((int)$this->cacheExpire <= 0) return true;
     return $this->getCache()->isExpired(md5($this->template));
   }
 
@@ -370,7 +334,7 @@ class Template implements \ArrayAccess
       }
       return \Aleph::exe($tpl->getTemplate(), array_merge(Template::getGlobals(), $tpl->getVars()));
     };
-    if ((int)$this->expire <= 0) return $render($this);
+    if ((int)$this->cacheExpire <= 0) return $render($this);
     $hash = $this->cacheID !== null ? $this->cacheID : md5($this->template);
     $cache = $this->getCache();
     if ($cache->isExpired($hash))
@@ -392,7 +356,7 @@ class Template implements \ArrayAccess
         else $parts[] = [$part, false];
       }
       foreach ($tmp as $name => $tpl) $this->vars[$name] = $tpl;
-      $cache->set($hash, $parts, $this->expire, 'templates');
+      $cache->set($hash, $parts, $this->cacheExpire, $this->cacheGroup);
     }
     else
     {
