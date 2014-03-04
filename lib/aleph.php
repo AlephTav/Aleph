@@ -447,7 +447,8 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * This method is automatically invoked when a fatal error occurred.
+   * Used to detect fatal errors or parsing errors.
+   * The method is called automatically when the script is over.
    *
    * @access public
    * @static
