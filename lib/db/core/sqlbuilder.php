@@ -40,6 +40,7 @@ abstract class SQLBuilder
   const ERR_SQL_2 = 'Cannot wrap empty string.';
   const ERR_SQL_3 = 'You can\'t invoke method "[{var}]" twice within the current SQL-construction.';
   const ERR_SQL_4 = 'Escaping format "[{var}]" is invalid.';
+  const ERR_SQL_5 = 'Operator "[{var}]" is invalid.';
   
   /**
    * Formats of the quoted values.
@@ -580,7 +581,7 @@ abstract class SQLBuilder
   protected function buildUpdate(array $update, &$data)
   {
     $sql = 'UPDATE ' . $this->selectExpression($update['table'], true);
-    if (!empty($update['join'])) $sql .= $this->buildJoin($update['join']);
+    if (!empty($update['join'])) $sql .= $this->buildJoin($update['join'], $data);
     $sql .= ' SET ' . $this->updateExpression($update['columns'], $data);
     if (!empty($update['where'])) $sql .= $this->buildWhere($update['where'], $data);
     if (!empty($update['order'])) $sql .= $this->buildOrder($update['order']);
@@ -599,7 +600,7 @@ abstract class SQLBuilder
   protected function buildDelete(array $delete, &$data)
   {
     $sql = 'DELETE FROM ' . $this->selectExpression($delete['table'], true);
-    if (!empty($delete['join'])) $sql .= $this->buildJoin($delete['join']);
+    if (!empty($delete['join'])) $sql .= $this->buildJoin($delete['join'], $data);
     if (!empty($delete['where'])) $sql .= $this->buildWhere($delete['where'], $data);
     if (!empty($delete['order'])) $sql .= $this->buildOrder($delete['order']);
     if (!empty($delete['limit'])) $sql .= $this->buildLimit($delete['limit']);
@@ -820,73 +821,89 @@ abstract class SQLBuilder
    */
   protected function whereExpression($expression, &$data, $conjunction = null)
   {
-    if ($expression instanceof self) return '(' . $expression . ')';
-    if (!is_array($expression)) return (string)$expression;
-    $tmp = [];
-    $conj = strtoupper(trim($conjunction)) ?: 'AND';
-    foreach ($expression as $column => $value)
+    if (is_array($expression))
     {
-      if (is_array($value)) 
-      {
-        $count = count($value);
-        if ($count == 1 && is_string($column) && !is_array(current($value)))
-        {
-          $tmp[] = $this->wrap($column) . ' = ' . $this->addParam($value, $data);
-          continue;
-        }
-        if (isset($value[0]) && !is_array($value[0]))
-        {
-          $operator = strtoupper(trim($value[0]));
-          if ($count == 2)
-          {
-            if (in_array($operator, ['=', '>', '<', '>=', '<=', '<>', '!=', 'LIKE', 'NOT LIKE']))
-            {
-              if ($value[1] instanceof self) $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . $value[1] . ')';
-              else if ($value[1] instanceof SQLExpression) $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $value[1];
-              else $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $this->addParam($value[1], $data);
-              continue;
-            }
-            else if ($operator == 'IN' || $operator == 'NOT IN')
-            {
-              $value[1] = (array)$value[1];
-              if ($this->seq == 0)
-              {
-                $data = array_merge($data, $value[1]);
-                $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . implode(', ', array_fill(0, count($value[1]), '?')) . ')';
-              }
-              else
-              {
-                $tmp = [];
-                foreach ($value[1] as $v) $tmp[] = $this->addParam($v, $data);
-                $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . implode(', ', $tmp) . ')';
-              }
-              continue;
-            }
-            else if ($value[0] == 'IS')
-            {
-              $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $value[1];
-              continue;
-            }
-          }
-          else if ($count == 3 && ($operator == 'BETWEEN' || $operator == 'NOT BETWEEN'))
-          {
-            $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $this->addParam($value[1], $data) . ' AND ' . $this->addParam($value[2], $data);
-            continue;
-          }
-        }
-        $column = strtoupper(trim($column));
-        $value = $this->whereExpression($value, $data, in_array($column, ['OR', 'AND', 'XOR', '||', '&&']) ? $column : 'AND');
-        $tmp[] = ($conj == 'AND' || $conj == 'XOR' || $conj == '&&') && ($column == 'OR' || $column == '||') ? '(' . $value . ')' : $value;
-      }
-      else if (is_numeric($column)) $tmp[] = (string)$value;
+      $tmp = [];
+      if ($conjunction) $cnj = strtoupper(trim($conjunction));
       else
       {
-        if ($value instanceof self) $tmp[] = $this->wrap($column) . ' = (' . $value . ')';
-        else if ($value instanceof SQLExpression) $tmp[] = $this->wrap($column) . ' = ' . $value;
-        else $tmp[] = $this->wrap($column) . ' = ' . $this->addParam($value, $data);
+        if (empty($expression[0]) || is_array($expression[0])) $cnj = 'AND';
+        else
+        {
+          $cnj = strtoupper(trim($expression[0]));
+          if (!in_array($cnj, ['AND', 'OR', 'XOR', '||', '&&'])) $cnj = 'AND';
+          else unset($expression[0]);
+        }
       }
+      foreach ($expression as $key => $operand)
+      {
+        if (!is_array($operand))
+        {
+          if ($operand instanceof self) $tmp[] = '(' . $operand . ')';
+          else if ($operand instanceof SQLExpression) $tmp[] = $this->wrap($key) . ' = ' . $operand;
+          else if (!is_numeric($key)) $tmp[] = $this->wrap($key) . ' = ' . $this->addParam($operand, $data);
+          else $tmp[] = (string)$operand;
+          continue;
+        }
+        $operator = isset($operand[0]) ? strtoupper(trim($operand[0])) : null;
+        switch ($operator)
+        {
+          case 'AND':
+          case 'OR':
+          case 'XOR':
+          case '||':
+          case '&&':
+            unset($operand[0]);
+            $value = $this->whereExpression($operand, $data, $operator);
+            $tmp[] = ($cnj == 'AND' || $cnj == 'XOR' || $cnj == '&&') && ($operator == 'OR' || $operator == '||') ? '(' . $value . ')' : $value;
+            break;
+          case '=':
+          case '>':
+          case '<':
+          case '>=':
+          case '<=':
+          case '<>':
+          case '!=':
+          case 'LIKE':
+          case 'NOT LIKE':
+            $column = $operand[1];
+            $value = $operand[2];
+            if ($value instanceof self) $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . $value . ')';
+            else if ($value instanceof SQLExpression) $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $value;
+            else $tmp[] = $this->wrap($column) . ' ' . $operator . ' ' . $this->addParam($value, $data);
+            break;
+          case 'IN':
+          case 'NOT IN':
+            $column = $operand[1];
+            $value = (array)$operand[2];
+            if ($this->seq == 0)
+            {
+              $data = array_merge($data, $value);
+              $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . implode(', ', array_fill(0, count($value), '?')) . ')';
+            }
+            else
+            {
+              $t = [];
+              foreach ($value as $v) $t[] = $this->addParam($v, $data);
+              $tmp[] = $this->wrap($column) . ' ' . $operator . ' (' . implode(', ', $t) . ')';
+            }
+            break;
+          case 'IS':
+            $tmp[] = $this->wrap($operand[1]) . ' ' . $operator . ' ' . $operand[2];
+            break;
+          case 'BETWEEN':
+          case 'NOT BETWEEN':
+            $tmp[] = $this->wrap($operand[1]) . ' ' . $operator . ' ' . $this->addParam($operand[2], $data) . ' AND ' . $this->addParam($operand[3], $data);
+            break;
+          default:
+            if (count($operand) == 1 && !is_numeric($key)) $tmp[] = $this->wrap($key) . ' = ' . $this->addParam($operand, $data);
+            else throw new Core\Exception($this, 'ERR_SQL_5', $operator);
+        }
+      }
+      return implode(' ' . $cnj . ' ', $tmp);
     }
-    return implode(' ' . $conj . ' ', $tmp);
+    if ($expression instanceof self) return '(' . $expression . ')';
+    return (string)$expression;
   }
   
   /**
