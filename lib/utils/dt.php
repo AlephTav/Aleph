@@ -448,8 +448,8 @@ class DT extends \DateTime
   /**
    * Returns text representation of the time elapsed since the specified date.
    *
-   * @param string | \DateTime $date - the start date.
-   * @param string | \DateTime $now - the current date.
+   * @param string | DateTimeInterface $date - the start date.
+   * @param string | DateTimeInterface $now - the current date.
    * @param string $format - date format string.
    * @return string
    * @access public
@@ -475,7 +475,7 @@ class DT extends \DateTime
    * Returns today's date.
    *
    * @param string $format - output date format.
-   * @param string | \DateTimeZone $timezone
+   * @param string | DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -489,7 +489,7 @@ class DT extends \DateTime
    * Returns tomorrow's date.
    *
    * @param string $format - output date format.
-   * @param string | \DateTimeZone $timezone
+   * @param string | DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -503,7 +503,7 @@ class DT extends \DateTime
    * Returns yesterday's date.
    *
    * @param string $format - output date format.
-   * @param string | \DateTimeZone $timezone
+   * @param string | DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -541,9 +541,9 @@ class DT extends \DateTime
   
   /**
    * Returns abbreviation of the given time zone.
-   * The time zone can be an instance of \DateTimeZone or a string.
+   * The time zone can be an instance of DateTimeZone or a string.
    *
-   * @param string | \DateTimeZone $timezone
+   * @param string | DateTimeZone $timezone
    * @return string
    * @access public
    * @static
@@ -558,8 +558,8 @@ class DT extends \DateTime
    * If $combine is TRUE the method returns associated array with keys which are time zones.
    *
    * @param boolean $combine - determines whether the method returns an associative array.
-   * @param integer $what - one of \DateTimeZone class constants.
-   * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to \DateTimeZone::PER_COUNTRY.
+   * @param integer $what - one of DateTimeZone class constants.
+   * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to DateTimeZone::PER_COUNTRY.
    * @return array
    * @access public
    * @static
@@ -575,8 +575,8 @@ class DT extends \DateTime
    * Returns list (associative array) of timezones in GMT format.
    *
    * @param array $replacement - can be used to replace some timezone names by others.
-   * @param integer $what - one of \DateTimeZone class constants.
-   * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to \DateTimeZone::PER_COUNTRY.
+   * @param integer $what - one of DateTimeZone class constants.
+   * @param string $country - a two-letter ISO 3166-1 compatible country code. This argument is only used when $what is set to DateTimeZone::PER_COUNTRY.
    * @return array
    * @access public
    * @static
@@ -613,7 +613,7 @@ class DT extends \DateTime
   /**
    * Returns timezone string in GMT format.
    *
-   * @param string | \DateTimeZone $timezone - timezone name or object.
+   * @param string | DateTimeZone $timezone - timezone name or object.
    * @return string
    * @access public
    * @static
@@ -634,8 +634,8 @@ class DT extends \DateTime
    * Converts the given date from one time zone and date format to another time zone and date format.
    *
    * @param string $date - string representing the date.
-   * @param string | \DateTimeZone $zoneOut - output date time zone.
-   * @param string | \DateTimeZone $zoneIn - input date time zone.
+   * @param string | DateTimeZone $zoneOut - output date time zone.
+   * @param string | DateTimeZone $zoneIn - input date time zone.
    * @param string $out - output format string.
    * @param string $in - input format string.
    * @return string
@@ -654,14 +654,14 @@ class DT extends \DateTime
    * Constructor.
    * If $date is not specified the current date will be taken. 
    *
-   * @param string | \DateTime $date - string representing the date or a \DateTime object.
+   * @param string | DateTimeInterface $date - string representing the date or an object implementing DateTimeInterface.
    * @param string $format - date format string.
-   * @param string | \DateTimeZone $timezone - date time zone.
+   * @param string | DateTimeZone $timezone - date time zone.
    * @access public
    */
   public function __construct($date = 'now', $format = null, $timezone = null)
   {
-    if ($date instanceof \DateTime) 
+    if ($date instanceof \DateTimeInterface) 
     {
       parent::__construct();
       $this->setTimestamp($date->getTimestamp());
@@ -706,7 +706,7 @@ class DT extends \DateTime
    * Sets the time zone for the Aleph\Utils\DT object.
    * Returns the DT object for method chaining or FALSE on failure.
    *
-   * @param string | \DateTimeZone $timezone
+   * @param string | DateTimeZone $timezone
    * @return self
    * @access public
    */
@@ -718,7 +718,7 @@ class DT extends \DateTime
   /**
    * Returns the Unix timestamp representing the date.
    *
-   * @param string | \DateTimeZone $timezone
+   * @param string | DateTimeZone $timezone
    * @return integer
    * @access public
    */
@@ -737,7 +737,7 @@ class DT extends \DateTime
    * Returns date formatted according to the given format and specified timezone.
    *
    * @param string $format - format accepted by date().
-   * @param string | \DateTimeZone $timezone - timezone of the output date.
+   * @param string | DateTimeZone $timezone - timezone of the output date.
    * @return string
    * @access public
    */
@@ -878,7 +878,7 @@ class DT extends \DateTime
    * The method returns 0 if the both dates are equal.
    *
    * @param mixed $date - the date to compare to.
-   * @param string | \DateTimeZone $timezone - timezone of the given dates.
+   * @param string | DateTimeZone $timezone - timezone of the given dates.
    * @return integer
    * @access public
    * @static
@@ -896,8 +896,8 @@ class DT extends \DateTime
   /**
    * Returns Generator object representing of date period.
    *
-   * @param string | \DateInterval $interval - the interval between recurrences within the period.
-   * @param integer | \DateTimeInterface $end - the number of recurrences or \DateTimeInterface object.
+   * @param string | DateInterval $interval - the interval between recurrences within the period.
+   * @param integer | DateTimeInterface $end - the number of recurrences or an object implementing DateTimeInterface.
    * @param boolean $excludeStartDate - determines whether the start date is excluded.
    * @return Generator
    * @access public
