@@ -72,8 +72,10 @@ class DOMDocumentEx extends \DOMDocument
     if (!\Aleph::isErrorHandlingEnabled()) return parent::loadHTML($source);
     $level = ini_get('error_reporting');
     \Aleph::errorHandling(true, E_ALL & ~E_NOTICE & ~E_WARNING);
+    $charset = $this->encoding;
     $source = mb_convert_encoding($source, 'HTML-ENTITIES', $this->encoding);
     $res = parent::loadHTML($source, $options);
+    $this->encoding = $charset;
     \Aleph::errorHandling(true, $level);
     return $res;
   }
@@ -126,7 +128,7 @@ class DOMDocumentEx extends \DOMDocument
     $node = $node ?: $this->documentElement;
     if (!$node) 
     {
-      parent::loadHTML('<html></html>');
+      $this->loadHTML('<html></html>');
       $node = $this->documentElement;
     }
     else if (!$node->parentNode)
@@ -170,7 +172,7 @@ class DOMDocumentEx extends \DOMDocument
     $node = $node ?: $this->documentElement;
     if (!$node) 
     {
-      parent::loadHTML('<html></html>');
+      $this->loadHTML('<html></html>');
       $node = $this->documentElement;
     }
     $node->nodeValue = '';
@@ -257,6 +259,7 @@ class DOMDocumentEx extends \DOMDocument
    */
   public function HTMLToNode($html)
   {
+    $html = mb_convert_encoding($html, 'HTML-ENTITIES', $this->encoding);
     if (!preg_match('/\A<([^> ]*)/', $html, $tag)) return new \DOMText($html);
     $tag = strtolower($tag[1]);
     $dom = new DOMDocumentEx($this->version, $this->encoding);
