@@ -54,7 +54,7 @@ class DOMDocumentEx extends \DOMDocument
    * @param string $charset - the encoding of the document as part of the XML declaration.
    * @access public
    */
-  public function __construct($version = '1.0', $charset = 'utf-8')
+  public function __construct($version = '1.0', $charset = 'UTF-8')
   {
     parent::__construct($version, $charset);
   }
@@ -72,7 +72,7 @@ class DOMDocumentEx extends \DOMDocument
     if (!\Aleph::isErrorHandlingEnabled()) return parent::loadHTML($source);
     $level = ini_get('error_reporting');
     \Aleph::errorHandling(true, E_ALL & ~E_NOTICE & ~E_WARNING);
-    mb_convert_encoding($source, 'HTML-ENTITIES', $this->encoding);
+    $source = mb_convert_encoding($source, 'HTML-ENTITIES', $this->encoding);
     $res = parent::loadHTML($source, $options);
     \Aleph::errorHandling(true, $level);
     return $res;
