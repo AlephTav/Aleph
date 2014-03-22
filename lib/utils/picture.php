@@ -33,7 +33,7 @@ namespace Aleph\Utils;
 class Picture
 {
   /**
-   * resizing modes.
+   * Resizing modes.
    */
   const PIC_MANUAL = 0;
   const PIC_AUTOWIDTH = 1;

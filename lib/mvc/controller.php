@@ -53,7 +53,7 @@ class Controller
    * @var array $map
    * @access protected
    */
-  protected $map = array();
+  protected $map = [];
   
   /**
    * Array of the basic HTTP error handlers (processing 404 and 403 errors is only available).
@@ -61,7 +61,7 @@ class Controller
    * @var array $handlers
    * @access protected
    */
-  protected $handlers = array();
+  protected $handlers = [];
   
   /**
    * Constructor. Checks whether the site is locked or not. If the site is locked the appropriate message (template) will be displayed.
@@ -70,7 +70,7 @@ class Controller
    * @param Aleph\Cache\Cache $cache - cache object for storing locked mark of the site.
    * @access public
    */
-  public function __construct(array $map = array(), Cache\Cache $cache = null)
+  public function __construct(array $map = [], Cache\Cache $cache = null)
   {
     $a = \Aleph::getInstance();
     if (!empty($a['locked']))
@@ -119,9 +119,10 @@ class Controller
    *
    * @param Aleph\MVC\Page $page
    * @param string | array $methods - HTTP request methods.
+   * @param string | Aleph\Net\URL $url - the URL string to route.
    * @access public
    */
-  public function execute(IPage $page = null, $methods = null)
+  public function execute(IPage $page = null, $methods = null, $url = null)
   {
     $a = \Aleph::getInstance();
     if ($page === null)
@@ -129,32 +130,30 @@ class Controller
       $router = $a->getRouter();
       foreach ($this->map as $resource => $info)
       {
-        foreach ($info as $methods => $data)
+        foreach ($info as $httpMethods => $data)
         {
-          if (isset($data['bind']))
+          if (isset($data['secure']))
           {
-            $router->bind($resource, $data['callback'], $methods)
-                   ->ssl(empty($data['ssl']) ? false : $data['ssl'])
-                   ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
-                   ->validation(empty($data['validation']) ? [] : $data['validation'])
-                   ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
-                   ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames']);
+            $router->secure($resource, $data['secure'], $httpMethods)
+                   ->component(empty($data['component']) ? Net\URL::ALL : $data['component']);
           }
           else if (isset($data['redirect']))
           {
-            $router->redirect($resource, $data['redirect'], $methods)
-                   ->ssl(empty($data['ssl']) ? false : $data['ssl'])
+            $router->redirect($resource, $data['redirect'], $httpMethods)
                    ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
-                   ->validation(empty($data['validation']) ? [] : $data['validation']);
+                   ->validation(empty($data['validation']) ? array() : $data['validation']);
           }
           else
           {
-            $router->secure($resource, $data['secure'], $methods)
-                   ->component(empty($data['component']) ? Net\URL::ALL : $data['component']);
+            $router->bind($resource, $data['callback'], $httpMethods)
+                   ->component(empty($data['component']) ? Net\URL::PATH : $data['component'])
+                   ->validation(empty($data['validation']) ? array() : $data['validation'])
+                   ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
+                   ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames']);
           }
         }
       }
-      $res = $router->route($methods);
+      $res = $router->route($methods, $url);
       if ($res['success'] === false)
       {
         if (isset($this->handlers[404]))
@@ -170,7 +169,7 @@ class Controller
         $page = $res['result'];
       }      
     }
-    Page::$page = $page;
+    Page::$current = $page;
     if (!$page->access())
     {
       if (!empty($page->noAccessURL)) \Aleph::go($page->noAccessURL);

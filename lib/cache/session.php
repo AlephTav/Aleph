@@ -22,65 +22,18 @@
 
 namespace Aleph\Cache;
 
+use Aleph\Core;
+
 /**
- * The class is intended for caching of different data using the PHP Redis extension.
+ * The class is intended for caching of different data using PHP sessions.
+ * You can use this type of cache for testing caching in your applications.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3
  * @package aleph.cache
  */
-class PHPRedis extends Cache
-{
-  /**
-   * The instance of \Redis class.
-   *
-   * @var \Redis $redis
-   */
-  private $redis;
-  
-  /**
-   * Checks whether the current type of cache is available or not.
-   *
-   * @return boolean
-   * @access public
-   * @static
-   */
-  public static function isAvailable()
-  {
-    return extension_loaded('redis');
-  }
-
-  /**
-   * Constructor.
-   *
-   * @param string $host - host or path to a unix domain socket for a redis connection.
-   * @param integer $port - port for a connection, optional.
-   * @param integer $timeout - the connection timeout, in seconds.
-   * @param string $password - password for server authentication, optional.
-   * @param integer $database - number of the redis database to use.
-   * @access public
-   */
-  public function __construct($host = '127.0.0.1', $port = 6379, $timeout = 0, $password = null, $database = 0)
-  {
-    parent::__construct();
-    $this->redis = new \Redis();
-    $this->redis->connect($host, $port, $timeout);
-    if ($password !== null) $this->redis->auth($password);
-    $this->redis->select($database);
-    $this->redis->setOption(\Redis::OPT_SERIALIZER, defined('Redis::SERIALIZER_IGBINARY') ? \Redis::SERIALIZER_IGBINARY : \Redis::SERIALIZER_PHP);
-  }
-
-  /**
-   * Returns the redis object.
-   *
-   * @return \Redis
-   * @access public
-   */
-  public function getRedis()
-  {
-    return $this->redis;
-  }
-
+class Session extends Cache
+{  
   /**
    * Conserves some data identified by a key into cache.
    *
@@ -89,11 +42,11 @@ class PHPRedis extends Cache
    * @param integer $expire - cache lifetime (in seconds).
    * @param string $group - group of a data key.
    * @access public
-   */
+   */  
   public function set($key, $content, $expire, $group = null)
   {
     $expire = abs((int)$expire);
-    $this->redis->set($key, $content, $expire);
+    $_SESSION['__CACHE__'][$key] = [serialize($content), $expire + time()];
     $this->saveKeyToVault($key, $expire, $group);
   }
 
@@ -101,12 +54,12 @@ class PHPRedis extends Cache
    * Returns some data previously conserved in cache.
    *
    * @param string $key - a data key.
-   * @return boolean
+   * @return mixed
    * @access public
    */
   public function get($key)
-  {
-    return $this->redis->get($key);
+  {                    
+    if (isset($_SESSION['__CACHE__'][$key])) return unserialize($_SESSION['__CACHE__'][$key][0]);
   }
 
   /**
@@ -117,8 +70,8 @@ class PHPRedis extends Cache
    * @access public
    */
   public function isExpired($key)
-  {
-    return !$this->redis->exists($key);
+  {                      
+    return empty($_SESSION['__CACHE__'][$key]) || $_SESSION['__CACHE__'][$key][1] <= time();
   }
 
   /**
@@ -128,10 +81,10 @@ class PHPRedis extends Cache
    * @access public
    */
   public function remove($key)
-  {
-    $this->redis->delete($key);
+  {             
+    unset($_SESSION['__CACHE__'][$key]);
   }
-
+  
   /**
    * Removes all previously conserved data from cache.
    *
@@ -139,16 +92,20 @@ class PHPRedis extends Cache
    */
   public function clean()
   {
-    $this->redis->flushDB();
+    unset($_SESSION['__CACHE__']);
   }
-  
+   
   /**
-   * Closes the current connection with redis.
+   * Garbage collector that should be used for removing of expired cache data.
    *
+   * @param float $probability - probability of garbage collector performing.
    * @access public
    */
-  public function __destruct()
+  public function gc($probability = 100)
   {
-    $this->redis->close();
+    if ((float)$probability * 1000 < rand(0, 99999)) return;
+    if (empty($_SESSION['__CACHE__']) || !is_array($_SESSION['__CACHE__'])) return;
+    foreach ($_SESSION['__CACHE__'] as $key => $item) if ($item[1] < time()) $this->remove($key);
+    $this->normalizeVault();
   }
 }

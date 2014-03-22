@@ -430,20 +430,22 @@ final class Aleph implements \ArrayAccess
    */
   public static function errorHandling($enable = true, $errorLevel = null)
   {
-    self::$errHandling = $enable;
-    restore_error_handler();
-    restore_exception_handler();
-    if (!$enable)
+    $enable = (bool)$enable;
+    if (self::$errHandling !== $enable)
     {
-      error_reporting($errorLevel ?: ini_get('error_reporting'));
-      return;
+      self::$errHandling = $enable;
+      restore_error_handler();
+      restore_exception_handler();
+      if ($enable)
+      {
+        set_exception_handler([__CLASS__, 'exception']);
+        set_error_handler(function($errno, $errstr, $errfile, $errline)
+        {
+          self::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
+        }, $errorLevel ?: error_reporting());
+      }
     }
-    error_reporting($errorLevel ?: E_ALL);
-    set_exception_handler([__CLASS__, 'exception']);
-    set_error_handler(function($errno, $errstr, $errfile, $errline)
-    {
-      self::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
-    }, $errorLevel);
+    if ($errorLevel !== null) error_reporting($errorLevel);
   }
   
   /**

@@ -74,43 +74,17 @@ class Page implements IPage
    */
   public $expire = 0;
   
-  public $body = null;
-  
-  /**
-   * An instance of \Aleph class.
-   *
-   * @var \Aleph
-   * @access public
-   */
-  protected $a = null;
-  
-  protected $request = null;
-  
-  protected $template = null;
-
-  /**
-   * The instance of Aleph\Web\AJAX class.
-   *
-   * @var Aleph\Web\AJAX
-   * @access public
-   */
-  protected $ajax = null;
-  
-  protected $pageID = null;
+  public $view = null;
   
   protected $ajaxPermissions = ['Aleph\MVC\\', 'Aleph\Web\UI\POM\\'];
   
   protected $sequenceMethods = ['first' => ['parse', 'init', 'load', 'render', 'unload'],
                                 'after' => ['assign', 'load', 'process', 'unload']];
-  
+                                
   public function __construct($template = null, Cache\Cache $cache = null)
   {
-    $this->a = \Aleph::getInstance();
-    $this->request = Net\Request::getInstance();
-    $this->ajax = Web\Ajax::getInstance();
-    $this->cache = $cache ?: (self::$defaultCache instanceof Cache\Cache ? self::$defaultCache : $this->a->getCache());
-    $this->template = $template;
-    $this->setPageID($template);
+    $this->cache = $cache ?: (self::$defaultCache instanceof Cache\Cache ? self::$defaultCache : \Aleph::getInstance()->getCache());
+    $this->view = new POM\View(md5(get_class($this) . $template . \Aleph::getSiteUniqueID()), $template);
   }
 
   /**
@@ -121,12 +95,12 @@ class Page implements IPage
    */
   public function getPageID()
   {
-    return $this->pageID;
+    return $this->view->UID;
   }
   
   public function setPageID($UID)
   {
-    $this->pageID = md5(get_class($this) . $UID . \Aleph::getSiteUniqueID());
+    $this->view->UID = $UID;
   }
   
   public function getSequenceMethods($first = true)
@@ -136,7 +110,7 @@ class Page implements IPage
   
   public function get($id, $isRecursion = true)
   {
-    return $this->body->get($id, $isRecursion);
+    return $this->view->get($id, $isRecursion);
   }
 
   /**
@@ -152,17 +126,17 @@ class Page implements IPage
   
   public function init()
   {
-    $this->body->init();
+    $this->view->init();
   }
 
   public function load()
   {
-    $this->body->load();
+    $this->view->load();
   }
   
   public function unload()
   {
-    $this->body->unload();
+    $this->view->unload();
   }
 
   /**
@@ -172,17 +146,18 @@ class Page implements IPage
    */
   public function parse()
   {
+    $this->view->parse();
+    exit;
     if (empty($this->a['pageTemplateCacheEnable']) || POM\Control::vsExpired(true))
     {
-      $this->body = new POM\Body($this->pageID);
-      $this->body->parse($this->template);
-      POM\Control::vsSet($this->body, true, true);
+      $this->view->parse();
+      POM\Control::vsSet($this->view, true, true);
       if (!empty($this->a['pageTemplateCacheEnable'])) POM\Control::vsPush(true);
     }
     else
     {
       POM\Control::vsPull(true);
-      $this->body = POM\Control::vsGet($this->pageID);
+      $this->view = POM\Control::vsGet($this->pageID);
     }
   }
 
@@ -196,15 +171,15 @@ class Page implements IPage
     }
     POM\Control::vsPull();
     POM\Control::vsMerge(empty($this->fv['ajax-vs']) ? [] : json_decode((string)$this->fv['ajax-vs'], true));
-    $this->body = POM\Control::vsGet($this->pageID);
+    $this->view = POM\Control::vsGet($this->pageID);
   }
 
   public function process()
   {
     $this->ajax->process($this->ajaxPermissions);
-    POM\Control::vsCompare();
+    $this->view->vsCompare();
     $this->ajax->perform();
-    POM\Control::vsPush();
+    $this->view->pushViewState();
   }
 
   /**
@@ -214,9 +189,9 @@ class Page implements IPage
    */
   public function render()
   {
-    $html = $this->body->render();
-    POM\Control::vsPush();
-    if ((int)$this->expire > 0) $this->cache->set($this->pageID, $html, $this->expire, '--pages');
+    $html = $this->view->render();
+    if ((int)$this->expire > 0) $this->cache->set($this->view->UID, $html, $this->expire, 'pages');
+    $this->view->pushViewState();
     echo $html;
   }
 }

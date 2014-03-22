@@ -38,8 +38,8 @@ interface IDelegate
    * Constructor. The only argument of it is string in Aleph framework format.
    * The following formats are possible:
    * 'function' - invokes a global function with name 'function'.
-   * '->method' - invokes a method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object. 
-   * '::method' - invokes a static method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object.
+   * '->method' - invokes a method 'method' of Aleph\MVC\Page::$current object (if defined) or Aleph object. 
+   * '::method' - invokes a static method 'method' of Aleph\MVC\Page::$current object (if defined) or Aleph object.
    * 'class::method' - invokes a static method 'method' of a class 'class'.
    * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
    * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -238,8 +238,8 @@ class Delegate implements IDelegate
    * Constructor. The only argument of it is string in Aleph framework format.
    * The following formats are possible:
    * 'function' - invokes a global function with name 'function'.
-   * '->method' - invokes a method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object. 
-   * '::method' - invokes a static method 'method' of Aleph\MVC\Page::$page object (if defined) or Aleph object.
+   * '->method' - invokes a method 'method' of Aleph\MVC\Page::$current object (if defined) or Aleph object. 
+   * '::method' - invokes a static method 'method' of Aleph\MVC\Page::$current object (if defined) or Aleph object.
    * 'class::method' - invokes a static method 'method' of a class 'class'.
    * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
    * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -300,7 +300,7 @@ class Delegate implements IDelegate
       else
       {
         $this->type = 'class';
-        $this->class = $matches[1] ?: (MVC\Page::$page instanceof MVC\IPage ? get_class(MVC\Page::$page) : 'Aleph');
+        $this->class = $matches[1] ?: (MVC\Page::$current instanceof MVC\IPage ? get_class(MVC\Page::$current) : 'Aleph');
         if ($this->class[0] == '\\') $this->class = ltrim($this->class, '\\');
         $this->numargs = (int)$matches[3];
         $this->static = ($matches[4] == '::');
@@ -355,7 +355,7 @@ class Delegate implements IDelegate
     if ($this->type == 'function' || $this->type == 'closure') return call_user_func_array($this->method, $args);
     if ($this->type == 'control')
     {
-      if (($class = MVC\Page::$page->get($this->cid)) === false) throw new Exception($this, 'ERR_DELEGATE_2', $this->cid);
+      if (($class = MVC\Page::$current->get($this->cid)) === false) throw new Exception($this, 'ERR_DELEGATE_2', $this->cid);
       if ($this->method == '__construct') return $class;
       return call_user_func_array([$class, $this->method], $args);
     }
@@ -364,7 +364,7 @@ class Delegate implements IDelegate
       if ($this->static) return call_user_func_array([$this->class, $this->method], $args);
       if (is_object($this->class)) $class = $this->class;
       else if ($this->class == 'Aleph') $class = \Aleph::getInstance();
-      else if (MVC\Page::$page instanceof MVC\IPage && $this->class == get_class(MVC\Page::$page)) $class = MVC\Page::$page;
+      else if (MVC\Page::$current instanceof MVC\IPage && $this->class == get_class(MVC\Page::$current)) $class = MVC\Page::$current;
       else $class = $this->getClassObject($args);
       if ($this->method == '__construct') return $class;
       return call_user_func_array([$class, $this->method], $args);
@@ -421,7 +421,7 @@ class Delegate implements IDelegate
   {
     if ($this->type == 'closure') return true;
     if ($this->type == 'function') return function_exists($this->method);
-    if ($this->type == 'control') return MVC\Page::$page->get($this->cid) !== false;
+    if ($this->type == 'control') return MVC\Page::$current->get($this->cid) !== false;
     $static = $this->static;
     $methodExists = function($class, $method) use ($static)
     {
@@ -518,7 +518,7 @@ class Delegate implements IDelegate
   public function getClassObject(array $args = null)
   {
     if (empty($this->class)) return;
-    if ($this->type == 'control') return MVC\Page::$page->get($this->cid);
+    if ($this->type == 'control') return MVC\Page::$current->get($this->cid);
     $class = new \ReflectionClass($this->class);
     if ($this->numargs == 0) return $class->newInstance();
     return $class->newInstanceArgs(array_splice($args, 0, $this->numargs));

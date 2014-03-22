@@ -19,6 +19,7 @@ function test_template()
   if ($tpl->render() !== '<template attr1="2" attr2="1">test</template>') return 'Processing of simple templates doesn\'t work.';
   // Checks processing of nested templates.
   $tpl->tpl = new Core\Template($file);
+  $tpl->cacheGroup = null;
   if ($tpl->render() !== '<template attr1="2" attr2="1"><template attr1="1" attr2="1">test</template></template>') return 'Processing of nested templates doesn\'t work.';
   // Checks caching of templates.
   $cache = new Cache\File();
@@ -30,9 +31,11 @@ function test_template()
   $tpl3 = 'Template #1: 2 | Template #2: 1 | test';
   Core\Template::setGlobals([]);
   $tpl = new Core\Template(__DIR__ . '/_resources/cached_template.tpl', 4, $key1, $cache);
+  $tpl->cacheGroup = null;
   $tpl->number = 1;
   $tpl->var = 1;
   $tpl->tpl = new Core\Template(__DIR__ . '/_resources/cached_template.tpl', 2, $key2, $cache);
+  $tpl->tpl->cacheGroup = null;
   $tpl->tpl->number = 2;
   $tpl->tpl->var = 2;
   $tpl->tpl->tpl = 'test';

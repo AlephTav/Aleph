@@ -32,7 +32,7 @@ use Aleph\Core;
  * @package aleph.cache
  * @abstract
  */
-abstract class Cache implements \ArrayAccess, \Countable
+abstract class Cache implements \Countable
 {
   /**
    * Error message templates.
@@ -46,14 +46,6 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @access private
    */
   private $vaultKey = null;
-  
-  /**
-   * If this property equals TRUE saveKey and removeKey methods cannot be invoked.
-   * 
-   * @var boolean $lock
-   * @access private
-   */
-  private $lock = false;
   
   /**
    * The vault lifetime. Defined as 1 year by default.
@@ -100,6 +92,8 @@ abstract class Cache implements \ArrayAccess, \Countable
                          isset($params['timeout']) ? $params['timeout'] : null,
                          isset($params['password']) ? $params['password'] : null,
                          isset($params['database']) ? $params['database'] : 0);
+      case 'session':
+        return new Session();
       case 'file':
       default:
         $cache = new File();
@@ -185,10 +179,13 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @param float $probability - probability of garbage collector performing.
    * @access public
    */
-  public function gc($probability = 100){}
+  public function gc($probability = 100)
+  {
+    if ((float)$probability * 1000 >= rand(0, 99999)) $this->normalizeVault();
+  }
   
   /**
-   * Returns the number of groups in the cache.
+   * Returns the number of keys in the cache.
    *
    * @return integer
    * @access public
@@ -196,113 +193,10 @@ abstract class Cache implements \ArrayAccess, \Countable
   public function count()
   {
     $vault = $this->getVault();
-    return is_array($vault) ? count($vault) - 1 : 0;
-  }
-  
-  /**
-   * Checks whether a data item exists.
-   *
-   * @param string $key - a data key to check for.
-   * @return boolean
-   * @access public
-   */
-  public function offsetExists($key)
-  {
-    return ($this->isExpired($key) === false);
-  }
-  
-  /**
-   * Returns the previously conserved data from cache.
-   *
-   * @param string $key - a data key.
-   * @return mixed
-   * @access public
-   */
-  public function offsetGet($key)
-  {
-    return $this->get($key);
-  }
-
-  /**
-   * Conserves some data in cache. If the method is firstly invoked the cache lifetime value equals the value of the property "vaultLifeTime".
-   *
-   * @param string $key - a data key.
-   * @param mixed $content
-   * @access public
-   */
-  public function offsetSet($key, $content)
-  {
-    $vault = $this->getVault();
-    $hash = md5($key);
-    if (isset($vault[$hash]))
-    {
-      $expire = $vault[$hash][1];
-      $group = $vault[$hash][2];
-    }
-    else
-    {
-      $expire = $this->vaultLifeTime;
-      $group = '';
-    }
-    $this->set($key, $content, $expire, $group);
-  }
-
-  /**
-   * Removes a data item from cache.
-   *
-   * @param string $key - a data key.
-   * @access public
-   */
-  public function offsetUnset($key)
-  {
-    $this->remove($key);
-  }
-  
-  /**
-   * Returns the previously conserved data from cache.
-   *
-   * @param string $key - a data key.
-   * @return mixed
-   * @access public
-   */
-  public function __get($key)
-  {
-    return $this[$key];
-  }
-  
-  /**
-   * Conserves some data in cache. If the method is firstly invoked the cache lifetime value equals the value of the property "vaultLifeTime".
-   *
-   * @param string $key - a data key.
-   * @param mixed $content
-   * @access public
-   */
-  public function __set($key, $content)
-  {
-    $this[$key] = $content;
-  }
-  
-  /**
-   * Checks whether a data item exists.
-   *
-   * @param string $key - a data key to check for.
-   * @return boolean
-   * @access public
-   */
-  public function __isset($key)
-  {
-    return isset($this[$key]);
-  }
-  
-  /**
-   * Removes a data item from cache.
-   *
-   * @param string $key - a data key.
-   * @access public
-   */
-  public function __unset($key)
-  {
-    unset($this[$key]);
+    if (!is_array($vault)) return 0;
+    $count = 0;
+    foreach ($vault as $keys) $count += count($keys);
+    return $count;
   }
   
   /**
@@ -339,20 +233,43 @@ abstract class Cache implements \ArrayAccess, \Countable
   }
   
   /**
+   * Removes keys of the expired data from the key vault.
+   *
+   * @access public
+   */
+  public function normalizeVault()
+  {
+    $vault = $this->getVault();
+    if (!is_array($vault)) return;
+    foreach ($vault as $group => $keys)
+    {
+      foreach ($keys as $key => $expire)
+      {
+        if ($this->isExpired($key, $expire)) 
+        {
+          $this->remove($key);
+          unset($vault[$group][$key]);
+        }
+      }
+      if (count($vault[$group]) == 0) unset($vault[$group]);
+    }
+    $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
+  }
+  
+  /**
    * Returns cached data by their group.
    *
    * @param string $group - group of cached data.
    * @return array
    * @access public   
    */
-  public function getByGroup($group = '')
+  public function getByGroup($group)
   {
     $vault = $this->getVault();
-    if (!isset($vault['groups'][$group]) || !is_array($vault['groups'][$group])) return [];
+    if (empty($vault[$group]) || !is_array($vault[$group])) return [];
     $tmp = [];
-    foreach ($vault['groups'][$group] as $k => $foo)
+    foreach ($vault[$group] as $key => $expire)
     {
-      $key = $vault[$k][0];
       $tmp[$key] = $this->get($key);
     }
     return $tmp;
@@ -364,11 +281,13 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @param string $group - group of cached data.
    * @access public
    */
-  public function cleanByGroup($group = '')
+  public function cleanByGroup($group)
   {
     $vault = $this->getVault();
-    if (!isset($vault['groups'][$group]) || !is_array($vault['groups'][$group])) return;
-    foreach ($vault['groups'][$group] as $k => $foo) $this->remove($vault[$k][0]);
+    if (empty($vault[$group]) || !is_array($vault[$group])) return;
+    foreach ($vault[$group] as $key => $expire) $this->remove($key);
+    unset($vault[$group]);
+    $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
   }
   
   /**
@@ -379,38 +298,13 @@ abstract class Cache implements \ArrayAccess, \Countable
    * @param string $group - group of a key.
    * @access protected
    */
-  protected function saveKey($key, $expire, $group = '')
+  protected function saveKeyToVault($key, $expire, $group)
   {
-    if ($this->lock) return;
-    $this->lock = true;
-    $k = md5($key);
-    $vault = $this->getVault();
-    $vault['groups'][$group][$k] = 1;
-    $vault[$k] = [$key, abs((int)$expire), $group];
-    $this->set($this->vaultKey, $vault, $this->vaultLifeTime);
-    $this->lock = false;
-  }
-  
-  /**
-   * Removes the key from the key vault.
-   *
-   * @param string $hash - a previoulsy saved key of cached data.
-   * @access protected
-   */
-  protected function removeKey($key)
-  {
-    if ($this->lock) return;
-    $this->lock = true;
-    $k = md5($key);
-    $vault = $this->getVault();
-    if (isset($vault[$k]))
+    if ($group !== null)
     {
-      $group = $vault[$k][2];
-      unset($vault['groups'][$group][$k]);
-      if (count($vault['groups'][$group]) == 0) unset($vault['groups'][$group]);
-      unset($vault[$k]);
-      $this->set($this->vaultKey, $vault, $this->vaultLifeTime);
+      $vault = $this->getVault();
+      $vault[$group][$key] = $expire;
+      $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
     }
-    $this->lock = false;
   }
 }

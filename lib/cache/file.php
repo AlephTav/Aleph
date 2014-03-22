@@ -81,15 +81,24 @@ class File extends Cache
    * @param string $group - group of a data key.
    * @access public
    */  
-  public function set($key, $content, $expire, $group = '')
+  public function set($key, $content, $expire, $group = null)
   {          
     if (!$this->dir) $this->setDirectory();
     $expire = abs((int)$expire);
     $file = $this->dir . md5($key);
-    file_put_contents($file, serialize($content), LOCK_EX);
-    chmod($file, 0777);
-    touch($file, $expire + time());
-    $this->saveKey($key, $expire, $group);
+    $h = fopen($file, 'c');
+    flock($h, LOCK_EX);
+    ftruncate($h, 0);
+    fwrite($h, serialize($content));
+    fflush($h);
+    flock($h, LOCK_UN);
+    fclose($h);
+    $level = error_reporting(0);
+    @chmod($file, 0777);
+    @touch($file, $expire + time());
+    error_reporting($level);
+    clearstatcache();
+    $this->saveKeyToVault($key, $expire, $group);
   }
 
   /**
@@ -103,7 +112,29 @@ class File extends Cache
   {                    
     if (!$this->dir) $this->setDirectory();
     $file = $this->dir . md5($key);
-    if (is_file($file)) return unserialize(file_get_contents($file));
+    if (file_exists($file)) 
+    {
+      $level = error_reporting(0);
+      $h = @fopen($file, 'r');
+      if (!$h) 
+      {
+        error_reporting($level);
+        return;
+      }
+      flock($h, LOCK_SH);
+      if (0 === $size = fstat($h)['size'])
+      {
+        flock($h, LOCK_UN);
+        fclose($h);
+        error_reporting($level);
+        return;
+      }
+      $content = fread($h, $size);
+      flock($h, LOCK_UN);
+      fclose($h);
+      error_reporting($level);
+      return strlen($content) == 0 ? null : unserialize($content);
+    }
   }
 
   /**
@@ -117,15 +148,11 @@ class File extends Cache
   {                      
     if (!$this->dir) $this->setDirectory();
     $file = $this->dir . md5($key);
-    if (!is_file($file))
-    {
-      $this->removeKey($key);
-      return true;
-    }
-    if (filemtime($file) > time()) return false;
-    unlink($file);
-    $this->removeKey($key);
-    return true;
+    if (!file_exists($file)) return true;
+    $level = error_reporting(0);
+    $flag = @filemtime($file) <= time();
+    error_reporting($level);
+    return $flag;
   }
 
   /**
@@ -138,8 +165,13 @@ class File extends Cache
   {             
     if (!$this->dir) $this->setDirectory();
     $file = $this->dir . md5($key);
-    if (is_file($file)) unlink($file);
-    $this->removeKey($key);
+    if (file_exists($file))
+    {
+      $level = error_reporting(0);
+      @unlink($file);
+      error_reporting($level);
+      clearstatcache();
+    }
   }
   
   /**
@@ -150,12 +182,8 @@ class File extends Cache
   public function clean()
   {
     if (!$this->dir) $this->setDirectory();
-    foreach (scandir($this->dir) as $file)
-    {
-      if ($file == '.' || $file == '..') continue; 
-      $item = $this->dir . '/' . $file;
-      if (is_file($item)) unlink($item);
-    }
+    if (strtolower(substr(PHP_OS, 0, 3)) == 'win') exec('del /Q /F ' . escapeshellarg($this->dir));
+    else exec('find ' . escapeshellarg($this->dir) . ' -maxdepth 1 -type f -delete');
   }
    
   /**
@@ -168,16 +196,8 @@ class File extends Cache
   {
     if (!$this->dir) $this->setDirectory();
     if ((float)$probability * 1000 < rand(0, 99999)) return;
-    foreach (scandir($this->dir) as $item)
-    {
-      if ($item == '..' || $item == '.') continue;
-      $file = $this->dir . $item;
-      if (!is_file($file)) continue;
-      if (filemtime($file) < time())
-      {
-        unlink($file);
-        $this->removeKey($file);
-      }
-    }
+    if (strtolower(substr(PHP_OS, 0, 3)) == 'win') exec('forfiles /P ' . escapeshellarg(rtrim($this->dir, '/\\')) . ' /D -0 /C "cmd /c IF @ftime LEQ %TIME:~0,-3% del @file"');
+    else exec('find ' . escapeshellarg($this->dir) . ' -type f -mmin +0 -delete');
+    $this->normalizeVault();
   }
 }

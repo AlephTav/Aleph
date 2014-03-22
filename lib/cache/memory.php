@@ -124,7 +124,7 @@ class Memory extends Cache
    * @param string $group - group of a data key.
    * @access public
    */  
-  public function set($key, $content, $expire, $group = '')
+  public function set($key, $content, $expire, $group = null)
   {
     $expire = abs((int)$expire);
     $k = md5($key);
@@ -138,7 +138,7 @@ class Memory extends Cache
       }
       $this->mem->set($k, [$k => $n], $this->compress, $expire);
     }
-    $this->saveKey($key, $expire, $group);
+    $this->saveKeyToVault($key, $expire, $group);
   }
 
   /**
@@ -171,9 +171,7 @@ class Memory extends Cache
    */
   public function isExpired($key)
   {
-    $flag = ($this->mem->get(md5($key)) === false);
-    if ($flag) $this->removeKey($key);
-    return $flag;
+    return $this->mem->get(md5($key)) === false;
   }
 
   /**
@@ -194,7 +192,6 @@ class Memory extends Cache
       }
     }
     else $this->mem->delete($k);
-    $this->removeKey($key);
   }
 
   /**

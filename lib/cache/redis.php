@@ -126,12 +126,12 @@ class Redis extends Cache
    * @param string $group - group of a data key.
    * @access public
    */
-  public function set($key, $content, $expire, $group = '')
+  public function set($key, $content, $expire, $group = null)
   {
     $expire = abs((int)$expire);
     if ($expire == 0) $this->execute('SET', [$key, serialize($content)]);
     else $this->execute('SETEX', [$key, $expire, serialize($content)]);
-    $this->saveKey($key, $expire, $group);
+    $this->saveKeyToVault($key, $expire, $group);
   }
 
   /**
@@ -156,9 +156,7 @@ class Redis extends Cache
    */
   public function isExpired($key)
   {
-    $flag = !$this->execute('EXISTS', [$key]);
-    if ($flag) $this->removeKey($key);
-    return $flag;
+    return !$this->execute('EXISTS', [$key]);
   }
 
   /**
@@ -170,7 +168,6 @@ class Redis extends Cache
   public function remove($key)
   {
     $this->execute('DEL', [$key]);
-    $this->removeKey($key);
   }
 
   /**

@@ -72,11 +72,11 @@ class APC extends Cache
    * @param string $group - group of a data key.
    * @access public
    */  
-  public function set($key, $content, $expire, $group = '')
+  public function set($key, $content, $expire, $group = null)
   {
     $expire = abs((int)$expire);
     apc_store($key, $content, $expire);
-    $this->saveKey($key, $expire, $group);
+    $this->saveKeyToVault($key, $expire, $group);
   }
    
   /**
@@ -100,9 +100,7 @@ class APC extends Cache
    */
   public function isExpired($key)
   {                  
-    $flag = (apc_exists($key) === false);
-    if ($flag) $this->removeKey($key);
-    return $flag;
+    return !apc_exists($key);
   }
 
   /**
@@ -114,7 +112,6 @@ class APC extends Cache
   public function remove($key)
   {
     apc_delete($key);
-    $this->removeKey($key);
   }
    
   /**
