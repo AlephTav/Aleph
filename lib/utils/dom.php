@@ -69,7 +69,6 @@ class DOMDocumentEx extends \DOMDocument
    */
   public function loadHTML($source, $options = 0)
   {
-    if (!\Aleph::isErrorHandlingEnabled()) return parent::loadHTML($source);
     $enabled = \Aleph::isErrorHandlingEnabled();
     $level = \Aleph::errorHandling(false, E_ALL & ~E_NOTICE & ~E_WARNING);
     $charset = $this->encoding;
