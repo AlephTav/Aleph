@@ -33,7 +33,19 @@ use Aleph\Core;
  * @package aleph.cache
  */
 class Session extends Cache
-{  
+{
+  /**
+   * Checks whether the current type of cache is available or not.
+   *
+   * @return boolean
+   * @access public
+   * @static
+   */
+  public static function isAvailable()
+  {
+    return session_id() != '';
+  } 
+
   /**
    * Conserves some data identified by a key into cache.
    *
