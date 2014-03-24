@@ -422,30 +422,29 @@ final class Aleph implements \ArrayAccess
   
   /**
    * Enables and disables the error handling mode.
+   * It returns the previous error reporting level. 
    *
    * @param boolean $enable - if it equals TRUE then the debug mode is enabled and it is disabled otherwise.
    * @param integer $errorLevel - new error reporting level.
+   * @return integer
    * @access public
    * @static
    */
   public static function errorHandling($enable = true, $errorLevel = null)
   {
-    $enable = (bool)$enable;
-    if (self::$errHandling !== $enable)
+    self::$errHandling = (bool)$enable;
+    restore_error_handler();
+    restore_exception_handler();
+    $level = $errorLevel !== null ? error_reporting($errorLevel) : error_reporting();
+    if ($enable)
     {
-      self::$errHandling = $enable;
-      restore_error_handler();
-      restore_exception_handler();
-      if ($enable)
+      set_exception_handler([__CLASS__, 'exception']);
+      set_error_handler(function($errno, $errstr, $errfile, $errline)
       {
-        set_exception_handler([__CLASS__, 'exception']);
-        set_error_handler(function($errno, $errstr, $errfile, $errline)
-        {
-          self::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
-        }, $errorLevel ?: error_reporting());
-      }
+        self::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
+      }, error_reporting());
     }
-    if ($errorLevel !== null) error_reporting($errorLevel);
+    return $level;
   }
   
   /**

@@ -168,7 +168,7 @@ class Template implements \ArrayAccess
   public function isExpired()
   {
     if ((int)$this->cacheExpire <= 0) return true;
-    return $this->getCache()->isExpired(md5($this->template));
+    return $this->getCache()->isExpired($this->getCacheID());
   }
 
   /**
@@ -335,7 +335,7 @@ class Template implements \ArrayAccess
       return \Aleph::exe($tpl->getTemplate(), array_merge(Template::getGlobals(), $tpl->getVars()));
     };
     if ((int)$this->cacheExpire <= 0) return $render($this);
-    $hash = $this->cacheID !== null ? $this->cacheID : md5($this->template);
+    $hash = $this->getCacheID();
     $cache = $this->getCache();
     if ($cache->isExpired($hash))
     {
@@ -406,5 +406,16 @@ class Template implements \ArrayAccess
     {
       \Aleph::exception($e);
     }
+  }
+  
+  /**
+   * Returns template cache ID.
+   *
+   * @return mixed 
+   * @access protected
+   */
+  protected function getCacheID()
+  {
+    return $this->cacheID !== null ? $this->cacheID : md5($this->template);
   }
 }

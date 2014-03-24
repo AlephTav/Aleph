@@ -86,18 +86,12 @@ class File extends Cache
     if (!$this->dir) $this->setDirectory();
     $expire = abs((int)$expire);
     $file = $this->dir . md5($key);
-    $h = fopen($file, 'c');
-    flock($h, LOCK_EX);
-    ftruncate($h, 0);
-    fwrite($h, serialize($content));
-    fflush($h);
-    flock($h, LOCK_UN);
-    fclose($h);
-    $level = error_reporting(0);
-    @chmod($file, 0777);
-    @touch($file, $expire + time());
-    error_reporting($level);
-    clearstatcache();
+    file_put_contents($file, serialize($content), LOCK_EX);
+    $enabled = \Aleph::isErrorHandlingEnabled();
+    $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+    chmod($file, 0777);
+    touch($file, $expire + time());
+    \Aleph::errorHandling($enabled, $level);
     $this->saveKeyToVault($key, $expire, $group);
   }
 
@@ -114,26 +108,11 @@ class File extends Cache
     $file = $this->dir . md5($key);
     if (file_exists($file)) 
     {
-      $level = error_reporting(0);
-      $h = @fopen($file, 'r');
-      if (!$h) 
-      {
-        error_reporting($level);
-        return;
-      }
-      flock($h, LOCK_SH);
-      if (0 === $size = fstat($h)['size'])
-      {
-        flock($h, LOCK_UN);
-        fclose($h);
-        error_reporting($level);
-        return;
-      }
-      $content = fread($h, $size);
-      flock($h, LOCK_UN);
-      fclose($h);
-      error_reporting($level);
-      return strlen($content) == 0 ? null : unserialize($content);
+      $enabled = \Aleph::isErrorHandlingEnabled();
+      $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+      while ('' === $content = file_get_contents($file)) usleep(100);
+      \Aleph::errorHandling($enabled, $level);
+      return $content === false ? null : unserialize($content);
     }
   }
 
@@ -149,9 +128,10 @@ class File extends Cache
     if (!$this->dir) $this->setDirectory();
     $file = $this->dir . md5($key);
     if (!file_exists($file)) return true;
-    $level = error_reporting(0);
-    $flag = @filemtime($file) <= time();
-    error_reporting($level);
+    $enabled = \Aleph::isErrorHandlingEnabled();
+    $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+    $flag = filemtime($file) <= time();
+    \Aleph::errorHandling($enabled, $level);
     return $flag;
   }
 
@@ -167,10 +147,10 @@ class File extends Cache
     $file = $this->dir . md5($key);
     if (file_exists($file))
     {
-      $level = error_reporting(0);
-      @unlink($file);
-      error_reporting($level);
-      clearstatcache();
+      $enabled = \Aleph::isErrorHandlingEnabled();
+      $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+      unlink($file);
+      \Aleph::errorHandling($enabled, $level);
     }
   }
   

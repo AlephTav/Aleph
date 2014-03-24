@@ -198,9 +198,13 @@ class Process
   {
     if ($this->child) return true;
     if (!$this->isStarted()) return false;
-    if (self::isWindows()) exec('tasklist /FI "IMAGENAME EQ php.exe" | find /N "' . $this->pid . '"', $output);
-    else exec('kill -0 ' . $this->pid, $output);
-    return count($output) > 0;
+    if (self::isWindows()) 
+    {
+      exec('tasklist /FI "IMAGENAME EQ php.exe" | find /N "' . $this->pid . '"', $output);
+      return count($output) > 0;
+    }
+    exec('ps -p ' . $this->pid, $output);
+    return count($output) > 1;
   }
   
   /**

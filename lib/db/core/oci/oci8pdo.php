@@ -335,9 +335,13 @@ class OCI8Statement
   {
     if ($parameters) foreach ($parameters as $k => $v) $this->bindValue($k, $v);
     $errMode = $this->db->getAttribute(\PDO::ATTR_ERRMODE);
-    if ($errMode != \PDO::ERRMODE_WARNING) $level = error_reporting(E_ALL & ~E_WARNING);
+    if ($errMode != \PDO::ERRMODE_WARNING)
+    {
+      $enabled = \Aleph::isErrorHandlingEnabled();
+      $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+    }
     $res = oci_execute($this->st, $this->db->inTransaction() ? OCI_NO_AUTO_COMMIT : OCI_COMMIT_ON_SUCCESS);
-    if ($errMode != \PDO::ERRMODE_WARNING) error_reporting($level);
+    if ($errMode != \PDO::ERRMODE_WARNING) \Aleph::errorHandling($enabled, $level);
     if ($res === false && $errMode == \PDO::ERRMODE_EXCEPTION) throw new \Exception(oci_error($this->st)['message']);
     return $res;
   }
