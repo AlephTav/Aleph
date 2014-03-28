@@ -20,45 +20,51 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Web\UI\POM;
+namespace Aleph\Web\POM;
 
-use Aleph\Core,
-    Aleph\MVC,
-    Aleph\Web,
-    Aleph\Web\UI\Tags;
-
-class ValidatorRequired extends Validator
+class TextBox extends Control
 {
-  public function __construct($id, $message = null)
+  const ERR_TEXTBOX_1 = 'Property "type" can take only one of the following values: "text", "password" and "memo".';
+
+  protected $ctrl = 'textbox';
+  
+  protected $dataAttributes = ['default' => 1];
+
+  public function __construct($id, $value = null)
   {
-    parent::__construct('validatorrequired', $id, $message);
+    parent::__construct($id);
+    $this->properties['type'] = 'text';
+    $this->properties['value'] = $value;
   }
 
-  public function validate()
+  public function clean()
   {
-    switch ($this->properties['mode'])
-    {
-      case 'AND':
-        $flag = true;
-        foreach ($this->properties['controls'] as $id) $flag &= $this->validateControl($id);
-        break;
-      case 'OR':
-        $flag = false;
-        foreach ($this->properties['controls'] as $id) $flag |= $this->validateControl($id);
-        break;
-      case 'XOR':
-        $n = 0;
-        foreach ($this->properties['controls'] as $id) if ($this->validateControl($id)) $n++;
-        $flag = ($n == 1);
-        break;
-    }
-    $this->properties['isValid'] = $flag;
-    $this->doAction();
+    $this->properties['value'] = null;
     return $this;
   }
 
-  public function check($value)
+  public function assign($value)
   {
-    return (strlen($value) > 0);
+    $this->properties['value'] = $value;
+    return $this;
+  }
+
+  /*public function validate($mode = null)
+  {
+    return strlen($this->attributes['value']) > 0;
+  }*/
+
+  public function render()
+  {
+    if (!$this->properties['visible']) return $this->invisible();
+    switch ($this->properties['type'])
+    {
+      case 'text':
+      case 'password':
+        return '<input type="' . htmlspecialchars($this->properties['type']) . '"' . $this->renderAttributes() . ' value="' . htmlspecialchars($this->properties['value']) . '" />';
+      case 'memo':
+        return '<textarea' . $this->renderAttributes() . '>' . $this->properties['value'] . '</textarea>';
+    }
+    throw new Core\Exception($this, 'ERR_TEXTBOX_1');
   }
 }

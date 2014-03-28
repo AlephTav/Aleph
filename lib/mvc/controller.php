@@ -122,7 +122,7 @@ class Controller
    * @param string | Aleph\Net\URL $url - the URL string to route.
    * @access public
    */
-  public function execute(IPage $page = null, $methods = null, $url = null)
+  public function execute(Page $page = null, $methods = null, $url = null)
   {
     $a = \Aleph::getInstance();
     if ($page === null)
@@ -165,7 +165,7 @@ class Controller
       }
       else
       {
-        if (!($res['result'] instanceof IPage)) return $res['result'];
+        if (!($res['result'] instanceof Page)) return $res['result'];
         $page = $res['result'];
       }      
     }
@@ -182,7 +182,7 @@ class Controller
     }
     if ($a->getRequest()->method == 'GET' && !$a->getRequest()->isAjax)
     {
-      if ((int)$page->expire > 0 && !isset($page->cache[$page->getPageID()])) $a->getResponse()->stop(200, $page->cache[$page->getPageID()]);
+      if (!$page->isExpired()) $a->getResponse()->stop(200, $page->restore());
       foreach ($page->getSequenceMethods(true) as $method) $page->{$method}();
     }
     else

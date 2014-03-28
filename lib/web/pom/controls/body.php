@@ -20,120 +20,24 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Web\UI\POM;
+namespace Aleph\Web\POM;
 
 use Aleph\Core,
     Aleph\MVC,
-    Aleph\Web,
-    Aleph\Web\UI\Tags;
+    Aleph\Web;
 
 class Body extends Panel
 {
-  const ERR_BODY_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
-  const ERR_BODY_2 = '[{var}] with ID = "[{var}]" doesn\'t have "materpage" attribute.';
-
-  protected $title = array('title' => '', 'attributes' => array());
-  protected $meta = array();
-  protected $css = array();
-  protected $js = array();
+  //const ERR_BODY_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
+  //const ERR_BODY_2 = '[{var}] with ID = "[{var}]" doesn\'t have "materpage" attribute.';
   
-  public function __construct($id)
+  public function __construct($id, $template = null)
   {
-    parent::__construct('body', $id);
-    unset($this->attributes['data-id']);
-    unset($this->attributes['data-ctrl']);
-    unset($this->properties['tag']);
-    unset($this->properties['expire']);
-    $this->attributes['id'] = $id;
+    parent::__construct($id, $template);
+    $this->properties['tag'] = 'body';
   }
   
-  public function setTitle($title, array $attributes = null)
-  {
-    $this->title = array('title' => $title, 'attributes' => $attributes ?: $this->title['attributes']);
-  }
-  
-  public function getTitle($withAttributes = false)
-  {
-    if ($withAttributes) return $this->title;
-    return $this->title['title'];
-  }
-  
-  public function addMeta(array $attributes)
-  {
-    $this->meta[] = $attributes;
-  }
-  
-  public function setMeta($id, array $attributes)
-  {
-    $this->meta[$id] = $attributes;
-  }
-  
-  public function getMeta($id)
-  {
-    return isset($this->meta[$id]) ? $this->meta[$id] : false;
-  }
-  
-  public function removeMeta($id)
-  {
-    unset($this->meta[$id]);
-  }
-  
-  public function addCSS(array $attributes, $style = null)
-  {
-    $this->css[] = array('style' => $style, 'attributes' => $attributes);
-  }
-  
-  public function setCSS($id, array $attributes, $style = null)
-  {
-    $this->css[$id] = array('style' => $style, 'attributes' => $attributes); 
-  }
-  
-  public function getCSS($id)
-  {
-    return isset($this->css[$id]) ? $this->css[$id] : false;
-  }
-  
-  public function removeCSS($id)
-  {
-    unset($this->css[$id]);
-  }
-  
-  public function getALLCSS()
-  {
-    return $this->css;
-  }
-  
-  public function addJS(array $attributes, $script = null, $place = 'top')
-  {
-    $this->js[] = array('script' => $script, 'attributes' => $attributes, 'place' => $place);
-  }
-  
-  public function setJS($id, array $attributes, $script = null, $place = 'top')
-  {
-    $this->js[$id] = array('script' => $script, 'attributes' => $attributes, 'place' => $place); 
-  }
-  
-  public function getJS($id)
-  {
-    return isset($this->js[$id]) ? $this->js[$id] : false;
-  }
-  
-  public function removeJS($id)
-  {
-    unset($this->js[$id]);
-  }
-  
-  public function getAllJS()
-  {
-    return $this->js;
-  }
-  
-  public function assign($values)
-  {
-   
-  }
-  
-  public function parse($template)
+  /*public function parse($template)
   {
     static $stack, $parentID, $subjectID;
     $php = array();
@@ -414,5 +318,5 @@ class Body extends Panel
     $this->tpl->__body_entities = $bottom;
     $html = $this->tpl->render();
     return $html ? '<!DOCTYPE html>' . $html : '';
-  }
+  }*/
 }

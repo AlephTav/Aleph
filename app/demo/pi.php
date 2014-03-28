@@ -4,7 +4,7 @@ use Aleph\Utils;
 
 require_once(__DIR__ . '/../../connect.php');
 
-Utils\Process::operate();
+$process = Utils\Process::operate();
 
 class PI
 {
@@ -12,11 +12,11 @@ class PI
   {
     Utils\Process::$php = 'C:\xampp\php\php.exe';
     // Start processes.
-    $numproc = 50; $processes = $parts = [];
+    $numproc = 10; $processes = $parts = [];
     for ($i = 0; $i < $numproc; $i++)
     {
       $process = new Utils\Process('PI::calculatePart');
-      $process->start(['max' => mt_rand(1000000, 10000000)]);
+      $process->start(mt_rand(10000000, 100000000));
       $processes[] = $process;
     }
     // Wait until all the processes are done.
@@ -41,8 +41,8 @@ class PI
           // Cleans shared memory.
           $process->clean();
         }
+        usleep(100000);
       }
-      usleep(100000);
     }
     // Calculate PI number.
     echo 'PI = ' . self::calculate($parts);
@@ -56,21 +56,21 @@ class PI
       $target += $part['target'];
       $count += $part['count'];
     }
-    return 4 * $target / $count;
+    return $target / $count * 4;
   }
   
   public static function calculatePart(Utils\Process $process)
   {
-    $max = $process->data['max'];
+    $max = $process->data;
+    $randmax = mt_getrandmax();
     for ($i = $j = 0; $i < $max; $i++)
     {
-      $x = mt_rand() / mt_getrandmax();
-      $y = mt_rand() / mt_getrandmax();
-      if ($x * $x + $y * $y <= 1) $j++;
+      $x = mt_rand(); $y = mt_rand();
+      if ($x + $y <= $randmax || $x * $x + $y * $y <= $randmax * $randmax) $j++;
     }
     $process->write(['count' => $max, 'target' => $j]);
     exit;
   }
 }
 
-PI::start();
+if (!$process) PI::start();

@@ -1,26 +1,30 @@
 <?php
 
-namespace Aleph\Web\UI\POM;
+namespace Aleph\Web\POM;
+
+use Aleph\MVC;
 
 class Iterator implements \Iterator
 {
-  private $controls = array();
+  private $controls = [];
+  
+  private $view = null;
 
   public function __construct(array $controls)
   {
     $this->controls = $controls;
+    $this->view = MVC\Page::$current->view;
   }
 
   public function rewind()
   {
-    $obj = reset($this->controls);
-    return $obj instanceof Control ? $obj : Control::getByUniqueID($obj);
+    reset($this->controls);
   }
 
   public function current()
   {
     $obj = current($this->controls);
-    return $obj instanceof Control ? $obj : Control::getByUniqueID($obj);
+    return $obj instanceof Control ? $obj : $this->view->get($obj);
   }
 
   public function key()
@@ -30,8 +34,7 @@ class Iterator implements \Iterator
 
   public function next()
   {
-    $obj = next($this->controls);
-    return $obj instanceof Control ? $obj : Control::getByUniqueID($obj);
+    next($this->controls);
   }
 
   public function valid()
