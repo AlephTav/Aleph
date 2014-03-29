@@ -10,6 +10,8 @@ class View implements \ArrayAccess
 {
   const ERR_VIEW_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
   const ERR_VIEW_2 = "Property ID of element [{var}] is not defined or empty[{var}]\nLine: [{var}], column: [{var}].";
+  const ERR_VIEW_3 = "Attribute \"path\" of element \"template\"[{var}] is not defined or such path does not exist.\nLine: [{var}], column: [{var}].";
+  const ERR_VIEW_4 = "Path to the master template is not defined or incorrect.\nFile: [{var}]";
   const ERR_VIEW_5 = 'Page template should have only one element body containing all other web controls.';
   
   protected static $process = 0;
@@ -71,8 +73,8 @@ class View implements \ArrayAccess
     {
       if ($obj instanceof Panel) 
       {
-        $obj->tpl->setTemplate(self::decodePHPTags($obj->tpl->getTemplate(), $marks));
-        foreach ($obj as $ctrl) self::decodePHPTags($ctrl, $marks);
+        $obj->tpl->setTemplate(static::decodePHPTags($obj->tpl->getTemplate(), $marks));
+        foreach ($obj as $ctrl) static::decodePHPTags($ctrl, $marks);
       }
       $vs = $obj->getVS();
       unset($vs['attributes']['id']);
@@ -82,7 +84,7 @@ class View implements \ArrayAccess
     }
     else if (is_array($obj))
     {
-      foreach ($obj as &$xhtml) $xhtml = self::decodePHPTags($xhtml, $marks);
+      foreach ($obj as &$xhtml) $xhtml = static::decodePHPTags($xhtml, $marks);
       return $obj;
     }
     return strtr(str_replace('6cff047854f19ac2aa52aac51bf3af4a', '&', $obj), $marks);
@@ -91,7 +93,7 @@ class View implements \ArrayAccess
   public static function evolute($value, array $marks)
   {
     $config = \Aleph::getInstance()->getConfig();
-    $value = \Aleph::exe(self::decodePHPTags($value, $marks), ['config' => $config]);
+    $value = \Aleph::exe(static::decodePHPTags($value, $marks), ['config' => $config]);
     $php = isset($config['pom']['phpMark']) ? $config['pom']['phpMark'] : 'php::';
     if (substr($value, 0, strlen($php)) == $php) 
     {
@@ -104,38 +106,24 @@ class View implements \ArrayAccess
   
   public static function analyze($template, array $vars = null)
   {
-    $config = \Aleph::getInstance()['pom'];
-    $ppOpenTag = empty($config['ppOpenTag']) ? '<!--{' : $config['ppOpenTag'];
-    $ppCloseTag = empty($config['ppCloseTag']) ? '}-->' : $config['ppCloseTag'];
-    if (is_file($template))
-    {
-      $file = $template;
-      $xhtml = file_get_contents($template);
-    }
-    else
-    {
-      $file = false;
-      $xhtml = $template;
-    }
     $view = new static();
-    if (strpos($xhtml, $ppOpenTag) !== false)
-    {
-      $view->tpl->setTemplate(strtr(static::encodePHPTags($xhtml, $marks), [$ppOpenTag => '<?php ', $ppCloseTag => '?>']));
-      if ($vars) $view->tpl->setVars($vars);
-      $xhtml = $view->tpl->render();
-    }
-    else
-    {
-      $xhtml = static::encodePHPTags($xhtml, $marks);
-    }
-    $ctx = $view->parseTemplate($xhtml, $marks, $file);
-    return ['controls' => static::decodePHPTags($ctx['controls'], $ctx['marks']),
-            'dtd' => $view->getDTD(),
+    $ctx = $view->parseTemplate($view->prepareTemplate($template, $vars));
+    $res = ['dtd' => $view->getDTD(),
             'title' => $view->getTitle(true),
             'meta' => $view->getAllMeta(),
             'js' => $view->getAllJS(),
             'css' => $view->getAllCSS(),
             'html' => $ctx['html']];
+    if (static::inParsing())
+    {
+      $res['controls'] = $ctx['controls'];
+      $res['marks'] = $ctx['marks'];
+    }
+    else
+    {
+      $res['controls'] = static::decodePHPTags($ctx['controls'], $ctx['marks']);
+    }
+    return $res;
   }
 
   public function __construct($template = null)
@@ -317,29 +305,7 @@ class View implements \ArrayAccess
     if (!empty($config['cacheEnabled']) && !$this->isExpired(true)) $this->pull(true);
     else
     {
-      $ppOpenTag = empty($config['ppOpenTag']) ? '<!--{' : $config['ppOpenTag'];
-      $ppCloseTag = empty($config['ppCloseTag']) ? '}-->' : $config['ppCloseTag'];
-      if (is_file($template))
-      {
-        $file = $template;
-        $xhtml = file_get_contents($template);
-      }
-      else
-      {
-        $file = false;
-        $xhtml = $template;
-      }
-      if (strpos($xhtml, $ppOpenTag) !== false)
-      {
-        $this->tpl->setTemplate(strtr(static::encodePHPTags($xhtml, $marks), [$ppOpenTag => '<?php ', $ppCloseTag => '?>']));
-        $this->tpl->setVars($this->vars);
-        $xhtml = $this->tpl->render();
-      }
-      else
-      {
-        $xhtml = static::encodePHPTags($xhtml, $marks);
-      }
-      $ctx = $this->parseTemplate($xhtml, $marks, $file);
+      $ctx = $this->parseTemplate($this->prepareTemplate($template, $this->vars));
       $body = array_pop($ctx['controls']);
       if ($body)
       {
@@ -487,22 +453,22 @@ class View implements \ArrayAccess
   
   protected function merge(array $vs)
   {
-    if ($vs['timestamp'] <= self::$timestamp) return;
+    if ($vs['timestamp'] <= static::$timestamp) return;
     foreach ($vs['vs'] as $uniqueID => $cvs)
     {
-      if (empty(self::$vs[$uniqueID])) continue;
-      $params = self::$vs[$uniqueID]['parameters'];
+      if (empty(static::$vs[$uniqueID])) continue;
+      $params = static::$vs[$uniqueID]['parameters'];
       foreach ($cvs as $k => $v)
       {
         if (array_key_exists($k, $params[0])) $params[0][$k] = $v;
         else if (array_key_exists($k, $params[2])) $params[2][$k] = $v;
       }
-      self::$vs[$uniqueID]['parameters'] = $params;
+      static::$vs[$uniqueID]['parameters'] = $params;
        //  $value = $this->fv[$this->uniqueID][$vs['parameters'][0]['uniqueID']];
        //  if ($value === null || !$vs['extra']['assign']) continue;
        //  $this[$vs['parameters'][0]['uniqueID']] = foo(new $vs['parameters'][1]['ctrlClass']($vs['parameters'][1]['id']))->setParameters($vs)->assign($value);
     }
-    //print_r(self::$vs);
+    //print_r(static::$vs);
   }
   
   protected function compare()
@@ -510,35 +476,98 @@ class View implements \ArrayAccess
     $ajax = Web\Ajax::getInstance();
     $actions = $ajax->getActions();
     $ajax->setActions(array());
-    foreach (self::$controls as $uniqueID => $ctrl)
+    foreach (static::$controls as $uniqueID => $ctrl)
     {
-      if (($diff = $ctrl->compare(self::$vs[$uniqueID])) !== false) 
+      if (($diff = $ctrl->compare(static::$vs[$uniqueID])) !== false) 
       {
         $ctrl->refresh($diff);
-        self::$vs[$uniqueID] = $ctrl->getVS();
+        static::$vs[$uniqueID] = $ctrl->getVS();
       }
     }
     $ajax->setActions(array_merge($ajax->getActions(), $actions));
   }
   
-  protected function parseTemplate($xhtml, array $marks, $file)
+  protected function prepareTemplate($template, array $vars = null)
   {
     $config = \Aleph::getInstance()['pom'];
-    $ctx = ['file' => $file,
+    $ppOpenTag = empty($config['ppOpenTag']) ? '<!--{' : $config['ppOpenTag'];
+    $ppCloseTag = empty($config['ppCloseTag']) ? '}-->' : $config['ppCloseTag'];
+    $prefix = empty($config['prefix']) ? 'c:' : strtolower($config['prefix']) . ':';
+    if (is_file($template))
+    {
+      $file = $template;
+      $xhtml = file_get_contents($template);
+    }
+    else
+    {
+      $file = false;
+      $xhtml = $template;
+    }
+    while (strtolower(substr(ltrim($xhtml), 0, strlen($prefix) + 9)) == '<' . $prefix . 'template')
+    {
+      preg_match('/\A\s*<' . preg_quote($prefix) . 'template\s*placeholder\s*=\s*"([^"]*)"\s*>(.*)<\/' . preg_quote($prefix) . 'template>/i', $xhtml, $matches);
+      $master = \Aleph::exe($matches[2], ['config' => $config]);
+      if (!file_exists($master)) throw new Core\Exception($this, 'ERR_VIEW_4', $file);
+      $file = $master;
+      $xhtml = str_ireplace('<placeholder>' . $matches[1] . '</placeholder>', ltrim(substr($xhtml, strlen($matches[0]))), file_get_contents($master));
+    }
+    if (strpos($xhtml, $ppOpenTag) !== false)
+    {
+      $xhtml = new Core\Template(strtr(static::encodePHPTags($xhtml, $marks), [$ppOpenTag => '<?php ', $ppCloseTag => '?>']));
+      if ($vars) $xhtml->setVars($vars);
+      $xhtml = $xhtml->render();
+    }
+    else
+    {
+      $xhtml = static::encodePHPTags($xhtml, $marks);
+    }
+    return ['file' => $file,
             'xhtml' => $xhtml,
             'charset' => isset($config['charset']) ? $config['charset'] : 'utf-8',
-            'prefix' => strtolower(empty($config['prefix']) ? 'c:' : $config['prefix'] . ':'),
+            'prefix' => $prefix,
             'controls' => [],
             'marks' => $marks,
             'stack' => new \SplStack(),
             'insideHead' => false,
             'tag' => '',      
             'html' => ''];
+         
+  }
+  
+  protected function parseTemplate($ctx)
+  {
     $parseStart = function($parser, $tag, array $attributes) use(&$ctx)
     {
       $tag = $ctx['tag'] = strtolower($tag);
-      if (strpos($tag, $ctx['prefix']) === 0 || $tag == 'body')
+      $p = strpos($tag, $ctx['prefix']);
+      if ($p === 0)
       {
+        $tag = substr($tag, strlen($ctx['prefix']));
+        if ($tag == 'template')
+        {
+          $path = isset($attributes['path']) ? static::evolute($attributes['path'], $ctx['marks']) : null;
+          if (!file_exists($path)) 
+          {
+            $line = xml_get_current_line_number($parser);
+            $column = xml_get_current_column_number($parser);
+            throw new Core\Exception($this, 'ERR_VIEW_3', $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
+          }
+          $res = static::analyze($path, $this->vars);
+          $ctx['marks'] = array_merge($ctx['marks'], $res['marks']);
+          if (count($ctx['stack']) > 0)
+          {
+            $parent = $ctx['stack']->top();
+            $parent->tpl->setTemplate($parent->tpl->getTemplate() . $res['html']);
+            foreach ($res['controls'] as $control) $parent->add($control);
+          }
+          else
+          {
+            $ctx['html'] .= $res['html'];
+            $ctx['controls'][] = $ctx['stack']->pop();
+            $ctx['controls'] = array_merge($ctx['controls'], $res['controls']);
+          }
+          return;
+        }
         if ($tag == 'body')
         {
           $ctrl = new Body('body');
@@ -554,12 +583,15 @@ class View implements \ArrayAccess
             $column = xml_get_current_column_number($parser);
             throw new Core\Exception($this, 'ERR_VIEW_2', $tag, $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
           }
-          $ctrl = '\Aleph\Web\POM\\' . substr($tag, strlen($ctx['prefix']));
+          $ctrl = '\Aleph\Web\POM\\' . $tag;
           $ctrl = new $ctrl($attributes['id']);
         }
         if (($ctrl instanceof Panel) && isset($attributes['template'])) 
         {
-          $ctrl->parse(static::evolute($attributes['template'], $ctx['marks']), $this->vars);
+          $res = static::analyze(static::evolute($attributes['template'], $ctx['marks']), $this->vars);
+          $ctx['marks'] = array_merge($ctx['marks'], $res['marks']);
+          foreach ($res['controls'] as $control) $ctrl->add($control);
+          $ctrl->tpl->setTemplate($res['html']); 
           unset($attributes['template']);
         }
         foreach ($attributes as $k => $v) 
@@ -576,21 +608,21 @@ class View implements \ArrayAccess
           switch ($tag)
           {
             case 'title':
-              $this->setTitle('', self::decodePHPTags($attributes, $ctx['marks']));
+              $this->setTitle('', static::decodePHPTags($attributes, $ctx['marks']));
               return;
             case 'meta':
-              $attributes = self::decodePHPTags($attributes, $ctx['marks']);
+              $attributes = static::decodePHPTags($attributes, $ctx['marks']);
               if (isset($attributes['id'])) $this->setMeta($attributes['id'], $attributes);
               else $this->addMeta($attributes);
               return;
             case 'style':
             case 'link':
-              $attributes = self::decodePHPTags($attributes, $ctx['marks']);
+              $attributes = static::decodePHPTags($attributes, $ctx['marks']);
               if (isset($attributes['id'])) $this->setCSS($attributes['id'], $attributes);
               else $this->addCSS($attributes);
               return;
             case 'script':
-              $attributes = self::decodePHPTags($attributes, $ctx['marks']);
+              $attributes = static::decodePHPTags($attributes, $ctx['marks']);
               if (isset($attributes['id'])) $this->setJS($attributes['id'], $attributes);
               else $this->addJS($attributes);
               return;
@@ -620,9 +652,12 @@ class View implements \ArrayAccess
     };
     $parseEnd = function($parser, $tag) use(&$ctx)
     {
+      $ctx['tag'] = '';
       $tag = strtolower($tag);
-      if (strpos($tag, $ctx['prefix']) === 0 || $tag == 'body')
+      $p = strpos($tag, $ctx['prefix']);
+      if ($p === 0)
       {
+        if (substr($tag, strlen($ctx['prefix'])) == 'template') return;
         if (count($ctx['stack']) > 1)
         {
           $ctrl = $ctx['stack']->pop();
@@ -637,7 +672,7 @@ class View implements \ArrayAccess
           $ctx['controls'][] = $ctrl;
         }
       }
-      else
+      else if ($tag != 'template')
       {
         $html = '';
         if (empty(static::$emptyTags[$tag]))
@@ -653,7 +688,6 @@ class View implements \ArrayAccess
           else $ctrl['value'] .= $html; 
         }
       }
-      $ctx['tag'] = '';
     };
     $parseCData = function($parser, $content) use(&$ctx)
     {    
@@ -663,17 +697,17 @@ class View implements \ArrayAccess
         {
           case 'title':
             $title = $this->getTitle(true);
-            $this->setTitle($title['title'] . self::decodePHPTags($content, $ctx['marks']), $title['attributes']);
+            $this->setTitle($title['title'] . static::decodePHPTags($content, $ctx['marks']), $title['attributes']);
             break;
           case 'style':
           case 'link':
-            $content = self::decodePHPTags($content, $ctx['marks']);
+            $content = static::decodePHPTags($content, $ctx['marks']);
             $css = array_pop($this->css);
             if (isset($css['attributes']['id'])) $this->setCSS($css['attributes']['id'], $css['attributes'], $css['style'] . $content);
             else $this->addCSS($cs['attributes'], $css['style'] . $content);
             return;
           case 'script':
-            $content = self::decodePHPTags($content, $ctx['marks']);
+            $content = static::decodePHPTags($content, $ctx['marks']);
             $js = array_pop($this->js['top']);
             if (isset($js['attributes']['id'])) $this->setJS($js['attributes']['id'], $js['attributes'], $js['script'] . $content);
             else $this->addJS($js['attributes'], $js['script'] . $content);
