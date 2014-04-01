@@ -25,7 +25,7 @@ namespace Aleph\Cache;
 use Aleph\Core;
 
 /**
- * The class is intended for caching of different data using the memcached extension.
+ * The class is intended for caching of different data using the memcache extension.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.3

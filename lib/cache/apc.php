@@ -88,7 +88,8 @@ class APC extends Cache
    */
   public function get($key)
   {
-    return apc_fetch($key);
+    $content = apc_fetch($key, $success);
+    return $success ? $content : null;
   }
 
   /**

@@ -48,13 +48,20 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   
   public function getVS()
   {
-    return parent::getVS() + ['controls' => array_keys($this->controls), 'tpl' => $this->tpl];
+    return parent::getVS() + ['controls' => array_keys($this->controls),
+                              'tpl' => $this->tpl->getTemplate(), 
+                              'tplExpire' => $this->tpl->cacheExpire,
+                              'tplGroup' => $this->tpl->cacheGroup,
+                              'tplID' => $this->tpl->cacheID];
   }
   
   public function setVS(array $vs)
   {
     $this->controls = array_combine($vs['controls'], $vs['controls']);
-    $this->tpl = $vs['tpl'];
+    $this->tpl->setTemplate($vs['tpl']);
+    $this->tpl->cacheID = $vs['tplID'];
+    $this->tpl->cacheExpire = $vs['tplExpire'];
+    $this->tpl->cacheGroup = $vs['tplGroup'];
     parent::setVS($vs);
   }
   
@@ -89,11 +96,11 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     $this->controls[$ctrl->id] = $ctrl;
   }
   
-  public function detach($id, $time = 0)
+  public function detach($id)
   {
     if ($this->inDetach) return $this;
     $this->inDetach = true;
-    if ($id instanceof Control) $ctrl = $id->remove($time);
+    if ($id instanceof Control) $ctrl = $id->remove();
     else 
     {
       $ctrl = $this->get($id, false);
@@ -103,6 +110,12 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     unset($this->controls[$ctrl->id]);
     $this->inDetach = false;
     return $this;
+  }
+  
+  public function remove()
+  {
+    foreach ($this->controls as $ctrl) $this->detach($ctrl);
+    parent::remove();
   }
   
   public function get($id, $isRecursion = true)

@@ -300,7 +300,7 @@ class Delegate implements IDelegate
       else
       {
         $this->type = 'class';
-        $this->class = $matches[1] ?: (MVC\Page::$current instanceof MVC\IPage ? get_class(MVC\Page::$current) : 'Aleph');
+        $this->class = $matches[1] ?: (MVC\Page::$current instanceof MVC\Page ? get_class(MVC\Page::$current) : 'Aleph');
         if ($this->class[0] == '\\') $this->class = ltrim($this->class, '\\');
         $this->numargs = (int)$matches[3];
         $this->static = ($matches[4] == '::');
@@ -364,7 +364,7 @@ class Delegate implements IDelegate
       if ($this->static) return call_user_func_array([$this->class, $this->method], $args);
       if (is_object($this->class)) $class = $this->class;
       else if ($this->class == 'Aleph') $class = \Aleph::getInstance();
-      else if (MVC\Page::$current instanceof MVC\IPage && $this->class == get_class(MVC\Page::$current)) $class = MVC\Page::$current;
+      else if (MVC\Page::$current instanceof MVC\Page && $this->class == get_class(MVC\Page::$current)) $class = MVC\Page::$current;
       else $class = $this->getClassObject($args);
       if ($this->method == '__construct') return $class;
       return call_user_func_array([$class, $this->method], $args);

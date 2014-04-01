@@ -33,14 +33,12 @@ abstract class Control implements \ArrayAccess
   const ERR_CTRL_2 = 'Web control [{var}] (full ID: [{var}]) does not have property [{var}].';
   const ERR_CTRL_3 = 'You cannot change readonly attribute ID of [{var}] (full ID: [{var}]).';
   const ERR_CTRL_4 = 'Web control with such logical ID exists already within the panel [{var}] (full ID: [{var}]).';
-  const ERR_CTRL_5 = 'Web control [{var}] (logic ID: [{var}]) is not attached to the view.';
-  const ERR_CTRL_6 = 'You cannot remove control [{var}] because it is not attached to the view.';
   
   //const ERR_CTRL_4 = 'You cannot change parentUniqueID of [{var}] with fullID = "[{var}]". To change parentUniqueID of some web control you should use setParent or setParentByUniqueID methods of web control object.';
   //const ERR_CTRL_7 = 'Web control with uniqueID = "[{var}]" does not exist.';
   
-  protected $doRefresh = false;
-  protected $doRemove = false;
+  protected $isRefreshed = false;
+  protected $isRemoved = false;
   
   protected $parent = null;
   
@@ -83,9 +81,16 @@ abstract class Control implements \ArrayAccess
     $this->properties['visible'] = true;
   }
   
-  public function isAttached()
+  public function getFullID()
   {
-    return MVC\Page::$current->view->has($this);
+    $id = $this->properties['id'];
+    $ctrl = $this;
+    while ($parent = $ctrl->getParent())
+    {
+      $id = $parent['id'] . '.' . $id;
+      $ctrl = $parent;
+    }
+    return $id;
   }
   
   public function getVS()
@@ -162,7 +167,7 @@ abstract class Control implements \ArrayAccess
     $this[$property] = null;
   }
   
-  public function event($event, $delegate)
+  public function addEvent($event, $delegate)
   {
     
   }
@@ -213,6 +218,7 @@ abstract class Control implements \ArrayAccess
   public function addStyle($style, $value)
   {
     if ($this->hasStyle($style)) $this->setStyle($style, $value);
+    else
     {
       $style = trim($style);
       if (strlen($style) == 0) return $this;
@@ -251,51 +257,48 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
-  public function refresh($time = true)
+  public function refresh($flag = true)
   {
-    if ($time !== false) $time = ($time === true) ? 0 : (int)$time;
-    $this->doRefresh = $time;
+    $this->isRefreshed = (bool)$flag;
     return $this;
   }
   
-  public function remove($time = 0)
+  public function isRefreshed()
   {
-    if ($this->doRemove !== false) $this->doRemove = (int)$time;
-    else
+    return $this->isRefreshed;
+  }
+  
+  public function remove()
+  {
+    if (!$this->isRemoved)
     {
-      if (false === $parent = $this->getParent()) throw new Core\Exception($this, 'ERR_CTRL_6', $this->properties['id']);
-      $this->doRemove = (int)$time;
-      $parent->detach($this);
+      $this->isRemoved = true;
+      if (false !== $parent = $this->getParent()) $parent->detach($this);
     }
     return $this;
   }
   
-  public function compare(array $vs, array $exclusions = null)
+  public function isRemoved()
   {
-    if (!$this->properties['parentUniqueID']) return false;
-    $new = array($this->attributes, $this->properties, $this->events);
-    if ($this->doRefresh !== false) return $new;
-    $diff = array(array(), array(), array());
-    for ($i = 0; $i < 3; $i++)
-    {
-      foreach ($vs['parameters'][$i] as $k => $v) 
-      {
-        if ($v != $new[$i][$k]) $diff[$i][$k] = $new[$i][$k];
-      }
-    }
-    return ($diff[0] || $diff[1] || $diff[2]) ? $diff : false;
+    return $this->isRemoved;
   }
   
-  public function getFullID()
+  public function compare(array $vs)
   {
-    $id = $this->properties['id'];
-    $ctrl = $this;
-    while ($parent = $ctrl->getParent())
+    if ($this->isRefreshed || $vs['properties'] != $this->properties) return $this->render();
+    $tmp = array_diff_key($this->attributes, $vs['attributes']);
+    foreach ($vs['attributes'] as $attr => $value)
     {
-      $id = $parent['id'] . '.' . $id;
-      $ctrl = $parent;
+      if (!isset($this->attributes[$attr])) $tmp[$attr] = null;
+      else if ($value != $this->attributes[$attr]) $tmp[$attr] = $this->attributes[$attr];
     }
-    return $id;
+    if ($tmp)
+    {
+      $vs = $tmp; $tmp = [];
+      foreach ($vs as $attr => $value) $tmp[isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr] = $value;
+      return $tmp;
+    }
+    return false;
   }
   
   public function getParent()
@@ -307,15 +310,23 @@ abstract class Control implements \ArrayAccess
 
   public function setParent(Control $parent)
   {
-    //if (!$parent->isAttached()) throw new Core\Exception($this, 'ERR_CTRL_5', get_class($parent), $parent->getFullID());
     if (!$this->parent) $this->parent = $parent;
     else
     {
     
     }
-    $this->doRemove = false;
+    $this->isRemoved = false;
     return $this;
   }
+  
+  /*public function setParentByUniqueID($uniqueID, $id = null, $mode = 'top')
+  {
+    $parent = self::getByUniqueID($uniqueID);
+    if (!$parent) throw new \Exception('ERR_CTRL_7', $uniqueID);
+    //$this->remove();
+    //$parent->inject($this, $id, $mode);
+    return $this;
+  }*/
   
   public function __toString()
   {
@@ -328,32 +339,6 @@ abstract class Control implements \ArrayAccess
       \Aleph::exception($e);
     }
   }
-  
-  /*protected function refresh(array $diff = null, $selector = null)
-  {
-    $selector = $selector ?: '#' . $this->attributes['id'];
-    if (!$diff || $diff[1] || $diff[2]) $this->ajax->replace($selector, $this->render(), $this->doRefresh);
-    else
-    {
-      foreach ($diff[0] as $k => &$v) $v = $k . ': \'' . addslashes($v) . '\'';
-      $this->ajax->script('aleph.dom.attr(\'' . $selector . '\', {' . implode(',', $diff[0]) . '})');
-    }
-    return $this;
-  }*/
-  
-  /*public function setParent(Panel $parent, $id = null, $mode = 'top')
-  {
-    return $this->setParentByUniqueID($parent->uniqueID, $id, $mode);
-  }
-
-  public function setParentByUniqueID($uniqueID, $id = null, $mode = 'top')
-  {
-    $parent = self::getByUniqueID($uniqueID);
-    if (!$parent) throw new \Exception('ERR_CTRL_7', $uniqueID);
-    //$this->remove();
-    //$parent->inject($this, $id, $mode);
-    return $this;
-  }*/
   
   protected function renderAttributes()
   {

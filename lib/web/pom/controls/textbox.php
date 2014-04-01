@@ -37,18 +37,6 @@ class TextBox extends Control
     $this->properties['value'] = $value;
   }
 
-  public function clean()
-  {
-    $this->properties['value'] = null;
-    return $this;
-  }
-
-  public function assign($value)
-  {
-    $this->properties['value'] = $value;
-    return $this;
-  }
-
   /*public function validate($mode = null)
   {
     return strlen($this->attributes['value']) > 0;

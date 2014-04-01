@@ -4,6 +4,7 @@ namespace Aleph\Web\POM;
 
 use Aleph\Core,
     Aleph\MVC,
+    Aleph\Net,
     Aleph\Utils;
 
 class View implements \ArrayAccess
@@ -23,6 +24,8 @@ class View implements \ArrayAccess
   protected $vars = [];
   
   protected $controls = [];
+  
+  protected $actions = [];
   
   protected $dtd = '<!DOCTYPE html>';
   
@@ -261,6 +264,33 @@ class View implements \ArrayAccess
     return $this->js;
   }
   
+  public function action(/* $action, $param1, $param2, ..., $time = 0 */)
+  {
+    $args = func_get_args();
+    switch ($args[0])
+    {
+      case 'alert':
+        $this->actions[] = '$a.ajax.action(\'alert\', \'' .  $this->quote($args[1]) . '\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        break;
+      case 'script':
+        $this->actions[] = '$a.ajax.action(\'script\', \'' . $this->replaceBreakups(json_decode($args[1])) . '\', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        break;
+      default:
+        $this->actions[] = '$a.ajax.action(\'script\', \'' . $this->replaceBreakups(json_decode($args[0])) . '\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        break;
+    }
+  }
+  
+  public function attach(Control $ctrl)
+  {
+    
+  }
+
+  public function has($id)
+  {
+    return $this->get($id instanceof Control ? $id->id : $id) !== false;
+  }
+  
   public function get($id, $isRecursion = true, Control $context = null)
   {
     if (isset($this->controls[$id])) return $this->controls[$id];
@@ -295,6 +325,26 @@ class View implements \ArrayAccess
     {
       $this->get($vs['attributes']['id'])->{$method}();
     }
+  }
+  
+  public function assign($UID, array $data, $timestamp)
+  {
+    $this->UID = $UID;
+    if ($this->isExpired()) return false;
+    $this->pull();
+    $this->merge($data, $timestamp);
+    return true;
+  }
+  
+  public function process($data)
+  {
+    $this->compare();
+    $this->push();
+    $response = Net\Response::getInstance();
+    $response->setContentType('json', isset(\Aleph::getInstance()['pom']['charset']) ? \Aleph::getInstance()['pom']['charset'] : 'utf-8');
+    $response->cache(false);
+    $response->body = json_encode(['script' => implode(';', $this->actions), 'data' => $data]);
+    $response->send();
   }
   
   public function parse()
@@ -451,48 +501,63 @@ class View implements \ArrayAccess
     foreach ($this->controls as $ctrl) $commit($ctrl);
   }
   
-  protected function merge(array $vs)
+  protected function merge(array $data, $timestamp)
   {
-    if ($vs['timestamp'] <= static::$timestamp) return;
-    foreach ($vs['vs'] as $uniqueID => $cvs)
+    if ($timestamp > $this->ts) foreach ($data as $uniqueID => $info)
     {
-      if (empty(static::$vs[$uniqueID])) continue;
-      $params = static::$vs[$uniqueID]['parameters'];
-      foreach ($cvs as $k => $v)
+      if (empty($this->vs[$uniqueID])) continue;
+      if (isset($info['value']))
       {
-        if (array_key_exists($k, $params[0])) $params[0][$k] = $v;
-        else if (array_key_exists($k, $params[2])) $params[2][$k] = $v;
+        if (array_key_exists('value', $this->vs[$uniqueID]['properties']))
+        {
+          $this->vs[$uniqueID]['properties']['value'] = $info['value'];
+          unset($info['value']);
+        }
       }
-      static::$vs[$uniqueID]['parameters'] = $params;
-       //  $value = $this->fv[$this->uniqueID][$vs['parameters'][0]['uniqueID']];
-       //  if ($value === null || !$vs['extra']['assign']) continue;
-       //  $this[$vs['parameters'][0]['uniqueID']] = foo(new $vs['parameters'][1]['ctrlClass']($vs['parameters'][1]['id']))->setParameters($vs)->assign($value);
+      $this->vs[$uniqueID]['attributes'] = array_merge($this->vs[$uniqueID]['attributes'], $info);
     }
-    //print_r(static::$vs);
   }
   
   protected function compare()
   {
-    $ajax = Web\Ajax::getInstance();
-    $actions = $ajax->getActions();
-    $ajax->setActions(array());
-    foreach (static::$controls as $uniqueID => $ctrl)
+    $tmp = [];
+    foreach ($this->controls as $uniqueID => $ctrl)
     {
-      if (($diff = $ctrl->compare(static::$vs[$uniqueID])) !== false) 
+      if ($ctrl->isRemoved())
       {
-        $ctrl->refresh($diff);
-        static::$vs[$uniqueID] = $ctrl->getVS();
+        $tmp[] = '$a.pom.remove(\'' . $uniqueID . '\');';
+        unset($this->vs[$uniqueID]);
+        continue;
       }
+      if (empty($this->vs[$uniqueID]))
+      {
+        // new control
+        $tmp[] = '$a.pom.add(\'' . $uniqueID . '\', \'' . $this->replaceBreakups($ctrl->render()) . '\')';
+      }
+      else if (false !== $diff = $ctrl->compare($this->vs[$uniqueID]))
+      {
+        if (is_array($diff)) 
+        {
+          foreach ($diff as $attr => &$value) $value = "'" . $attr . "': '" . $this->replaceBreakups($value) . "'";
+          $diff = '{' . implode(',', $diff) . '}';
+        }
+        else
+        {
+          $diff = "'" . $this->replaceBreakups($diff) . "'";
+        }
+        $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . $diff . ')';
+      }
+      $this->vs[$uniqueID] = $ctrl->getVS();
     }
-    $ajax->setActions(array_merge($ajax->getActions(), $actions));
-  }
+    if ($tmp) array_unshift($this->actions, implode(';', $tmp));
+  }  
   
   protected function prepareTemplate($template, array $vars = null)
   {
     $config = \Aleph::getInstance()['pom'];
+    $prefix = empty($config['prefix']) ? 'c:' : strtolower($config['prefix']) . ':';
     $ppOpenTag = empty($config['ppOpenTag']) ? '<!--{' : $config['ppOpenTag'];
     $ppCloseTag = empty($config['ppCloseTag']) ? '}-->' : $config['ppCloseTag'];
-    $prefix = empty($config['prefix']) ? 'c:' : strtolower($config['prefix']) . ':';
     if (is_file($template))
     {
       $file = $template;
@@ -503,13 +568,15 @@ class View implements \ArrayAccess
       $file = false;
       $xhtml = $template;
     }
+    $placeholders = [];
     while (strtolower(substr(ltrim($xhtml), 0, strlen($prefix) + 9)) == '<' . $prefix . 'template')
     {
       preg_match('/\A\s*<' . preg_quote($prefix) . 'template\s*placeholder\s*=\s*"([^"]*)"\s*>(.*)<\/' . preg_quote($prefix) . 'template>/i', $xhtml, $matches);
       $master = \Aleph::exe($matches[2], ['config' => $config]);
       if (!file_exists($master)) throw new Core\Exception($this, 'ERR_VIEW_4', $file);
       $file = $master;
-      $xhtml = str_ireplace('<placeholder>' . $matches[1] . '</placeholder>', ltrim(substr($xhtml, strlen($matches[0]))), file_get_contents($master));
+      $xhtml = file_get_contents($master);
+      $placeholders[\Aleph::exe($matches[1], ['config' => $config])] = ltrim(substr($xhtml, strlen($matches[0])));
     }
     if (strpos($xhtml, $ppOpenTag) !== false)
     {
@@ -526,6 +593,7 @@ class View implements \ArrayAccess
             'charset' => isset($config['charset']) ? $config['charset'] : 'utf-8',
             'prefix' => $prefix,
             'controls' => [],
+            'placeholders' => $placeholders,
             'marks' => $marks,
             'stack' => new \SplStack(),
             'insideHead' => false,
@@ -534,7 +602,7 @@ class View implements \ArrayAccess
          
   }
   
-  protected function parseTemplate($ctx)
+  protected function parseTemplate(array $ctx)
   {
     $parseStart = function($parser, $tag, array $attributes) use(&$ctx)
     {
@@ -543,14 +611,24 @@ class View implements \ArrayAccess
       if ($p === 0)
       {
         $tag = substr($tag, strlen($ctx['prefix']));
-        if ($tag == 'template')
+        if ($tag == 'template' || $tag == 'placeholder')
         {
-          $path = isset($attributes['path']) ? static::evolute($attributes['path'], $ctx['marks']) : null;
-          if (!file_exists($path)) 
+          if ($tag == 'placeholder')
           {
-            $line = xml_get_current_line_number($parser);
-            $column = xml_get_current_column_number($parser);
-            throw new Core\Exception($this, 'ERR_VIEW_3', $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
+            if (empty($attributes['id'])) return;
+            $id = static::evolute($attributes['id'], $ctx['marks']);
+            if (empty($ctx['placeholders'][$id])) return;
+            $path = $ctx['placeholders'][$id];
+          }
+          else
+          {
+            $path = isset($attributes['path']) ? static::evolute($attributes['path'], $ctx['marks']) : null;
+            if (!file_exists($path)) 
+            {
+              $line = xml_get_current_line_number($parser);
+              $column = xml_get_current_column_number($parser);
+              throw new Core\Exception($this, 'ERR_VIEW_3', $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
+            }
           }
           $res = static::analyze($path, $this->vars);
           $ctx['marks'] = array_merge($ctx['marks'], $res['marks']);
@@ -597,7 +675,8 @@ class View implements \ArrayAccess
         foreach ($attributes as $k => $v) 
         {
           if (strtolower(substr($k, 0, 5)) == 'attr-') $ctrl->{substr($k, 5)} = $v;
-          else $ctrl[$k] = $v;
+          else if (isset($ctrl[$k])) $ctrl[$k] = $v;
+          else $ctrl->{$k} = $v;
         }
         $ctx['stack']->push($ctrl);
       }
@@ -657,7 +736,8 @@ class View implements \ArrayAccess
       $p = strpos($tag, $ctx['prefix']);
       if ($p === 0)
       {
-        if (substr($tag, strlen($ctx['prefix'])) == 'template') return;
+        $tag = substr($tag, strlen($ctx['prefix']));
+        if ($tag == 'template' || $tag == 'placeholder') return;
         if (count($ctx['stack']) > 1)
         {
           $ctrl = $ctx['stack']->pop();
@@ -672,7 +752,7 @@ class View implements \ArrayAccess
           $ctx['controls'][] = $ctrl;
         }
       }
-      else if ($tag != 'template')
+      else
       {
         $html = '';
         if (empty(static::$emptyTags[$tag]))
@@ -704,7 +784,7 @@ class View implements \ArrayAccess
             $content = static::decodePHPTags($content, $ctx['marks']);
             $css = array_pop($this->css);
             if (isset($css['attributes']['id'])) $this->setCSS($css['attributes']['id'], $css['attributes'], $css['style'] . $content);
-            else $this->addCSS($cs['attributes'], $css['style'] . $content);
+            else $this->addCSS($css['attributes'], $css['style'] . $content);
             return;
           case 'script':
             $content = static::decodePHPTags($content, $ctx['marks']);
@@ -816,5 +896,29 @@ class View implements \ArrayAccess
   private function getActualVS($obj)
   {
     return $obj instanceof Control ? $obj->getVS() : (isset($this->controls[$obj]) ? $this->controls[$obj]->getVS() : $this->vs[$obj]);
+  }
+  
+  /**
+   * Replaces breakup symbols in a string on their codes.
+   *
+   * @param string $str
+   * @return string
+   * @access private
+   */
+  private function replaceBreakups($str, $escapeQuote = true)
+  {
+    return strtr($str, $escapeQuote ? ["\r" => '&#0013;', "\n" => '&#0010;', "'" => "\'"] : ["\r" => '&#0013;', "\n" => '&#0010;']);
+  }
+
+  /**
+   * Returns a string with backslashes before breakup symbols, single quote and backslash. 
+   *
+   * @param  string $str
+   * @return string
+   * @access private
+   */
+  private function quote($str)
+  {
+    return strtr($str, ["\\" => "\\\\", "'" => "\'", "\r" => "\\r", "\n" => "\\n"]);
   }
 }

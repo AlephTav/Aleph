@@ -23,12 +23,13 @@
 namespace Aleph\MVC;
 
 use Aleph\Core,
-    Aleph\Cache,
-    Aleph\Web,
+    Aleph\Net,
     Aleph\Web\POM;
 
 class Page
 {
+  const ERR_PAGE_1 = 'Method [{var}] is not allowed to be invoked.';
+
   /**
    * Default cache of page classes.
    *
@@ -179,15 +180,12 @@ class Page
   
   public function assign()
   {
-    /*if (empty($this->fv['ajax-key']) || $this->fv['ajax-key'] != sha1($this->pageID)) throw new Core\Exception($this, 'ERR_PAGE_1');
-    if (POM\Control::vsExpired()) 
+    $data = Net\Request::getInstance()->data;
+    if (!$this->view->assign($data['ajax-key'], isset($data['ajax-vs']['vs']) ? $data['ajax-vs']['vs'] : [], $data['ajax-vs']['ts']))
     {
       if ($this->noSessionURL) \Aleph::go($this->noSessionURL);
       \Aleph::reload();
     }
-    POM\Control::vsPull();
-    POM\Control::vsMerge(empty($this->fv['ajax-vs']) ? [] : json_decode((string)$this->fv['ajax-vs'], true));
-    */
   }
 
   public function load()
@@ -209,10 +207,18 @@ class Page
   
   public function process()
   {
-    /*$this->ajax->process($this->ajaxPermissions);
-    $this->view->vsCompare();
-    $this->ajax->perform();
-    $this->view->push();*/
+    $data = Net\Request::getInstance()->data;
+    if (isset($data['ajax-method']))
+    {
+      $method = new Core\Delegate($data['ajax-method']);
+      if (!$method->in($this->ajaxPermissions)) throw new Core\Exception($this, 'ERR_PAGE_1', $method);
+      ob_start();
+      $response = $method->call(empty($data['ajax-args']) ? [] : $data['ajax-args']);
+      $output = trim(ob_get_contents());
+      ob_end_clean();
+      if (strlen($output)) $this->view->action('alert', $output);
+    }
+    $this->view->process($response);
   }
   
   public function unload()
