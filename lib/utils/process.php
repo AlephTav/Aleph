@@ -198,7 +198,7 @@ class Process
   {
     if ($this->child) return true;
     if (!$this->isStarted()) return false;
-    if (self::isWindows()) 
+    if (static::isWindows()) 
     {
       exec('tasklist /FI "IMAGENAME EQ php.exe" | find /N "' . $this->pid . '"', $output);
       return count($output) > 0;
@@ -258,13 +258,19 @@ class Process
     $this->clean();
     if ($data !== null) $this->write($data);
     $cmd = static::$php . ' ' . escapeshellarg($mark) . ' ' . md5($mark) . ' ' . $this->uid;
-    $res = proc_open($cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes, null, null, ['bypass_shell' => true]);
+    $res = proc_open('start /b ' . $cmd, [['pipe', 'r'], ['pipe', 'w'], ['pipe', 'w']], $pipes);
     if (!is_resource($res))
     {
       $this->clean();
       return false;
     }
     $this->pid = proc_get_status($res)['pid'];
+    if (static::isWindows())
+    {
+      $output = array_filter(explode(' ', trim(shell_exec('wmic process get parentprocessid,processid | find "' . $this->pid . '"'))));
+      $this->pid = end($output);
+    }
+    proc_close($res);
     return true;
   }
   
@@ -280,7 +286,7 @@ class Process
       $this->clean();
       exit;
     }
-    exec((self::isWindows() ? 'taskkill /F /PID ' : 'kill ') . $this->pid);
+    exec((static::isWindows() ? 'taskkill /F /PID ' : 'kill ') . $this->pid);
     $this->clean();
     $this->uid = $this->pid = null;
   }

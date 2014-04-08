@@ -836,7 +836,7 @@ class UploadedFile
    * @param integer $error - the upload error.
    * @access public
    */
-  public function __construct($path, $name, $type = null, $size = null, $error = null)
+  public function __construct($path, $name = null, $type = null, $size = null, $error = null)
   {
     if (is_array($path))
     {
