@@ -259,7 +259,7 @@ class DOMDocumentEx extends \DOMDocument
   public function HTMLToNode($html)
   {
     $html = mb_convert_encoding($html, 'HTML-ENTITIES', $this->encoding);
-    if (!preg_match('/\A<([^> ]*)/', $html, $tag)) return new \DOMText($html);
+    if (!preg_match('/\A<([^>? ]+)/', ltrim($html), $tag)) return new \DOMText($html);
     $tag = strtolower($tag[1]);
     $dom = new DOMDocumentEx($this->version, $this->encoding);
     $dom->loadHTML($html);
