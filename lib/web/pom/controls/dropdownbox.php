@@ -22,49 +22,60 @@
 
 namespace Aleph\Web\POM;
 
-class TextBox extends Control
+class DropDownBox extends Control
 {
-  const ERR_TEXTBOX_1 = 'Property "type" can take only one of the following values: "text", "password" and "memo".';
-
-  protected $ctrl = 'textbox';
+  protected $ctrl = 'dropdownbox';
   
-  protected $dataAttributes = ['default' => 1];
-
-  public function __construct($id, $value = '')
+  public function __construct($id, $value = null)
   {
     parent::__construct($id);
-    $this->properties['type'] = 'text';
     $this->properties['value'] = $value;
-  }
-  
-  public function offsetGet($property)
-  {
-    $value = parent::offsetGet($property);
-    if (strtolower($property) == 'value' && strlen($value) == 0 && isset($this->attributes['default'])) $value = $this->attributes['default'];
-    return $value;
+    $this->properties['caption'] = null;
+    $this->properties['options'] = [];
   }
   
   public function clean()
   {
-    $this->properties['value'] = isset($this->attributes['default']) ? $this->attributes['default'] : '';
+    $this->properties['value'] = '';
   }
 
   public function validate(Validator $validator)
   {
     return $validator->check($this['value']);
   }
-
+  
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    switch ($this->properties['type'])
+    $html = '<select' . $this->renderAttributes() . '>';
+    if (strlen($this->properties['caption'])) $html .= $this->getOptionHTML('', $this->properties['caption']);
+    foreach ($this->properties['options'] as $key => $value)
     {
-      case 'text':
-      case 'password':
-        return '<input type="' . htmlspecialchars($this->properties['type']) . '"' . $this->renderAttributes() . ' value="' . htmlspecialchars($this->properties['value']) . '" />';
-      case 'memo':
-        return '<textarea' . $this->renderAttributes() . '>' . $this->properties['value'] . '</textarea>';
+      if (is_array($value))
+      {
+        $html .= '<optgroup label="' . htmlspecialchars($key) . '">';
+        foreach ($value as $k => $v) $html .= $this->getOptionHTML($k, $v);
+        $html .= '</optgroup>';
+      }
+      else
+      {
+        $html .= $this->getOptionHTML($key, $value);
+      }
     }
-    throw new Core\Exception($this, 'ERR_TEXTBOX_1');
+    $html .= '</select>';
+    return $html;
+  }
+  
+  protected function getOptionHTML($value, $text)
+  {
+    if (is_array($this->properties['value'])) 
+    {
+      $s = in_array($value, $this->properties['value']) ? ' selected="selected"' : '';
+    }
+    else
+    {
+      $s = (string)$this->properties['value'] === (string)$value ? ' selected="selected"' : '';
+    }
+    return '<option value="' . htmlspecialchars($value) . '"' . $s . '>' . htmlspecialchars($text) . '</option>';
   }
 }

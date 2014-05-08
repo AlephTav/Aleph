@@ -27,10 +27,7 @@ use Aleph\Core,
     Aleph\Web;
 
 class Body extends Panel
-{
-  //const ERR_BODY_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
-  //const ERR_BODY_2 = '[{var}] with ID = "[{var}]" doesn\'t have "materpage" attribute.';
-  
+{  
   public function __construct($id, $template = null)
   {
     parent::__construct($id, $template);

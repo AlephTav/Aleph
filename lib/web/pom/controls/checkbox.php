@@ -22,49 +22,41 @@
 
 namespace Aleph\Web\POM;
 
-class TextBox extends Control
+class CheckBox extends Control
 {
-  const ERR_TEXTBOX_1 = 'Property "type" can take only one of the following values: "text", "password" and "memo".';
-
-  protected $ctrl = 'textbox';
+  protected $ctrl = 'checkbox';
   
-  protected $dataAttributes = ['default' => 1];
-
-  public function __construct($id, $value = '')
+  protected $baseAttributes = ['id' => 1, 'checked' => 1, 'disabled' => 1, 'required' => 1];
+  
+  public function __construct($id, $value = null)
   {
     parent::__construct($id);
-    $this->properties['type'] = 'text';
     $this->properties['value'] = $value;
-  }
-  
-  public function offsetGet($property)
-  {
-    $value = parent::offsetGet($property);
-    if (strtolower($property) == 'value' && strlen($value) == 0 && isset($this->attributes['default'])) $value = $this->attributes['default'];
-    return $value;
+    $this->properties['caption'] = null;
+    $this->properties['align'] = 'right';
+    $this->properties['tag'] = 'div';
   }
   
   public function clean()
   {
-    $this->properties['value'] = isset($this->attributes['default']) ? $this->attributes['default'] : '';
+    unset($this->attributes['checked']);
   }
 
   public function validate(Validator $validator)
   {
-    return $validator->check($this['value']);
+    if ($validator instanceof ValidatorRequired) return $validator->check(!empty($this->attributes['checked']));
+    return true;
   }
-
+  
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    switch ($this->properties['type'])
-    {
-      case 'text':
-      case 'password':
-        return '<input type="' . htmlspecialchars($this->properties['type']) . '"' . $this->renderAttributes() . ' value="' . htmlspecialchars($this->properties['value']) . '" />';
-      case 'memo':
-        return '<textarea' . $this->renderAttributes() . '>' . $this->properties['value'] . '</textarea>';
-    }
-    throw new Core\Exception($this, 'ERR_TEXTBOX_1');
+    $html = '<' . $this->properties['tag'] . ' id="container_' . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>';
+    if (strlen($this->properties['caption'])) $label = '<label for="' . $this->attributes['id'] . '">' . $this->properties['caption'] . '</label>';
+    if ($this->properties['align'] == 'left' && isset($label)) $html .= $label;
+    $html .= '<input type="checkbox"' . $this->renderAttributes() . ' />';
+    if ($this->properties['align'] != 'left' && isset($label)) $html .= $label;
+    $html .= '</' . $this->properties['tag'] . '>';
+    return $html;
   }
 }

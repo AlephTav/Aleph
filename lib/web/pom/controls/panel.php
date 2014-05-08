@@ -28,7 +28,7 @@ use Aleph\Core,
 
 class Panel extends Control implements \IteratorAggregate, \Countable
 {
-  const ERR_PANEL_1 = 'Web control [{var}] (logic ID: [{var}]) already exists in panel [{var}] (full ID: [{var}]).';
+  const ERR_PANEL_1 = 'Web control [{var}] with logic ID [{var}] already exists in panel [{var}] (full ID: [{var}]).';
   const ERR_PANEL_2 = 'Web control [{var}] does not exist in panel [{var}] (full ID: [{var}]).';
   
   public $tpl = null;
@@ -89,10 +89,10 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     $this->refresh();
   }
   
-  public function add(Control $ctrl)
+  public function add(Control $ctrl, $mode = null, $id = null)
   {
-    if (isset($this->controls[$ctrl->id]) || $this->get($ctrl['id'], false)) throw new Core\Exception($this, 'ERR_PANEL_1', get_class($ctrl), $ctrl['id'], get_class($this), $this->getFullID());
-    $ctrl->setParent($this);
+    if ($this->get($ctrl['id'], false)) throw new Core\Exception($this, 'ERR_PANEL_1', get_class($ctrl), $ctrl['id'], get_class($this), $this->getFullID());
+    $ctrl->setParent($this, $mode, $id);
     $this->controls[$ctrl->id] = $ctrl;
   }
   
@@ -108,6 +108,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
       $ctrl->remove($time);
     }
     unset($this->controls[$ctrl->id]);
+    $this->tpl->setTemplate(str_replace(View::getControlPlaceHolder($ctrl->id), '', $this->tpl->getTemplate()));
     $this->inDetach = false;
     return $this;
   }
@@ -116,6 +117,12 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   {
     foreach ($this->controls as $ctrl) $this->detach($ctrl);
     parent::remove();
+  }
+  
+  public function clean($isRecursion = true)
+  {
+    MVC\Page::$current->view->clean($this->attributes['id'], $isRecursion);
+    return $this;
   }
   
   public function get($id, $isRecursion = true)

@@ -1,6 +1,14 @@
 <?php
 
-namespace Aleph\Web\POM;
+namespace
+{
+  function ID($id)
+  {
+    return \Aleph\MVC\Page::$current->view->get($id)->id;
+  }
+}
+
+namespace Aleph\Web\POM {
 
 use Aleph\Core,
     Aleph\MVC,
@@ -127,6 +135,11 @@ class View implements \ArrayAccess
       $res['controls'] = static::decodePHPTags($ctx['controls'], $ctx['marks']);
     }
     return $res;
+  }
+  
+  public static function getControlPlaceHolder($uniqueID)
+  {
+    return '<?php echo $' . $uniqueID . '; ?>'; 
   }
 
   public function __construct($template = null)
@@ -270,7 +283,7 @@ class View implements \ArrayAccess
     switch ($args[0])
     {
       case 'alert':
-        $this->actions[] = '$a.ajax.action(\'alert\', \'' .  $this->quote($args[1]) . '\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $this->actions[] = '$a.ajax.action(\'alert\', \'' .  $this->quote($args[1]) . '\', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
         break;
       case 'script':
         $this->actions[] = '$a.ajax.action(\'script\', \'' . $this->replaceBreakups(json_decode($args[1])) . '\', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
@@ -283,12 +296,14 @@ class View implements \ArrayAccess
   
   public function attach(Control $ctrl)
   {
-    
+    $this->controls[$ctrl->id] = $ctrl;
+    if ($ctrl instanceof Panel) foreach($ctrl as $child) $this->attach($child);
   }
 
-  public function has($id)
+  public function isAttached($ctrl)
   {
-    return $this->get($id instanceof Control ? $id->id : $id) !== false;
+    $id = $ctrl instanceof Control ? $ctrl->id : $ctrl;
+    return isset($this->controls[$id]) || isset($this->vs[$id]);
   }
   
   public function get($id, $isRecursion = true, Control $context = null)
@@ -303,12 +318,39 @@ class View implements \ArrayAccess
       return $ctrl;
     }
     if ($context) $controls = $context->getControls();
-    else if (isset($this->controls[$this->UID])) $controls = $this->controls[$this->UID]->getControls();
-    else if (isset($this->vs[$this->UID])) $controls = $this->vs[$this->UID]['controls'];
+    else if (isset($this->controls[$this->UID])) 
+    {
+      if ($id == $this->controls[$this->UID]['id']) return $this->controls[$this->UID];
+      $controls = $this->controls[$this->UID]->getControls();
+    }
+    else if (isset($this->vs[$this->UID])) 
+    {
+      if ($id == $this->vs[$this->UID]['properties']['id']) return $this->get($this->UID, false);
+      $controls = $this->vs[$this->UID]['controls'];
+    }
     else return false;
     $ctrl = $this->searchControl(explode('.', $id), $controls, $isRecursion ? -1 : 0);
     if ($ctrl) $this->controls[$ctrl->id] = $ctrl;
     return $ctrl;
+  }
+  
+  public function clean($id, $isRecursion = true)
+  {
+    $ctrl = $this->get($id);
+    if (isset($ctrl['value'])) $ctrl->clean();
+    if ($ctrl instanceof Panel)
+    {
+      foreach ($ctrl->getControls() as $child)
+      {
+        $vs = $this->getActualVS($child);
+        if (isset($vs['properties']['value']))
+        {
+          if ($isRecursion && isset($vs['controls'])) $this->clean($vs['attributes']['id'], true);
+          else if ($child instanceof Control) $child->clean();
+          else $this->get($vs['attributes']['id'])->clean();
+        }
+      }
+    }
   }
   
   public function invoke($method, $obj = null)
@@ -360,7 +402,9 @@ class View implements \ArrayAccess
       if ($body)
       {
         if (!($body instanceof Body) || count($ctx['controls'])) throw new Core\Exception($this, 'ERR_VIEW_5');
-        $this->controls[$body->id] = static::decodePHPTags($body, $ctx['marks']);
+        $this->controls[$body->id] = $body;
+        $this->commit();
+        $this->controls = [$body->id => static::decodePHPTags($body, $ctx['marks'])];
         $this->commit();
         $this->controls = [];
       }
@@ -385,6 +429,14 @@ class View implements \ArrayAccess
   
   public function render()
   {
+    foreach ($this->controls as $uniqueID => $ctrl)
+    {
+      foreach ($ctrl->getEvents() as $eid => $event)
+      {
+        if ($event === false) $this->addJS([], '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')', false);
+        else $this->addJS([], '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (strlen($event['check']) ? ', ' . $event['check'] : '') .  ')', false);
+      }
+    }
     $sort = function($a, $b){return $a['order'] - $b['order'];};
     uasort($this->css, $sort);
     uasort($this->js['top'], $sort);
@@ -421,9 +473,9 @@ class View implements \ArrayAccess
     }
     if (count($this->js['bottom']))
     {
-      $js = '';
-      foreach ($this->js['bottom'] as $js) $js .= $js['script'];
-      $head .= '<script type="text/javascript">$(function(){' . $js . '});</script>';
+      $bottom = '';
+      foreach ($this->js['bottom'] as $js) $bottom .= rtrim($js['script'], ';') . ';';
+      if (strlen($bottom)) $head .= '<script type="text/javascript">$(function(){' . $bottom . '});</script>';
     }
     $this->tpl->__head_entities = $head;
     if (false !== $body = $this->get($this->UID)) $this->tpl->{$this->UID} = $body->render();
@@ -506,15 +558,14 @@ class View implements \ArrayAccess
     if ($timestamp > $this->ts) foreach ($data as $uniqueID => $info)
     {
       if (empty($this->vs[$uniqueID])) continue;
-      if (isset($info['value']))
+      if (isset($info['value']) && array_key_exists('value', $this->vs[$uniqueID]['properties']))
       {
-        if (array_key_exists('value', $this->vs[$uniqueID]['properties']))
-        {
-          $this->vs[$uniqueID]['properties']['value'] = $info['value'];
-          unset($info['value']);
-        }
+        $this->vs[$uniqueID]['properties']['value'] = $info['value'];
       }
-      $this->vs[$uniqueID]['attributes'] = array_merge($this->vs[$uniqueID]['attributes'], $info);
+      if (isset($info['attrs']))
+      {
+        $this->vs[$uniqueID]['attributes'] = array_merge($this->vs[$uniqueID]['attributes'], $info['attrs']);
+      }
     }
   }
   
@@ -529,23 +580,37 @@ class View implements \ArrayAccess
         unset($this->vs[$uniqueID]);
         continue;
       }
-      if (empty($this->vs[$uniqueID]))
+      $vs = $ctrl->getVS();
+      if ($ctrl->isCreated())
       {
-        // new control
-        $tmp[] = '$a.pom.add(\'' . $uniqueID . '\', \'' . $this->replaceBreakups($ctrl->render()) . '\')';
+        $tmp[] = '$a.pom.create(\'' . $uniqueID . '\', \'' . $this->replaceBreakups($ctrl->render()) . '\', \'' . $ctrl->getCreationInfo()['mode'] . '\', \'' . $ctrl->getCreationInfo()['id'] . '\')';
       }
       else if (false !== $diff = $ctrl->compare($this->vs[$uniqueID]))
       {
         if (is_array($diff)) 
         {
           foreach ($diff as $attr => &$value) $value = "'" . $attr . "': '" . $this->replaceBreakups($value) . "'";
+          unset($value);
           $diff = '{' . implode(',', $diff) . '}';
+          $removed = array_diff_key($this->vs[$uniqueID]['attributes'], $vs['attributes']);
+          if (count($removed) == 0) $removed = '[]';
+          else
+          {
+            foreach ($removed as $attr => &$value) $value = "'" . $attr . "'";
+            $removed = '[' . implode(', ', $removed) . ']';
+          }
         }
         else
         {
           $diff = "'" . $this->replaceBreakups($diff) . "'";
+          $removed = '[]';
         }
-        $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . $diff . ')';
+        $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . $diff . ', ' . $removed . ', ' . $this->replaceBreakups(json_encode(array_keys($ctrl->getBaseAttributes()))) . ')';
+      }
+      foreach ($ctrl->getEvents() as $eid => $event)
+      {
+        if ($event === false) $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
+        else $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (strlen($event['check']) ? ', ' . $event['check'] : '') .  ')';
       }
       $this->vs[$uniqueID] = $ctrl->getVS();
     }
@@ -718,7 +783,7 @@ class View implements \ArrayAccess
         if ($tag == 'head') 
         {
           $ctx['insideHead'] = true;
-          $html .= '<?php echo $__head_entities; ?>';
+          $html .= static::getControlPlaceHolder('__head_entities');
         }
         if (!count($ctx['stack'])) $ctx['html'] .= $html;
         else
@@ -742,13 +807,13 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->pop();
           $parent = $ctx['stack']->top();
-          $parent->tpl->setTemplate($parent->tpl->getTemplate() . '<?php echo $' . $ctrl->id . '; ?>');
+          $parent->tpl->setTemplate($parent->tpl->getTemplate() . static::getControlPlaceHolder($ctrl->id));
           $parent->add($ctrl);
         }
         else
         {
           $ctrl = $ctx['stack']->pop();
-          $ctx['html'] .= '<?php echo $' . $ctrl->id . '; ?>';
+          $ctx['html'] .= static::getControlPlaceHolder($ctrl->id);
           $ctx['controls'][] = $ctrl;
         }
       }
@@ -921,4 +986,6 @@ class View implements \ArrayAccess
   {
     return strtr($str, ["\\" => "\\\\", "'" => "\'", "\r" => "\\r", "\n" => "\\n"]);
   }
+}
+
 }
