@@ -37,6 +37,12 @@ class CheckBox extends Control
     $this->properties['tag'] = 'div';
   }
   
+  public function check($flag = true)
+  {
+    if ($flag) $this->attributes['checked'] = 'checked';
+    else unset($this->attributes['checked']);
+  }
+  
   public function clean()
   {
     unset($this->attributes['checked']);
@@ -54,7 +60,7 @@ class CheckBox extends Control
     $html = '<' . $this->properties['tag'] . ' id="container_' . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>';
     if (strlen($this->properties['caption'])) $label = '<label for="' . $this->attributes['id'] . '">' . $this->properties['caption'] . '</label>';
     if ($this->properties['align'] == 'left' && isset($label)) $html .= $label;
-    $html .= '<input type="checkbox"' . $this->renderAttributes() . ' />';
+    $html .= '<input type="checkbox" value="' . htmlspecialchars($this->properties['value']) . '"' . $this->renderAttributes() . ' />';
     if ($this->properties['align'] != 'left' && isset($label)) $html .= $label;
     $html .= '</' . $this->properties['tag'] . '>';
     return $html;

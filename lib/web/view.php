@@ -414,10 +414,10 @@ class View implements \ArrayAccess
       $aleph = $url . '/web/js/aleph.min.js';
       foreach ($this->js['top'] as $id => $js)
       {
-        if (isset($js['attibutes']['src']))
+        if (isset($js['attributes']['src']))
         {
-          if ($js['attibutes']['src'] == $jquery) $hasjQuery = true;
-          else if ($js['attibutes']['src'] == $aleph) $hasAleph = true;
+          if ($js['attributes']['src'] == $jquery) $hasjQuery = true;
+          else if ($js['attributes']['src'] == $aleph) $hasAleph = true;
           if ($hasjQuery && $hasAleph) break;
         }
       }
@@ -585,8 +585,9 @@ class View implements \ArrayAccess
       {
         $tmp[] = '$a.pom.create(\'' . $uniqueID . '\', \'' . $this->replaceBreakups($ctrl->render()) . '\', \'' . $ctrl->getCreationInfo()['mode'] . '\', \'' . $ctrl->getCreationInfo()['id'] . '\')';
       }
-      else if (false !== $diff = $ctrl->compare($this->vs[$uniqueID]))
+      else
       {
+        $diff = $ctrl->compare($this->vs[$uniqueID]);
         if (is_array($diff)) 
         {
           foreach ($diff as $attr => &$value) $value = "'" . $attr . "': '" . $this->replaceBreakups($value) . "'";
@@ -605,7 +606,10 @@ class View implements \ArrayAccess
           $diff = "'" . $this->replaceBreakups($diff) . "'";
           $removed = '[]';
         }
-        $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . $diff . ', ' . $removed . ', ' . $this->replaceBreakups(json_encode(array_keys($ctrl->getBaseAttributes()))) . ')';
+        if ($diff != '{}' || $removed != '[]')
+        {
+          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . $diff . ', ' . $removed . ', ' . $this->replaceBreakups(json_encode(array_keys($ctrl->getBaseAttributes()))) . ')';
+        }
       }
       foreach ($ctrl->getEvents() as $eid => $event)
       {
@@ -790,7 +794,8 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->top();
           if ($ctrl instanceof Panel) $ctrl->tpl->setTemplate($ctrl->tpl->getTemplate() . $html);
-          else $ctrl['value'] .= $html; 
+          else if (isset($ctrl['value'])) $ctrl['value'] .= $html;
+          else $ctrl['text'] .= $html;
         }
       }
     };
@@ -830,7 +835,8 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->top();
           if ($ctrl instanceof Panel) $ctrl->tpl->setTemplate($ctrl->tpl->getTemplate() . $html);
-          else $ctrl['value'] .= $html; 
+          else if (isset($ctrl['value'])) $ctrl['value'] .= $html;
+          else $ctrl['text'] .= $html;
         }
       }
     };
@@ -897,7 +903,8 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->top();
           if ($ctrl instanceof Panel) $ctrl->tpl->setTemplate($ctrl->tpl->getTemplate() . $content);
-          else $ctrl['value'] .= $content; 
+          else if (isset($ctrl['value'])) $ctrl['value'] .= $content;
+          else $ctrl['text'] .= $content;
         }
       }
     };

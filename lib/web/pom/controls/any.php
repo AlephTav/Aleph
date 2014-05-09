@@ -22,11 +22,20 @@
 
 namespace Aleph\Web\POM;
 
-class Body extends Panel
-{  
-  public function __construct($id, $template = null)
+class Any extends Control
+{
+  protected $ctrl = 'any';
+  
+  public function __construct($id, $tag = 'div', $text = null)
   {
-    parent::__construct($id, $template);
-    $this->properties['tag'] = 'body';
+    parent::__construct($id);
+    $this->properties['tag'] = $tag;
+    $this->properties['text'] = $text;
+  }
+  
+  public function render()
+  {
+    if (!$this->properties['visible']) return $this->invisible();
+    return '<' . $this->properties['tag'] . $this->renderAttributes() . '>' . $this->properties['text'] . '</' . $this->properties['tag'] . '>';
   }
 }

@@ -344,8 +344,7 @@ abstract class Control implements \ArrayAccess
         $tmp[isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr] = $value;
       }
     }
-    if ($tmp) return $tmp;
-    return false;
+    return $tmp;
   }
   
   public function getParent()

@@ -22,11 +22,20 @@
 
 namespace Aleph\Web\POM;
 
-class Body extends Panel
-{  
-  public function __construct($id, $template = null)
+class Button extends Control
+{
+  protected $ctrl = 'button';
+  
+  public function __construct($id, $text = null)
   {
-    parent::__construct($id, $template);
-    $this->properties['tag'] = 'body';
+    parent::__construct($id);
+    $this->attributes['type'] = 'button';
+    $this->properties['text'] = $text;
+  }
+  
+  public function render()
+  {
+    if (!$this->properties['visible']) return $this->invisible();
+    return '<button' . $this->renderAttributes() . '>' . $this->properties['text'] . '</button>';
   }
 }

@@ -22,60 +22,47 @@
 
 namespace Aleph\Web\POM;
 
-class DropDownBox extends Control
+class Radio extends Control
 {
-  protected $ctrl = 'dropdownbox';
+  protected $ctrl = 'radio';
+  
+  protected $baseAttributes = ['id' => 1, 'checked' => 1, 'disabled' => 1, 'required' => 1];
   
   public function __construct($id, $value = null)
   {
     parent::__construct($id);
     $this->properties['value'] = $value;
     $this->properties['caption'] = null;
-    $this->properties['options'] = [];
+    $this->properties['align'] = 'right';
+    $this->properties['tag'] = 'div';
+  }
+  
+  public function check($flag = true)
+  {
+    if ($flag) $this->attributes['checked'] = 'checked';
+    else unset($this->attributes['checked']);
   }
   
   public function clean()
   {
-    $this->properties['value'] = '';
+    unset($this->attributes['checked']);
   }
 
   public function validate(Validator $validator)
   {
-    return $validator->check(is_array($this->properties['value']) ? implode('', $this->properties['value']) : $this->properties['value']);
+    if ($validator instanceof ValidatorRequired) return $validator->check(!empty($this->attributes['checked']));
+    return true;
   }
   
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    $html = '<select' . $this->renderAttributes() . '>';
-    if (strlen($this->properties['caption'])) $html .= $this->getOptionHTML('', $this->properties['caption']);
-    foreach ($this->properties['options'] as $key => $value)
-    {
-      if (is_array($value))
-      {
-        $html .= '<optgroup label="' . htmlspecialchars($key) . '">';
-        foreach ($value as $k => $v) $html .= $this->getOptionHTML($k, $v);
-        $html .= '</optgroup>';
-      }
-      else
-      {
-        $html .= $this->getOptionHTML($key, $value);
-      }
-    }
-    $html .= '</select>';
+    $html = '<' . $this->properties['tag'] . ' id="container_' . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>';
+    if (strlen($this->properties['caption'])) $label = '<label for="' . $this->attributes['id'] . '">' . $this->properties['caption'] . '</label>';
+    if ($this->properties['align'] == 'left' && isset($label)) $html .= $label;
+    $html .= '<input type="checkbox" value="' . htmlspecialchars($this->properties['value']) . '"' . $this->renderAttributes() . ' />';
+    if ($this->properties['align'] != 'left' && isset($label)) $html .= $label;
+    $html .= '</' . $this->properties['tag'] . '>';
     return $html;
-  }
-  
-  protected function getOptionHTML($value, $text)
-  {
-    if (is_array($this->properties['value'])) 
-    {
-      $s = in_array($value, $this->properties['value']) ? ' selected="selected"' : '';
-    }
-    else
-    {
-      $s = (string)$this->properties['value'] === (string)$value ? ' selected="selected"' : '';
-    }
-    return '<option value="' . htmlspecialchars($value) . '"' . $s . '>' . htmlspecialchars($text) . '</option>';
   }
 }
