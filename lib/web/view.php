@@ -89,8 +89,8 @@ class View implements \ArrayAccess
       }
       $vs = $obj->getVS();
       unset($vs['attributes']['id']);
-      foreach ($vs['attributes'] as $attr => $value) $obj->{$attr} = static::evolute($value, $marks);
-      foreach ($vs['properties'] as $prop => $value) $obj[$prop] = static::evolute($value, $marks);
+      foreach ($vs['attributes'] as $attr => $value) if (is_scalar($value)) $obj->{$attr} = static::evolute($value, $marks);
+      foreach ($vs['properties'] as $prop => $value) if (is_scalar($value)) $obj[$prop] = static::evolute($value, $marks);
       return $obj;
     }
     else if (is_array($obj))
@@ -286,10 +286,10 @@ class View implements \ArrayAccess
         $this->actions[] = '$a.ajax.action(\'alert\', \'' .  $this->quote($args[1]) . '\', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
         break;
       case 'script':
-        $this->actions[] = '$a.ajax.action(\'script\', \'' . $this->replaceBreakups(json_decode($args[1])) . '\', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        $this->actions[] = '$a.ajax.action(\'script\', ' . json_encode($args[1]) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
         break;
       default:
-        $this->actions[] = '$a.ajax.action(\'script\', \'' . $this->replaceBreakups(json_decode($args[0])) . '\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $this->actions[] = '$a.ajax.action(\'script\', ' . json_encode($args[0]) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
     }
   }
@@ -406,7 +406,6 @@ class View implements \ArrayAccess
         $this->commit();
         $this->controls = [$body->id => static::decodePHPTags($body, $ctx['marks'])];
         $this->commit();
-        $this->controls = [];
       }
       $this->tpl->setTemplate($ctx['html']);
       $url = \Aleph::url('framework');
@@ -480,6 +479,7 @@ class View implements \ArrayAccess
     $this->tpl->__head_entities = $head;
     if (false !== $body = $this->get($this->UID)) $this->tpl->{$this->UID} = $body->render();
     $html = $this->tpl->render();
+    $this->commit();
     $this->push();
     return $this->dtd . $html;
   }
@@ -583,32 +583,21 @@ class View implements \ArrayAccess
       $vs = $ctrl->getVS();
       if ($ctrl->isCreated())
       {
-        $tmp[] = '$a.pom.create(\'' . $uniqueID . '\', \'' . $this->replaceBreakups($ctrl->render()) . '\', \'' . $ctrl->getCreationInfo()['mode'] . '\', \'' . $ctrl->getCreationInfo()['id'] . '\')';
+        $tmp[] = '$a.pom.create(\'' . $uniqueID . '\', ' . json_encode($ctrl->render()) . ', \'' . $ctrl->getCreationInfo()['mode'] . '\', \'' . $ctrl->getCreationInfo()['id'] . '\')';
       }
       else
       {
-        $diff = $ctrl->compare($this->vs[$uniqueID]);
-        if (is_array($diff)) 
+        $cmp = $ctrl->compare($this->vs[$uniqueID]);
+        if (is_array($cmp))
         {
-          foreach ($diff as $attr => &$value) $value = "'" . $attr . "': '" . $this->replaceBreakups($value) . "'";
-          unset($value);
-          $diff = '{' . implode(',', $diff) . '}';
-          $removed = array_diff_key($this->vs[$uniqueID]['attributes'], $vs['attributes']);
-          if (count($removed) == 0) $removed = '[]';
-          else
+          if (count($cmp['diff']) || count($cmp['removed']))
           {
-            foreach ($removed as $attr => &$value) $value = "'" . $attr . "'";
-            $removed = '[' . implode(', ', $removed) . ']';
+            $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . json_encode($cmp['diff']) . ', ' . json_encode($cmp['removed']) . ')';
           }
         }
         else
         {
-          $diff = "'" . $this->replaceBreakups($diff) . "'";
-          $removed = '[]';
-        }
-        if ($diff != '{}' || $removed != '[]')
-        {
-          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . $diff . ', ' . $removed . ', ' . $this->replaceBreakups(json_encode(array_keys($ctrl->getBaseAttributes()))) . ')';
+          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . json_encode($cmp) . ')';
         }
       }
       foreach ($ctrl->getEvents() as $eid => $event)

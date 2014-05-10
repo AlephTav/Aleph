@@ -22,18 +22,24 @@
 
 namespace Aleph\Web\POM;
 
+use Aleph\Core;
+
 class TextBox extends Control
 {
-  const ERR_TEXTBOX_1 = 'Property "type" can take only one of the following values: "text", "password" and "memo".';
+  const ERR_TEXTBOX_1 = 'Incorrect type value "[{var}]". Property "type" can take only one of the following values: "text", "password" and "memo".';
+  
+  const TYPE_TEXT = 'text';
+  const TYPE_PASSWORD = 'password';
+  const TYPE_MEMO = 'memo';
 
   protected $ctrl = 'textbox';
   
   protected $dataAttributes = ['default' => 1];
 
-  public function __construct($id, $value = '')
+  public function __construct($id, $value = null)
   {
     parent::__construct($id);
-    $this->properties['type'] = 'text';
+    $this->properties['type'] = self::TYPE_TEXT;
     $this->properties['value'] = $value;
   }
   
@@ -59,12 +65,12 @@ class TextBox extends Control
     if (!$this->properties['visible']) return $this->invisible();
     switch ($this->properties['type'])
     {
-      case 'text':
-      case 'password':
+      case self::TYPE_TEXT:
+      case self::TYPE_PASSWORD:
         return '<input type="' . htmlspecialchars($this->properties['type']) . '"' . $this->renderAttributes() . ' value="' . htmlspecialchars($this->properties['value']) . '" />';
-      case 'memo':
+      case self::TYPE_MEMO:
         return '<textarea' . $this->renderAttributes() . '>' . $this->properties['value'] . '</textarea>';
     }
-    throw new Core\Exception($this, 'ERR_TEXTBOX_1');
+    throw new Core\Exception($this, 'ERR_TEXTBOX_1', $this->properties['type']);
   }
 }

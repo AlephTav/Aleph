@@ -32,7 +32,7 @@ abstract class Control implements \ArrayAccess
   
   const ERR_CTRL_1 = 'ID of [{var}] should match /^[0-9a-zA-Z_]+$/ pattern, "[{var}]" was given.';
   const ERR_CTRL_2 = 'Web control [{var}] (full ID: [{var}]) does not have property [{var}].';
-  const ERR_CTRL_3 = 'You cannot change readonly attribute ID of [{var}] (full ID: [{var}]).';
+  const ERR_CTRL_3 = 'You cannot change or delete readonly attribute ID of [{var}] (full ID: [{var}]).';
   const ERR_CTRL_4 = 'Web control with such logical ID exists already within the panel [{var}] (full ID: [{var}]).';
   const ERR_CTRL_5 = 'You cannot inject control [{var}] (full ID: [{var}]) AFTER or BEFORE panel [{var}] (full ID: [{var}]) within this panel. Use a parent of the panel for injecting.';
   const ERR_CTRL_6 = 'You cannot inject control [{var}] (full ID: [{var}]) at TOP or BOTTOM of another control [{var}] (full ID: [{var}]). Try to use this control as a parent.';
@@ -129,16 +129,6 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
-  public function getDataAttributes()
-  {
-    return $this->dataAttributes;
-  }
-  
-  public function getBaseAttributes()
-  {
-    return $this->baseAttributes;
-  }
-  
   public function __set($attribute, $value)
   {
     $attribute = strtolower($attribute);
@@ -159,7 +149,9 @@ abstract class Control implements \ArrayAccess
   
   public function __unset($attribute)
   {
-    unset($this->attributes[strtolower($attribute)]);
+    $attribute = strtolower($attribute);
+    if ($attribute == 'id') throw new Core\Exception($this, 'ERR_CTRL_3', get_class($this), $this->getFullID());
+    unset($this->attributes[$attribute]);
   }
   
   public function offsetSet($property, $value)
@@ -192,6 +184,17 @@ abstract class Control implements \ArrayAccess
     $this[$property] = null;
   }
   
+  public function callback($callback, $isStatic = false)
+  {
+    return addcslashes(get_class($this) . ($isStatic ? '::' . $callback : '@' . $this->attributes['id'] . '->' . $callback), '\\');
+  }
+  
+  public function method($callback, array $params = null, $isStatic = false)
+  {
+    $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], true));
+    return '$a.ajax.doit(\'' . $this->callback($callback, $isStatic) . '\'' . (strlen($params) ? ', ' . $params : '') . ')';
+  }
+  
   public function getEvents()
   {
     return $this->events;
@@ -212,88 +215,96 @@ abstract class Control implements \ArrayAccess
     $this->events[$id] = false;
   }
   
-  public function hasClass($class)
+  public function hasClass($class, $isContainer = false)
   {
+    $attr = $isContainer ? 'container-class' : 'class';
     $class = trim($class);
-    if (strlen($class) == 0 || !isset($this->attributes['class'])) return false;
-    return strpos(' ' . trim($this->attributes['class']) . ' ', ' ' . $class . ' ') !== false;
+    if (strlen($class) == 0 || !isset($this->attributes[$attr])) return false;
+    return strpos(' ' . trim($this->attributes[$attr]) . ' ', ' ' . $class . ' ') !== false;
   }
 
-  public function addClass($class)
+  public function addClass($class, $isContainer = false)
   {
+    $attr = $isContainer ? 'container-class' : 'class';
     $class = trim($class);
-    if (strlen($class) == 0 || $this->hasClass($class)) return $this;
-    if (!isset($this->attributes['class'])) $this->attributes['class'] = $class;
-    else $this->attributes['class'] = trim(trim($this->attributes['class']) . ' ' . $class);
+    if (strlen($class) == 0 || $this->hasClass($class, $isContainer)) return $this;
+    if (!isset($this->attributes[$attr])) $this->attributes[$attr] = $class;
+    else $this->attributes[$attr] = trim(trim($this->attributes[$attr]) . ' ' . $class);
     return $this;
   }
 
-  public function removeClass($class)
+  public function removeClass($class, $isContainer = false)
   {
+    $attr = $isContainer ? 'container-class' : 'class';
     $class = trim($class);
-    if (strlen($class) == 0 || !isset($this->attributes['class'])) return $this;
-    $this->attributes['class'] = trim(str_replace(' ' . $class . ' ', '', trim($this->attributes['class'])));
+    if (strlen($class) == 0 || !isset($this->attributes[$attr])) return $this;
+    $this->attributes[$attr] = trim(str_replace(' ' . $class . ' ', '', trim($this->attributes[$attr])));
     return $this;
   }
 
-  public function replaceClass($class1, $class2)
+  public function replaceClass($class1, $class2, $isContainer = false)
   {
-    return $this->removeClass($class1)->addClass($class2);
+    return $this->removeClass($class1, $isContainer)->addClass($class2, $isContainer);
   }
 
-  public function toggleClass($class1, $class2 = null)
+  public function toggleClass($class1, $class2 = null, $isContainer = false)
   {
-    if (!$this->hasClass($class1)) $this->replaceClass($class2, $class1);
-    else $this->replaceClass($class1, $class2);
+    if (!$this->hasClass($class1, $isContainer)) $this->replaceClass($class2, $class1, $isContainer);
+    else $this->replaceClass($class1, $class2, $isContainer);
     return $this;
   }
   
-  public function hasStyle($style)
+  public function hasStyle($style, $isContainer = false)
   {
+    $attr = $isContainer ? 'container-style' : 'style';
     $style = trim($style);
-    if (strlen($style) == 0 || !isset($this->attributes['style'])) return false;
-    return strpos($this->attributes['style'], $style) !== false;
+    if (strlen($style) == 0 || !isset($this->attributes[$attr])) return false;
+    return strpos($this->attributes[$attr], $style) !== false;
   }
 
-  public function addStyle($style, $value)
+  public function addStyle($style, $value, $isContainer = false)
   {
-    if ($this->hasStyle($style)) $this->setStyle($style, $value);
+    $attr = $isContainer ? 'container-style' : 'style';
+    if ($this->hasStyle($style, $isContainer)) $this->setStyle($style, $value, $isContainer);
     else
     {
       $style = trim($style);
       if (strlen($style) == 0) return $this;
-      if (!isset($this->attributes['style'])) $this->attributes['style'] = $style . ':' . $value . ';';
-      else $this->attributes['style'] = trim($this->attributes['style'] . (substr($this->attributes['style'], -1, 1) != ';' ? ';' : '') . $style . ':' . $value . ';');
+      if (!isset($this->attributes[$attr])) $this->attributes[$attr] = $style . ':' . $value . ';';
+      else $this->attributes[$attr] = trim($this->attributes[$attr] . (substr($this->attributes[$attr], -1, 1) != ';' ? ';' : '') . $style . ':' . $value . ';');
     }
     return $this;
   }
 
-  public function setStyle($style, $value)
+  public function setStyle($style, $value, $isContainer = false)
   {
-    if (!isset($this->attributes['style'])) return $this;
-    $this->attributes['style'] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', $style . ':' . $value . ';', $this->attributes['style']);
+    $attr = $isContainer ? 'container-style' : 'style';
+    if (!isset($this->attributes[$attr])) return $this;
+    $this->attributes[$attr] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', $style . ':' . $value . ';', $this->attributes[$attr]);
     return $this;
   }
 
-  public function getStyle($style)
+  public function getStyle($style, $isContainer = false)
   {
-    if (!isset($this->attributes['style'])) return;
-    preg_match('/' . preg_quote($style) . ' *:([^;]*);*/', $this->attributes['style'], $matches);
+    $attr = $isContainer ? 'container-style' : 'style';
+    if (!isset($this->attributes[$attr])) return;
+    preg_match('/' . preg_quote($style) . ' *:([^;]*);*/', $this->attributes[$attr], $matches);
     return isset($matches[1]) ? $matches[1] : null;
   }
 
-  public function removeStyle($style)
+  public function removeStyle($style, $isContainer = false)
   {
-    if (!isset($this->attributes['style'])) return $this;
-    $this->attributes['style'] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', '', $this->attributes['style']);
-    $this->attributes['style'] = trim(str_replace(['  ', '   '], ' ', $this->attributes['style']));
+    $attr = $isContainer ? 'container-style' : 'style';
+    if (!isset($this->attributes[$attr])) return $this;
+    $this->attributes[$attr] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', '', $this->attributes[$attr]);
+    $this->attributes[$attr] = trim(str_replace(['  ', '   '], ' ', $this->attributes[$attr]));
     return $this;
   }
 
-  public function toggleStyle($style, $value)
+  public function toggleStyle($style, $value, $isContainer = false)
   {
-    if (!$this->hasStyle($style)) $this->addStyle($style, $value);
-    else $this->removeStyle($style);
+    if (!$this->hasStyle($style, $isContainer)) $this->addStyle($style, $value, $isContainer);
+    else $this->removeStyle($style, $isContainer);
     return $this;
   }
   
@@ -336,12 +347,31 @@ abstract class Control implements \ArrayAccess
   public function compare(array $vs)
   {
     if ($this->isRefreshed || $vs['properties'] != $this->properties) return $this->render();
-    $tmp = [];
+    $tmp = ['diff' => [], 'removed' => []];
     foreach ($this->attributes as $attr => $value)
     {
-      if (empty($vs['attributes'][$attr]) || $value != $vs['attributes'][$attr])
+      if (!isset($vs['attributes'][$attr]) || $value != $vs['attributes'][$attr])
       {
-        $tmp[isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr] = $value;
+        $container = '';
+        if (substr($attr, 0, 10) == 'container-') 
+        {
+          $container = 'container-';
+          $attr = substr($attr, 10);
+        }
+        $tmp['diff'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = $value;
+      }
+    }
+    foreach ($vs['attributes'] as $attr => $value)
+    {
+      if (!isset($this->attributes[$attr])) 
+      {
+        $container = '';
+        if (substr($attr, 0, 10) == 'container-') 
+        {
+          $container = 'container-';
+          $attr = substr($attr, 10);
+        }
+        $tmp['removed'][] = $container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr);
       }
     }
     return $tmp;
@@ -445,20 +475,22 @@ abstract class Control implements \ArrayAccess
   
   protected function renderAttributes($renderBaseAttributes = true)
   {
-    if (count($this->baseAttributes) == 0)
+    if ($renderBaseAttributes)
     {
       $tmp = ['data-ctrl="' . $this->ctrl . '"'];
       foreach ($this->attributes as $attr => $value) 
       {
+        if (substr($attr, 0, 10) == 'container-') continue;
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
     }
     else
     {
-      $tmp = $renderBaseAttributes ? ['data-ctrl="' . $this->ctrl . '"'] : [];
+      $tmp = [];
       foreach ($this->attributes as $attr => $value) 
       {
-        if ($renderBaseAttributes && empty($this->baseAttributes[$attr]) || !$renderBaseAttributes && isset($this->baseAttributes[$attr])) continue;
+        if (substr($attr, 0, 10) != 'container-') continue;
+        $attr = substr($attr, 10);
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
     }

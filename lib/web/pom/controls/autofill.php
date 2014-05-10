@@ -22,45 +22,23 @@
 
 namespace Aleph\Web\POM;
 
-class CheckBox extends Control
+class Autofill extends TextBox
 {
-  protected $ctrl = 'checkbox';
+  protected $ctrl = 'autofill';
   
+  protected $dataAttributes = ['default' => 1, 'callback' => 1, 'timeout' => 1, 'activeitemclass' => 1];
+
   public function __construct($id, $value = null)
   {
-    parent::__construct($id);
-    $this->properties['value'] = $value;
-    $this->properties['caption'] = null;
-    $this->properties['align'] = 'right';
+    parent::__construct($id, $value);
     $this->properties['tag'] = 'div';
-  }
-  
-  public function check($flag = true)
-  {
-    if ($flag) $this->attributes['checked'] = 'checked';
-    else unset($this->attributes['checked']);
-  }
-  
-  public function clean()
-  {
-    unset($this->attributes['checked']);
-  }
-
-  public function validate(Validator $validator)
-  {
-    if ($validator instanceof ValidatorRequired) return $validator->check(!empty($this->attributes['checked']));
-    return true;
   }
   
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    $html = '<' . $this->properties['tag'] . ' id="container_' . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>';
-    if (strlen($this->properties['caption'])) $label = '<label for="' . $this->attributes['id'] . '">' . $this->properties['caption'] . '</label>';
-    if ($this->properties['align'] == 'left' && isset($label)) $html .= $label;
-    $html .= '<input type="checkbox" value="' . htmlspecialchars($this->properties['value']) . '"' . $this->renderAttributes() . ' />';
-    if ($this->properties['align'] != 'left' && isset($label)) $html .= $label;
-    $html .= '</' . $this->properties['tag'] . '>';
+    $html = '<' . $this->properties['tag'] . ' id="container_' . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>' . parent::render();
+    $html .= '<ul id="list_' . $this->attributes['id'] . '" style="display:none;"></ul></' . $this->properties['tag'] . '>';
     return $html;
   }
 }

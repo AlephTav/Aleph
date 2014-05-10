@@ -26,8 +26,6 @@ class Radio extends Control
 {
   protected $ctrl = 'radio';
   
-  protected $baseAttributes = ['id' => 1, 'checked' => 1, 'disabled' => 1, 'required' => 1];
-  
   public function __construct($id, $value = null)
   {
     parent::__construct($id);
