@@ -105,7 +105,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     {
       $ctrl = $this->get($id, false);
       if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
-      $ctrl->remove($time);
+      $ctrl->remove();
     }
     unset($this->controls[$ctrl->id]);
     $this->tpl->setTemplate(str_replace(View::getControlPlaceHolder($ctrl->id), '', $this->tpl->getTemplate()));
@@ -113,10 +113,20 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     return $this;
   }
   
+  public function replace($id, $ctrl)
+  {
+    
+  }
+  
   public function remove()
   {
     foreach ($this->controls as $ctrl) $this->detach($ctrl);
     parent::remove();
+  }
+  
+  public function check($flag = true, $isRecursion = true)
+  {
+  
   }
   
   public function clean($isRecursion = true)

@@ -186,12 +186,14 @@ abstract class Control implements \ArrayAccess
   
   public function callback($callback, $isStatic = false)
   {
-    return addcslashes(get_class($this) . ($isStatic ? '::' . $callback : '@' . $this->attributes['id'] . '->' . $callback), '\\');
+    return addcslashes(get_class($this) . ($isStatic ? '::' . $callback : '@' . $this->attributes['id'] . '->' . $callback), "'\\");
   }
   
   public function method($callback, array $params = null, $isStatic = false)
   {
-    $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], true));
+    $config = \Aleph::getInstance()->getConfig();
+    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
+    $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], false, $jsMark));
     return '$a.ajax.doit(\'' . $this->callback($callback, $isStatic) . '\'' . (strlen($params) ? ', ' . $params : '') . ')';
   }
   
@@ -200,14 +202,18 @@ abstract class Control implements \ArrayAccess
     return $this->events;
   }
   
-  public function addEvent($id, $type, $callback, $check = null, $params = null)
+  public function addEvent($id, $type, $callback, array $options = null)
   {
     $callback = (string)$callback;
     $config = \Aleph::getInstance()->getConfig();
-    $js = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
-    if (substr($callback, 0, strlen($js)) == $js) $callback = substr($callback, strlen($js));
-    else $callback = 'function(event){$a.ajax.doit(\'' . str_replace('\\', '\\\\', $callback) . '\'' . (strlen($params) ? ', ' . $params : '') . ');}';
-    $this->events[$id] = ['type' => strtolower($type), 'callback' => $callback, 'check' => $check];
+    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
+    if (substr($callback, 0, strlen($jsMark)) == $jsMark) $callback = substr($callback, strlen($jsMark));
+    else 
+    {
+      $params = implode(', ', Utils\PHP\Tools::php2js(isset($options['params']) ? $options['params'] : [], false, $jsMark));
+      $callback = 'function(event){$a.ajax.doit(\'' . addcslashes($callback, "'\\") . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
+    }
+    $this->events[$id] = ['type' => strtolower($type), 'callback' => $callback, 'options' => $options];
   }
   
   public function removeEvent($id)
@@ -358,7 +364,7 @@ abstract class Control implements \ArrayAccess
           $container = 'container-';
           $attr = substr($attr, 10);
         }
-        $tmp['diff'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = $value;
+        $tmp['diff'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = (string)$value;
       }
     }
     foreach ($vs['attributes'] as $attr => $value)
@@ -454,6 +460,28 @@ abstract class Control implements \ArrayAccess
     if ($parent->isAttached() && !$this->isAttached()) MVC\Page::$current->view->attach($this);
     $this->isRemoved = false;
     return $this;
+  }
+  
+  public function copy($id = null)
+  {
+    $class = get_class($this);
+    $ctrl = new $class($id ?: $this->properties['id']);
+    $vs = $this->getVS();
+    $vs['properties']['id'] = $ctrl['id'];
+    if ($this instanceof Panel)
+    {
+      $vs['controls'] = [];
+      $ctrl->setVS($vs);
+      foreach ($this as $child) 
+      {
+        $copy = $child->copy();
+        $ctrl->tpl->setTemplate(str_replace(View::getControlPlaceHolder($child->id), View::getControlPlaceHolder($copy->id), $ctrl->tpl->getTemplate()));
+        $ctrl->add($copy);
+      }
+      return $ctrl;
+    }
+    $ctrl->setVS($vs);
+    return $ctrl;
   }
   
   public function getXHTML()

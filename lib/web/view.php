@@ -280,16 +280,37 @@ class View implements \ArrayAccess
   public function action(/* $action, $param1, $param2, ..., $time = 0 */)
   {
     $args = func_get_args();
-    switch ($args[0])
+    $config = \Aleph::getInstance()->getConfig();
+    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
+    $act = strtolower($args[0]);
+    switch ($act)
     {
       case 'alert':
-        $this->actions[] = '$a.ajax.action(\'alert\', \'' .  $this->quote($args[1]) . '\', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
-        break;
+      case 'redirect':
+      case 'focus':
+      case 'remove':
       case 'script':
-        $this->actions[] = '$a.ajax.action(\'script\', ' . json_encode($args[1]) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        $this->actions[] = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        break;
+      case 'reload':
+        $this->actions[] = '$a.ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        break;
+      case 'focus':
+      case 'addclass':
+      case 'removeclass':
+      case 'toggleclass':
+      case 'remove':
+      case 'insert':
+      case 'replace':
+        $this->actions[] = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
+        break;
+      case 'display':
+      case 'message':
+      case 'inject':
+        $this->actions[] = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[3], true, $jsMark) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
         break;
       default:
-        $this->actions[] = '$a.ajax.action(\'script\', ' . json_encode($args[0]) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $this->actions[] = '$a.ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, $jsMark) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
     }
   }
@@ -365,6 +386,7 @@ class View implements \ArrayAccess
     }
     if (!empty($vs['methods'][$method])) 
     {
+   
       $this->get($vs['attributes']['id'])->{$method}();
     }
   }
@@ -385,7 +407,12 @@ class View implements \ArrayAccess
     $response = Net\Response::getInstance();
     $response->setContentType('json', isset(\Aleph::getInstance()['pom']['charset']) ? \Aleph::getInstance()['pom']['charset'] : 'utf-8');
     $response->cache(false);
-    $response->body = json_encode(['script' => implode(';', $this->actions), 'data' => $data]);
+    if (count($this->actions) == 0 && strlen($data) == 0) $response->body = '';
+    else
+    {
+      $sep = uniqid();
+      $response->body = $sep . implode(';', $this->actions) . $sep . json_encode($data);
+    }
     $response->send();
   }
   
@@ -433,7 +460,7 @@ class View implements \ArrayAccess
       foreach ($ctrl->getEvents() as $eid => $event)
       {
         if ($event === false) $this->addJS([], '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')', false);
-        else $this->addJS([], '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (strlen($event['check']) ? ', ' . $event['check'] : '') .  ')', false);
+        else $this->addJS([], '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')', false);
       }
     }
     $sort = function($a, $b){return $a['order'] - $b['order'];};
@@ -572,6 +599,8 @@ class View implements \ArrayAccess
   protected function compare()
   {
     $tmp = [];
+    $config = \Aleph::getInstance()->getConfig();
+    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
     foreach ($this->controls as $uniqueID => $ctrl)
     {
       if ($ctrl->isRemoved())
@@ -592,18 +621,18 @@ class View implements \ArrayAccess
         {
           if (count($cmp['diff']) || count($cmp['removed']))
           {
-            $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . json_encode($cmp['diff']) . ', ' . json_encode($cmp['removed']) . ')';
+            $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp['diff'], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($cmp['removed']) . ')';
           }
         }
         else
         {
-          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . json_encode($cmp) . ')';
+          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp) . ')';
         }
       }
       foreach ($ctrl->getEvents() as $eid => $event)
       {
         if ($event === false) $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
-        else $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (strlen($event['check']) ? ', ' . $event['check'] : '') .  ')';
+        else $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')';
       }
       $this->vs[$uniqueID] = $ctrl->getVS();
     }
@@ -957,30 +986,6 @@ class View implements \ArrayAccess
   private function getActualVS($obj)
   {
     return $obj instanceof Control ? $obj->getVS() : (isset($this->controls[$obj]) ? $this->controls[$obj]->getVS() : $this->vs[$obj]);
-  }
-  
-  /**
-   * Replaces breakup symbols in a string on their codes.
-   *
-   * @param string $str
-   * @return string
-   * @access private
-   */
-  private function replaceBreakups($str, $escapeQuote = true)
-  {
-    return strtr($str, $escapeQuote ? ["\r" => '&#0013;', "\n" => '&#0010;', "'" => "\'"] : ["\r" => '&#0013;', "\n" => '&#0010;']);
-  }
-
-  /**
-   * Returns a string with backslashes before breakup symbols, single quote and backslash. 
-   *
-   * @param  string $str
-   * @return string
-   * @access private
-   */
-  private function quote($str)
-  {
-    return strtr($str, ["\\" => "\\\\", "'" => "\'", "\r" => "\\r", "\n" => "\\n"]);
   }
 }
 
