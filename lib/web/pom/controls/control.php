@@ -136,10 +136,12 @@ abstract class Control implements \ArrayAccess
     $this->attributes[$attribute] = $value;
   }
   
-  public function __get($attribute)
+  public function &__get($attribute)
   {
     $attribute = strtolower($attribute);
-    return isset($this->attributes[$attribute]) ? $this->attributes[$attribute] : null;
+    if (isset($this->attributes[$attribute])) return $this->attributes[$attribute];
+    $value = null;
+    return $value;
   }
   
   public function __isset($attribute)
@@ -191,9 +193,7 @@ abstract class Control implements \ArrayAccess
   
   public function method($callback, array $params = null, $isStatic = false)
   {
-    $config = \Aleph::getInstance()->getConfig();
-    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
-    $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], false, $jsMark));
+    $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], false, View::JS_MARK));
     return '$a.ajax.doit(\'' . $this->callback($callback, $isStatic) . '\'' . (strlen($params) ? ', ' . $params : '') . ')';
   }
   
@@ -205,12 +205,10 @@ abstract class Control implements \ArrayAccess
   public function addEvent($id, $type, $callback, array $options = null)
   {
     $callback = (string)$callback;
-    $config = \Aleph::getInstance()->getConfig();
-    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
-    if (substr($callback, 0, strlen($jsMark)) == $jsMark) $callback = substr($callback, strlen($jsMark));
+    if (substr($callback, 0, strlen(View::JS_MARK)) == View::JS_MARK) $callback = substr($callback, strlen(View::JS_MARK));
     else 
     {
-      $params = implode(', ', Utils\PHP\Tools::php2js(isset($options['params']) ? $options['params'] : [], false, $jsMark));
+      $params = implode(', ', Utils\PHP\Tools::php2js(isset($options['params']) ? $options['params'] : [], false, View::JS_MARK));
       $callback = 'function(event){$a.ajax.doit(\'' . addcslashes($callback, "'\\") . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
     }
     $this->events[$id] = ['type' => strtolower($type), 'callback' => $callback, 'options' => $options];
@@ -356,7 +354,7 @@ abstract class Control implements \ArrayAccess
     $tmp = ['diff' => [], 'removed' => []];
     foreach ($this->attributes as $attr => $value)
     {
-      if (!isset($vs['attributes'][$attr]) || $value != $vs['attributes'][$attr])
+      if (!isset($vs['attributes'][$attr]) && $value !== null || $value != $vs['attributes'][$attr])
       {
         $container = '';
         if (substr($attr, 0, 10) == 'container-') 
@@ -364,7 +362,7 @@ abstract class Control implements \ArrayAccess
           $container = 'container-';
           $attr = substr($attr, 10);
         }
-        $tmp['diff'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = (string)$value;
+        $tmp['diff'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
       }
     }
     foreach ($vs['attributes'] as $attr => $value)
@@ -509,6 +507,7 @@ abstract class Control implements \ArrayAccess
       foreach ($this->attributes as $attr => $value) 
       {
         if (substr($attr, 0, 10) == 'container-') continue;
+        $value = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
     }
@@ -519,6 +518,7 @@ abstract class Control implements \ArrayAccess
       {
         if (substr($attr, 0, 10) != 'container-') continue;
         $attr = substr($attr, 10);
+        $value = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
     }

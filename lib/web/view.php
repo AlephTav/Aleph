@@ -23,6 +23,9 @@ class View implements \ArrayAccess
   const ERR_VIEW_4 = "Path to the master template is not defined or incorrect.\nFile: [{var}]";
   const ERR_VIEW_5 = 'Page template should have only one element body containing all other web controls.';
   
+  const PHP_MARK = 'php::';
+  const JS_MARK = 'js::';
+  
   protected static $process = 0;
   
   protected static $emptyTags = ['br' => 1, 'hr' => 1, 'meta' => 1, 'link' => 1, 'img' => 1, 'embed' => 1, 'param' => 1, 'input' => 1, 'base' => 1, 'area' => 1, 'col' => 1];
@@ -103,12 +106,10 @@ class View implements \ArrayAccess
   
   public static function evolute($value, array $marks)
   {
-    $config = \Aleph::getInstance()->getConfig();
-    $value = \Aleph::exe(static::decodePHPTags($value, $marks), ['config' => $config]);
-    $php = isset($config['pom']['phpMark']) ? $config['pom']['phpMark'] : 'php::';
-    if (substr($value, 0, strlen($php)) == $php) 
+    $value = \Aleph::exe(static::decodePHPTags($value, $marks), ['config' => \Aleph::getInstance()->getConfig()]);
+    if (substr($value, 0, strlen(self::PHP_MARK)) == self::PHP_MARK)
     {
-      $value = substr($value, strlen($php));
+      $value = substr($value, strlen(self::PHP_MARK));
       if (strlen($value) == 0) return;
       eval(\Aleph::ecode('$value = ' . $value . ';'));
     }
@@ -252,7 +253,7 @@ class View implements \ArrayAccess
   public function addJS(array $attributes, $script = null, $inHead = true, $order = null)
   {
     $place = $inHead ? 'top' : 'bottom';
-    $this->js[$place][] = ['script' => $script, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->js[$place])];
+    $this->js[$place][isset($attributes['src']) ? $attributes['src'] : count($this->js[$place])] = ['script' => $script, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->js[$place])];
   }
   
   public function setJS($id, array $attributes, $script = null, $inHead = true, $order = null)
@@ -433,22 +434,11 @@ class View implements \ArrayAccess
         $this->commit();
         $this->controls = [$body->id => static::decodePHPTags($body, $ctx['marks'])];
         $this->commit();
+        $url = \Aleph::url('framework');
+        $this->addJS(['src' => $url . '/web/js/jquery/jquery.min.js'], null, true, -1000);
+        $this->addJS(['src' => $url . '/web/js/aleph.min.js'], null, true, -100);
       }
       $this->tpl->setTemplate($ctx['html']);
-      $url = \Aleph::url('framework');
-      $jquery = $url . '/web/js/jquery.min.js';
-      $aleph = $url . '/web/js/aleph.min.js';
-      foreach ($this->js['top'] as $id => $js)
-      {
-        if (isset($js['attributes']['src']))
-        {
-          if ($js['attributes']['src'] == $jquery) $hasjQuery = true;
-          else if ($js['attributes']['src'] == $aleph) $hasAleph = true;
-          if ($hasjQuery && $hasAleph) break;
-        }
-      }
-      if (empty($hasjQuery)) $this->setJS('jquery', ['src' => $jquery], null, true, -1000);
-      if (empty($hasAleph)) $this->setJS('aleph', ['src' => $aleph], null, true, -100);
       if (!empty($config['cacheEnabled'])) $this->push(true);
     }
   }

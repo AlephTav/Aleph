@@ -189,4 +189,51 @@ class Tools
   {
     return static::replace($search, '', $subject);
   }
+  
+  /**
+   * Converts mixed PHP value to JS value.
+   * If the given value is an array and the second argument is FALSE the array will be treated as an array of values.
+   *
+   * @param mixed $value - a PHP value to be converted.
+   * @param boolean $isArray - determines whether the given value is an array of values or not.
+   * @param string $jsMark - determines a prefix mark of the JavaScript code.
+   * @return string|array - returns an array of converted values or a string.
+   */
+  public static function php2js($value, $isArray = true, $jsMark = null)
+  {
+    $rep = ["\r" => '\\r', "\n" => '\\n', "'" => "\'", '\\' => '\\\\'];
+    if (is_object($value)) $value = get_object_vars($value);
+    if (is_array($value)) 
+    {
+      if ($isArray)
+      {
+        $tmp = []; $isNumeric = true;
+        foreach ($value as $k => $v) 
+        {
+          if (!is_numeric($k))
+          {
+            $isNumeric = false;
+            break;
+          }
+        }
+        if ($isNumeric)
+        {
+          foreach ($value as $k => $v) $tmp[] = static::php2js($v, true, $jsMark);
+          return '[' . implode(', ', $tmp) . ']';
+        }
+        foreach ($value as $k => $v) $tmp[] = "'" . strtr($k, $rep) . "': " . static::php2js($v, true, $jsMark);
+        return '{' . implode(', ', $tmp) . '}';
+      }
+      else
+      {
+        foreach ($value as &$v) $v = static::php2js($v, true, $jsMark);
+        return $value;
+      }
+    }
+    if (is_null($value)) return 'null';
+    if (is_bool($value)) return $value ? 'true' : 'false';
+    if (is_numeric($value)) return $value;
+    if (strlen($jsMark) && substr($value, 0, strlen($jsMark)) == $jsMark) return substr($value, strlen($jsMark));
+    return "'" . strtr($value, $rep) . "'";
+  }
 }

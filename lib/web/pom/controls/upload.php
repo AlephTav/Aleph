@@ -25,37 +25,29 @@ namespace Aleph\Web\POM;
 use Aleph\MVC,
     Aleph\Utils\PHP;
 
-class CKEditor extends Control
+class Upload extends Control
 {
-  protected $ctrl = 'ckeditor';
+  protected $ctrl = 'upload';
   
-  protected $dataAttributes = ['options' => 1];
+  protected $dataAttributes = ['options' => 1, 'callback' => 1];
 
-  public function __construct($id, $value = null)
+  public function __construct($id)
   {
     parent::__construct($id);
-    $this->properties['value'] = $value;
   }
   
   public function init()
   {
-    MVC\Page::$current->view->addJS(['src' => \Aleph::url('framework') . '/web/js/ckeditor/ckeditor.js']);
-  }
-  
-  public function clean()
-  {
-    $this->properties['value'] = '';
-  }
-
-  public function validate(Validator $validator)
-  {
-    return $validator->check($this['value']);
+    $url = \Aleph::url('framework');
+    $view = MVC\Page::$current->view;
+    $view->addJS(['src' => $url . '/web/js/jquery/upload/vendor/jquery.ui.widget.js']);
+    $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.iframe-transport.js']);
+    $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.fileupload.js']);
   }
 
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    unset($this->attributes['style']);
-    return '<textarea' . $this->renderAttributes() . ' style="visibility:hidden;display:none;">' . $this->properties['value'] . '</textarea>';
+    return '<input type="file"' . $this->renderAttributes() . ' />';
   }
 }
