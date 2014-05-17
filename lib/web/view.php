@@ -330,13 +330,27 @@ class View implements \ArrayAccess
   
   public function get($id, $isRecursion = true, Control $context = null)
   {
-    if (isset($this->controls[$id])) return $this->controls[$id];
-    if (isset($this->vs[$id]))
+    if (isset($this->controls[$id])) 
+    {
+      $ctrl = $this->controls[$id];
+      if ($context)
+      {
+        if (isset($context->getControls()[$id])) return $ctrl;
+        return false;
+      }
+      return $ctrl;
+    }
+    else if (isset($this->vs[$id]))
     {
       $vs = $this->vs[$id];
       $ctrl = new $vs['class']($vs['properties']['id']);
       $ctrl->setVS($vs);
       $this->controls[$ctrl->id] = $ctrl;
+      if ($context)
+      {
+        if (isset($context->getControls()[$id])) return $ctrl;
+        return false;
+      }
       return $ctrl;
     }
     if ($context) $controls = $context->getControls();
@@ -365,11 +379,30 @@ class View implements \ArrayAccess
       foreach ($ctrl->getControls() as $child)
       {
         $vs = $this->getActualVS($child);
-        if (isset($vs['properties']['value']))
+        if ($isRecursion && isset($vs['controls'])) $this->clean($vs['attributes']['id'], true);
+        else if (isset($vs['properties']['value']))
         {
-          if ($isRecursion && isset($vs['controls'])) $this->clean($vs['attributes']['id'], true);
-          else if ($child instanceof Control) $child->clean();
+          if ($child instanceof Control) $child->clean();
           else $this->get($vs['attributes']['id'])->clean();
+        }
+      }
+    }
+  }
+  
+  public function check($id, $flag = true, $isRecursion = true)
+  {
+    $ctrl = $this->get($id);
+    if ($ctrl instanceof CheckBox) $ctrl->check($flag);
+    else if ($ctrl instanceof Panel)
+    {
+      foreach ($ctrl->getControls() as $child)
+      {
+        $vs = $this->getActualVS($child);
+        if ($isRecursion && isset($vs['controls'])) $this->check($vs['attributes']['id'], $flag, true);
+        if ($vs['class'] == 'Aleph\\Web\\POM\\CheckBox')
+        {
+          if ($child instanceof Control) $child->check($flag);
+          else $this->get($vs['attributes']['id'])->check($flag);
         }
       }
     }
@@ -583,6 +616,10 @@ class View implements \ArrayAccess
       {
         $this->vs[$uniqueID]['attributes'] = array_merge($this->vs[$uniqueID]['attributes'], $info['attrs']);
       }
+      if (isset($info['removed']))
+      {
+        foreach ($info['removed'] as $attr) unset($this->vs[$uniqueID]['attributes'][$attr]);
+      }
     }
   }
   
@@ -593,31 +630,30 @@ class View implements \ArrayAccess
     $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
     foreach ($this->controls as $uniqueID => $ctrl)
     {
+      if (!$ctrl->isCreated()) continue;
+      $tmp[] = '$a.pom.create(\'' . $uniqueID . '\', ' . json_encode($ctrl->render()) . ', \'' . $ctrl->getCreationInfo()['mode'] . '\', \'' . $ctrl->getCreationInfo()['id'] . '\')';
+      $this->vs[$uniqueID] = $ctrl->getVS();
+      unset($this->controls[$uniqueID]);
+    }
+    foreach ($this->controls as $uniqueID => $ctrl)
+    {
       if ($ctrl->isRemoved())
       {
         $tmp[] = '$a.pom.remove(\'' . $uniqueID . '\');';
         unset($this->vs[$uniqueID]);
         continue;
       }
-      $vs = $ctrl->getVS();
-      if ($ctrl->isCreated())
+      $cmp = $ctrl->compare($this->vs[$uniqueID]);
+      if (is_array($cmp))
       {
-        $tmp[] = '$a.pom.create(\'' . $uniqueID . '\', ' . json_encode($ctrl->render()) . ', \'' . $ctrl->getCreationInfo()['mode'] . '\', \'' . $ctrl->getCreationInfo()['id'] . '\')';
+        if (count($cmp['diff']) || count($cmp['removed']))
+        {
+          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp['diff'], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($cmp['removed']) . ')';
+        }
       }
       else
       {
-        $cmp = $ctrl->compare($this->vs[$uniqueID]);
-        if (is_array($cmp))
-        {
-          if (count($cmp['diff']) || count($cmp['removed']))
-          {
-            $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp['diff'], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($cmp['removed']) . ')';
-          }
-        }
-        else
-        {
-          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp) . ')';
-        }
+        $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp) . ')';
       }
       foreach ($ctrl->getEvents() as $eid => $event)
       {

@@ -338,7 +338,7 @@ abstract class Control implements \ArrayAccess
     if (!$this->isRemoved)
     {
       $this->isRemoved = true;
-      if (false !== $parent = $this->getParent()) $parent->detach($this);
+      if (false !== $parent = $this->getParent()) $parent->detach($this->attributes['id']);
     }
     return $this;
   }
@@ -394,10 +394,11 @@ abstract class Control implements \ArrayAccess
     else
     {
       $prnt = $this->getParent();
-      if ($prnt->id != $parent->id) $prnt->detach($this);
+      if ($prnt->id != $parent->id) $prnt->detach($this->attributes['id']);
       $this->parent = $parent;
     }
-    $this->creationInfo = ['mode' => null, 'id' => null];
+    $this->isCreated = true;
+    $this->creationInfo = ['mode' => $mode, 'id' => $id];
     if ($id === null || $id == $parent->id)
     {
       if ($mode !== null) 
@@ -419,7 +420,6 @@ abstract class Control implements \ArrayAccess
             throw new Core\Exception($this, 'ERR_CTRL_7', $mode);
         }
         $this->creationInfo = ['mode' => $mode, 'id' => $parent->id];
-        $this->isCreated = true;
       }
     }
     else if (false !== $ctrl = $parent->get($id, false))
@@ -443,17 +443,14 @@ abstract class Control implements \ArrayAccess
            throw new Core\Exception($this, 'ERR_CTRL_7', $mode);
       }
       $this->creationInfo = ['mode' => $mode, 'id' => $ctrl->id];
-      $this->isCreated = true;
     }
-    else
+    else if ($mode !== 'replace')
     {
       $root = md5(microtime(true));
       $dom = new Utils\DOMDocumentEx();
       $dom->setHTML('<div id="' . $root . '">' . $parent->tpl->getTemplate() . '</div>');
       $dom->inject($id, View::getControlPlaceHolder($this->attributes['id']), $mode);
       $parent->tpl->setTemplate($dom->getInnerHTML($dom->getElementById($root)));
-      $this->creationInfo = ['mode' => $mode, 'id' => $id];
-      $this->isCreated = true;
     }
     if ($parent->isAttached() && !$this->isAttached()) MVC\Page::$current->view->attach($this);
     $this->isRemoved = false;

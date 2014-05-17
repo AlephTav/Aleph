@@ -91,31 +91,32 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   
   public function add(Control $ctrl, $mode = null, $id = null)
   {
-    if ($this->get($ctrl['id'], false)) throw new Core\Exception($this, 'ERR_PANEL_1', get_class($ctrl), $ctrl['id'], get_class($this), $this->getFullID());
+    if ($this->get($ctrl['id'], false, $this)) throw new Core\Exception($this, 'ERR_PANEL_1', get_class($ctrl), $ctrl['id'], get_class($this), $this->getFullID());
     $ctrl->setParent($this, $mode, $id);
     $this->controls[$ctrl->id] = $ctrl;
+    return $this;
   }
   
   public function detach($id)
   {
     if ($this->inDetach) return $this;
     $this->inDetach = true;
-    if ($id instanceof Control) $ctrl = $id->remove();
-    else 
-    {
-      $ctrl = $this->get($id, false);
-      if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
-      $ctrl->remove();
-    }
+    $ctrl = $this->get($id, false, $this);
+    if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
+    $ctrl->remove();
     unset($this->controls[$ctrl->id]);
     $this->tpl->setTemplate(str_replace(View::getControlPlaceHolder($ctrl->id), '', $this->tpl->getTemplate()));
     $this->inDetach = false;
     return $this;
   }
   
-  public function replace($id, $ctrl)
+  public function replace($id, Control $new)
   {
-    
+    $ctrl = $this->get($id, false, $this);
+    if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
+    $this->tpl->setTemplate(str_replace(View::getControlPlaceHolder($ctrl->id), View::getControlPlaceHolder($new->id), $this->tpl->getTemplate()));
+    $ctrl->remove();
+    return $this->add($new, 'replace', $ctrl->id);
   }
   
   public function remove()
@@ -126,7 +127,8 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   
   public function check($flag = true, $isRecursion = true)
   {
-  
+    MVC\Page::$current->view->check($this->attributes['id'], $flag, $isRecursion);
+    return $this;
   }
   
   public function clean($isRecursion = true)
