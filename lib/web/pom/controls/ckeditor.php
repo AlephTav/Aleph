@@ -29,7 +29,7 @@ class CKEditor extends Control
 {
   protected $ctrl = 'ckeditor';
   
-  protected $dataAttributes = ['options' => 1];
+  protected $dataAttributes = ['settings' => 1];
 
   public function __construct($id, $value = null)
   {

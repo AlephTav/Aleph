@@ -22,32 +22,22 @@
 
 namespace Aleph\Web\POM;
 
-use Aleph\MVC,
-    Aleph\Utils\PHP;
+use Aleph\Core,
+    Aleph\MVC;
 
-class Upload extends Control
+class Popup extends Panel
 {
-  protected $ctrl = 'upload';
-  
-  protected $dataAttributes = ['settings' => 1, 'callback' => 1];
+  protected $ctrl = 'popup';
 
-  public function __construct($id)
+  protected $dataAttributes = ['overlay' => 1, 'overlayclass' => 1, 'overlayselector' => 1, 'closebyescape' => 1, 'closebydocument' => 1, 'closebuttons' => 1];
+  
+  public function show($center = true)
   {
-    parent::__construct($id);
+    MVC\Page::$current->view->action('$a.pom.get(\'' . $this->attributes['id'] . '\').show(' . ($center ? 'true' : 'false') . ')');
   }
   
-  public function init()
+  public function hide()
   {
-    $url = \Aleph::url('framework');
-    $view = MVC\Page::$current->view;
-    $view->addJS(['src' => $url . '/web/js/jquery/upload/vendor/jquery.ui.widget.js']);
-    $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.iframe-transport.js']);
-    $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.fileupload.js']);
-  }
-
-  public function render()
-  {
-    if (!$this->properties['visible']) return $this->invisible();
-    return '<input type="file"' . $this->renderAttributes() . ' />';
+    MVC\Page::$current->view->action('$a.pom.get(\'' . $this->attributes['id'] . '\').hide()');
   }
 }

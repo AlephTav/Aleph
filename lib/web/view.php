@@ -291,10 +291,10 @@ class View implements \ArrayAccess
       case 'focus':
       case 'remove':
       case 'script':
-        $this->actions[] = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
         break;
       case 'reload':
-        $this->actions[] = '$a.ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $act = '$a.ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
       case 'focus':
       case 'addclass':
@@ -303,17 +303,19 @@ class View implements \ArrayAccess
       case 'remove':
       case 'insert':
       case 'replace':
-        $this->actions[] = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
+        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
         break;
       case 'display':
       case 'message':
       case 'inject':
-        $this->actions[] = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[3], true, $jsMark) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
+        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[3], true, $jsMark) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
         break;
       default:
-        $this->actions[] = '$a.ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, $jsMark) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $act = '$a.ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, $jsMark) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
     }
+    if (Net\Request::getInstance()->isAjax) $this->actions[] = $act;
+    else $this->addJS([], $act, false);
   }
   
   public function attach(Control $ctrl)
@@ -960,7 +962,10 @@ class View implements \ArrayAccess
     xml_set_element_handler($parser, $parseStart, $parseEnd);
     xml_set_character_data_handler($parser, $parseCData);
     xml_set_default_handler($parser, $parseCData);
-    if (!xml_parse($parser, $ctx['xhtml']))
+    $flag = strtolower(substr($ctx['xhtml'], 0, 9)) != '<!doctype';
+    if ($flag) $xhtml = '<root>' . $ctx['xhtml'] . '</root>';
+    else $xhtml = $ctx['xhtml'];
+    if (!xml_parse($parser, $xhtml))
     {
       $error = xml_error_string(xml_get_error_code($parser));
       $line = xml_get_current_line_number($parser);
@@ -969,6 +974,7 @@ class View implements \ArrayAccess
       throw new Core\Exception($this, 'ERR_VIEW_1', $error, $file, $line, $column);
     }
     xml_parser_free($parser);
+    if ($flag) $ctx['html'] = substr($ctx['html'], 6, -7);
     static::$process--;
     return $ctx;
   }
