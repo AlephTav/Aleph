@@ -63,6 +63,7 @@ class Paginator extends Control
     $this->properties['last'] = ceil($this->properties['total'] / $this->properties['size']) - 1;
     if ($this->properties['page'] < 0) $this->properties['page'] = 0;
     if ($this->properties['page'] > $this->properties['last']) $this->properties['page'] = $this->properties['last'];
+    return $this;
   }
   
   public function render()

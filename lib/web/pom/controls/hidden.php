@@ -35,6 +35,7 @@ class Hidden extends Control
   public function clean()
   {
     $this->properties['value'] = '';
+    return $this;
   }
 
   public function validate(Validator $validator)

@@ -212,11 +212,13 @@ abstract class Control implements \ArrayAccess
       $callback = 'function(event){$a.ajax.doit(\'' . addcslashes($callback, "'\\") . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
     }
     $this->events[$id] = ['type' => strtolower($type), 'callback' => $callback, 'options' => $options];
+    return $this;
   }
   
   public function removeEvent($id)
   {
     $this->events[$id] = false;
+    return $this;
   }
   
   public function hasClass($class, $isContainer = false)
@@ -463,18 +465,6 @@ abstract class Control implements \ArrayAccess
     $ctrl = new $class($id ?: $this->properties['id']);
     $vs = $this->getVS();
     $vs['properties']['id'] = $ctrl['id'];
-    if ($this instanceof Panel)
-    {
-      $vs['controls'] = [];
-      $ctrl->setVS($vs);
-      foreach ($this as $child) 
-      {
-        $copy = $child->copy();
-        $ctrl->tpl->setTemplate(str_replace(View::getControlPlaceHolder($child->id), View::getControlPlaceHolder($copy->id), $ctrl->tpl->getTemplate()));
-        $ctrl->add($copy);
-      }
-      return $ctrl;
-    }
     $ctrl->setVS($vs);
     return $ctrl;
   }

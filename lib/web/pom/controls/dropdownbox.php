@@ -37,6 +37,7 @@ class DropDownBox extends Control
   public function clean()
   {
     $this->properties['value'] = '';
+    return $this;
   }
 
   public function validate(Validator $validator)
@@ -49,7 +50,7 @@ class DropDownBox extends Control
     if (!$this->properties['visible']) return $this->invisible();
     $html = '<select' . $this->renderAttributes() . '>';
     if (strlen($this->properties['caption'])) $html .= $this->getOptionHTML('', $this->properties['caption']);
-    foreach ($this->properties['options'] as $key => $value)
+    foreach ((array)$this->properties['options'] as $key => $value)
     {
       if (is_array($value))
       {

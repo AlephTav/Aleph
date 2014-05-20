@@ -39,11 +39,13 @@ class Radio extends Control
   {
     if ($flag) $this->attributes['checked'] = 'checked';
     else unset($this->attributes['checked']);
+    return $this;
   }
   
   public function clean()
   {
     unset($this->attributes['checked']);
+    return $this;
   }
 
   public function validate(Validator $validator)

@@ -53,6 +53,7 @@ class TextBox extends Control
   public function clean()
   {
     $this->properties['value'] = isset($this->attributes['default']) ? $this->attributes['default'] : '';
+    return $this;
   }
 
   public function validate(Validator $validator)

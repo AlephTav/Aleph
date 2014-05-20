@@ -30,11 +30,6 @@ class Upload extends Control
   protected $ctrl = 'upload';
   
   protected $dataAttributes = ['settings' => 1, 'callback' => 1];
-
-  public function __construct($id)
-  {
-    parent::__construct($id);
-  }
   
   public function init()
   {
@@ -43,6 +38,7 @@ class Upload extends Control
     $view->addJS(['src' => $url . '/web/js/jquery/upload/vendor/jquery.ui.widget.js']);
     $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.iframe-transport.js']);
     $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.fileupload.js']);
+    return $this;
   }
 
   public function render()

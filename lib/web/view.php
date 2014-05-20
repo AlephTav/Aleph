@@ -125,7 +125,7 @@ class View implements \ArrayAccess
             'meta' => $view->getAllMeta(),
             'js' => $view->getAllJS(),
             'css' => $view->getAllCSS(),
-            'html' => $ctx['html']];
+            'html' => static::decodePHPTags($ctx['html'], $ctx['marks'])];
     if (static::inParsing())
     {
       $res['controls'] = $ctx['controls'];
@@ -467,8 +467,7 @@ class View implements \ArrayAccess
         if (!($body instanceof Body) || count($ctx['controls'])) throw new Core\Exception($this, 'ERR_VIEW_5');
         $this->controls[$body->id] = $body;
         $this->commit();
-        $this->controls = [$body->id => static::decodePHPTags($body, $ctx['marks'])];
-        $this->commit();
+        static::decodePHPTags($body, $ctx['marks']);
         $url = \Aleph::url('framework');
         $this->addJS(['src' => $url . '/web/js/jquery/jquery.min.js'], null, true, -1000);
         $this->addJS(['src' => $url . '/web/js/aleph.min.js'], null, true, -100);
@@ -594,12 +593,13 @@ class View implements \ArrayAccess
     $commit = function(Control $ctrl) use(&$commit)
     {
       $this->vs[$ctrl->id] = $ctrl->getVS();
+      $this->controls[$ctrl->id] = $ctrl;
       if ($ctrl instanceof Panel)
       {
-        foreach ($ctrl->getControls() as $uniqueID => $ctrl)
+        foreach ($ctrl as $uniqueID => $child)
         {
-          if ($ctrl instanceof Control) $commit($ctrl);
-        }        
+          $commit($child);
+        }
       }
     };
     foreach ($this->controls as $ctrl) $commit($ctrl);
@@ -630,6 +630,7 @@ class View implements \ArrayAccess
     $tmp = [];
     $config = \Aleph::getInstance()->getConfig();
     $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
+    $controls = $this->controls;
     foreach ($this->controls as $uniqueID => $ctrl)
     {
       if (!$ctrl->isCreated()) continue;
@@ -657,12 +658,15 @@ class View implements \ArrayAccess
       {
         $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp) . ')';
       }
+      $this->vs[$uniqueID] = $ctrl->getVS();
+    }
+    foreach ($controls as $uniqueID => $ctrl)
+    {
       foreach ($ctrl->getEvents() as $eid => $event)
       {
         if ($event === false) $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
         else $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')';
       }
-      $this->vs[$uniqueID] = $ctrl->getVS();
     }
     if ($tmp) array_unshift($this->actions, implode(';', $tmp));
   }  

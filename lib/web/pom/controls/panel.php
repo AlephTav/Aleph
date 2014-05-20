@@ -86,7 +86,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     $this->tpl->setTemplate($res['html']);
     foreach ($this->controls as $ctrl) $this->detach($ctrl);
     foreach ($res['controls'] as $ctrl) $this->add($ctrl);
-    $this->refresh();
+    return $this->refresh();
   }
   
   public function add(Control $ctrl, $mode = null, $id = null)
@@ -123,6 +123,23 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   {
     foreach ($this->controls as $ctrl) $this->detach($ctrl);
     parent::remove();
+  }
+  
+  public function copy($id = null)
+  {
+    $class = get_class($this);
+    $ctrl = new $class($id ?: $this->properties['id']);
+    $vs = $this->getVS();
+    $vs['properties']['id'] = $ctrl['id'];
+    $vs['controls'] = [];
+    $ctrl->setVS($vs);
+    foreach ($this as $child) 
+    {
+      $copy = $child->copy();
+      $ctrl->tpl->setTemplate(str_replace(View::getControlPlaceHolder($child->id), View::getControlPlaceHolder($copy->id), $ctrl->tpl->getTemplate()));
+      $ctrl->add($copy);
+    }
+    return $ctrl;
   }
   
   public function check($flag = true, $isRecursion = true)

@@ -34,10 +34,12 @@ class Popup extends Panel
   public function show($center = true)
   {
     MVC\Page::$current->view->action('$a.pom.get(\'' . $this->attributes['id'] . '\').show(' . ($center ? 'true' : 'false') . ')');
+    return $this;
   }
   
   public function hide()
   {
     MVC\Page::$current->view->action('$a.pom.get(\'' . $this->attributes['id'] . '\').hide()');
+    return $this;
   }
 }
