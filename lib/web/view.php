@@ -627,48 +627,40 @@ class View implements \ArrayAccess
   
   protected function compare()
   {
-    $tmp = [];
+    if (count($this->controls) == 0) return;
     $config = \Aleph::getInstance()->getConfig();
     $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
-    $controls = $this->controls;
-    foreach ($this->controls as $uniqueID => $ctrl)
-    {
-      if (!$ctrl->isCreated()) continue;
-      $tmp[] = '$a.pom.create(\'' . $uniqueID . '\', ' . json_encode($ctrl->render()) . ', \'' . $ctrl->getCreationInfo()['mode'] . '\', \'' . $ctrl->getCreationInfo()['id'] . '\')';
-      $this->vs[$uniqueID] = $ctrl->getVS();
-      unset($this->controls[$uniqueID]);
-    }
+    $tmp = ['created' => [], 'removed' => [], 'refreshed' => []];
+    $events = [];
     foreach ($this->controls as $uniqueID => $ctrl)
     {
       if ($ctrl->isRemoved())
       {
-        $tmp[] = '$a.pom.remove(\'' . $uniqueID . '\');';
+        $tmp['removed'][$uniqueID] = $ctrl instanceof Panel;
         unset($this->vs[$uniqueID]);
         continue;
       }
-      $cmp = $ctrl->compare($this->vs[$uniqueID]);
-      if (is_array($cmp))
+      if ($ctrl->isCreated())
       {
-        if (count($cmp['diff']) || count($cmp['removed']))
-        {
-          $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp['diff'], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($cmp['removed']) . ')';
-        }
+        $tmp['created'][$uniqueID] = ['html' => $ctrl->render(), 'mode' => $ctrl->getCreationInfo()['mode'], 'id' => $ctrl->getCreationInfo()['id']];  
       }
       else
       {
-        $tmp[] = '$a.pom.refresh(\'' . $uniqueID . '\', ' . Utils\PHP\Tools::php2js($cmp) . ')';
+        $cmp = $ctrl->compare($this->vs[$uniqueID]);
+        if (!is_array($cmp) || count($cmp['attrs']) || count($cmp['removed']))
+        {
+          $tmp['refreshed'][$uniqueID] = $cmp;
+        }
+      }
+      foreach ($ctrl->getEvents() as $eid => $event)
+      {
+        if ($event === false) $events[] = '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
+        else $events[] = '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')';
       }
       $this->vs[$uniqueID] = $ctrl->getVS();
     }
-    foreach ($controls as $uniqueID => $ctrl)
-    {
-      foreach ($ctrl->getEvents() as $eid => $event)
-      {
-        if ($event === false) $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
-        else $tmp[] = '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')';
-      }
-    }
-    if ($tmp) array_unshift($this->actions, implode(';', $tmp));
+    array_unshift($events, '$a.pom.refresh(' . Utils\PHP\Tools::php2js($tmp, true, $jsMark) . ')');
+    array_unshift($this->actions, implode(';', $events));
   }  
   
   protected function prepareTemplate($template, array $vars = null)

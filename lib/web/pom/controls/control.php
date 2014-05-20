@@ -340,6 +340,7 @@ abstract class Control implements \ArrayAccess
     if (!$this->isRemoved)
     {
       $this->isRemoved = true;
+      $this->isCreated = false;
       if (false !== $parent = $this->getParent()) $parent->detach($this->attributes['id']);
     }
     return $this;
@@ -353,7 +354,7 @@ abstract class Control implements \ArrayAccess
   public function compare(array $vs)
   {
     if ($this->isRefreshed || $vs['properties'] != $this->properties) return $this->render();
-    $tmp = ['diff' => [], 'removed' => []];
+    $tmp = ['attrs' => [], 'removed' => []];
     foreach ($this->attributes as $attr => $value)
     {
       if (!isset($vs['attributes'][$attr]) && $value !== null || $value != $vs['attributes'][$attr])
@@ -364,7 +365,7 @@ abstract class Control implements \ArrayAccess
           $container = 'container-';
           $attr = substr($attr, 10);
         }
-        $tmp['diff'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
+        $tmp['attrs'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
       }
     }
     foreach ($vs['attributes'] as $attr => $value)
@@ -399,7 +400,6 @@ abstract class Control implements \ArrayAccess
       if ($prnt->id != $parent->id) $prnt->detach($this->attributes['id']);
       $this->parent = $parent;
     }
-    $this->isCreated = true;
     $this->creationInfo = ['mode' => $mode, 'id' => $id];
     if ($id === null || $id == $parent->id)
     {
@@ -455,6 +455,7 @@ abstract class Control implements \ArrayAccess
       $parent->tpl->setTemplate($dom->getInnerHTML($dom->getElementById($root)));
     }
     if ($parent->isAttached() && !$this->isAttached()) MVC\Page::$current->view->attach($this);
+    $this->isCreated = true;
     $this->isRemoved = false;
     return $this;
   }
