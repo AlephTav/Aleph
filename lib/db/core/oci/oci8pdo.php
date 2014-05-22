@@ -370,9 +370,9 @@ class OCI8Statement
     if ($style === null) list($style, $arg, $args) = $this->defaultFetchMode;
     if (($style & \PDO::FETCH_COLUMN) == \PDO::FETCH_COLUMN || $style == \PDO::FETCH_FUNC || $style == \PDO::FETCH_KEY_PAIR) $s = OCI_NUM;
     else if (($style & \PDO::FETCH_CLASS) == \PDO::FETCH_CLASS) $s = OCI_ASSOC;
-    else if (($style & \PDO::FETCH_BOTH) == \PDO::FETCH_BOTH) $s = OCI_BOTH;
-    else if (($style & \PDO::FETCH_ASSOC) == \PDO::FETCH_ASSOC) $s = OCI_ASSOC;
-    else if (($style & \PDO::FETCH_NUM) == \PDO::FETCH_NUM) $s = OCI_NUM;
+    else if (($style & 7) == \PDO::FETCH_BOTH) $s = OCI_BOTH;
+    else if (($style & 7) == \PDO::FETCH_ASSOC) $s = OCI_ASSOC;
+    else if (($style & 7) == \PDO::FETCH_NUM) $s = OCI_NUM;
     else $s = OCI_BOTH;
     if (oci_fetch_all($this->st, $rows, 0, -1, OCI_FETCHSTATEMENT_BY_ROW + $s) === false) return false;
     if ($style == \PDO::FETCH_FUNC)
@@ -449,9 +449,9 @@ class OCI8Statement
   {
     if ($style === null) $style = $this->defaultFetchMode[0];
     if (($style & \PDO::FETCH_OBJ) == \PDO::FETCH_OBJ) return oci_fetch_object($this->st);
-    if (($style & \PDO::FETCH_BOTH) == \PDO::FETCH_BOTH) $style = OCI_BOTH;
-    else if (($style & \PDO::FETCH_ASSOC) == \PDO::FETCH_ASSOC) $style = OCI_ASSOC;
-    else if (($style & \PDO::FETCH_NUM) == \PDO::FETCH_NUM) $style = OCI_NUM;
+    if (($style & 7) == \PDO::FETCH_BOTH) $style = OCI_BOTH;
+    else if (($style & 7) == \PDO::FETCH_ASSOC) $style = OCI_ASSOC;
+    else if (($style & 7) == \PDO::FETCH_NUM) $style = OCI_NUM;
     else $style = OCI_BOTH;
     return oci_fetch_array($this->st, $style + OCI_RETURN_NULLS);
   }
