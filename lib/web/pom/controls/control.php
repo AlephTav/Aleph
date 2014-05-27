@@ -226,7 +226,7 @@ abstract class Control implements \ArrayAccess
     $attr = $isContainer ? 'container-class' : 'class';
     $class = trim($class);
     if (strlen($class) == 0 || !isset($this->attributes[$attr])) return false;
-    return strpos(' ' . trim($this->attributes[$attr]) . ' ', ' ' . $class . ' ') !== false;
+    return strpos(' ' . $this->attributes[$attr] . ' ', ' ' . $class . ' ') !== false;
   }
 
   public function addClass($class, $isContainer = false)
@@ -235,7 +235,7 @@ abstract class Control implements \ArrayAccess
     $class = trim($class);
     if (strlen($class) == 0 || $this->hasClass($class, $isContainer)) return $this;
     if (!isset($this->attributes[$attr])) $this->attributes[$attr] = $class;
-    else $this->attributes[$attr] = trim(trim($this->attributes[$attr]) . ' ' . $class);
+    else $this->attributes[$attr] = trim(rtrim($this->attributes[$attr]) . ' ' . $class);
     return $this;
   }
 
@@ -244,7 +244,7 @@ abstract class Control implements \ArrayAccess
     $attr = $isContainer ? 'container-class' : 'class';
     $class = trim($class);
     if (strlen($class) == 0 || !isset($this->attributes[$attr])) return $this;
-    $this->attributes[$attr] = trim(str_replace(' ' . $class . ' ', '', trim($this->attributes[$attr])));
+    $this->attributes[$attr] = trim(str_replace(' ' . $class . ' ', '', ' ' . $this->attributes[$attr] . ' '));
     return $this;
   }
 
@@ -339,9 +339,9 @@ abstract class Control implements \ArrayAccess
   {
     if (!$this->isRemoved)
     {
+      if (false !== $parent = $this->getParent()) $parent->detach($this->attributes['id']);
       $this->isRemoved = true;
       $this->isCreated = false;
-      if (false !== $parent = $this->getParent()) $parent->detach($this->attributes['id']);
     }
     return $this;
   }

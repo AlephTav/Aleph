@@ -335,11 +335,8 @@ class View implements \ArrayAccess
     if (isset($this->controls[$id])) 
     {
       $ctrl = $this->controls[$id];
-      if ($context)
-      {
-        if (isset($context->getControls()[$id])) return $ctrl;
-        return false;
-      }
+      if ($context && !isset($context->getControls()[$id])) return false;
+      if ($ctrl->isRemoved()) return false;
       return $ctrl;
     }
     else if (isset($this->vs[$id]))
@@ -347,12 +344,8 @@ class View implements \ArrayAccess
       $vs = $this->vs[$id];
       $ctrl = new $vs['class']($vs['properties']['id']);
       $ctrl->setVS($vs);
+      if ($context && !isset($context->getControls()[$id])) return false;
       $this->controls[$ctrl->id] = $ctrl;
-      if ($context)
-      {
-        if (isset($context->getControls()[$id])) return $ctrl;
-        return false;
-      }
       return $ctrl;
     }
     if ($context) $controls = $context->getControls();
@@ -422,8 +415,94 @@ class View implements \ArrayAccess
     }
     if (!empty($vs['methods'][$method])) 
     {
-   
       $this->get($vs['attributes']['id'])->{$method}();
+    }
+  }
+  
+  public function getValidators($groups = 'default')
+  {
+    $validators = [];
+    $ids = array_merge(array_keys($this->vs), array_keys($this->controls));
+    if ($groups == '*')
+    {
+      foreach ($ids as $id)
+      {
+        $vs = $this->getActualVS($id);
+        if ($vs && is_subclass_of($vs['class'], 'Aleph\Web\POM\Validator')) 
+        {
+          $validators[] = $this->get($id);
+        }
+      }
+    }
+    else
+    {
+      $groups = array_map('trim', explode(',', $groups));
+      foreach ($ids as $id)
+      {
+        $vs = $this->getActualVS($id);
+        if ($vs && is_subclass_of($vs['class'], 'Aleph\Web\POM\Validator')) 
+        {
+          $group = isset($vs['group']) ? $vs['group'] : 'default';
+          foreach ($groups as $grp)
+          {
+            if (preg_match('/,\s*' . preg_quote($grp) . '\s*,/', ',' . $group . ','))
+            {
+              $validators[] = $this->get($id);
+              break;
+            }
+          }
+        }
+      }
+    }
+    return $validators;
+  }
+  
+  public function validate($groups = 'default', $classInvalid = null, $classValid = null)
+  {
+    $validators = $this->getValidators($groups);
+    usort($validators, function($a, $b)
+    {
+      return (int)$a->index - (int)$b->index;
+    });
+    $flag = true;
+    $result = [];
+    foreach ($validators as $validator)
+    {
+      if ($validator->validate())
+      {
+        foreach ($validator->getResult() as $id => $res)
+        {
+          if (!isset($result[$id])) $result[$id] = true;
+        }
+      }
+      else
+      {
+        $flag = false;
+        foreach ($validator->getResult() as $id => $res)
+        {
+          if (!$res) $result[$id] = false;
+          else if (!isset($result[$id])) $result[$id] = true;
+        }
+      }
+    }
+    foreach ($result as $id => $res)
+    {
+      if ($res) $this->get($id)->removeClass($classInvalid)->addClass($classValid);
+      else $this->get($id)->removeClass($classValid)->addClass($classInvalid);
+    }
+    return $flag;
+  }
+  
+  public function reset($groups = 'default', $classInvalid = null, $classValid = null)
+  {
+    foreach ($this->getValidators($groups) as $validator)
+    {
+      foreach ($validator->getControls() as $id)
+      {
+        $ctrl = $this->get($id);
+        if ($ctrl) $ctrl->removeClass($classInvalid)->addClass($classValid);
+      }
+      $validator->state = true;
     }
   }
   
@@ -628,21 +707,21 @@ class View implements \ArrayAccess
   protected function compare()
   {
     if (count($this->controls) == 0) return;
-    $config = \Aleph::getInstance()->getConfig();
-    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
     $tmp = ['created' => [], 'removed' => [], 'refreshed' => []];
-    $events = [];
+    $events = []; $flag = false;
     foreach ($this->controls as $uniqueID => $ctrl)
     {
       if ($ctrl->isRemoved())
       {
         $tmp['removed'][$uniqueID] = $ctrl instanceof Panel;
         unset($this->vs[$uniqueID]);
+        $flag = true;
         continue;
       }
       if ($ctrl->isCreated())
       {
-        $tmp['created'][$uniqueID] = ['html' => $ctrl->render(), 'mode' => $ctrl->getCreationInfo()['mode'], 'id' => $ctrl->getCreationInfo()['id']];  
+        $tmp['created'][$uniqueID] = ['html' => $ctrl->render(), 'mode' => $ctrl->getCreationInfo()['mode'], 'id' => $ctrl->getCreationInfo()['id']];
+        $flag = true;
       }
       else
       {
@@ -650,6 +729,7 @@ class View implements \ArrayAccess
         if (!is_array($cmp) || count($cmp['attrs']) || count($cmp['removed']))
         {
           $tmp['refreshed'][$uniqueID] = $cmp;
+          $flag = true;
         }
       }
       foreach ($ctrl->getEvents() as $eid => $event)
@@ -659,8 +739,11 @@ class View implements \ArrayAccess
       }
       $this->vs[$uniqueID] = $ctrl->getVS();
     }
-    array_unshift($events, '$a.pom.refresh(' . Utils\PHP\Tools::php2js($tmp, true, $jsMark) . ')');
-    array_unshift($this->actions, implode(';', $events));
+    if ($flag)
+    {
+      array_unshift($events, '$a.pom.refresh(' . Utils\PHP\Tools::php2js($tmp, true, self::JS_MARK) . ')');
+      array_unshift($this->actions, implode(';', $events));
+    }
   }  
   
   protected function prepareTemplate($template, array $vars = null)
@@ -980,7 +1063,7 @@ class View implements \ArrayAccess
     foreach ($controls as $obj)
     {
       $vs = $this->getActualVS($obj);
-      if ($vs['properties']['id'] == $cid[0])
+      if ($vs && $vs['properties']['id'] == $cid[0])
       {
         $m = 1; $n = count($cid);
         for ($k = 1; $k < $n; $k++)
@@ -990,7 +1073,7 @@ class View implements \ArrayAccess
           foreach ($controls as $obj)
           {
             $vs = $this->getActualVS($obj);
-            if ($vs['properties']['id'] == $cid[$k])
+            if ($vs && $vs['properties']['id'] == $cid[$k])
             {
               $m++;
               $flag = true;
@@ -1013,7 +1096,17 @@ class View implements \ArrayAccess
   
   private function getActualVS($obj)
   {
-    return $obj instanceof Control ? $obj->getVS() : (isset($this->controls[$obj]) ? $this->controls[$obj]->getVS() : $this->vs[$obj]);
+    if ($obj instanceof Control)
+    {
+      if ($obj->isRemoved()) return false;
+      return $obj->getVS();
+    } 
+    if (isset($this->controls[$obj])) 
+    {
+      if ($this->controls[$obj]->isRemoved()) return false;
+      return $this->controls[$obj]->getVS();
+    }
+    return $this->vs[$obj];
   }
 }
 
