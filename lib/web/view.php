@@ -487,8 +487,10 @@ class View implements \ArrayAccess
     }
     foreach ($result as $id => $res)
     {
-      if ($res) $this->get($id)->removeClass($classInvalid)->addClass($classValid);
-      else $this->get($id)->removeClass($classValid)->addClass($classInvalid);
+      $ctrl = $this->get($id);
+      $hasContainer = $ctrl->hasContainer();
+      if ($res) $ctrl->removeClass($classInvalid, $hasContainer)->addClass($classValid, $hasContainer);
+      else $ctrl->removeClass($classValid, $hasContainer)->addClass($classInvalid, $hasContainer);
     }
     return $flag;
   }

@@ -72,6 +72,12 @@ abstract class Validator extends Control
     return $this->result;
   }
   
+  public function setResult(array $result)
+  {
+    $this->result = $result;
+    return $this;
+  }
+  
   public function clean()
   {
     $this->attributes['state'] = true;
@@ -80,6 +86,7 @@ abstract class Validator extends Control
   
   public function validate()
   {
+    $this->result = [];
     $ids = $this->getControls(); 
     $len = count($ids);
     if ($len == 0) 
@@ -88,7 +95,6 @@ abstract class Validator extends Control
       return true;
     }
     $view = MVC\Page::$current->view;
-    $this->result = [];
     switch (isset($this->attributes['mode']) ? strtoupper($this->attributes['mode']) : 'AND')
     {
       default:

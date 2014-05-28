@@ -22,20 +22,15 @@
 
 namespace Aleph\Web\POM;
 
-class VRequired extends Validator
+class VEmail extends VRegExp
 {
-  protected $ctrl = 'vrequired';
+  const EMAIL_REG_EXP = '/^[-a-z0-9!#$%&\'*+\/=?^_`{|}~]+(\.[-a-z0-9!#$%&\'*+\/=?^_`{|}~]+)*@([a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?\.)+(aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|[a-z][a-z])$/i';
+
+  protected $ctrl = 'vemail';
 
   public function __construct($id)
   {
     parent::__construct($id);
-    $this->dataAttributes['trim'] = 1;
-  }
-
-  public function check($value)
-  {
-    if ($value === false || $value === true) return $value;
-    if (!empty($this->attributes['trim'])) return strlen(trim($value)) > 0;
-    return strlen($value) > 0;
+    $this->attributes['expression'] = self::EMAIL_REG_EXP;
   }
 }

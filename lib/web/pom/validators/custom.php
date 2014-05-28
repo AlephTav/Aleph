@@ -22,20 +22,30 @@
 
 namespace Aleph\Web\POM;
 
-class VRequired extends Validator
+use Aleph\MVC;
+
+class VCustom extends Validator
 {
-  protected $ctrl = 'vrequired';
+  protected $ctrl = 'vcustom';
 
   public function __construct($id)
   {
     parent::__construct($id);
-    $this->dataAttributes['trim'] = 1;
+    $this->dataAttributes['clientfunction'] = 1;
+    $this->dataAttributes['serverfunction'] = 1;
   }
-
+  
+  public function validate()
+  {
+    if (!empty($this->attributes['serverfunction'])) return $this->attributes['state'] = \Aleph::delegate($this->attributes['serverfunction'], $this);
+    if (empty($this->attributes['clientfunction'])) $flag = true;
+    else $flag = isset($this->attributes['state']) ? (bool)$this->attributes['state'] : true;
+    foreach ($this->getControls() as $id) $this->result[$id] = $flag;
+    return $this->attributes['state'] = $flag;
+  }
+  
   public function check($value)
   {
-    if ($value === false || $value === true) return $value;
-    if (!empty($this->attributes['trim'])) return strlen(trim($value)) > 0;
-    return strlen($value) > 0;
+    return $value; 
   }
 }

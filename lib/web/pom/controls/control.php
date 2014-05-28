@@ -221,6 +221,11 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
+  public function hasContainer()
+  {
+    return false;
+  }
+  
   public function hasClass($class, $isContainer = false)
   {
     $attr = $isContainer ? 'container-class' : 'class';

@@ -22,20 +22,22 @@
 
 namespace Aleph\Web\POM;
 
-class VRequired extends Validator
+class VRegExp extends Validator
 {
-  protected $ctrl = 'vrequired';
+  protected $ctrl = 'vregexp';
 
   public function __construct($id)
   {
     parent::__construct($id);
-    $this->dataAttributes['trim'] = 1;
+    $this->dataAttributes['empty'] = 1;
+    $this->dataAttributes['expression'] = 1;
   }
 
   public function check($value)
   {
-    if ($value === false || $value === true) return $value;
-    if (!empty($this->attributes['trim'])) return strlen(trim($value)) > 0;
-    return strlen($value) > 0;
+    if (empty($this->attributes['expression']) || !empty($this->attributes['empty']) && strlen($value) == 0) return true;
+    $exp = $this->attributes['expression'];
+    if ($exp[0] == 'i') return preg_match(substr($exp, 1), $value) == 0; 
+    return preg_match($exp, $value) > 0;
   }
 }

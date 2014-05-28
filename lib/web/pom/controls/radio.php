@@ -35,6 +35,11 @@ class Radio extends Control
     $this->properties['tag'] = 'div';
   }
   
+  public function hasContainer()
+  {
+    return true;
+  }
+  
   public function check($flag = true)
   {
     if ($flag) $this->attributes['checked'] = 'checked';
@@ -50,7 +55,7 @@ class Radio extends Control
 
   public function validate(Validator $validator)
   {
-    if ($validator instanceof ValidatorRequired) return $validator->check(!empty($this->attributes['checked']));
+    if ($validator instanceof VRequired) return $validator->check(!empty($this->attributes['checked']));
     return true;
   }
   
