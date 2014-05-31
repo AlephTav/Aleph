@@ -408,9 +408,6 @@ abstract class Control implements \ArrayAccess
       }
       $this->parent = $parent;
     }
-    $controls = $parent->getControls();
-    $controls[$this->attributes['id']] = $this;
-    $parent->setControls($controls);
     $this->creationInfo = ['mode' => $mode, 'id' => $id];
     if ($id === null || $id == $parent->id)
     {
@@ -467,6 +464,9 @@ abstract class Control implements \ArrayAccess
       $dom->inject($id, View::encodePHPTags($ph, $marks), $mode);
       $parent->tpl->setTemplate(View::decodePHPTags($dom->getInnerHTML($dom->getElementById($root)), $marks));
     }
+    $controls = $parent->getControls();
+    $controls[$this->attributes['id']] = $this;
+    $parent->setControls($controls);
     if ($parent->isAttached() && !$this->isAttached()) MVC\Page::$current->view->attach($this);
     $this->isCreated = true;
     $this->isRemoved = false;
