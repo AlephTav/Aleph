@@ -164,7 +164,7 @@ abstract class Control implements \ArrayAccess
     {
       if ($value == $this->properties[$property]) return;
       if (!preg_match(self::ID_REG_EXP, $value)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $value);
-      if (false !== $parent = $this->getParent() && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
+      if ((false !== $parent = $this->getParent()) && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
     }
     $this->properties[$property] = $value;
   }
@@ -344,7 +344,7 @@ abstract class Control implements \ArrayAccess
   {
     if (!$this->isRemoved)
     {
-      if (false !== $parent = $this->getParent()) $parent->detach($this->attributes['id']);
+      if ((false !== $parent = $this->getParent()) && !$parent->isRemoved()) $parent->detach($this->attributes['id']);
       $this->isRemoved = true;
       $this->isCreated = false;
     }
@@ -402,9 +402,15 @@ abstract class Control implements \ArrayAccess
     else
     {
       $prnt = $this->getParent();
-      if ($prnt->id != $parent->id) $prnt->detach($this->attributes['id']);
+      if ($prnt && $prnt->id != $parent->id) 
+      {
+        if (!$prnt->isRemoved()) $prnt->detach($this->attributes['id']);
+      }
       $this->parent = $parent;
     }
+    $controls = $parent->getControls();
+    $controls[$this->attributes['id']] = $this;
+    $parent->setControls($controls);
     $this->creationInfo = ['mode' => $mode, 'id' => $id];
     if ($id === null || $id == $parent->id)
     {
@@ -431,20 +437,20 @@ abstract class Control implements \ArrayAccess
     }
     else if (false !== $ctrl = $parent->get($id, false))
     {
+      $ph = View::getControlPlaceHolder($this->attributes['id']);
+      $ch = View::getControlPlaceHolder($ctrl->id);
+      if (!empty($prnt) && $prnt->id == $parent->id) $tpl = str_replace($ph, '', $parent->tpl->getTemplate());
+      else $tpl = $parent->tpl->getTemplate();
       switch ($mode)
       {
          case Utils\DOMDocumentEx::DOM_INJECT_TOP:
          case Utils\DOMDocumentEx::DOM_INJECT_BOTTOM:
            throw new Core\Exception($this, 'ERR_CTRL_6', get_class($this), $this->getFullID(), get_class($ctrl), $ctrl->getFullID());
          case Utils\DOMDocumentEx::DOM_INJECT_AFTER:
-           $ph = View::getControlPlaceHolder($this->attributes['id']);
-           $ch = View::getControlPlaceHolder($ctrl->id);
-           $parent->tpl->setTemplate(str_replace($ch, $ch . $ph, $parent->tpl->getTemplate()));
+           $parent->tpl->setTemplate(str_replace($ch, $ch . $ph, $tpl));
            break;
          case Utils\DOMDocumentEx::DOM_INJECT_BEFORE:
-           $ph = View::getControlPlaceHolder($this->attributes['id']);
-           $ch = View::getControlPlaceHolder($ctrl->id);
-           $parent->tpl->setTemplate(str_replace($ch, $ph . $ch, $parent->tpl->getTemplate()));
+           $parent->tpl->setTemplate(str_replace($ch, $ph . $ch, $tpl));
            break;
          default:
            throw new Core\Exception($this, 'ERR_CTRL_7', $mode);
@@ -453,11 +459,13 @@ abstract class Control implements \ArrayAccess
     }
     else if ($mode !== 'replace')
     {
+      $ph = View::getControlPlaceHolder($this->attributes['id']);
+      $tpl = str_replace($ph, '', $parent->tpl->getTemplate());
       $root = md5(microtime(true));
       $dom = new Utils\DOMDocumentEx();
-      $dom->setHTML('<div id="' . $root . '">' . $parent->tpl->getTemplate() . '</div>');
-      $dom->inject($id, View::getControlPlaceHolder($this->attributes['id']), $mode);
-      $parent->tpl->setTemplate($dom->getInnerHTML($dom->getElementById($root)));
+      $dom->setHTML('<div id="' . $root . '">' . $tpl . '</div>');
+      $dom->inject($id, View::encodePHPTags($ph, $marks), $mode);
+      $parent->tpl->setTemplate(View::decodePHPTags($dom->getInnerHTML($dom->getElementById($root)), $marks));
     }
     if ($parent->isAttached() && !$this->isAttached()) MVC\Page::$current->view->attach($this);
     $this->isCreated = true;
@@ -470,6 +478,8 @@ abstract class Control implements \ArrayAccess
     $class = get_class($this);
     $ctrl = new $class($id ?: $this->properties['id']);
     $vs = $this->getVS();
+    $vs['parent'] = null;
+    $vs['attributes']['id'] = $ctrl->id;
     $vs['properties']['id'] = $ctrl['id'];
     $ctrl->setVS($vs);
     return $ctrl;

@@ -70,6 +70,12 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     return $this->controls;
   }
   
+  public function setControls(array $controls)
+  {
+    $this->controls = $controls;
+    return $this;
+  }
+  
   public function count()
   {
     return count($this->controls);
@@ -91,9 +97,8 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   
   public function add(Control $ctrl, $mode = null, $id = null)
   {
-    if ($this->get($ctrl['id'], false, $this)) throw new Core\Exception($this, 'ERR_PANEL_1', get_class($ctrl), $ctrl['id'], get_class($this), $this->getFullID());
+    if ($this->get($ctrl['id'], false)) throw new Core\Exception($this, 'ERR_PANEL_1', get_class($ctrl), $ctrl['id'], get_class($this), $this->getFullID());
     $ctrl->setParent($this, $mode, $id);
-    $this->controls[$ctrl->id] = $ctrl;
     return $this;
   }
   
@@ -101,7 +106,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   {
     if ($this->inDetach) return $this;
     $this->inDetach = true;
-    $ctrl = $this->get($id, false, $this);
+    $ctrl = $this->get($id, false);
     if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
     $ctrl->remove();
     unset($this->controls[$ctrl->id]);
@@ -112,17 +117,18 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   
   public function replace($id, Control $new)
   {
-    $ctrl = $this->get($id, false, $this);
+    $ctrl = $this->get($id, false);
     if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
-    $this->tpl->setTemplate(str_replace(View::getControlPlaceHolder($ctrl->id), View::getControlPlaceHolder($new->id), $this->tpl->getTemplate()));
+    $oph = View::getControlPlaceHolder($ctrl->id);
+    $nph = View::getControlPlaceHolder($new->id);
+    if (false !== $this->get($new->id, false)) 
+    {
+      $this->tpl->setTemplate(str_replace($nph, '', $this->tpl->getTemplate()));
+      unset($this->controls[$new->id]);
+    }
+    $this->tpl->setTemplate(str_replace($oph, $nph, $this->tpl->getTemplate()));
     $ctrl->remove();
     return $this->add($new, 'replace', $ctrl->id);
-  }
-  
-  public function remove()
-  {
-    foreach ($this->controls as $ctrl) $this->detach($ctrl);
-    parent::remove();
   }
   
   public function copy($id = null)
@@ -130,6 +136,8 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     $class = get_class($this);
     $ctrl = new $class($id ?: $this->properties['id']);
     $vs = $this->getVS();
+    $vs['parent'] = null;
+    $vs['attributes']['id'] = $ctrl->id;
     $vs['properties']['id'] = $ctrl['id'];
     $vs['controls'] = [];
     $ctrl->setVS($vs);

@@ -34,7 +34,7 @@ class View implements \ArrayAccess
   
   protected $vars = [];
   
-  protected $controls = [];
+  public $controls = [];
   
   protected $actions = [];
   
@@ -50,7 +50,7 @@ class View implements \ArrayAccess
   
   private $UID = null;
   
-  private $vs = [];
+  public $vs = [];
   
   private $ts = 0;
   
@@ -722,8 +722,13 @@ class View implements \ArrayAccess
       }
       if ($ctrl->isCreated())
       {
-        $tmp['created'][$uniqueID] = ['html' => $ctrl->render(), 'mode' => $ctrl->getCreationInfo()['mode'], 'id' => $ctrl->getCreationInfo()['id']];
-        $flag = true;
+        $mode = $ctrl->getCreationInfo()['mode'];
+        $id = $ctrl->getCreationInfo()['id'];
+        if ($mode && $id)
+        {
+          $tmp['created'][$uniqueID] = ['html' => $ctrl->render(), 'mode' => $ctrl->getCreationInfo()['mode'], 'id' => $ctrl->getCreationInfo()['id']];
+          $flag = true;
+        }
       }
       else
       {
@@ -743,7 +748,7 @@ class View implements \ArrayAccess
     }
     if ($flag)
     {
-      array_unshift($events, '$a.pom.refresh(' . Utils\PHP\Tools::php2js($tmp, true, self::JS_MARK) . ')');
+      array_unshift($events, '$a.pom._refreshPOMTree(' . Utils\PHP\Tools::php2js($tmp, true, self::JS_MARK) . ')');
       array_unshift($this->actions, implode(';', $events));
     }
   }  
