@@ -554,7 +554,11 @@ class View implements \ArrayAccess
         $this->addJS(['src' => $url . '/web/js/aleph.min.js'], null, true, -100);
       }
       $this->tpl->setTemplate($ctx['html']);
-      if (!empty($config['cacheEnabled'])) $this->push(true);
+      if (!empty($config['cacheEnabled'])) 
+      {
+        $this->commit();
+        $this->push(true);
+      }
     }
   }
   
