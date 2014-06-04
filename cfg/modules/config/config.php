@@ -8,6 +8,7 @@ class Config extends Module
                 'debugging' => true,
                 'logging' => true,
                 'templateDebug' => 'lib/tpl/debug.tpl',
+                'templateBug' => 'lib/tpl/bug.tpl',
                 'autoload' => ['search' => true,
                                'unique' => true,
                                'classmap' => 'classmap.php',
@@ -32,11 +33,20 @@ class Config extends Module
                          'cacheExpire' => 0,
                          'cacheGroup' => 'db'],
                 'ar' => ['cacheExpire' => -1,
-                         'cacheGroup' => 'ar']];
+                         'cacheGroup' => 'ar'],
+                'mvc' => ['locked' => false,
+                          'unlockKey' => 'iwanttosee',
+                          'unlockKeyExpire' => 108000,
+                          'templateLock' => 'lib/tpl/bug.tpl'],
+                'pom' => ['charset' => 'utf-8',
+                          'prefix' => 'c',
+                          'ppOpenTag' => '<!--{',
+                          'ppCloseTag' => '}-->',
+                          'cacheEnabled' => false]];
 
-  private $defaults = ['app/core/config.php' => 1, 'app/core/.local.ini' => 1];
+  private $defaults = ['app/core/config.php' => 1, 'app/core/.local.php' => 1];
   
-  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'autoload', 'cache', 'db', 'ar'];
+  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'autoload', 'cache', 'db', 'ar', 'mvc', 'pom'];
   
   public function init()
   {
@@ -108,6 +118,8 @@ class Config extends Module
             if (!is_array($cfg['cache']['servers'])) unset($cfg['cache']['servers']);
           }
         }
+        $cfg['mvc']['locked'] = (bool)$cfg['mvc']['locked'];
+        $cfg['pom']['cacheEnabled'] = (bool)$cfg['pom']['cacheEnabled'];
         $cfg['db']['logging'] = (bool)$cfg['db']['logging'];
         if (isset($cfg['db']['cacheExpire'])) $cfg['db']['cacheExpire'] = (int)$cfg['db']['cacheExpire'];
         if (isset($cfg['ar']['cacheExpire'])) $cfg['ar']['cacheExpire'] = (int)$cfg['ar']['cacheExpire'];

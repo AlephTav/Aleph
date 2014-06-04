@@ -405,6 +405,7 @@ abstract class Control implements \ArrayAccess
       if ($prnt && $prnt->id != $parent->id) 
       {
         if (!$prnt->isRemoved()) $prnt->detach($this->attributes['id']);
+        if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
       }
       $this->parent = $parent;
     }
@@ -467,9 +468,12 @@ abstract class Control implements \ArrayAccess
     $controls = $parent->getControls();
     $controls[$this->attributes['id']] = $this;
     $parent->setControls($controls);
-    if ($parent->isAttached() && !$this->isAttached()) MVC\Page::$current->view->attach($this);
-    $this->isCreated = true;
-    $this->isRemoved = false;
+    if ($parent->isAttached())
+    {
+      if (!$this->isAttached()) MVC\Page::$current->view->attach($this);
+      $this->isCreated = true;
+      $this->isRemoved = false;
+    }
     return $this;
   }
   

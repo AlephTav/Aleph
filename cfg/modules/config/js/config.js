@@ -18,8 +18,8 @@ cfg.addModule('config',
     // Config saving
     $('body').on('click', '#btnSave', function()
     {
-      var tmp, info = {'debugging': $('#debugOn').attr('checked') == 'checked' ? 1 : 0, 
-                       'logging': $('#logOn').attr('checked') == 'checked' ? 1 : 0};
+      var tmp, info = {'debugging': $('#debugOn').prop('checked') ? 1 : 0, 
+                       'logging': $('#logOn').prop('checked') ? 1 : 0};
       if ((tmp = $('#tplDebug').val()) != '') info['templateDebug'] = tmp;
       if ((tmp = $('#tplBug').val()) != '') info['templateBug'] = tmp;
       if ((tmp = $('#customDebugMethod').val()) != '') info['customDebugMethod'] = tmp;
@@ -33,7 +33,7 @@ cfg.addModule('config',
       else if (info.cache.type == 'memory')
       {
         info.cache.servers = $('#memServers').val();
-        info.cache.compress = $('#compressNo').attr('checked') == 'checked' ? false : true;
+        info.cache.compress = $('#compressNo').prop('checked') ? false : true;
       }
       else if (info.cache.type == 'redis' || info.cache.type == 'phpredis')
       {
@@ -43,14 +43,23 @@ cfg.addModule('config',
         info.cache.database = $('#redisDatabase').val();
         info.cache.password = $('#redisPassword').val();
       }
-      info['autoload'] = {'search': $('#alSearchYes').attr('checked') == 'checked' ? 1 : 0, 'unique': $('#alUniqueYes').attr('checked') == 'checked' ? 1 : 0};
+      info['autoload'] = {'search': $('#alSearchYes').prop('checked') ? 1 : 0, 'unique': $('#alUniqueYes').prop('checked') ? 1 : 0};
       if ((tmp = $('#alClassMap').val()) != '') info['autoload']['classmap'] = tmp;
       if ((tmp = $('#alMask').val()) != '') info['autoload']['mask'] = tmp;
       if ((tmp = $('#alCallback').val()) != '') info['autoload']['callback'] = tmp;
       if ((tmp = $('#alTimeout').val()) != '') info['autoload']['timeout'] = tmp;
       if ((tmp = $('#alDirectories').val()) != '') info['autoload']['directories'] = tmp;
       if ((tmp = $('#alExclusions').val()) != '') info['autoload']['exclusions'] = tmp;
-      info['db'] = {'logging': $('#dbLogOn').attr('checked') == 'checked' ? 1 : 0};
+      info['mvc'] = {'locked': $('#appLocked').prop('checked') ? 1 : 0};
+      if ((tmp = $('#unlockKey').val()) != '') info['mvc']['unlockKey'] = tmp;
+      if ((tmp = $('#unlockKeyExpire').val()) != '') info['mvc']['unlockKeyExpire'] = tmp;
+      if ((tmp = $('#templateLock').val()) != '') info['mvc']['templateLock'] = tmp;
+      info['pom'] = {'cacheEnabled': $('#pomCacheEnabled').prop('checked') ? 1 : 0};
+      if ((tmp = $('#pomCharset').val()) != '') info['pom']['charset'] = tmp;
+      if ((tmp = $('#pomPrefix').val()) != '') info['pom']['prefix'] = tmp;
+      if ((tmp = $('#pomPPOpenTag').val()) != '') info['pom']['ppOpenTag'] = tmp;
+      if ((tmp = $('#pomPPCloseTag').val()) != '') info['pom']['ppCloseTag'] = tmp;
+      info['db'] = {'logging': $('#dbLogOn').prop('checked') ? 1 : 0};
       if ((tmp = $('#dbLogFile').val()) != '') info['db']['log'] = tmp;
       if ((tmp = $('#dbCacheExpire').val()) != '') info['db']['cacheExpire'] = tmp;
       if ((tmp = $('#dbCacheGroup').val()) != '') info['db']['cacheGroup'] = tmp;

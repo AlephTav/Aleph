@@ -4,7 +4,7 @@ namespace
 {
   function ID($id)
   {
-    return \Aleph\MVC\Page::$current->view->get($id)->id;
+    if (false !== $ctrl = \Aleph\MVC\Page::$current->view->get($id)) return $ctrl->id;
   }
 }
 
@@ -394,7 +394,7 @@ class View implements \ArrayAccess
       {
         $vs = $this->getActualVS($child);
         if ($isRecursion && isset($vs['controls'])) $this->check($vs['attributes']['id'], $flag, true);
-        if ($vs['class'] == 'Aleph\\Web\\POM\\CheckBox')
+        if ($vs['class'] == 'Aleph\Web\POM\CheckBox')
         {
           if ($child instanceof Control) $child->check($flag);
           else $this->get($vs['attributes']['id'])->check($flag);
@@ -549,9 +549,6 @@ class View implements \ArrayAccess
         $this->controls[$body->id] = $body;
         $this->commit();
         static::decodePHPTags($body, $ctx['marks']);
-        $url = \Aleph::url('framework');
-        $this->addJS(['src' => $url . '/web/js/jquery/jquery.min.js'], null, true, -1000);
-        $this->addJS(['src' => $url . '/web/js/aleph.min.js'], null, true, -100);
       }
       $this->tpl->setTemplate($ctx['html']);
       if (!empty($config['cacheEnabled'])) 
@@ -734,7 +731,7 @@ class View implements \ArrayAccess
           $flag = true;
         }
       }
-      else
+      else if (isset($this->vs[$uniqueID]))
       {
         $cmp = $ctrl->compare($this->vs[$uniqueID]);
         if (!is_array($cmp) || count($cmp['attrs']) || count($cmp['removed']))
@@ -760,7 +757,7 @@ class View implements \ArrayAccess
   protected function prepareTemplate($template, array $vars = null)
   {
     $config = \Aleph::getInstance()['pom'];
-    $prefix = empty($config['prefix']) ? 'c:' : strtolower($config['prefix']) . ':';
+    $prefix = empty($config['prefix']) ? '' : strtolower($config['prefix']) . ':';
     $ppOpenTag = empty($config['ppOpenTag']) ? '<!--{' : $config['ppOpenTag'];
     $ppCloseTag = empty($config['ppCloseTag']) ? '}-->' : $config['ppCloseTag'];
     if (is_file($template))
@@ -774,14 +771,20 @@ class View implements \ArrayAccess
       $xhtml = $template;
     }
     $placeholders = [];
+    $qprefix = preg_quote($prefix);
     while (strtolower(substr(ltrim($xhtml), 0, strlen($prefix) + 9)) == '<' . $prefix . 'template')
     {
-      preg_match('/\A\s*<' . preg_quote($prefix) . 'template\s*placeholder\s*=\s*"([^"]*)"\s*>(.*)<\/' . preg_quote($prefix) . 'template>/i', $xhtml, $matches);
+      preg_match('/\A\s*<' . $qprefix . 'template\s*placeholder\s*=\s*"([^"]*)"\s*>(.*)<\/' . $qprefix . 'template>/i', $xhtml, $matches);
       $master = \Aleph::exe($matches[2], ['config' => $config]);
       if (!file_exists($master)) throw new Core\Exception($this, 'ERR_VIEW_4', $file);
+      $xhtml = ltrim(substr($xhtml, strlen($matches[0])));
+      $placeholders[\Aleph::exe($matches[1], ['config' => $config])] = $xhtml;
       $file = $master;
       $xhtml = file_get_contents($master);
-      $placeholders[\Aleph::exe($matches[1], ['config' => $config])] = ltrim(substr($xhtml, strlen($matches[0])));
+      foreach ($placeholders as $id => $content)
+      {
+        $xhtml = preg_replace('/<' . $qprefix . 'placeholder\s*id\s*=\s*"' . preg_quote($id) . '"\s*(\/>|>(.*)<\/' . $qprefix . 'placeholder>)/i', $content, $xhtml, -1, $count);
+      }
     }
     if (strpos($xhtml, $ppOpenTag) !== false)
     {
@@ -798,7 +801,6 @@ class View implements \ArrayAccess
             'charset' => isset($config['charset']) ? $config['charset'] : 'utf-8',
             'prefix' => $prefix,
             'controls' => [],
-            'placeholders' => $placeholders,
             'marks' => $marks,
             'stack' => new \SplStack(),
             'insideHead' => false,
@@ -816,24 +818,14 @@ class View implements \ArrayAccess
       if ($p === 0)
       {
         $tag = substr($tag, strlen($ctx['prefix']));
-        if ($tag == 'template' || $tag == 'placeholder')
+        if ($tag == 'template')
         {
-          if ($tag == 'placeholder')
+          $path = isset($attributes['path']) ? static::evolute($attributes['path'], $ctx['marks']) : null;
+          if (!file_exists($path)) 
           {
-            if (empty($attributes['id'])) return;
-            $id = static::evolute($attributes['id'], $ctx['marks']);
-            if (empty($ctx['placeholders'][$id])) return;
-            $path = $ctx['placeholders'][$id];
-          }
-          else
-          {
-            $path = isset($attributes['path']) ? static::evolute($attributes['path'], $ctx['marks']) : null;
-            if (!file_exists($path)) 
-            {
-              $line = xml_get_current_line_number($parser);
-              $column = xml_get_current_column_number($parser);
-              throw new Core\Exception($this, 'ERR_VIEW_3', $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
-            }
+            $line = xml_get_current_line_number($parser);
+            $column = xml_get_current_column_number($parser);
+            throw new Core\Exception($this, 'ERR_VIEW_3', $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
           }
           $res = static::analyze($path, $this->vars);
           $ctx['marks'] = array_merge($ctx['marks'], $res['marks']);
@@ -869,7 +861,7 @@ class View implements \ArrayAccess
           $ctrl = '\Aleph\Web\POM\\' . $tag;
           $ctrl = new $ctrl($attributes['id']);
         }
-        if (($ctrl instanceof Panel) && isset($attributes['template'])) 
+        if (($ctrl instanceof Panel) && isset($attributes['template']))
         {
           $res = static::analyze(static::evolute($attributes['template'], $ctx['marks']), $this->vars);
           $ctx['marks'] = array_merge($ctx['marks'], $res['marks']);
@@ -943,7 +935,7 @@ class View implements \ArrayAccess
       if ($p === 0)
       {
         $tag = substr($tag, strlen($ctx['prefix']));
-        if ($tag == 'template' || $tag == 'placeholder') return;
+        if ($tag == 'template') return;
         if (count($ctx['stack']) > 1)
         {
           $ctrl = $ctx['stack']->pop();

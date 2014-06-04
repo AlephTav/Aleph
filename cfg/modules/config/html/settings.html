@@ -125,6 +125,50 @@
 		  <label class="ym-label" for="redisPassword">Password</label>
 				<input type="text" id="redisPassword" name="redisPassword" value="<?php echo @$cfg['cache']['password']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>
+  <h6 class="subtitle">MVC Settings</h6>
+  <div class="ym-fbox-check">
+    <span class="ym-label">Application lock</span>
+    <input type="radio" id="appLocked" value="1" name="applocking" <?php echo (empty($cfg['mvc']['locked']) ? '' : 'checked="checked"'); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
+				<label for="appLocked">Yes</label>
+				<input type="radio" id="appUnlocked" value="0" name="applocking" <?php echo (empty($cfg['mvc']['locked']) ? 'checked="checked"' : ''); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
+				<label for="appUnlocked">No</label>
+  </div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="unlockKey">Unlock key</label>
+				<input type="text" id="unlockKey" name="unlockKey" value="<?php echo @$cfg['mvc']['unlockKey']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="unlockKeyExpire">Unlock key expire (in seconds)</label>
+				<input type="text" id="unlockKeyExpire" name="unlockKeyExpire" value="<?php echo @$cfg['mvc']['unlockKeyExpire']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="templateLock">Locking message template</label>
+				<input type="text" id="templateLock" name="templateLock" value="<?php echo @$cfg['mvc']['templateLock']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <h6 class="subtitle">POM Settings</h6>
+  <div class="ym-fbox-check">
+    <span class="ym-label">Cache enabled</span>
+    <input type="radio" id="pomCacheEnabled" value="1" name="pomCacheEnabled" <?php echo (empty($cfg['pom']['cacheEnabled']) ? '' : 'checked="checked"'); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
+				<label for="pomCacheEnabled">Yes</label>
+				<input type="radio" id="pomCacheDisabled" value="0" name="pomCacheDisabled" <?php echo (empty($cfg['pom']['cacheEnabled']) ? 'checked="checked"' : ''); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
+				<label for="pomCacheDisabled">No</label>
+  </div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="pomCharset">Charset</label>
+				<input type="text" id="pomCharset" name="pomCharset" value="<?php echo @$cfg['pom']['charset']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="pomPrefix">Prefix of controls' tags</label>
+				<input type="text" id="pomPrefix" name="pomPrefix" value="<?php echo @$cfg['pom']['prefix']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="pomPPOpenTag">Preprocessor's open tag</label>
+				<input type="text" id="pomPPOpenTag" name="pomPPOpenTag" value="<?php echo @$cfg['pom']['ppOpenTag']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text">
+		  <label class="ym-label" for="pomPPCloseTag">Preprocessor's close tag</label>
+				<input type="text" id="pomPPCloseTag" name="pomPPCloseTag" value="<?php echo @$cfg['pom']['ppCloseTag']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
   <h6 class="subtitle">Database Settings</h6>
   <div class="ym-fbox-check">
     <span class="ym-label">Logging</span>
