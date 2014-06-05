@@ -474,7 +474,7 @@ class OCIBuilder extends SQLBuilder
     $alias = 'a' . rand(111111, 999999);
     $sql = parent::buildSelect($select, $data);
     $sql = 'SELECT ' . $alias . '.*' . ($limit['offset'] !== null ? ', ROWNUM rnum' : '') . ' FROM (' . $sql . ') ' . $alias;
-    if ($limit['limit'] !== null) $sql .= ' WHERE ROWNUM <= ' . (int)$limit['limit'];
+    if ($limit['limit'] !== null) $sql .= ' WHERE ROWNUM <= ' . ((int)$limit['limit'] + (int)$limit['offset']);
     if ($limit['offset']  !== null) $sql = 'SELECT * FROM (' . $sql . ') WHERE rnum > ' . (int)$limit['offset'];
     return $sql;
   }
