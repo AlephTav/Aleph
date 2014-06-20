@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2012 Aleph Tav
+ * Copyright (c) 2014 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2012 Aleph Tav
+ * @copyright Copyright &copy; 2014 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -26,9 +26,19 @@ use Aleph\Core,
     Aleph\Net,
     Aleph\Web\POM;
 
+/**
+ * The base class of all classes that intended for rendering HTML and management of UI of web pages.
+ * The Page class plays role of Controller in MVC model.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.mvc
+ */
 class Page
 {
+  // Error message templates.
   const ERR_PAGE_1 = 'Method [{var}] is not allowed to be invoked.';
+  const ERR_PAGE_2 = 'Incorrect request to the page.';
 
   /**
    * Default cache of page classes.
@@ -39,10 +49,31 @@ class Page
    */
   public static $cache = null;
   
+  /**
+   * Default cache group.
+   *
+   * @var string $cacheGroup
+   * @access public
+   * @static
+   */
   public static $cacheGroup = 'pages';
   
+  /**
+   * Default cache expire.
+   *
+   * @var integer $cacheExpire
+   * @access public
+   * @static
+   */
   public static $cacheExpire = 0;
   
+  /**
+   * Contains a page object, whose workflow is performed.
+   *
+   * @var Aleph\MVC\Page $current
+   * @access public
+   * @static
+   */
   public static $current = null;
   
   /**
@@ -77,8 +108,22 @@ class Page
    */
   protected $expire = 0;
   
-  protected $ajaxPermissions = ['Aleph\MVC\\', 'Aleph\Web\UI\POM\\'];
+  /**
+   * This list of namespaces, classes and methods restricts ability to invoke any PHP function from the client side via Ajax request.
+   * Classes and methods only match this list can be invoked.
+   *
+   * @var array $ajaxPermissions
+   * @access protected
+   */
+  protected $ajaxPermissions = ['Aleph\MVC\\', 'Aleph\Web\POM\\'];
   
+  /**
+   * The sequence of class methods that determines the class workflow.
+   * The sequence should consist of two parts: for the first visit to the page (GET non-Ajax request) and for other visits.
+   *
+   * @var array $sequenceMethods
+   * @access protected
+   */
   protected $sequenceMethods = ['first' => ['parse', 'init', 'load', 'render', 'unload'],
                                 'after' => ['assign', 'load', 'process', 'unload']];
        
@@ -90,8 +135,21 @@ class Page
    */   
   private $UID = null;
   
+  /**
+   * Cache object for storing HTML of the rendered page.
+   *
+   * @var Aleph\Cache\Cache $storage
+   * @access private
+   */
   private $storage = null;
   
+  /**
+   * Constructor. Creates unique identifier of the page based on page template, page class and site unique ID. 
+   * This UID can be used for caching of page rendering.
+   *
+   * @param string $template - template string or path to a template file.
+   * @access public
+   */
   public function __construct($template = null)
   {
     $this->UID = md5(get_class($this) . $template . \Aleph::getSiteUniqueID());
@@ -99,27 +157,6 @@ class Page
     $this->storage = static::$cache ? static::$cache : \Aleph::getInstance()->getCache();
   }
   
-  public function isExpired()
-  {
-    return $this->expire > 0 ? $this->storage->isExpired($this->UID) : true;
-  }
-  
-  public function restore()
-  {
-    return $this->storage->get($this->UID);
-  }
-  
-  /**
-   * Returns the page cache object.
-   *
-   * @return Aleph\Cache\Cache
-   * @access public
-   */
-  public function getCache()
-  {
-    return $this->storage;
-  }
-
   /**
    * Returns the unique page ID.
    *
@@ -142,11 +179,64 @@ class Page
     $this->UID = $UID;
   }
   
+  /**
+   * Returns the page cache object.
+   *
+   * @return Aleph\Cache\Cache
+   * @access public
+   */
+  public function getCache()
+  {
+    return $this->storage;
+  }
+  
+  /**
+   * Returns FALSE if the page is not cached or its cache is expired. Otherwise, it returns TRUE.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isExpired()
+  {
+    return $this->expire > 0 ? $this->storage->isExpired($this->UID) : true;
+  }
+  
+  /**
+   * Recovers page HTML from cache.
+   * It returns NULL if the page is not cached or its cache is expired.
+   *
+   * @return string
+   * @access public
+   */
+  public function restore()
+  {
+    return $this->storage->get($this->UID);
+  }
+  
+  /**
+   * Returns list of workflow methods.
+   * if $first is TRUE, the list of methods for the first visit to the page is returned, 
+   * otherwise the method returns the list of methods for the next visits.
+   *
+   * @param boolean $first - determines type of sequence of methods.
+   * @return array
+   * @access public
+   */
   public function getSequenceMethods($first = true)
   {
     return $this->sequenceMethods[$first ? 'first' : 'after'];
   }
 
+  /**
+   * This method is alias of method get() of class Aleph\Web\POM\View and returns control object by its unique or logic ID.
+   * If a control with such ID is not found, it returns FALSE.
+   *
+   * @param string $id - unique or logic control ID.
+   * @param boolean $isRecursion - determines whether to recursively search a control in all panels.
+   * @param Aleph\POM\Control $context - the panel control inside which the control searching is performed.
+   * @return Aleph\POM\Control|boolean
+   * @access public
+   */
   public function get($id, $isRecursion = true)
   {
     return $this->view->get($id, $isRecursion);
@@ -173,21 +263,23 @@ class Page
     $this->view->parse();
   }
   
+  /**
+   * Initializes the page view.
+   * This method is performed once during the first visit to the page.
+   *
+   * @access public
+   */
   public function init()
   {
     $this->view->invoke('init');
   }
-  
-  public function assign()
-  {
-    $data = Net\Request::getInstance()->data;
-    if (!$this->view->assign($data['ajax-key'], isset($data['ajax-vs']['vs']) ? $data['ajax-vs']['vs'] : [], $data['ajax-vs']['ts']))
-    {
-      if ($this->noSessionURL) \Aleph::go($this->noSessionURL);
-      \Aleph::reload();
-    }
-  }
 
+  /**
+   * Prepares the page view.
+   * This method is executed each time you visit the page.
+   *
+   * @access public
+   */
   public function load()
   {
     $this->view->invoke('load');
@@ -205,6 +297,28 @@ class Page
     echo $html;
   }
   
+  /**
+   * Assigns the changes that received from the client side, to controls.
+   *
+   * @access public
+   */
+  public function assign()
+  {
+    $data = Net\Request::getInstance()->data;
+    if (!isset($data['ajax-vs']) || !isset($data['ajax-key'])) throw new Core\Exception($this, 'ERR_PAGE_2');
+    if (!is_array($data['ajax-vs'])) $data['ajax-vs'] = json_decode($data['ajax-vs'], true);
+    if (!$this->view->assign($data['ajax-key'], isset($data['ajax-vs']['vs']) ? $data['ajax-vs']['vs'] : [], $data['ajax-vs']['ts']))
+    {
+      if ($this->noSessionURL) \Aleph::go($this->noSessionURL);
+      \Aleph::reload();
+    }
+  }
+  
+  /**
+   * Performs the Ajax request.
+   *
+   * @access public
+   */
   public function process()
   {
     $data = Net\Request::getInstance()->data;
@@ -221,6 +335,12 @@ class Page
     $this->view->process($response);
   }
   
+  /**
+   * Completes the page workflow.
+   * This method is executed each time you visit the page.
+   *
+   * @access public
+   */
   public function unload()
   {
     $this->view->invoke('unload');

@@ -428,7 +428,7 @@ class View implements \ArrayAccess
       foreach ($ids as $id)
       {
         $vs = $this->getActualVS($id);
-        if ($vs && is_subclass_of($vs['class'], 'Aleph\Web\POM\Validator')) 
+        if ($vs && $vs['properties']['visible'] && is_subclass_of($vs['class'], 'Aleph\Web\POM\Validator') && empty($vs['attributes']['locked'])) 
         {
           $validators[] = $this->get($id);
         }
@@ -440,7 +440,7 @@ class View implements \ArrayAccess
       foreach ($ids as $id)
       {
         $vs = $this->getActualVS($id);
-        if ($vs && is_subclass_of($vs['class'], 'Aleph\Web\POM\Validator')) 
+        if ($vs && $vs['properties']['visible'] && is_subclass_of($vs['class'], 'Aleph\Web\POM\Validator') && empty($vs['attributes']['locked'])) 
         {
           $group = isset($vs['group']) ? $vs['group'] : 'default';
           foreach ($groups as $grp)

@@ -39,6 +39,7 @@ abstract class Validator extends Control
     $this->attributes['index'] = 0;
     $this->attributes['mode'] = 'AND';
     $this->attributes['hiding'] = false;
+    $this->attributes['locked'] = false;
     $this->attributes['controls'] = null;
     $this->attributes['groups'] = 'default';
     $this->attributes['text'] = null;
@@ -76,6 +77,17 @@ abstract class Validator extends Control
   {
     $this->result = $result;
     return $this;
+  }
+  
+  public function lock($flag = true)
+  {
+    $this->attributes['locked'] = (bool)$flag;
+    return $this;
+  }
+  
+  public function isLocked()
+  {
+    return !empty($this->attributes['locked']);
   }
   
   public function clean()

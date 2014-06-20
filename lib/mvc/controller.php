@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2012 Aleph Tav
+ * Copyright (c) 2014 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2012 Aleph Tav
+ * @copyright Copyright &copy; 2014 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -30,7 +30,7 @@ use Aleph\Core,
  * This class is designed for controlling of page classes.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.3
+ * @version 1.0.0
  * @package aleph.mvc
  */
 class Controller
@@ -72,7 +72,7 @@ class Controller
    */
   public function __construct(array $map = [], Cache\Cache $cache = null)
   {
-    $a = \Aleph::getInstance();
+    $a = \Aleph::getInstance()['mvc'];
     if (!empty($a['locked']))
     {
       $cache = $cache ?: (self::$cache instanceof Cache\Cache ? self::$cache : $a->getCache());
@@ -120,6 +120,7 @@ class Controller
    * @param Aleph\MVC\Page $page
    * @param string | array $methods - HTTP request methods.
    * @param string | Aleph\Net\URL $url - the URL string to route.
+   * @return mixed
    * @access public
    */
   public function execute(Page $page = null, $methods = null, $url = null)
