@@ -31,6 +31,12 @@ class Upload extends Control
   
   protected $dataAttributes = ['settings' => 1, 'callback' => 1];
   
+  public function __construct($id)
+  {
+    parent::__construct($id);
+    $this->attributes['settings'] = [];
+  }
+  
   public function init()
   {
     $url = \Aleph::url('framework');

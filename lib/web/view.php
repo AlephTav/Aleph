@@ -227,7 +227,7 @@ class View implements \ArrayAccess
   
   public function addCSS(array $attributes, $style = null, $order = null)
   {
-    $this->css[] = ['style' => $style, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->css)];
+    $this->css[isset($attributes['href']) ? $attributes['href'] : count($this->css)] = ['style' => $style, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->css)];
   }
   
   public function setCSS($id, array $attributes, $style = null, $order = null)
@@ -549,6 +549,10 @@ class View implements \ArrayAccess
         $this->controls[$body->id] = $body;
         $this->commit();
         static::decodePHPTags($body, $ctx['marks']);
+        $src = \Aleph::url('framework') . '/web/js/jquery/jquery.min.js';
+        if (empty($this->js['top'][$src])) $this->addJS(['src' => $src]);
+        $src = \Aleph::url('framework') . '/web/js/aleph.full.min.js';
+        if (empty($this->js['top'][$src])) $this->addJS(['src' => $src]);
       }
       $this->tpl->setTemplate($ctx['html']);
       if (!empty($config['cacheEnabled'])) 

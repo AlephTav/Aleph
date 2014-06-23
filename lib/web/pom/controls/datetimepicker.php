@@ -25,40 +25,22 @@ namespace Aleph\Web\POM;
 use Aleph\MVC,
     Aleph\Utils\PHP;
 
-class CKEditor extends Control
+class DateTimePicker extends Input
 {
-  protected $ctrl = 'ckeditor';
+  protected $ctrl = 'datetimepicker';
   
   protected $dataAttributes = ['settings' => 1];
 
   public function __construct($id, $value = null)
   {
-    parent::__construct($id);
-    $this->properties['value'] = $value;
+    parent::__construct($id, 'text', $value);
     $this->attributes['settings'] = [];
   }
   
   public function init()
   {
-    MVC\Page::$current->view->addJS(['src' => \Aleph::url('framework') . '/web/js/ckeditor/ckeditor.js']);
+    MVC\Page::$current->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/jquery/datetimepicker/datetimepicker.css']);
+    MVC\Page::$current->view->addJS(['src' => \Aleph::url('framework') . '/web/js/jquery/datetimepicker/datetimepicker.js']);
     return $this;
-  }
-  
-  public function clean()
-  {
-    $this->properties['value'] = '';
-    return $this;
-  }
-
-  public function validate(Validator $validator)
-  {
-    return $validator->check($this['value']);
-  }
-
-  public function render()
-  {
-    if (!$this->properties['visible']) return $this->invisible();
-    unset($this->attributes['style']);
-    return '<textarea' . $this->renderAttributes() . ' style="visibility:hidden;display:none;">' . $this->properties['value'] . '</textarea>';
   }
 }
