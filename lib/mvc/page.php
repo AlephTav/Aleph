@@ -154,7 +154,7 @@ class Page
   {
     $this->UID = md5(get_class($this) . $template . \Aleph::getSiteUniqueID());
     $this->view = new POM\View($template);
-    $this->storage = static::$cache ? static::$cache : \Aleph::getInstance()->getCache();
+    $this->storage = static::$cache ?: \Aleph::getInstance()->getCache();
   }
   
   /**
@@ -198,7 +198,7 @@ class Page
    */
   public function isExpired()
   {
-    return $this->expire > 0 ? $this->storage->isExpired($this->UID) : true;
+    return ($this->expire ?: static::$cacheExpire) ? $this->storage->isExpired($this->UID) : true;
   }
   
   /**
@@ -233,8 +233,8 @@ class Page
    *
    * @param string $id - unique or logic control ID.
    * @param boolean $isRecursion - determines whether to recursively search a control in all panels.
-   * @param Aleph\POM\Control $context - the panel control inside which the control searching is performed.
-   * @return Aleph\POM\Control|boolean
+   * @param Aleph\Web\POM\Control $context - the panel control inside which the control searching is performed.
+   * @return Aleph\Web\POM\Control|boolean
    * @access public
    */
   public function get($id, $isRecursion = true)
@@ -243,7 +243,7 @@ class Page
   }
 
   /**
-   * Checks accessibility of a page.
+   * Checks accessibility of the page.
    *
    * @return boolean
    * @access public
@@ -293,12 +293,12 @@ class Page
   public function render()
   {
     $html = $this->view->render();
-    if ($this->expire > 0) $this->storage->set($this->UID, $html, $this->expire, 'pages');
+    if ($this->expire ?: static::$cacheExpire) $this->storage->set($this->UID, $html, $this->expire, static::$cacheGroup ?: 'pages');
     echo $html;
   }
   
   /**
-   * Assigns the changes that received from the client side, to controls.
+   * Assigns the control changes that received from the client side, to the server side controls.
    *
    * @access public
    */

@@ -1,7 +1,34 @@
 <?php
+/**
+ * Copyright (c) 2014 Aleph Tav
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @link http://www.4leph.com
+ * @copyright Copyright &copy; 2014 Aleph Tav
+ * @license http://www.opensource.org/licenses/MIT
+ */
 
 namespace
 {
+  /**
+   * Returns unique identifier of a control object by its logic ID.
+   * If control with given logic ID does not exist then the method returns NULL.
+   *
+   * @param string $id - unique or logic identifier of a control.
+   * @return string
+   */
   function ID($id)
   {
     if (false !== $ctrl = \Aleph\MVC\Page::$current->view->get($id)) return $ctrl->id;
@@ -15,50 +42,166 @@ use Aleph\Core,
     Aleph\Net,
     Aleph\Utils;
 
+/**
+ * This class represents View component in MVC design pattern.
+ * It contains methods that useful for any manipulation of the HTML, CSS, JS and UI of the web page. 
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */    
 class View implements \ArrayAccess
 {
+  // Error message templates.
   const ERR_VIEW_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
   const ERR_VIEW_2 = "Property ID of element [{var}] is not defined or empty[{var}]\nLine: [{var}], column: [{var}].";
   const ERR_VIEW_3 = "Attribute \"path\" of element \"template\"[{var}] is not defined or such path does not exist.\nLine: [{var}], column: [{var}].";
   const ERR_VIEW_4 = "Path to the master template is not defined or incorrect.\nFile: [{var}]";
   const ERR_VIEW_5 = 'Page template should have only one element body containing all other web controls.';
   
+  // Mark of PHP code string in HTML attributes.
   const PHP_MARK = 'php::';
+  
+  // Mark of JS code string in HTML attributes.
   const JS_MARK = 'js::';
   
-  protected static $process = 0;
-  
-  protected static $emptyTags = ['br' => 1, 'hr' => 1, 'meta' => 1, 'link' => 1, 'img' => 1, 'embed' => 1, 'param' => 1, 'input' => 1, 'base' => 1, 'area' => 1, 'col' => 1];
-
+  /**
+   * An instance of Aleph\Core\Template class that contains the page HTML.
+   *
+   * @var Aleph\Core\Template $tpl
+   * @access public
+   */
   public $tpl = null;
   
+  /**
+   * Contains the number of parsing threads.
+   * This property is used for determining that the parsing process takes place in the moment.
+   *
+   * @var integer $process
+   * @access protected
+   * @static
+   */
+  protected static $process = 0;
+  
+  /**
+   * List of all empty HTML tags.
+   *
+   * @var array $emptyTags
+   * @access protected
+   * @static
+   */
+  protected static $emptyTags = ['br' => 1, 'hr' => 1, 'meta' => 1, 'link' => 1, 'img' => 1, 'embed' => 1, 'param' => 1, 'input' => 1, 'base' => 1, 'area' => 1, 'col' => 1];
+
+  /**
+   * Array of variables for template preprocessing.
+   *
+   * @var array $vars
+   * @access protected
+   */
   protected $vars = [];
   
-  public $controls = [];
+  /**
+   * Array of control objects that used for quick access to the required control object.
+   *
+   * @var array $controls
+   * @access protected
+   */
+  protected $controls = [];
   
+  /**
+   * Array of JS commands that should be performed on the client side.
+   *
+   * @var array $actions
+   * @access protected   
+   */
   protected $actions = [];
   
+  /**
+   * DTD of the page HTML.
+   *
+   * @var string $dtd
+   * access protected
+   */
   protected $dtd = '<!DOCTYPE html>';
   
+  /**
+   * Title of the page and attributes of the HTML <title> tag.
+   *
+   * @var array $title
+   * @access protected
+   */
   protected $title = ['title' => '', 'attributes' => []];
   
+  /**
+   * Array of the meta information (meta tags) of the page.
+   *
+   * @var array $meta
+   * @access protected    
+   */
   protected $meta = [];
   
+  /**
+   * Array of all CSS files which placed on the page.
+   *
+   * @var array $css
+   * @access protected
+   */
   protected $css = [];
   
+  /**
+   * Array of all JS files which placed on the page.
+   *
+   * @var array $js
+   * @access protected
+   */
   protected $js = ['top' => [], 'bottom' => []];
   
+  /**
+   * Unique identifier of the page view.
+   *
+   * @var string $UID 
+   * @access private
+   */
   private $UID = null;
   
-  public $vs = [];
+  /**
+   * Array of the control view states.
+   *
+   * @var array $vs
+   * @access private   
+   */
+  private $vs = [];
   
+  /**
+   * The timestamp of the last synchronization of the server and client side controls.
+   *
+   * @var integer $ts
+   * @access private
+   */
   private $ts = 0;
   
+  /**
+   * Returns TRUE if the view in state of parsing and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   * @static
+   */
   public static function inParsing()
   {
     return static::$process > 0;
   }
   
+  /**
+   * Encodes PHP tags in HTML template of the page in order that the parsing is made possible.
+   * It returns HTML templates of the page in which all PHP code fragments are encoded.
+   *
+   * @param string $xhtml - the page HTML template containing PHP code.
+   * @param mixed $marks - used for storing encoded fragments of PHP code.
+   * @return string
+   * @access public
+   * @static
+   */
   public static function encodePHPTags($xhtml, &$marks)
   {
     $marks = [];
@@ -81,6 +224,16 @@ class View implements \ArrayAccess
     return str_replace('&', '6cff047854f19ac2aa52aac51bf3af4a', $xhtml);
   }
     
+  /**
+   * Decodes previously encoded fragments of PHP code in HTML template or in control properties and attributes.
+   * Returns the given object with decoded fragments of PHP code.
+   *
+   * @param mixed $obj - an object to decode. It can be a control object, an array or the page template.
+   * @param array $marks - array of the previously stored PHP code fragments.
+   * @return mixed
+   * @access public
+   * @static
+   */
   public static function decodePHPTags($obj, array $marks)
   {
     if ($obj instanceof Control)
@@ -92,8 +245,8 @@ class View implements \ArrayAccess
       }
       $vs = $obj->getVS();
       unset($vs['attributes']['id']);
-      foreach ($vs['attributes'] as $attr => $value) if (is_scalar($value)) $obj->{$attr} = static::evolute($value, $marks);
-      foreach ($vs['properties'] as $prop => $value) if (is_scalar($value)) $obj[$prop] = static::evolute($value, $marks);
+      foreach ($vs['attributes'] as $attr => $value) if (is_scalar($value)) $obj->{$attr} = static::evaluate($value, $marks);
+      foreach ($vs['properties'] as $prop => $value) if (is_scalar($value)) $obj[$prop] = static::evaluate($value, $marks);
       return $obj;
     }
     else if (is_array($obj))
@@ -104,7 +257,17 @@ class View implements \ArrayAccess
     return strtr(str_replace('6cff047854f19ac2aa52aac51bf3af4a', '&', $obj), $marks);
   }
   
-  public static function evolute($value, array $marks)
+  /**
+   * Executes PHP code in the given string.
+   * The result is a new string with executed PHP code or a PHP object if the given string is a marked string of PHP code.
+   *
+   * @param string $value - some string containing PHP code or being a string of PHP code with PHP code marker in the beginning.
+   * @param array $marks - the previously stored encoded fragments of PHP code in the page template.
+   * @return mixed
+   * @access public
+   * @static
+   */
+  public static function evaluate($value, array $marks)
   {
     $value = \Aleph::exe(static::decodePHPTags($value, $marks), ['config' => \Aleph::getInstance()->getConfig()]);
     if (substr($value, 0, strlen(self::PHP_MARK)) == self::PHP_MARK)
@@ -116,6 +279,15 @@ class View implements \ArrayAccess
     return $value;
   }
   
+  /**
+   * Parses arbitrary template and returns information about this template and its controls.
+   *
+   * @param string $template - template string or path to the template file.
+   * @param array $vars - array of PHP variables for preprocessing of the template.
+   * @return array
+   * @access public
+   * @static
+   */
   public static function analyze($template, array $vars = null)
   {
     $view = new static();
@@ -138,151 +310,357 @@ class View implements \ArrayAccess
     return $res;
   }
   
-  public static function getControlPlaceHolder($uniqueID)
+  /**
+   * Returns template placeholder of the given control.
+   *
+   * @param string $uniqueID - unique identifier of the control.
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function getControlPlaceholder($uniqueID)
   {
     return '<?php echo $' . $uniqueID . '; ?>'; 
   }
 
+  /**
+   * Constructor. Initializes $tpl property.
+   *
+   * @param string $template - template string or path to the page template file.
+   * @access public
+   */
   public function __construct($template = null)
   {
     $this->tpl = new Core\Template($template);
+    if (isset($_SESSION['__DOWNLOAD__'])) 
+    {
+      $data = $_SESSION['__DOWNLOAD__'];
+      unset($_SESSION['__DOWNLOAD__']);
+      Net\Response::getInstance()->download($data['file'], $data['filename'], $data['contentType'], $data['deleteAfterDownload']);
+    }
   }
   
+  /**
+   * Sets template variable for preprocessing.
+   *
+   * @param string $name - name of variable.
+   * @param mixed $value - value of variable.
+   * @access public
+   */
   public function offsetSet($name, $value)
   {
     $this->vars[$name] = $value;
   }
 
+  /**
+   * Returns TRUE if a PHP variable (for template preprocessing) with the given name exists and FALSE otherwise.
+   *
+   * @param string $name - name of PHP variable.
+   * @access public
+   */
   public function offsetExists($name)
   {
     return isset($this->vars[$name]);
   }
 
+  /**
+   * Removes PHP variable for preprocessing.
+   *
+   * @param string $name - name of variable.
+   * @access public
+   */
   public function offsetUnset($name)
   {
     unset($this->vars[$name]);
   }
 
+  /**
+   * Returns value of the PHP variable that used for the template preprocessing.
+   *
+   * @param string $name - name of variable.
+   * @return mixed
+   * @access public
+   */
   public function &offsetGet($name)
   {
     if (!isset($this->vars[$name])) $this->vars[$name] = null;
     return $this->vars[$name];
   }
   
+  /**
+   * Returns array of PHP variables for preprocessing.
+   *
+   * @return array
+   * @access public
+   */
   public function getVars()
   {
     return $this->vars;
   }
   
+  /**
+   * Sets PHP variables for the template preprocessing.
+   *
+   * @param array $vars - PHP variables.
+   * @access public
+   */
   public function setVars(array $vars)
   {
     $this->vars = $vars;
   }
   
+  /**
+   * Returns DTD of the web page.
+   *
+   * @return string
+   * @access public
+   */
   public function getDTD()
   {
     return $this->dtd;
   }
   
+  /**
+   * Sets DTD of the page.
+   *
+   * @param string $dtd
+   * @access public
+   */
   public function setDTD($dtd)
   {
     $this->dtd = $dtd;
   }
   
+  /**
+   * Sets title of the web page.
+   *
+   * @param string $title - the page title.
+   * @param array $attributes - attributes of <title> tag.
+   * @access public
+   */
   public function setTitle($title, array $attributes = null)
   {
     $this->title = ['title' => $title, 'attributes' => $attributes ?: $this->title['attributes']];
   }
   
+  /**
+   * Returns title of the web page.
+   *
+   * @param boolean $withAttributes - determines whether to return title with attributes of <title> tag.
+   * @return array|string
+   * @access public
+   */
   public function getTitle($withAttributes = false)
   {
     if ($withAttributes) return $this->title;
     return $this->title['title'];
   }
   
+  /**
+   * Adds meta information on the web page.
+   *
+   * @param array $attributes - attributes of <meta> tag.
+   * @access public   
+   */
   public function addMeta(array $attributes)
   {
     $this->meta[] = $attributes;
   }
   
+  /**
+   * Adds meta information on the web page.
+   *
+   * @param string $id - unique identifier of the given meta information.
+   * @param array $attributes - attributes of <meta> tag.
+   * @access public
+   */
   public function setMeta($id, array $attributes)
   {
     $this->meta[$id] = $attributes;
   }
   
+  /**
+   * Returns meta information that associated with the given identifier.
+   * If no meta information associated with the given identifier, it returns FALSE.
+   *
+   * @param string $id - unique identifier of the meta information.
+   * @return array
+   * @access public
+   */
   public function getMeta($id)
   {
     return isset($this->meta[$id]) ? $this->meta[$id] : false;
   }
   
+  /**
+   * Removes meta information associated with the given identifier.
+   *
+   * @param string $id - unique identifier of the meta information.
+   * @access public
+   */
   public function removeMeta($id)
   {
     unset($this->meta[$id]);
   }
   
+  /**
+   * Returns all meta data that added on the page.
+   *
+   * @return array
+   * @access public
+   */
   public function getAllMeta()
   {
     return $this->meta;
   }
   
+  /**
+   * Adds CSS file or css string on the web page.
+   * If attributes "href" is defined it will be used as a unique identifier of this CSS.
+   *
+   * @param array $attributes - attributes of <style> (or <link>) tag.
+   * @param string $style - CSS string of the inline style.
+   * @param integer $order - some integer number that determines order of the attaching styles.
+   * @access public
+   */
   public function addCSS(array $attributes, $style = null, $order = null)
   {
     $this->css[isset($attributes['href']) ? $attributes['href'] : count($this->css)] = ['style' => $style, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->css)];
   }
   
+  /**
+   * Adds CSS associated with the given identifier on the web page.
+   *
+   * @param string $id - unique identifier of the CSS.
+   * @param array $attributes - attributes of the attaching styles.
+   * @param string $style - CSS string of the inline style.
+   * @param integer $order - some integer number that determines order of the attaching styles.
+   * @access public
+   */
   public function setCSS($id, array $attributes, $style = null, $order = null)
   {
     $this->css[$id] = ['style' => $style, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->css)];
   }
   
+  /**
+   * Returns CSS information associated with the given identifier.
+   * If CSS with such identifier does not exists, it returns FALSE.
+   *
+   * @param string $id - unique identifier of CSS.
+   * @return array
+   * @access public
+   */
   public function getCSS($id)
   {
     return isset($this->css[$id]) ? $this->css[$id] : false;
   }
   
+  /**
+   * Removes CSS by its identifier.
+   *
+   * @param string $id - unique identifier of CSS.
+   * @access public
+   */
   public function removeCSS($id)
   {
     unset($this->css[$id]);
   }
   
+  /**
+   * Returns all CSS attached to the page.
+   *
+   * @return array
+   * @access public   
+   */
   public function getAllCSS()
   {
     return $this->css;
   }
   
+  /**
+   * Adds JS on the web page.
+   * If attribute "src" is defined, it will be used as a unique identifier of the adding JS.
+   *
+   * @param array $attributes - attributes of <script> tag.
+   * @param string $script - JS code string of inline script.
+   * @param boolean $inHead - determines whether the given script is placed on head section or before closed <body> tag.
+   * @param integer $order - determines the order in which scripts are attached to the page.
+   * @access public
+   */
   public function addJS(array $attributes, $script = null, $inHead = true, $order = null)
   {
     $place = $inHead ? 'top' : 'bottom';
     $this->js[$place][isset($attributes['src']) ? $attributes['src'] : count($this->js[$place])] = ['script' => $script, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->js[$place])];
   }
   
+  /**
+   * Adds JS associated with some unique identifier on the web page.
+   *
+   * @param string $id - unique identifier of the JS.
+   * @param array $attributes - attributes of <script> tag.
+   * @param string $script - JS code string of inline script.
+   * @param boolean $inHead - determines whether the given script is placed on head section or before closed <body> tag.
+   * @param integer $order - determines the order in which scripts are attached to the page.
+   * @access public
+   */
   public function setJS($id, array $attributes, $script = null, $inHead = true, $order = null)
   {
     $place = $inHead ? 'top' : 'bottom';
     $this->js[$place][$id] = ['script' => $script, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->js[$place])];
   }
   
+  /**
+   * Returns information about attached JS code.
+   * If script with the given identifier does not exist, it returns FALSE.
+   *
+   * @param string $id - unique identifier of the script.
+   * @param boolean - determines whether the required script is placed on head section or before closed <body> tag.
+   * @return array
+   * @access public
+   */
   public function getJS($id, $inHead = true)
   {
     $place = $inHead ? 'top' : 'bottom';
     return isset($this->js[$place][$id]) ? $this->js[$place][$id] : false;
   }
   
+  /**
+   * Removes JS code from the page.
+   *
+   * @param string $id - unique identifier of the script.
+   * @param boolean - determines whether the required script is placed on head section or before closed <body> tag.
+   * @access public
+   */
   public function removeJS($id, $inHead = true)
   {
     unset($this->js[$inHead ? 'top' : 'bottom'][$id]);
   }
   
+  /**
+   * Returns all attached to the page scripts.
+   *
+   * @return array
+   * @access public
+   */
   public function getAllJS()
   {
     return $this->js;
   }
   
+  /**
+   * Establishes JS code that will be preformed on the client side.
+   *
+   * @param string $action - command name which determines actions that should be executed on the client side.
+   * @param mixed $param1 - the first parameter of the command.
+   * ...
+   * @param mixed $paramn - the last parameter of the command.
+   * @param integer $time - time delay of the command execution.
+   * @access public
+   */
   public function action(/* $action, $param1, $param2, ..., $time = 0 */)
   {
     $args = func_get_args();
     $config = \Aleph::getInstance()->getConfig();
-    $jsMark = isset($config['pom']['jsMark']) ? $config['pom']['jsMark'] : 'js::';
     $act = strtolower($args[0]);
     switch ($act)
     {
@@ -291,7 +669,7 @@ class View implements \ArrayAccess
       case 'focus':
       case 'remove':
       case 'script':
-        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
         break;
       case 'reload':
         $act = '$a.ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
@@ -303,33 +681,59 @@ class View implements \ArrayAccess
       case 'remove':
       case 'insert':
       case 'replace':
-        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
+        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, self::JS_MARK) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
         break;
       case 'display':
       case 'message':
       case 'inject':
-        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, $jsMark) . ', ' .  Utils\PHP\Tools::php2js($args[3], true, $jsMark) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
+        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[3], true, self::JS_MARK) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
+        break;
+      case 'download':
+        $_SESSION['__DOWNLOAD__'] = ['file' => $args[1], 'filename' => isset($args[2]) ? $args[2] : null, 'contentType' => isset($args[3]) ? $args[3] : null, 'deleteAfterDownload' => isset($args[4]) ? $args[4] : false];
+        $act = '$a.ajax.action(\'reload\')';
         break;
       default:
-        $act = '$a.ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, $jsMark) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $act = '$a.ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, self::JS_MARK) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
     }
     if (Net\Request::getInstance()->isAjax) $this->actions[] = $act;
     else $this->addJS([], $act, false);
   }
   
+  /**
+   * Attaches control object to the view.
+   *
+   * @param Aleph\Web\POM\Control $ctrl - a control to be added to the view.
+   * @access public
+   */
   public function attach(Control $ctrl)
   {
     $this->controls[$ctrl->id] = $ctrl;
     if ($ctrl instanceof Panel) foreach($ctrl as $child) $this->attach($child);
   }
 
+  /**
+   * Returns TRUE if the given control is attached to the view and FALSE otherwise.
+   *
+   * @param string|Aleph\Web\POM\Control $ctrl - a control object or its unique identifier.
+   * @return boolean
+   * @access public
+   */
   public function isAttached($ctrl)
   {
     $id = $ctrl instanceof Control ? $ctrl->id : $ctrl;
     return isset($this->controls[$id]) || isset($this->vs[$id]);
   }
   
+  /**
+   * Searches the required control in the page object model and returns its instance.
+   * The method returns FALSE if the required control is not found.
+   *
+   * @param string $id - unique or logic identifier of a control.
+   * @param boolean $isRecursion - determines whether to recursively search the control inside panels.
+   * @param Aleph\Web\POM\Control $context - the panel, only inside which the search should be performed.
+   * @return Aleph\Web\POM\Control
+   */
   public function get($id, $isRecursion = true, Control $context = null)
   {
     if (isset($this->controls[$id])) 
@@ -365,6 +769,14 @@ class View implements \ArrayAccess
     return $ctrl;
   }
   
+  /**
+   * Restores value of the control property "value" to default.
+   * If the given control is a panel, its children will also restore your properties "value".
+   *
+   * @param string $id - unique or logic identifier of the control.
+   * @param boolean $isRecursion - determines whether the method should be recursively applied to all child panels of the given panel.
+   * @access public
+   */
   public function clean($id, $isRecursion = true)
   {
     $ctrl = $this->get($id);
@@ -384,6 +796,14 @@ class View implements \ArrayAccess
     }
   }
   
+  /**
+   * Checks or unchecks checkboxes of the panel.
+   *
+   * @param string $id - unique or logic identifier of the panel.
+   * @param boolean $flag - determines whether a checkbox will be checked or not.
+   * @param boolean $isRecursion - determines whether the method should be recursively applied to all child panels of the given panel.
+   * @access public
+   */
   public function check($id, $flag = true, $isRecursion = true)
   {
     $ctrl = $this->get($id);
@@ -403,9 +823,16 @@ class View implements \ArrayAccess
     }
   }
   
-  public function invoke($method, $obj = null)
+  /**
+   * For every control invokes the required method if the control has it.
+   *
+   * @param string $method - the required control method.
+   * @param mixed $id - a control object or control ID. If this parameter is not defined, the unique ID of body control is used.
+   * @access public
+   */
+  public function invoke($method, $id = null)
   {
-    $vs = $this->getActualVS($obj ?: $this->UID);
+    $vs = $this->getActualVS($id ?: $this->UID);
     if (isset($vs['controls']))
     {
       foreach ($vs['controls'] as $uniqueID)
@@ -419,6 +846,13 @@ class View implements \ArrayAccess
     }
   }
   
+  /**
+   * Returns array of the validators with the given validation group.
+   *
+   * @param string $groups - comma separated validation groups or symbol "*", which means all validators.
+   * @return array
+   * @access public
+   */
   public function getValidators($groups = 'default')
   {
     $validators = [];
@@ -457,6 +891,16 @@ class View implements \ArrayAccess
     return $validators;
   }
   
+  /**
+   * Launches group of validators.
+   * It returns TRUE if all validated controls are valid and FALSE otherwise. 
+   *
+   * @param string $groups - comma separated validation groups or symbol "*", which means all validators.
+   * @param string $classInvalid - style class that will be applied to invalid controls.
+   * @param string $classValid - style class that will be applied to valid controls.
+   * @return boolean
+   * @access public
+   */
   public function validate($groups = 'default', $classInvalid = null, $classValid = null)
   {
     $validators = $this->getValidators($groups);
@@ -495,6 +939,14 @@ class View implements \ArrayAccess
     return $flag;
   }
   
+  /**
+   * Sets group of validators to valid state.
+   *
+   * @param string $groups - comma separated validation groups or symbol "*", which means all validators.
+   * @param string $classInvalid - style class that was applied to invalid controls.
+   * @param string $classValid - style class that was applied to valid controls.
+   * @access public
+   */
   public function reset($groups = 'default', $classInvalid = null, $classValid = null)
   {
     foreach ($this->getValidators($groups) as $validator)
@@ -508,6 +960,16 @@ class View implements \ArrayAccess
     }
   }
   
+  /**
+   * Merges attribute values of the client side controls with the server side controls.
+   * It returns FALSE if the current session is expired and TRUE otherwise. 
+   *
+   * @param string $UID - unique identifier of the view.
+   * @param array $data - changes of control attributes received from the client side.
+   * @param integer $timestamp - the time of obtaining of the given changes.
+   * @return boolean
+   * @access public
+   */
   public function assign($UID, array $data, $timestamp)
   {
     $this->UID = $UID;
@@ -517,6 +979,12 @@ class View implements \ArrayAccess
     return true;
   }
   
+  /**
+   * Forms HTTP response for the result of the Ajax request execution.
+   *
+   * @param mixed $data - result of the Ajax request execution.
+   * @access public
+   */
   public function process($data)
   {
     $this->compare();
@@ -532,7 +1000,12 @@ class View implements \ArrayAccess
     }
     $response->send();
   }
-  
+
+  /**
+   * Parses the view template.
+   *
+   * @access public
+   */   
   public function parse()
   {
     $config = \Aleph::getInstance()['pom'];
@@ -563,6 +1036,12 @@ class View implements \ArrayAccess
     }
   }
   
+  /**
+   * Renders the view HTML.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     foreach ($this->controls as $uniqueID => $ctrl)
@@ -621,6 +1100,13 @@ class View implements \ArrayAccess
     return $this->dtd . $html;
   }
   
+  /**
+   * Renders attributes of an HTML tag.
+   *
+   * @param array $attributes - tag attributes.
+   * @return string
+   * @access protected
+   */
   protected function renderAttributes(array $attributes)
   {
     $tmp = [];
@@ -631,16 +1117,36 @@ class View implements \ArrayAccess
     return ' ' . implode(' ', $tmp);
   }
   
+  /**
+   * Returns view state cache ID.
+   *
+   * @param boolean $init - if it is TRUE, the cache ID of initial view state is returned and otherwise the cache ID of intermediate view states is returned.
+   * @return string
+   * @access protected
+   */
   protected function getCacheID($init)
   {
     return $this->UID . ($init ? '_init_vs' : session_id() . '_vs');
   }
   
+  /**
+   * Returns TRUE if the current session is expired and TRUE otherwise.
+   *
+   * @param boolean $init - determines whether need to check cache expiration of the initial view state.
+   * @return boolean
+   * @access protected
+   */
   protected function isExpired($init = false)
   {
     return MVC\Page::$current->getCache()->isExpired($this->getCacheID($init));
   }
   
+  /**
+   * Extracts the control view states from the cache.
+   *
+   * @param boolean $init - determines whether need to extract the initial view state of the controls.
+   * @access protected
+   */
   protected function pull($init = false)
   {
     $vs = MVC\Page::$current->getCache()->get($this->getCacheID($init));
@@ -658,6 +1164,12 @@ class View implements \ArrayAccess
     Core\Template::setGlobals($vs['globals']);
   }
   
+  /**
+   * Puts the control view states into the cache.
+   *
+   * @param boolean $init - determines whether the initial view state of the controls is put into the cache.
+   * @access protected
+   */
   protected function push($init = false)
   {
     $vs = ['vs' => $this->vs, 'globals' => Core\Template::getGlobals(), 'ts' => $init ? 0 : (new Utils\DT('now', null, 'UTC'))->getTimestamp()];
@@ -674,6 +1186,11 @@ class View implements \ArrayAccess
     $cache->set($this->getCacheID($init), $vs, $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), 'pages');
   }
   
+  /**
+   * Calculates the view state of controls and stores them in $vs property.
+   *
+   * @access protected
+   */
   protected function commit()
   {
     $commit = function(Control $ctrl) use(&$commit)
@@ -691,6 +1208,13 @@ class View implements \ArrayAccess
     foreach ($this->controls as $ctrl) $commit($ctrl);
   }
   
+  /**
+   * Merges new values of control attributes with their old values.
+   *
+   * @param array $data - new attribute values.
+   * @param integer $timestamp - the time when the changes of attribute values occurred.
+   * @access protected
+   */
   protected function merge(array $data, $timestamp)
   {
     if ($timestamp > $this->ts) foreach ($data as $uniqueID => $info)
@@ -711,6 +1235,12 @@ class View implements \ArrayAccess
     }
   }
   
+  /**
+   * Compares the current values of attributes and properties of the controls with their old values 
+   * and forms JS code for refreshing the changed controls on the client side. 
+   *
+   * @access protected
+   */
   protected function compare()
   {
     if (count($this->controls) == 0) return;
@@ -758,6 +1288,15 @@ class View implements \ArrayAccess
     }
   }  
   
+  /**
+   * Prepares template to the parsing.
+   * It returns the detailed information about the template. 
+   *
+   * @param string $template - template string or path to template file.
+   * @param array $vars - template variables for the template preprocessing.
+   * @return array
+   * @access protected
+   */
   protected function prepareTemplate($template, array $vars = null)
   {
     $config = \Aleph::getInstance()['pom'];
@@ -813,6 +1352,13 @@ class View implements \ArrayAccess
          
   }
   
+  /**
+   * Parses the template.
+   *
+   * @param array $ctx - array of the template detailed information.
+   * @return array - the updated detailed information about the template.
+   * @access protected
+   */
   protected function parseTemplate(array $ctx)
   {
     $parseStart = function($parser, $tag, array $attributes) use(&$ctx)
@@ -824,7 +1370,7 @@ class View implements \ArrayAccess
         $tag = substr($tag, strlen($ctx['prefix']));
         if ($tag == 'template')
         {
-          $path = isset($attributes['path']) ? static::evolute($attributes['path'], $ctx['marks']) : null;
+          $path = isset($attributes['path']) ? static::evaluate($attributes['path'], $ctx['marks']) : null;
           if (!file_exists($path)) 
           {
             $line = xml_get_current_line_number($parser);
@@ -867,7 +1413,7 @@ class View implements \ArrayAccess
         }
         if (($ctrl instanceof Panel) && isset($attributes['template']))
         {
-          $res = static::analyze(static::evolute($attributes['template'], $ctx['marks']), $this->vars);
+          $res = static::analyze(static::evaluate($attributes['template'], $ctx['marks']), $this->vars);
           $ctx['marks'] = array_merge($ctx['marks'], $res['marks']);
           foreach ($res['controls'] as $control) $ctrl->add($control);
           $ctrl->tpl->setTemplate($res['html']); 
@@ -919,7 +1465,7 @@ class View implements \ArrayAccess
         if ($tag == 'head') 
         {
           $ctx['insideHead'] = true;
-          $html .= static::getControlPlaceHolder('__head_entities');
+          $html .= static::getControlPlaceholder('__head_entities');
         }
         if (!count($ctx['stack'])) $ctx['html'] .= $html;
         else
@@ -944,13 +1490,13 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->pop();
           $parent = $ctx['stack']->top();
-          $parent->tpl->setTemplate($parent->tpl->getTemplate() . static::getControlPlaceHolder($ctrl->id));
+          $parent->tpl->setTemplate($parent->tpl->getTemplate() . static::getControlPlaceholder($ctrl->id));
           $parent->add($ctrl);
         }
         else
         {
           $ctrl = $ctx['stack']->pop();
-          $ctx['html'] .= static::getControlPlaceHolder($ctrl->id);
+          $ctx['html'] .= static::getControlPlaceholder($ctrl->id);
           $ctx['controls'][] = $ctrl;
         }
       }
@@ -1065,7 +1611,16 @@ class View implements \ArrayAccess
     return $ctx;
   }
   
-  protected function searchControl(array $cid, $controls, $deep = -1)
+  /**
+   * Searches the control in POM.
+   *
+   * @param array $cid - the logic control identifier.
+   * @param array $controls - controls that contained in the panel.
+   * @param integer $deep - the nested level of the control.
+   * @return Aleph\Web\POM\Control
+   * @access private
+   */
+  private function searchControl(array $cid, array $controls, $deep = -1)
   {
     foreach ($controls as $obj)
     {
@@ -1101,6 +1656,12 @@ class View implements \ArrayAccess
     return empty($n) ? false : ($obj instanceof Control ? $obj : $this->get($vs['attributes']['id']));
   }
   
+  /**
+   * Returns the actual view state of the control.
+   *
+   * @param mixed $obj - the control object or its ID.
+   * @return array|boolean - returns FALSE if a control with such ID does not exist.
+   */
   private function getActualVS($obj)
   {
     if ($obj instanceof Control)

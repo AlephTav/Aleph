@@ -110,7 +110,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
     $ctrl->remove();
     unset($this->controls[$ctrl->id]);
-    $this->tpl->setTemplate(str_replace(View::getControlPlaceHolder($ctrl->id), '', $this->tpl->getTemplate()));
+    $this->tpl->setTemplate(str_replace(View::getControlPlaceholder($ctrl->id), '', $this->tpl->getTemplate()));
     $this->inDetach = false;
     return $this;
   }
@@ -119,8 +119,8 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   {
     $ctrl = $this->get($id, false);
     if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_2', $id, get_class($this), $this->getFullID());
-    $oph = View::getControlPlaceHolder($ctrl->id);
-    $nph = View::getControlPlaceHolder($new->id);
+    $oph = View::getControlPlaceholder($ctrl->id);
+    $nph = View::getControlPlaceholder($new->id);
     if (false !== $this->get($new->id, false)) 
     {
       $this->tpl->setTemplate(str_replace($nph, '', $this->tpl->getTemplate()));
@@ -144,7 +144,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     foreach ($this as $child) 
     {
       $copy = $child->copy();
-      $ctrl->tpl->setTemplate(str_replace(View::getControlPlaceHolder($child->id), View::getControlPlaceHolder($copy->id), $ctrl->tpl->getTemplate()));
+      $ctrl->tpl->setTemplate(str_replace(View::getControlPlaceholder($child->id), View::getControlPlaceholder($copy->id), $ctrl->tpl->getTemplate()));
       $ctrl->add($copy);
     }
     return $ctrl;

@@ -556,8 +556,10 @@ class Response
    * @param string $path - the full path to the downloading file.
    * @param string $filename - the name of the downloading file.
    * @param string $contentType - the mime type of the downloading file.
+   * @param boolean $deleteAfterDownload - determines whether the file should be deleted after download.
+   * @access public
    */
-  public function download($path, $filename = null, $contentType = null)
+  public function download($path, $filename = null, $contentType = null, $deleteAfterDownload = false)
   {
     if (!$filename) $filename = basename($path);
     if (!$contentType) $contentType = function_exists('mime_content_type') ? mime_content_type($path) : 'application/octet-stream';
@@ -570,6 +572,7 @@ class Response
     $this->headers->set('Content-Length', filesize($path));
     $this->send();
     readfile($path);
+    if ($deleteAfterDownload) unlink($path);
     exit;
   }
   

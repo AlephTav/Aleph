@@ -414,7 +414,7 @@ abstract class Control implements \ArrayAccess
     {
       if ($mode !== null) 
       {
-        $ph = View::getControlPlaceHolder($this->attributes['id']);
+        $ph = View::getControlPlaceholder($this->attributes['id']);
         $tpl = str_replace($ph, '', $parent->tpl->getTemplate());
         switch ($mode)
         {
@@ -435,8 +435,8 @@ abstract class Control implements \ArrayAccess
     }
     else if (false !== $ctrl = $parent->get($id, false))
     {
-      $ph = View::getControlPlaceHolder($this->attributes['id']);
-      $ch = View::getControlPlaceHolder($ctrl->id);
+      $ph = View::getControlPlaceholder($this->attributes['id']);
+      $ch = View::getControlPlaceholder($ctrl->id);
       if (!empty($prnt) && $prnt->id == $parent->id) $tpl = str_replace($ph, '', $parent->tpl->getTemplate());
       else $tpl = $parent->tpl->getTemplate();
       switch ($mode)
@@ -457,7 +457,7 @@ abstract class Control implements \ArrayAccess
     }
     else if ($mode !== 'replace')
     {
-      $ph = View::getControlPlaceHolder($this->attributes['id']);
+      $ph = View::getControlPlaceholder($this->attributes['id']);
       $tpl = str_replace($ph, '', $parent->tpl->getTemplate());
       $root = md5(microtime(true));
       $dom = new Utils\DOMDocumentEx();
