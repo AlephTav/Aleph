@@ -230,7 +230,7 @@ class Tools
         return $value;
       }
     }
-    if (is_null($value)) return 'null';
+    if (is_null($value)) return 'undefined';
     if (is_bool($value)) return $value ? 'true' : 'false';
     if (is_numeric($value)) return $value;
     if (strlen($jsMark) && substr($value, 0, strlen($jsMark)) == $jsMark) return substr($value, strlen($jsMark));

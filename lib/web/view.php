@@ -267,9 +267,9 @@ class View implements \ArrayAccess
    * @access public
    * @static
    */
-  public static function evaluate($value, array $marks)
+  public static function evaluate($value, array $marks = null)
   {
-    $value = \Aleph::exe(static::decodePHPTags($value, $marks), ['config' => \Aleph::getInstance()->getConfig()]);
+    $value = \Aleph::exe(static::decodePHPTags($value, $marks ?: []), ['config' => \Aleph::getInstance()->getConfig()]);
     if (substr($value, 0, strlen(self::PHP_MARK)) == self::PHP_MARK)
     {
       $value = substr($value, strlen(self::PHP_MARK));
@@ -438,9 +438,10 @@ class View implements \ArrayAccess
    * @param array $attributes - attributes of <title> tag.
    * @access public
    */
-  public function setTitle($title, array $attributes = null)
+  public function setTitle($title = null, array $attributes = null)
   {
-    $this->title = ['title' => $title, 'attributes' => $attributes ?: $this->title['attributes']];
+    $this->title = ['title' => $title !== null ? $title : $this->title['title'], 
+                    'attributes' => $attributes !== null ? $attributes : $this->title['attributes']];
   }
   
   /**
@@ -648,16 +649,16 @@ class View implements \ArrayAccess
   }
   
   /**
-   * Establishes JS code that will be preformed on the client side.
+   * Establishes JS code that will be performed on the client side.
    *
    * @param string $action - command name which determines actions that should be executed on the client side.
    * @param mixed $param1 - the first parameter of the command.
    * ...
    * @param mixed $paramn - the last parameter of the command.
-   * @param integer $time - time delay of the command execution.
+   * @param integer $delay - time delay of the command execution.
    * @access public
    */
-  public function action(/* $action, $param1, $param2, ..., $time = 0 */)
+  public function action(/* $action, $param1, $param2, ..., $delay = 0 */)
   {
     $args = func_get_args();
     $config = \Aleph::getInstance()->getConfig();
@@ -674,11 +675,9 @@ class View implements \ArrayAccess
       case 'reload':
         $act = '$a.ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
-      case 'focus':
       case 'addclass':
       case 'removeclass':
       case 'toggleclass':
-      case 'remove':
       case 'insert':
       case 'replace':
         $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, self::JS_MARK) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
@@ -686,7 +685,7 @@ class View implements \ArrayAccess
       case 'display':
       case 'message':
       case 'inject':
-        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[3], true, self::JS_MARK) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
+        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[2]) ? $args[2] : null, true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[3]) ? $args[3] : null, true, self::JS_MARK) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
         break;
       case 'download':
         $_SESSION['__DOWNLOAD__'] = ['file' => $args[1], 'filename' => isset($args[2]) ? $args[2] : null, 'contentType' => isset($args[3]) ? $args[3] : null, 'deleteAfterDownload' => isset($args[4]) ? $args[4] : false];
