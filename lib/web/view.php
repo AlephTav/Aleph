@@ -770,7 +770,7 @@ class View implements \ArrayAccess
   
   /**
    * Restores value of the control property "value" to default.
-   * If the given control is a panel, its children will also restore your properties "value".
+   * If the given control is a panel, its children will also restore their properties "value".
    *
    * @param string $id - unique or logic identifier of the control.
    * @param boolean $isRecursion - determines whether the method should be recursively applied to all child panels of the given panel.
@@ -1298,6 +1298,7 @@ class View implements \ArrayAccess
    */
   protected function prepareTemplate($template, array $vars = null)
   {
+    $cfg = \Aleph::getInstance()->getConfig();
     $config = \Aleph::getInstance()['pom'];
     $prefix = empty($config['prefix']) ? '' : strtolower($config['prefix']) . ':';
     $ppOpenTag = empty($config['ppOpenTag']) ? '<!--{' : $config['ppOpenTag'];
@@ -1317,10 +1318,10 @@ class View implements \ArrayAccess
     while (strtolower(substr(ltrim($xhtml), 0, strlen($prefix) + 9)) == '<' . $prefix . 'template')
     {
       preg_match('/\A\s*<' . $qprefix . 'template\s*placeholder\s*=\s*"([^"]*)"\s*>(.*)<\/' . $qprefix . 'template>/i', $xhtml, $matches);
-      $master = \Aleph::exe($matches[2], ['config' => $config]);
+      $master = \Aleph::exe($matches[2], ['config' => $cfg]);
       if (!file_exists($master)) throw new Core\Exception($this, 'ERR_VIEW_4', $file);
       $xhtml = ltrim(substr($xhtml, strlen($matches[0])));
-      $placeholders[\Aleph::exe($matches[1], ['config' => $config])] = $xhtml;
+      $placeholders[\Aleph::exe($matches[1], ['config' => $cfg])] = $xhtml;
       $file = $master;
       $xhtml = file_get_contents($master);
       foreach ($placeholders as $id => $content)
