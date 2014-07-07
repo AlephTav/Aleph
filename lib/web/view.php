@@ -274,7 +274,7 @@ class View implements \ArrayAccess
     {
       $value = substr($value, strlen(self::PHP_MARK));
       if (strlen($value) == 0) return;
-      eval(\Aleph::ecode('$value = ' . $value . ';'));
+      eval(\Aleph::ecode('$value = ' . htmlspecialchars_decode($value) . ';'));
     }
     return $value;
   }

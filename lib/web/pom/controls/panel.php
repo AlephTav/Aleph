@@ -24,7 +24,8 @@ namespace Aleph\Web\POM;
 
 use Aleph\Core,
     Aleph\MVC,
-    Aleph\Web;
+    Aleph\Web,
+    Aleph\Utils;
 
 class Panel extends Control implements \IteratorAggregate, \Countable
 {
@@ -180,5 +181,20 @@ class Panel extends Control implements \IteratorAggregate, \Countable
       foreach ($this as $uniqueID => $ctrl) $this->tpl->{$uniqueID} = $ctrl->render();
     }
     return $this->tpl->render();
+  }
+  
+  /**
+   * Returns XHTML of the control.
+   *
+   * @return string
+   * @access public
+   */
+  public function getXHTML()
+  {
+    $tpl = $this->tpl->getTemplate();
+    $tag = Utils\PHP\Tools::getClassName($this);
+    $html = '<' . $tag . $this->getXHTMLAttributes() . '>';
+    foreach ($this as $uniqueID => $ctrl) $tpl = str_replace(View::getControlPlaceholder($uniqueID), $ctrl->getXHTML(), $tpl);
+    return $html . $tpl . '</' . $tag . '>';
   }
 }

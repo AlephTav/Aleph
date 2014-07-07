@@ -26,10 +26,21 @@ use Aleph\Core,
     Aleph\MVC,
     Aleph\Utils;
 
+/**
+ * The base class of all web controls.
+ * It contains methods for access to attributes and properties of controls, methods for managing view state of controls and
+ * methods for attaching control to a view (panel).
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 abstract class Control implements \ArrayAccess
 {
+  // Regular expression for checking the format of logic control identifiers.
   const ID_REG_EXP = '/^[0-9a-zA-Z_]+$/';
   
+  // Error message templates.
   const ERR_CTRL_1 = 'ID of [{var}] should match /^[0-9a-zA-Z_]+$/ pattern, "[{var}]" was given.';
   const ERR_CTRL_2 = 'Web control [{var}] (full ID: [{var}]) does not have property [{var}].';
   const ERR_CTRL_3 = 'You cannot change or delete readonly attribute ID of [{var}] (full ID: [{var}]).';
@@ -38,16 +49,50 @@ abstract class Control implements \ArrayAccess
   const ERR_CTRL_6 = 'You cannot inject control [{var}] (full ID: [{var}]) at TOP or BOTTOM of another control [{var}] (full ID: [{var}]). Try to use this control as a parent.';
   const ERR_CTRL_7 = 'Injecting mode [{var}] is invalid. The valid values are "top", "bottom", "after" and "before".';
   
+  /**
+   * Determines whether the control properties or attributes were changed 
+   * and the control should be refreshed on the client side.
+   *
+   * @var boolean $isRefreshed
+   * @access protected
+   */
   protected $isRefreshed = false;
+  
+  /**
+   * Determines whether the control was removed and it should be removed on the client side.
+   *
+   * @var boolean $isRemoved
+   * @access protected
+   */
   protected $isRemoved = false;
+  
+  /**
+   * Determines whether the control has just created and it should be added on the page on the client side.
+   *
+   * @var boolean $isCreated
+   * @access protected
+   */
   protected $isCreated = false;
   
+  /**
+   * Information about the placement on the web page of the newly created control.
+   *
+   * @var array $creationInfo
+   * @access protected
+   */
   protected $creationInfo = null;
   
+  /**
+   * Unique identifier of the parent control or its object.
+   *
+   * @var string|ClickBlocks\Web\POM\Control $parent
+   * @access protected
+   */
   protected $parent = null;
   
   /**
    * The control type.
+   * This type is shown as attribute "data-ctrl" in the control tag on the web page.
    *
    * @var string $ctrl
    * @access protected
@@ -55,7 +100,7 @@ abstract class Control implements \ArrayAccess
   protected $ctrl = null;
   
   /**
-   * HTML Global Attributes
+   * HTML global attributes of the control.
    *
    * @var array $attributes
    * @access protected
@@ -77,14 +122,35 @@ abstract class Control implements \ArrayAccess
                             'accesskey' => ''        // Specifies a shortcut key to activate/focus an element.
                            */];
   
+  /**
+   * Non-standard control attributes, that should be rendered as "data-" attributes on the web page.
+   *
+   * @var array $dataAttributes
+   * @access protected
+   */
   protected $dataAttributes = [];
-  
-  protected $baseAttributes = [];
 
+  /**
+   * The control properties.
+   *
+   * @var array $properties
+   * @access protected
+   */
   protected $properties = [];
   
+  /**
+   * The control events.
+   *
+   * @var array $events
+   */
   protected $events = [];
 
+  /**
+   * Constructor. Creates the unique control identifier that based on its logic identifier.
+   *
+   * @param string $id - the logic control identifier. It should contains only numeric, alphabetic symbols and symbol "_".
+   * @access public
+   */
   public function __construct($id)
   {
     if (!preg_match(self::ID_REG_EXP, $id)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $id);
@@ -93,11 +159,25 @@ abstract class Control implements \ArrayAccess
     $this->properties['visible'] = true;
   }
   
+  /**
+   * Returns TRUE if the control is attached to the current view and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
   public function isAttached()
   {
     return MVC\Page::$current->view->isAttached($this);
   }
   
+  /**
+   * Returns full logic identifier of the control.
+   * The full logic identifier is a dot-separated string containing logic identifiers of 
+   * all parents of the given control along with its logic identifier.
+   *
+   * @return string
+   * @access public
+   */
   public function getFullID()
   {
     $id = $this->properties['id'];
@@ -110,6 +190,12 @@ abstract class Control implements \ArrayAccess
     return $id;
   }
   
+  /**
+   * Returns view state of the control.
+   *
+   * @return array
+   * @access public
+   */
   public function getVS()
   {
     return ['class' => get_class($this), 
@@ -121,6 +207,13 @@ abstract class Control implements \ArrayAccess
                           'unload' => method_exists($this, 'unload')]];
   }
 
+  /**
+   * Sets view state of the control.
+   *
+   * @param array $vs - view state of the control.
+   * @return self
+   * @access public
+   */
   public function setVS(array $vs)
   {
     $this->parent = $vs['parent'];
@@ -129,6 +222,13 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
+  /**
+   * Sets value of the control attribute.
+   *
+   * @param string $attribute - the attribute name.
+   * @param mixed $value - the attribute value.
+   * @access public
+   */
   public function __set($attribute, $value)
   {
     $attribute = strtolower($attribute);
@@ -136,6 +236,13 @@ abstract class Control implements \ArrayAccess
     $this->attributes[$attribute] = $value;
   }
   
+  /**
+   * Returns value of the control attribute.
+   *
+   * @param string $attribute - the attribute name.
+   * @return mixed
+   * @access public
+   */
   public function &__get($attribute)
   {
     $attribute = strtolower($attribute);
@@ -144,11 +251,24 @@ abstract class Control implements \ArrayAccess
     return $value;
   }
   
+  /**
+   * Returns TRUE if value of the given attribute is defined and FALSE otherwise.
+   *
+   * @param string $attribute - the attribute name.
+   * @return boolean
+   * @access public
+   */
   public function __isset($attribute)
   {
     return isset($this->attributes[strtolower($attribute)]);
   }
   
+  /**
+   * Removes the control attributes.
+   *
+   * @param string $attribute - the attribute name.
+   * @access public
+   */
   public function __unset($attribute)
   {
     $attribute = strtolower($attribute);
@@ -156,6 +276,13 @@ abstract class Control implements \ArrayAccess
     unset($this->attributes[$attribute]);
   }
   
+  /**
+   * Sets value of the control property.
+   *
+   * @param string $property - the property name.
+   * @param mixed $value - the property value.
+   * @access public
+   */
   public function offsetSet($property, $value)
   {
     $property = strtolower($property);
@@ -169,6 +296,13 @@ abstract class Control implements \ArrayAccess
     $this->properties[$property] = $value;
   }
   
+  /**
+   * Returns value of the control property.
+   *
+   * @param string $property - the property name.
+   * @return mixed
+   * @access public   
+   */
   public function &offsetGet($property)
   {
     $property = strtolower($property);
@@ -176,32 +310,84 @@ abstract class Control implements \ArrayAccess
     return $this->properties[$property];
   }
   
+  /**
+   * Returns TRUE if the control has the given property and FALSE otherwise.
+   *
+   * @param string $property - the property name.
+   * @return boolean
+   * @access public
+   */
   public function offsetExists($property)
   {
     return array_key_exists(strtolower($property), $this->properties);
   }
   
+  /**
+   * Removes value (sets it to NULL) of the control property.
+   *
+   * @param string $property - the property name.
+   * @access public
+   */
   public function offsetUnset($property)
   {
     $this[$property] = null;
   }
   
+  /**
+   * Returns delegate string for the given control method.
+   *
+   * @param string $callback - the control method.
+   * @param boolean $isStatic - determines whether the control method is static.
+   * @return string
+   * @access public
+   */
   public function callback($callback, $isStatic = false)
   {
-    return addcslashes(get_class($this) . ($isStatic ? '::' . $callback : '@' . $this->attributes['id'] . '->' . $callback), "'\\");
+    return addcslashes(get_class($this) . ($isStatic ? '::' . $callback : '@' . $this->attributes['id'] . '->' . $callback), '\\');
   }
   
+  /**
+   * Returns JS code for invoking of the given control method through Ajax request.
+   *
+   * @param string $callback - the control method.
+   * @param array $params - the method parameters.
+   * @param boolean $isStatic - determines whether the control method is static.
+   * @return string
+   * @access public
+   */
   public function method($callback, array $params = null, $isStatic = false)
   {
     $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], false, View::JS_MARK));
     return '$a.ajax.doit(\'' . $this->callback($callback, $isStatic) . '\'' . (strlen($params) ? ', ' . $params : '') . ')';
   }
   
+  /**
+   * Returns the control events.
+   *
+   * @return array
+   * @access public
+   */
   public function getEvents()
   {
     return $this->events;
   }
   
+  /**
+   * Adds new JS event to the control.
+   * Parameter $options can have the following elements:
+   * [
+   *  'params'      => [string], // parameters of the control method if $callback represents the control method.
+   *  'check'       => [string], // JS function that will determine whether or not to trigger the given event handler.
+   *  'toContainer' => [boolean] // determines whether or not the given event should be applied to the container tag of the control.
+   * ]
+   *
+   * @param string $id - the unique event identifier.
+   * @param string $type - the DOM event type, such as "click" or "change", or custom event type.
+   * @param string $callback - the control method or marked JS code string of the event handler.
+   * @param array $options - the additional event parameters.
+   * @return self
+   * @access public
+   */
   public function addEvent($id, $type, $callback, array $options = null)
   {
     $callback = (string)$callback;
@@ -209,23 +395,45 @@ abstract class Control implements \ArrayAccess
     else 
     {
       $params = implode(', ', Utils\PHP\Tools::php2js(isset($options['params']) ? $options['params'] : [], false, View::JS_MARK));
-      $callback = 'function(event){$a.ajax.doit(\'' . addcslashes($callback, "'\\") . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
+      $callback = 'function(event){$a.ajax.doit(\'' . addcslashes($callback, '\\') . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
     }
     $this->events[$id] = ['type' => strtolower($type), 'callback' => $callback, 'options' => $options];
     return $this;
   }
   
+  /**
+   * Removes the control event.
+   *
+   * @param string $id - the event identifier.
+   * @return self
+   * @access public
+   */
   public function removeEvent($id)
   {
     $this->events[$id] = false;
     return $this;
   }
   
+  /**
+   * Returns TRUE if the control has the container tag and FALSE otherwise.
+   * This method need to be overridden in child classes if your control has the container tag.
+   *
+   * @return boolean
+   * @access public
+   */
   public function hasContainer()
   {
     return false;
   }
   
+  /**
+   * Returns TRUE if the control has the given CSS class.
+   *
+   * @param string $class - the CSS class.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return boolean
+   * @access public
+   */
   public function hasClass($class, $isContainer = false)
   {
     $attr = $isContainer ? 'container-class' : 'class';
@@ -234,6 +442,14 @@ abstract class Control implements \ArrayAccess
     return strpos(' ' . $this->attributes[$attr] . ' ', ' ' . $class . ' ') !== false;
   }
 
+  /**
+   * Adds CSS class to the control.
+   *
+   * @param string $class - CSS class to add.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function addClass($class, $isContainer = false)
   {
     $attr = $isContainer ? 'container-class' : 'class';
@@ -244,6 +460,14 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
 
+  /**
+   * Removes CSS class from the control.
+   *
+   * @param string $class - CSS class to remove.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function removeClass($class, $isContainer = false)
   {
     $attr = $isContainer ? 'container-class' : 'class';
@@ -253,11 +477,29 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
 
+  /**
+   * Replaces CSS class with the other CSS class.
+   *
+   * @param string $class1 - CSS class to be replaced.
+   * @param string $class2 - CSS class to replace.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function replaceClass($class1, $class2, $isContainer = false)
   {
     return $this->removeClass($class1, $isContainer)->addClass($class2, $isContainer);
   }
 
+  /**
+   * Toggles CSS class.
+   *
+   * @param string $class1 - CSS class to toggle.
+   * @param string $class2 - CSS class to replace.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function toggleClass($class1, $class2 = null, $isContainer = false)
   {
     if (!$this->hasClass($class1, $isContainer)) $this->replaceClass($class2, $class1, $isContainer);
@@ -265,6 +507,14 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
+  /**
+   * Returns TRUE if the control has the given CSS property.
+   *
+   * @param string $style - the CSS property name.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return string
+   * @access public
+   */
   public function hasStyle($style, $isContainer = false)
   {
     $attr = $isContainer ? 'container-style' : 'style';
@@ -273,6 +523,16 @@ abstract class Control implements \ArrayAccess
     return strpos($this->attributes[$attr], $style) !== false;
   }
 
+  /**
+   * Adds new CSS property value to the control attribute "style".
+   * If the control hasn't the given property it will be added. 
+   *
+   * @param string $style - the CSS property name.
+   * @param mixed $value - the CSS property value.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function addStyle($style, $value, $isContainer = false)
   {
     $attr = $isContainer ? 'container-style' : 'style';
@@ -287,6 +547,16 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
 
+  /**
+   * Sets value of the CSS property of the control attribute "style".
+   * If CSS property with the given name does not exists it won't be added to the control.
+   *
+   * @param string $style - the CSS property name.
+   * @param mixed $value - the CSS property value.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function setStyle($style, $value, $isContainer = false)
   {
     $attr = $isContainer ? 'container-style' : 'style';
@@ -295,6 +565,14 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
 
+  /**
+   * Returns value of the CSS property of the control attribute "style".
+   *
+   * @param string $style - the CSS property name.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return mixed
+   * @access public
+   */
   public function getStyle($style, $isContainer = false)
   {
     $attr = $isContainer ? 'container-style' : 'style';
@@ -303,6 +581,14 @@ abstract class Control implements \ArrayAccess
     return isset($matches[1]) ? $matches[1] : null;
   }
 
+  /**
+   * Removes CSS property from the control attribute "style".
+   *
+   * @param string $style - the CSS property name.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function removeStyle($style, $isContainer = false)
   {
     $attr = $isContainer ? 'container-style' : 'style';
@@ -312,6 +598,15 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
 
+  /**
+   * Toggles CSS property value from the control attribute "style".
+   *
+   * @param string $style - the CSS property name.
+   * @param mixed $value - the CSS property value.
+   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @return self
+   * @access public
+   */
   public function toggleStyle($style, $value, $isContainer = false)
   {
     if (!$this->hasStyle($style, $isContainer)) $this->addStyle($style, $value, $isContainer);
@@ -319,27 +614,71 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
+  /**
+   * Returns TRUE if the control has just created and not attached to the current view.
+   * Otherwise it returns FALSE.
+   *
+   * @return boolean
+   * @access public
+   */
   public function isCreated()
   {
     return $this->isCreated;
   }
   
+  /**
+   * Returns TRUE if the control has an attribute or a property changed, or if method refresh() was invoked with parameter TRUE.
+   * Otherwise it returns FALSE.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isRefreshed()
+  {
+    return $this->isRefreshed;
+  }
+  
+  /**
+   * Returns TRUE if the control was removed.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isRemoved()
+  {
+    return $this->isRemoved;
+  }
+  
+  /**
+   * Returns information about placement of the newly created control.
+   *
+   * @return array
+   * @access public
+   */
   public function getCreationInfo()
   {
     return $this->creationInfo;
   }
   
+  /**
+   * This method can be used to force the control to refresh on the client side even though no its attributes or properties were changed.
+   *
+   * @param boolean $flag - if it is TRUE, the control will be refreshed on the client side.
+   * @return self
+   * @access public
+   */
   public function refresh($flag = true)
   {
     $this->isRefreshed = (bool)$flag;
     return $this;
   }
   
-  public function isRefreshed()
-  {
-    return $this->isRefreshed;
-  }
-  
+  /**
+   * Removes the control from the current view.
+   *
+   * @return self
+   * @access public
+   */
   public function remove()
   {
     if (!$this->isRemoved)
@@ -351,11 +690,15 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
-  public function isRemoved()
-  {
-    return $this->isRemoved;
-  }
-  
+  /**
+   * Returns array of the changed or removed control attributes, or the rendered control HTML.
+   * This method is automatically invoked by the current view to refresh DOM of the web page.  
+   *
+   *
+   * @param array $vs - the old view state of the control.
+   * @return array|string
+   * @access public
+   */
   public function compare(array $vs)
   {
     if ($this->isRefreshed || $vs['properties'] != $this->properties) return $this->render();
@@ -389,6 +732,13 @@ abstract class Control implements \ArrayAccess
     return $tmp;
   }
   
+  /**
+   * Returns the parent control.
+   * If the control does not have the parent, it returns FALSE.
+   *
+   * @return Aleph\Web\POM\Panel
+   * @access public
+   */
   public function getParent()
   {
     if (!$this->parent) return false;
@@ -396,6 +746,16 @@ abstract class Control implements \ArrayAccess
     return $this->parent = MVC\Page::$current->view->get($this->parent);
   }
 
+  /**
+   * Sets parent of the control.
+   * The control will be attached to the view if it isn't and its parent is attached to the view.
+   *
+   * @param Aleph\Web\POM\Panel $parent - the control parent.
+   * @param string $mode - determines the placement of the control in the parent template.
+   * @param string $id - the unique or logic identifier of one of the parent control or value of the attribute "id" of some element in the parent template.
+   * @return self
+   * @access public
+   */
   public function setParent(Control $parent, $mode = null, $id = null)
   {
     if (!$this->parent) $this->parent = $parent;
@@ -477,6 +837,14 @@ abstract class Control implements \ArrayAccess
     return $this;
   }
   
+  /**
+   * Creates full copy of the control.
+   * If $id is not defined the logic identifier of the original control is used.
+   *
+   * @param string $id - the logic identifier of the control copy.
+   * @return Aleph\Web\POM\Control
+   * @access public
+   */
   public function copy($id = null)
   {
     $class = get_class($this);
@@ -489,11 +857,12 @@ abstract class Control implements \ArrayAccess
     return $ctrl;
   }
   
-  public function getXHTML()
-  {
-  
-  }
-  
+  /**
+   * Returns rendered HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function __toString()
   {
     try
@@ -506,6 +875,53 @@ abstract class Control implements \ArrayAccess
     }
   }
   
+  /**
+   * Returns XHTML of the control.
+   *
+   * @return string
+   * @access public
+   */
+  public function getXHTML()
+  {
+    return '<' . Utils\PHP\Tools::getClassName($this) . $this->getXHTMLAttributes() . ' />';
+  }
+  
+  /**
+   * Returns the control attributes and properties rendered to XHTML.
+   *
+   * @return string
+   * @access protected
+   */
+  protected function getXHTMLAttributes()
+  {
+    $html = '';
+    $attributes = $this->attributes;
+    unset($attributes['id']);
+    foreach ($attributes as $attr => $value)
+    {
+      if (!is_scalar($value) || strlen($value)) 
+      {
+        $html .= ' attr-' . strtolower($attr) . '="';
+        if (is_scalar($value)) $html .= htmlspecialchars($value) . '"';
+        else $html .= View::PHP_MARK . 'unserialize(\'' . addcslashes(htmlspecialchars(serialize($value)), "'") . '\')"';
+      }
+    }
+    foreach ($this->properties as $prop => $value)
+    {
+      $html .= ' ' . strtolower($prop) . '="';
+      if (is_scalar($value)) $html .= htmlspecialchars($value) . '"';
+      else $html .= View::PHP_MARK . 'unserialize(\'' . addcslashes(htmlspecialchars(serialize($value)), "'") . '\')"';
+    }
+    return $html;
+  }
+  
+  /**
+   * Renders HTML of the control attributes.
+   *
+   * @param boolean $renderBaseAttributes - determines whether the attributes of the main control tag are rendered.
+   * @return string
+   * @access protected
+   */
   protected function renderAttributes($renderBaseAttributes = true)
   {
     if ($renderBaseAttributes)
@@ -532,6 +948,12 @@ abstract class Control implements \ArrayAccess
     return ' ' . implode(' ', $tmp);
   }
   
+  /**
+   * Returns standard HTML for an invisible control.
+   *
+   * @return string
+   * @access protected
+   */
   protected function invisible()
   {
     return '<span id="' . htmlspecialchars($this->attributes['id']) . '" style="display:none;"></span>';
