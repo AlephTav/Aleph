@@ -729,11 +729,12 @@ class View implements \ArrayAccess
    * The method returns FALSE if the required control is not found.
    *
    * @param string $id - unique or logic identifier of a control.
-   * @param boolean $isRecursion - determines whether to recursively search the control inside panels.
+   * @param boolean $searchRecursively - determines whether to recursively search the control inside panels.
    * @param Aleph\Web\POM\Control $context - the panel, only inside which the search should be performed.
    * @return Aleph\Web\POM\Control
+   * @access public
    */
-  public function get($id, $isRecursion = true, Control $context = null)
+  public function get($id, $searchRecursively = true, Control $context = null)
   {
     if (isset($this->controls[$id])) 
     {
@@ -763,7 +764,7 @@ class View implements \ArrayAccess
       $controls = $this->vs[$this->UID]['controls'];
     }
     else return false;
-    $ctrl = $this->searchControl(explode('.', $id), $controls, $isRecursion ? -1 : 0);
+    $ctrl = $this->searchControl(explode('.', $id), $controls, $searchRecursively ? -1 : 0);
     if ($ctrl) $this->controls[$ctrl->id] = $ctrl;
     return $ctrl;
   }
@@ -773,10 +774,10 @@ class View implements \ArrayAccess
    * If the given control is a panel, its children will also restore their properties "value".
    *
    * @param string $id - unique or logic identifier of the control.
-   * @param boolean $isRecursion - determines whether the method should be recursively applied to all child panels of the given panel.
+   * @param boolean $searchRecursively - determines whether the method should be recursively applied to all child panels of the given panel.
    * @access public
    */
-  public function clean($id, $isRecursion = true)
+  public function clean($id, $searchRecursively = true)
   {
     $ctrl = $this->get($id);
     if (isset($ctrl['value'])) $ctrl->clean();
@@ -785,7 +786,7 @@ class View implements \ArrayAccess
       foreach ($ctrl->getControls() as $child)
       {
         $vs = $this->getActualVS($child);
-        if ($isRecursion && isset($vs['controls'])) $this->clean($vs['attributes']['id'], true);
+        if ($searchRecursively && isset($vs['controls'])) $this->clean($vs['attributes']['id'], true);
         else if (isset($vs['properties']['value']))
         {
           if ($child instanceof Control) $child->clean();
@@ -800,10 +801,10 @@ class View implements \ArrayAccess
    *
    * @param string $id - unique or logic identifier of the panel.
    * @param boolean $flag - determines whether a checkbox will be checked or not.
-   * @param boolean $isRecursion - determines whether the method should be recursively applied to all child panels of the given panel.
+   * @param boolean $searchRecursively - determines whether the method should be recursively applied to all child panels of the given panel.
    * @access public
    */
-  public function check($id, $flag = true, $isRecursion = true)
+  public function check($id, $flag = true, $searchRecursively = true)
   {
     $ctrl = $this->get($id);
     if ($ctrl instanceof CheckBox) $ctrl->check($flag);
@@ -812,7 +813,7 @@ class View implements \ArrayAccess
       foreach ($ctrl->getControls() as $child)
       {
         $vs = $this->getActualVS($child);
-        if ($isRecursion && isset($vs['controls'])) $this->check($vs['attributes']['id'], $flag, true);
+        if ($searchRecursively && isset($vs['controls'])) $this->check($vs['attributes']['id'], $flag, true);
         if ($vs['class'] == 'Aleph\Web\POM\CheckBox')
         {
           if ($child instanceof Control) $child->check($flag);

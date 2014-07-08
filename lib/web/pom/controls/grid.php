@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2012 Aleph Tav
+ * Copyright (c) 2014 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2012 Aleph Tav
+ * @copyright Copyright &copy; 2014 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -30,9 +30,9 @@ class Grid extends Panel
   
   protected $rows = null;
   
-  public function __construct($id, $template = null)
+  public function __construct($id, $template = null, $expire = 0)
   {
-    parent::__construct($id, $template);
+    parent::__construct($id, $template, $expire);
     $this->properties['source'] = null;
     $this->properties['sort'] = 1;
     $this->properties['size'] = 10;
@@ -86,7 +86,7 @@ class Grid extends Panel
     return 0;
   }
   
-  public function getInnerHTML()
+  public function renderInnerHTML()
   {
     if ($this->tpl->isExpired())
     {
@@ -114,7 +114,7 @@ class Grid extends Panel
         $ctrl['page'] = $this->properties['page'];
       }
     }
-    return parent::getInnerHTML();
+    return parent::renderInnerHTML();
   }
   
   public function normalize()

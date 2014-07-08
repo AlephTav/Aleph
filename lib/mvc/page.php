@@ -232,14 +232,14 @@ class Page
    * If a control with such ID is not found, it returns FALSE.
    *
    * @param string $id - unique or logic control ID.
-   * @param boolean $isRecursion - determines whether to recursively search a control in all panels.
+   * @param boolean $searchRecursively - determines whether to recursively search a control in all panels.
    * @param Aleph\Web\POM\Control $context - the panel control inside which the control searching is performed.
    * @return Aleph\Web\POM\Control|boolean
    * @access public
    */
-  public function get($id, $isRecursion = true)
+  public function get($id, $searchRecursively = true)
   {
-    return $this->view->get($id, $isRecursion);
+    return $this->view->get($id, $searchRecursively);
   }
 
   /**

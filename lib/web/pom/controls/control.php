@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2012 Aleph Tav
+ * Copyright (c) 2014 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2012 Aleph Tav
+ * @copyright Copyright &copy; 2014 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -44,7 +44,7 @@ abstract class Control implements \ArrayAccess
   const ERR_CTRL_1 = 'ID of [{var}] should match /^[0-9a-zA-Z_]+$/ pattern, "[{var}]" was given.';
   const ERR_CTRL_2 = 'Web control [{var}] (full ID: [{var}]) does not have property [{var}].';
   const ERR_CTRL_3 = 'You cannot change or delete readonly attribute ID of [{var}] (full ID: [{var}]).';
-  const ERR_CTRL_4 = 'Web control with such logical ID exists already within the panel [{var}] (full ID: [{var}]).';
+  const ERR_CTRL_4 = 'Web control with logical ID "[{var}]" exists already within the panel [{var}] (full ID: [{var}]).';
   const ERR_CTRL_5 = 'You cannot inject control [{var}] (full ID: [{var}]) AFTER or BEFORE panel [{var}] (full ID: [{var}]) within this panel. Use a parent of the panel for injecting.';
   const ERR_CTRL_6 = 'You cannot inject control [{var}] (full ID: [{var}]) at TOP or BOTTOM of another control [{var}] (full ID: [{var}]). Try to use this control as a parent.';
   const ERR_CTRL_7 = 'Injecting mode [{var}] is invalid. The valid values are "top", "bottom", "after" and "before".';
@@ -291,7 +291,7 @@ abstract class Control implements \ArrayAccess
     {
       if ($value == $this->properties[$property]) return;
       if (!preg_match(self::ID_REG_EXP, $value)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $value);
-      if ((false !== $parent = $this->getParent()) && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
+      if ((false !== $parent = $this->getParent()) && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', $value, get_class($parent), $parent->getFullID());
     }
     $this->properties[$property] = $value;
   }
@@ -430,13 +430,13 @@ abstract class Control implements \ArrayAccess
    * Returns TRUE if the control has the given CSS class.
    *
    * @param string $class - the CSS class.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return boolean
    * @access public
    */
-  public function hasClass($class, $isContainer = false)
+  public function hasClass($class, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-class' : 'class';
+    $attr = $applyToContainer ? 'container-class' : 'class';
     $class = trim($class);
     if (strlen($class) == 0 || !isset($this->attributes[$attr])) return false;
     return strpos(' ' . $this->attributes[$attr] . ' ', ' ' . $class . ' ') !== false;
@@ -446,15 +446,15 @@ abstract class Control implements \ArrayAccess
    * Adds CSS class to the control.
    *
    * @param string $class - CSS class to add.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function addClass($class, $isContainer = false)
+  public function addClass($class, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-class' : 'class';
+    $attr = $applyToContainer ? 'container-class' : 'class';
     $class = trim($class);
-    if (strlen($class) == 0 || $this->hasClass($class, $isContainer)) return $this;
+    if (strlen($class) == 0 || $this->hasClass($class, $applyToContainer)) return $this;
     if (!isset($this->attributes[$attr])) $this->attributes[$attr] = $class;
     else $this->attributes[$attr] = trim(rtrim($this->attributes[$attr]) . ' ' . $class);
     return $this;
@@ -464,13 +464,13 @@ abstract class Control implements \ArrayAccess
    * Removes CSS class from the control.
    *
    * @param string $class - CSS class to remove.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function removeClass($class, $isContainer = false)
+  public function removeClass($class, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-class' : 'class';
+    $attr = $applyToContainer ? 'container-class' : 'class';
     $class = trim($class);
     if (strlen($class) == 0 || !isset($this->attributes[$attr])) return $this;
     $this->attributes[$attr] = trim(str_replace(' ' . $class . ' ', '', ' ' . $this->attributes[$attr] . ' '));
@@ -482,13 +482,13 @@ abstract class Control implements \ArrayAccess
    *
    * @param string $class1 - CSS class to be replaced.
    * @param string $class2 - CSS class to replace.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function replaceClass($class1, $class2, $isContainer = false)
+  public function replaceClass($class1, $class2, $applyToContainer = false)
   {
-    return $this->removeClass($class1, $isContainer)->addClass($class2, $isContainer);
+    return $this->removeClass($class1, $applyToContainer)->addClass($class2, $applyToContainer);
   }
 
   /**
@@ -496,14 +496,14 @@ abstract class Control implements \ArrayAccess
    *
    * @param string $class1 - CSS class to toggle.
    * @param string $class2 - CSS class to replace.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function toggleClass($class1, $class2 = null, $isContainer = false)
+  public function toggleClass($class1, $class2 = null, $applyToContainer = false)
   {
-    if (!$this->hasClass($class1, $isContainer)) $this->replaceClass($class2, $class1, $isContainer);
-    else $this->replaceClass($class1, $class2, $isContainer);
+    if (!$this->hasClass($class1, $applyToContainer)) $this->replaceClass($class2, $class1, $applyToContainer);
+    else $this->replaceClass($class1, $class2, $applyToContainer);
     return $this;
   }
   
@@ -511,13 +511,13 @@ abstract class Control implements \ArrayAccess
    * Returns TRUE if the control has the given CSS property.
    *
    * @param string $style - the CSS property name.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return string
    * @access public
    */
-  public function hasStyle($style, $isContainer = false)
+  public function hasStyle($style, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? 'container-style' : 'style';
     $style = trim($style);
     if (strlen($style) == 0 || !isset($this->attributes[$attr])) return false;
     return strpos($this->attributes[$attr], $style) !== false;
@@ -529,14 +529,14 @@ abstract class Control implements \ArrayAccess
    *
    * @param string $style - the CSS property name.
    * @param mixed $value - the CSS property value.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function addStyle($style, $value, $isContainer = false)
+  public function addStyle($style, $value, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-style' : 'style';
-    if ($this->hasStyle($style, $isContainer)) $this->setStyle($style, $value, $isContainer);
+    $attr = $applyToContainer ? 'container-style' : 'style';
+    if ($this->hasStyle($style, $applyToContainer)) $this->setStyle($style, $value, $applyToContainer);
     else
     {
       $style = trim($style);
@@ -553,13 +553,13 @@ abstract class Control implements \ArrayAccess
    *
    * @param string $style - the CSS property name.
    * @param mixed $value - the CSS property value.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function setStyle($style, $value, $isContainer = false)
+  public function setStyle($style, $value, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? 'container-style' : 'style';
     if (!isset($this->attributes[$attr])) return $this;
     $this->attributes[$attr] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', $style . ':' . $value . ';', $this->attributes[$attr]);
     return $this;
@@ -569,13 +569,13 @@ abstract class Control implements \ArrayAccess
    * Returns value of the CSS property of the control attribute "style".
    *
    * @param string $style - the CSS property name.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return mixed
    * @access public
    */
-  public function getStyle($style, $isContainer = false)
+  public function getStyle($style, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? 'container-style' : 'style';
     if (!isset($this->attributes[$attr])) return;
     preg_match('/' . preg_quote($style) . ' *:([^;]*);*/', $this->attributes[$attr], $matches);
     return isset($matches[1]) ? $matches[1] : null;
@@ -585,13 +585,13 @@ abstract class Control implements \ArrayAccess
    * Removes CSS property from the control attribute "style".
    *
    * @param string $style - the CSS property name.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function removeStyle($style, $isContainer = false)
+  public function removeStyle($style, $applyToContainer = false)
   {
-    $attr = $isContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? 'container-style' : 'style';
     if (!isset($this->attributes[$attr])) return $this;
     $this->attributes[$attr] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', '', $this->attributes[$attr]);
     $this->attributes[$attr] = trim(str_replace(['  ', '   '], ' ', $this->attributes[$attr]));
@@ -603,14 +603,14 @@ abstract class Control implements \ArrayAccess
    *
    * @param string $style - the CSS property name.
    * @param mixed $value - the CSS property value.
-   * @param boolean $isContainer - determines whether the container tag of the control is considered.
+   * @param boolean $applyToContainer - determines whether the container tag of the control is considered.
    * @return self
    * @access public
    */
-  public function toggleStyle($style, $value, $isContainer = false)
+  public function toggleStyle($style, $value, $applyToContainer = false)
   {
-    if (!$this->hasStyle($style, $isContainer)) $this->addStyle($style, $value, $isContainer);
-    else $this->removeStyle($style, $isContainer);
+    if (!$this->hasStyle($style, $applyToContainer)) $this->addStyle($style, $value, $applyToContainer);
+    else $this->removeStyle($style, $applyToContainer);
     return $this;
   }
   
@@ -758,14 +758,18 @@ abstract class Control implements \ArrayAccess
    */
   public function setParent(Control $parent, $mode = null, $id = null)
   {
-    if (!$this->parent) $this->parent = $parent;
+    if (!$this->parent) 
+    {
+      if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', $this->properties['id'], get_class($parent), $parent->getFullID());
+      $this->parent = $parent;
+    }
     else
     {
       $prnt = $this->getParent();
       if ($prnt && $prnt->id != $parent->id) 
       {
         if (!$prnt->isRemoved()) $prnt->detach($this->attributes['id']);
-        if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
+        if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', $this->properties['id'], get_class($parent), $parent->getFullID());
       }
       $this->parent = $parent;
     }
@@ -862,6 +866,15 @@ abstract class Control implements \ArrayAccess
    *
    * @return string
    * @access public
+   * @abstract
+   */
+  abstract public function render();
+  
+  /**
+   * Returns rendered HTML of the control.
+   *
+   * @return string
+   * @access public
    */
   public function __toString()
   {
@@ -881,38 +894,9 @@ abstract class Control implements \ArrayAccess
    * @return string
    * @access public
    */
-  public function getXHTML()
+  public function renderXHTML()
   {
-    return '<' . Utils\PHP\Tools::getClassName($this) . $this->getXHTMLAttributes() . ' />';
-  }
-  
-  /**
-   * Returns the control attributes and properties rendered to XHTML.
-   *
-   * @return string
-   * @access protected
-   */
-  protected function getXHTMLAttributes()
-  {
-    $html = '';
-    $attributes = $this->attributes;
-    unset($attributes['id']);
-    foreach ($attributes as $attr => $value)
-    {
-      if (!is_scalar($value) || strlen($value)) 
-      {
-        $html .= ' attr-' . strtolower($attr) . '="';
-        if (is_scalar($value)) $html .= htmlspecialchars($value) . '"';
-        else $html .= View::PHP_MARK . 'unserialize(\'' . addcslashes(htmlspecialchars(serialize($value)), "'") . '\')"';
-      }
-    }
-    foreach ($this->properties as $prop => $value)
-    {
-      $html .= ' ' . strtolower($prop) . '="';
-      if (is_scalar($value)) $html .= htmlspecialchars($value) . '"';
-      else $html .= View::PHP_MARK . 'unserialize(\'' . addcslashes(htmlspecialchars(serialize($value)), "'") . '\')"';
-    }
-    return $html;
+    return '<' . Utils\PHP\Tools::getClassName($this) . $this->renderXHTMLAttributes() . ' />';
   }
   
   /**
@@ -949,7 +933,36 @@ abstract class Control implements \ArrayAccess
   }
   
   /**
-   * Returns standard HTML for an invisible control.
+   * Returns the control attributes and properties rendered to XHTML.
+   *
+   * @return string
+   * @access protected
+   */
+  protected function renderXHTMLAttributes()
+  {
+    $html = '';
+    $attributes = $this->attributes;
+    unset($attributes['id']);
+    foreach ($attributes as $attr => $value)
+    {
+      if (!is_scalar($value) || strlen($value)) 
+      {
+        $html .= ' attr-' . strtolower($attr) . '="';
+        if (is_scalar($value)) $html .= htmlspecialchars($value) . '"';
+        else $html .= View::PHP_MARK . 'unserialize(\'' . addcslashes(htmlspecialchars(serialize($value)), "'") . '\')"';
+      }
+    }
+    foreach ($this->properties as $prop => $value)
+    {
+      $html .= ' ' . strtolower($prop) . '="';
+      if (is_scalar($value)) $html .= htmlspecialchars($value) . '"';
+      else $html .= View::PHP_MARK . 'unserialize(\'' . addcslashes(htmlspecialchars(serialize($value)), "'") . '\')"';
+    }
+    return $html;
+  }
+  
+  /**
+   * Returns the standard HTML for an invisible control.
    *
    * @return string
    * @access protected
