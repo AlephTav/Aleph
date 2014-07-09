@@ -954,7 +954,12 @@ class View implements \ArrayAccess
       foreach ($validator->getControls() as $id)
       {
         $ctrl = $this->get($id);
-        if ($ctrl) $ctrl->removeClass($classInvalid)->addClass($classValid);
+        if ($ctrl) 
+        {
+          $hasContainer = $ctrl->hasContainer();
+          $ctrl->removeClass($classInvalid, $hasContainer)
+               ->addClass($classValid, $hasContainer);
+        }
       }
       $validator->state = true;
     }
