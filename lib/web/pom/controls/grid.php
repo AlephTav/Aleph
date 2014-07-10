@@ -39,6 +39,21 @@ class Grid extends Panel
     $this->properties['page'] = 0;
   }
   
+  public function setSort($sort)
+  {
+    $this->properties['sort'] = $sort;
+  }
+  
+  public function setSize($size)
+  {
+    $this->properties['size'] = $size;
+  }
+  
+  public function setPage($page)
+  {
+    $this->properties['page'] = $page;
+  }
+  
   public function init()
   {
     foreach (['size', 'size1', 'size2'] as $id)
@@ -50,7 +65,7 @@ class Grid extends Panel
         unset($ctrl->multiple);
         $ctrl['options'] = [10 => 10, 20 => 20, 30 => 30, 40 => 40, 50 => 50, 999999999 => 'All'];
         $ctrl['value'] = $this->properties['size'];
-        $ctrl->addEvent('changeSize', 'change', get_class($this) . '@' . $this->attributes['id'] . '->offsetSet', ['params' => ['size', 'js::this.value']]);
+        $ctrl->addEvent('changeSize', 'change', get_class($this) . '@' . $this->attributes['id'] . '->setSize', ['params' => ['js::this.value']]);
       }
     }
     return $this;
@@ -59,7 +74,7 @@ class Grid extends Panel
   public function getSortMethod($sort)
   {
     if (abs($this->properties['sort']) == $sort) $sort = $this->properties['sort'];
-    return $this->method('offsetSet', ['sort', -$sort]);
+    return $this->method('setSort', [-$sort]);
   }
   
   public function getCount($cache = true)
@@ -108,7 +123,7 @@ class Grid extends Panel
       {
         $ctrl = $this->get($id, false);
         if (!$ctrl) continue;
-        $ctrl['callback'] = $this->method('offsetSet', ['page', '#page#']);
+        $ctrl['callback'] = $this->method('setPage', ['#page#']);
         $ctrl['total'] = $this->count;
         $ctrl['size'] = $this->properties['size'];
         $ctrl['page'] = $this->properties['page'];

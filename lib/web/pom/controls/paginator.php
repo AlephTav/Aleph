@@ -51,6 +51,12 @@ class Paginator extends Control
                                 'spacer'   => '<span>...</span>'];
   }
   
+  public function setPage($page)
+  {
+    $this->properties['page'] = $page;
+    return $this;
+  }
+  
   public function normalize()
   {
     $this->properties['total'] = (int)$this->properties['total'];

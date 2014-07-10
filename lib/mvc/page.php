@@ -109,13 +109,13 @@ class Page
   protected $expire = 0;
   
   /**
-   * This list of namespaces, classes and methods restricts ability to invoke any PHP function from the client side via Ajax request.
-   * Classes and methods only match this list can be invoked.
+   * This list of regular expressions that restrict the area of permitted delegates.
    *
    * @var array $ajaxPermissions
    * @access protected
    */
-  protected $ajaxPermissions = ['Aleph\MVC\\', 'Aleph\Web\POM\\'];
+  protected $ajaxPermissions = ['permitted' => ['/^Aleph\\\\(MVC|Web\\\\POM)\\\\[^\\\\]*$/i'],
+                                'forbidden' => ['/^Aleph\\\\Web\\\\POM\\\\[^\\\\]*\[\d*\]->offset(Set|Get|Unset|Exists)$/i']];
   
   /**
    * The sequence of class methods that determines the class workflow.
@@ -325,7 +325,7 @@ class Page
     if (isset($data['ajax-method']))
     {
       $method = new Core\Delegate($data['ajax-method']);
-      if (!$method->in($this->ajaxPermissions)) throw new Core\Exception($this, 'ERR_PAGE_1', $method);
+      if (!$method->isPermitted($this->ajaxPermissions)) throw new Core\Exception($this, 'ERR_PAGE_1', $method);
       ob_start();
       $response = $method->call(empty($data['ajax-args']) ? [] : $data['ajax-args']);
       $output = trim(ob_get_contents());

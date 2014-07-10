@@ -84,19 +84,20 @@ interface IDelegate
   public function call(array $args = null);
   
   /**
-   * Checks whether it is possible according to permissions to invoke this delegate or not.
-   * Permission can be in the following formats:
-   * - class name with method name: class::method, class->method
-   * - class name without any methods.
-   * - function name.
-   * - namespace.
-   * The method returns TRUE if a callback matches with one or more permissions and FALSE otherwise.
+   * Checks whether or not the delegate can be invoked according to permissions.
+   * Permissions array have the following structure:
+   * [
+   *   'permitted' => ['regexp1', 'regexp2', ... ],
+   *   'forbidden' => ['regexp1', 'regexp2', ...]
+   * ]
+   * If string representation of the delegate matches at least one of 'permitted' regular expressions and none of 'forbidden' regular expressions, the method returns TRUE.
+   * Otherwise it returns FALSE.
    *
-   * @param string | array $permissions - permissions to check.
+   * @param array $permissions - permissions to check.
    * @return boolean
    * @access public
    */
-  public function in($permissions);
+  public function isPermitted(array $permissions);
   
   /**
    * Verifies that the delegate exists and can be invoked.
@@ -313,7 +314,7 @@ class Delegate implements IDelegate
           $this->type = 'control';
         }
       }
-      $this->callback = $callback;
+      $this->callback = $this->class . ($this->static ? '::' : '[' . ($this->numargs ?: ''). ']->') . $this->method;
     }
   } 
   
@@ -372,42 +373,38 @@ class Delegate implements IDelegate
   }
 
   /**
-   * Checks whether it is possible according to permissions to invoke this delegate or not.
-   * Permission can be in the following formats:
-   * - class name with method name: class::method, class->method
-   * - class name without any methods.
-   * - function name.
-   * - namespace.
-   * The method returns TRUE if a callback matches with one or more permissions and FALSE otherwise.
+   * Checks whether or not the delegate can be invoked according to permissions.
+   * Permissions array have the following structure:
+   * [
+   *   'permitted' => ['regexp1', 'regexp2', ... ],
+   *   'forbidden' => ['regexp1', 'regexp2', ...]
+   * ]
+   * If string representation of the delegate matches at least one of 'permitted' regular expressions and none of 'forbidden' regular expressions, the method returns TRUE.
+   * Otherwise it returns FALSE.
    *
-   * @param string | array $permissions - permissions to check.
+   * @param array $permissions - permissions to check.
    * @return boolean
    * @access public
    */
-  public function in($permissions)
+  public function isPermitted(array $permissions)
   {
-    if ($this->type == 'closure') return true;
-    if ($this->type == 'function')
+    foreach (['permitted' => true, 'forbidden' => false] as $type => $res)
     {
-      $m = $this->split($this->method);
-      foreach ((array)$permissions as $permission)
+      if (isset($permissions[$type]))
       {
-        $p = $this->split($permission);
-        if ($p[0] != '' && $m == $p || $p[0] == '' && substr($m[1], 0, strlen($p[1])) == $p[1]) return true;
+        $flag = !$res;
+        foreach ((array)$permissions[$type] as $regexp)
+        {
+          if (preg_match($regexp, $this->callback))
+          {
+            $flag = $res;
+            break;
+          }
+        }
+        if (!$flag) return false;
       }
     }
-    else
-    {
-      $m = $this->split(is_object($this->class) ? get_class($this->class) : $this->class);
-      foreach ((array)$permissions as $permission)
-      {
-        $info = explode($this->static ? '::' : '->', $permission);
-        if (!empty($info[1]) && $info[1] != $this->method) continue;
-        $p = $this->split($info[0]);
-        if ($p[0] != '' && $m == $p || $p[0] == '' && substr($m[1], 0, strlen($p[1])) == $p[1]) return true;
-      }
-    }
-    return false;
+    return true;
   }
   
   /**
@@ -522,19 +519,5 @@ class Delegate implements IDelegate
     $class = new \ReflectionClass($this->class);
     if ($this->numargs == 0) return $class->newInstance();
     return $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
-  }
-  
-  /**
-   * Splits full class name on two part: namespace and proper class name. Method returns these parts as an array.
-   *
-   * @param string $identifier - full class name.
-   * @return array
-   * @access private
-   */
-  private function split($identifier)
-  {
-    if (strlen($identifier) == 0) return ['', ''];
-    $ex = explode('\\', $identifier[0] == '\\' ? ltrim($identifier, '\\') : $identifier);
-    return [array_pop($ex), implode('\\', $ex)];
   }
 }
