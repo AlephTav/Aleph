@@ -22,18 +22,48 @@
 
 namespace Aleph\Web\POM;
 
-use Aleph\MVC;
+use Aleph\Core,
+    Aleph\MVC;
 
+/**
+ * This validator checks whether the values of the validating controls are equal to each other.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class VCompare extends Validator
 {
+  // Error message template.
+  const ERR_VCOMPARE_1 = 'The validating value should be scalar.';
+
+  /**
+   * The validator type.
+   *
+   * @var string $ctrl
+   * @access protected   
+   */
   protected $ctrl = 'vcompare';
 
+  /**
+   * Constructor. Initializes the validator properties.
+   *
+   * @param string $id - the logic identifier of the validator.
+   * @access public
+   */
   public function __construct($id)
   {
     parent::__construct($id);
     $this->dataAttributes['caseinsensitive'] = 1;
   }
   
+  /**
+   * Validates controls of the validator.
+   * The method returns TRUE if all controls values are equal to each other and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
   public function validate()
   {
     $this->result = [];
@@ -108,8 +138,17 @@ class VCompare extends Validator
     return $this->attributes['state'] = $flag;
   }
   
+  /**
+   * Returns the given value for comparison.
+   * If the given value is not scalar, the method throws exception.
+   *
+   * @param mixed $value - the value to validate.
+   * @return string
+   * @access public
+   */
   public function check($value)
   {
+    if (isset($value) && !is_scalar($value)) throw new Core\Exception($this, 'ERR_VCOMPARE_1');
     return empty($this->attributes['caseinsensitive']) ? (string)$value : strtolower($value);
   }
 }

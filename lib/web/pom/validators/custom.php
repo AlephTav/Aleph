@@ -24,10 +24,29 @@ namespace Aleph\Web\POM;
 
 use Aleph\MVC;
 
+/**
+ * This validator checks whether the values of the validating controls matches the user defined conditions.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class VCustom extends Validator
 {
+  /**
+   * The validator type.
+   *
+   * @var string $ctrl
+   * @access protected   
+   */
   protected $ctrl = 'vcustom';
 
+  /**
+   * Constructor. Initializes the validator properties.
+   *
+   * @param string $id - the logic identifier of the validator.
+   * @access public
+   */
   public function __construct($id)
   {
     parent::__construct($id);
@@ -35,6 +54,13 @@ class VCustom extends Validator
     $this->dataAttributes['serverfunction'] = 1;
   }
   
+  /**
+   * Validates controls of the validator.
+   * The method returns TRUE if all controls values matches the user defined conditions and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
   public function validate()
   {
     if (!empty($this->attributes['serverfunction'])) return $this->attributes['state'] = \Aleph::delegate($this->attributes['serverfunction'], $this);
@@ -44,6 +70,13 @@ class VCustom extends Validator
     return $this->attributes['state'] = $flag;
   }
   
+  /**
+   * Returns value that passed to the method. 
+   *
+   * @param mixed $value - the value to validate.
+   * @return string
+   * @access public
+   */
   public function check($value)
   {
     return $value; 

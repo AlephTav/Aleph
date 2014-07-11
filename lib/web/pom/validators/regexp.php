@@ -22,10 +22,29 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * This validator checks whether the value of the validating control matches the given regular expression.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class VRegExp extends Validator
 {
+  /**
+   * The validator type.
+   *
+   * @var string $ctrl
+   * @access protected   
+   */
   protected $ctrl = 'vregexp';
 
+  /**
+   * Constructor. Initializes the validator properties.
+   *
+   * @param string $id - the logic identifier of the validator.
+   * @access public
+   */
   public function __construct($id)
   {
     parent::__construct($id);
@@ -33,8 +52,17 @@ class VRegExp extends Validator
     $this->dataAttributes['expression'] = 1;
   }
 
+  /**
+   * Returns TRUE if the given value matches the specified regular expression and FALSE otherwise.
+   * If the given value is not scalar, the method always returns TRUE.
+   *
+   * @param mixed $value - the value to validate.
+   * @return boolean
+   * @access public
+   */
   public function check($value)
   {
+    if (isset($value) && !is_scalar($value)) return true;
     if (empty($this->attributes['expression']) || !empty($this->attributes['empty']) && strlen($value) == 0) return true;
     $exp = $this->attributes['expression'];
     if ($exp[0] == 'i') return preg_match(substr($exp, 1), $value) == 0; 

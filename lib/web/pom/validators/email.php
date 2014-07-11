@@ -22,12 +22,31 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * This validator checks whether the value of the validating control matches valid email format.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class VEmail extends VRegExp
 {
   const EMAIL_REG_EXP = '/^[-a-z0-9!#$%&\'*+\/=?^_`{|}~]+(\.[-a-z0-9!#$%&\'*+\/=?^_`{|}~]+)*@([a-z0-9]([-a-z0-9]{0,61}[a-z0-9])?\.)+(aero|arpa|asia|biz|cat|com|coop|edu|gov|info|int|jobs|mil|mobi|museum|name|net|org|pro|tel|travel|[a-z][a-z])$/i';
 
+  /**
+   * The validator type.
+   *
+   * @var string $ctrl
+   * @access protected   
+   */
   protected $ctrl = 'vemail';
 
+  /**
+   * Constructor. Initializes the validator properties.
+   *
+   * @param string $id - the logic identifier of the validator.
+   * @access public
+   */
   public function __construct($id)
   {
     parent::__construct($id);
