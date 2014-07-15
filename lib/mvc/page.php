@@ -114,7 +114,7 @@ class Page
    * @var array $ajaxPermissions
    * @access protected
    */
-  protected $ajaxPermissions = ['permitted' => ['/^Aleph\\\\(MVC|Web\\\\POM)\\\\[^\\\\]*$/i'],
+  protected $ajaxPermissions = ['permitted' => ['/^Aleph\\\\(MVC|Web\\\\POM).*$/i'],
                                 'forbidden' => ['/^Aleph\\\\Web\\\\POM\\\\[^\\\\]*\[\d*\]->offset(Set|Get|Unset|Exists)$/i']];
   
   /**

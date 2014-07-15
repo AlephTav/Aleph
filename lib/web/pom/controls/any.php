@@ -22,10 +22,31 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * By using this control you can manage any HTML element on the server side.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Any extends Control
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected   
+   */
   protected $ctrl = 'any';
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $tag - the HTML tag name.
+   * @param string $text - the inner HTML of the given element.
+   * @access public
+   */
   public function __construct($id, $tag = 'div', $text = null)
   {
     parent::__construct($id);
@@ -33,6 +54,12 @@ class Any extends Control
     $this->properties['text'] = $text;
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();

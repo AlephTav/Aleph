@@ -22,8 +22,22 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * Represents the main container control that maps to <body> HTML element.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Body extends Panel
 {  
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $template - the body template.
+   * @access public
+   */
   public function __construct($id, $template = null)
   {
     parent::__construct($id, $template);

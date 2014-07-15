@@ -42,13 +42,7 @@ class Paginator extends Control
     $this->properties['last'] = null;
     $this->properties['callback'] = null;
     $this->properties['tag'] = 'div';
-    $this->properties['tpl'] = ['active'   => '<span>#item#</span>',
-                                'page'     => '<a href="javascript:;" onclick="#callback#">#item#</a>',
-                                'next'     => '<a href="javascript:;" onclick="#callback#">Next</a>',
-                                'prev'     => '<a href="javascript:;" onclick="#callback#">Previous</a>',
-                                'first'    => '<a href="javascript:;" onclick="#callback#">First</a>',
-                                'last'     => '<a href="javascript:;" onclick="#callback#">Last</a>',
-                                'spacer'   => '<span>...</span>'];
+    $this->properties['text'] = null;
   }
   
   public function setPage($page)
@@ -76,6 +70,7 @@ class Paginator extends Control
   {
     if (!$this->properties['visible']) return $this->invisible();
     $this->normalize();
+    if (!is_array($this->properties['text'])) $this->parseTemplate();
     $html = '<' . $this->properties['tag'] . $this->renderAttributes() . '>';
     if ($this->properties['total'] > $this->properties['size'])
     {
@@ -84,7 +79,7 @@ class Paginator extends Control
       $prev = $this->replaceTplPart('prev', $this->properties['page'] - 1, $callback);
       $next = $this->replaceTplPart('next', $this->properties['page'] + 1, $callback);
       $last = $this->replaceTplPart('last', $this->properties['last'], $callback);
-      $spacer = $this->properties['tpl']['spacer'];
+      $spacer = $this->properties['text']['spacer'];
       if ($this->properties['page'] != 0) $html .= $first . $prev;
       switch ($this->properties['type'])
       {
@@ -179,6 +174,34 @@ class Paginator extends Control
   
   protected function replaceTplPart($part, $page, $callback)
   {
-    return strtr($this->properties['tpl'][$part], ['#item#' => $page + 1, '#page#' => $page, '#callback#' => str_replace('#page#', $page, $callback)]);
+    return strtr($this->properties['text'][$part], ['#item#' => $page + 1, '#page#' => $page, '#callback#' => str_replace('#page#', $page, $callback)]);
+  }
+  
+  protected function parseTemplate()
+  {
+    $tpl = $this->properties['text'];
+    if (!$tpl)
+    {
+      $parts = ['active' => '<span>#item#</span>',
+                'page'   => '<a href="javascript:;" onclick="#callback#">#item#</a>',
+                'next'   => '<a href="javascript:;" onclick="#callback#">Next</a>',
+                'prev'   => '<a href="javascript:;" onclick="#callback#">Previous</a>',
+                'first'  => '<a href="javascript:;" onclick="#callback#">First</a>',
+                'last'   => '<a href="javascript:;" onclick="#callback#">Last</a>',
+                'spacer' => '<span>...</span>'];
+    }
+    else
+    {
+      $parts = ['active' => '', 'page' => '', 'next' => '', 'prev' => '', 'first' => '', 'last' => '', 'spacer' => ''];
+      $dom = new Utils\DOMDocumentEx();
+      if (is_file($tpl)) $dom->loadHTMLFile($tpl);
+      else $dom->loadHTML($tpl);
+      foreach ($parts as $name => &$part)
+      {
+        $node = $dom->getElementsByTagName($name)->item(0);
+        if ($node) $part = $dom->getInnerHTML($node);
+      }
+    }
+    $this->properties['text'] = $parts;
   }
 }

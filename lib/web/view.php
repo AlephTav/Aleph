@@ -1028,9 +1028,9 @@ class View implements \ArrayAccess
         $this->commit();
         static::decodePHPTags($body, $ctx['marks']);
         $src = \Aleph::url('framework') . '/web/js/jquery/jquery.min.js';
-        if (empty($this->js['top'][$src])) $this->addJS(['src' => $src]);
+        if (empty($this->js['top'][$src])) $this->addJS(['src' => $src], null, true, -1000);
         $src = \Aleph::url('framework') . '/web/js/aleph.full.min.js';
-        if (empty($this->js['top'][$src])) $this->addJS(['src' => $src]);
+        if (empty($this->js['top'][$src])) $this->addJS(['src' => $src], null, true, -999);
       }
       $this->tpl->setTemplate($ctx['html']);
       if (!empty($config['cacheEnabled'])) 

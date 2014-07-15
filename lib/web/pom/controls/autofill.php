@@ -22,18 +22,52 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * This control represents the Ajax autocomplete combobox that
+ * enables users to quickly find and select from a pre-populated list of values as they type. 
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Autofill extends TextBox
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected   
+   */
   protected $ctrl = 'autofill';
   
+  /**
+   * Non-standard control attributes, that should be rendered as "data-" attributes on the web page.
+   *
+   * @var array $dataAttributes
+   * @access protected
+   */
   protected $dataAttributes = ['default' => 1, 'callback' => 1, 'timeout' => 1, 'activeitemclass' => 1];
 
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $value - the value of the combobox.
+   * @access public
+   */
   public function __construct($id, $value = null)
   {
     parent::__construct($id, $value);
+    $this->attributes['timeout'] = 200;
     $this->properties['tag'] = 'div';
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
