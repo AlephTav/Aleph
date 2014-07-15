@@ -876,7 +876,7 @@ class View implements \ArrayAccess
         $vs = $this->getActualVS($id);
         if ($vs && $vs['properties']['visible'] && is_subclass_of($vs['class'], 'Aleph\Web\POM\Validator') && empty($vs['attributes']['locked'])) 
         {
-          $group = isset($vs['group']) ? $vs['group'] : 'default';
+          $group = isset($vs['attributes']['groups']) ? $vs['attributes']['groups'] : 'default';
           foreach ($groups as $grp)
           {
             if (preg_match('/,\s*' . preg_quote($grp) . '\s*,/', ',' . $group . ','))

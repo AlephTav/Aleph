@@ -718,7 +718,7 @@ abstract class Control implements \ArrayAccess
     }
     foreach ($vs['attributes'] as $attr => $value)
     {
-      if (!isset($this->attributes[$attr])) 
+      if (!isset($this->attributes[$attr]) && $value !== null) 
       {
         $container = '';
         if (substr($attr, 0, 10) == 'container-') 

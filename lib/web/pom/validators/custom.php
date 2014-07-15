@@ -67,7 +67,8 @@ class VCustom extends Validator
     if (empty($this->attributes['clientfunction'])) $flag = true;
     else $flag = isset($this->attributes['state']) ? (bool)$this->attributes['state'] : true;
     foreach ($this->getControls() as $id) $this->result[$id] = $flag;
-    return $this->attributes['state'] = $flag;
+    $this->attributes['state'] = $flag;
+    return true;
   }
   
   /**
