@@ -10,7 +10,7 @@ require_once(__DIR__ . '/../core/delegate.php');
 function test_delegate()
 {
   if (!test_delegate_parse()) return 'Parsing of string delegate doesn\'t work.';
-  if (!test_delegate_in()) return 'Checking of permissions doesn\'t work.';
+  if (!test_delegate_isPermitted()) return 'Checking of permissions doesn\'t work.';
   return true;
 }
 
@@ -65,20 +65,21 @@ function test_delegate_parse()
 }
 
 /**
- * Test for checking of permissions (method Aleph\Core\Delegate::in).
+ * Test for checking of permissions (method Aleph\Core\Delegate::isPermitted).
  */
-function test_delegate_in()
+function test_delegate_isPermitted()
 {
+  $permissions = ['permitted' => ['/^Aleph\\\\(MVC|Web\\\\POM)\\\\[^\\\\]*$/i'],
+                  'forbidden' => ['/^Aleph\\\\Web\\\\POM\\\\[^\\\\]*\[\d*\]->offset(Set|Get|Unset|Exists)$/i']];
+
+  $d1 = new Delegate('Aleph\MVC\MyPage->test');
+  $d2 = new Delegate('Aleph\Web\POM\Control@myctrl->offsetSet');
+  $d3 = new Delegate('Aleph\Web\POM\Control@myctrl->__set');
+
   $f = 1;
-  $d = new Delegate('Aleph\Net\URL::current');
-  $f &= $d->in('');
-  $f &= $d->in('Aleph\\');
-  $f &= $d->in('Aleph\Net\\');
-  $f &= $d->in('Aleph\Net\URL');
-  $f &= $d->in('Aleph\Net\URL::current');
-  $f &= $d->in(['Aleph\Core\\', 'Aleph\\']);
-  $f &= !$d->in('Aleph\Core\\');
-  $f &= !$d->in('Aleph\Net\URL->current');
+  $f &= (int)$d1->isPermitted($permissions);
+  $f &= (int)!$d2->isPermitted($permissions);
+  $f &= (int)$d3->isPermitted($permissions);
   return (bool)$f;
 }
 
