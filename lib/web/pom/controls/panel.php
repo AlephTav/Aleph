@@ -326,6 +326,32 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   }
   
   /**
+   * Returns associative array of values of form (panel) controls.
+   *
+   * @param boolean $searchRecursively - determines whether values of controls of nested panels will also be gathered.
+   * @return array
+   * @access public
+   */
+  public function getFormValues($searchRecursively = true)
+  {
+    return MVC\Page::$current->view->getFormValues($this, $searchRecursively);
+  }
+  
+  /**
+   * Assigns values to the panel controls.
+   *
+   * @param array $values - values to be assigned to.
+   * @param boolean $searchRecursively - determines whether values will be also assigned to the controls of nested panels.
+   * @return self
+   * @access public
+   */
+  public function setFormValues(array $values, $searchRecursively = true)
+  {
+    MVC\Page::$current->view->setFormValues($this, $values, $searchRecursively);
+    return $this;
+  }
+  
+  /**
    * Returns HTML of the panel.
    *
    * @return string

@@ -358,7 +358,7 @@ abstract class Control implements \ArrayAccess
   public function method($callback, array $params = null, $isStatic = false)
   {
     $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], false, View::JS_MARK));
-    return '$a.ajax.doit(\'' . $this->callback($callback, $isStatic) . '\'' . (strlen($params) ? ', ' . $params : '') . ')';
+    return '$ajax.doit(\'' . $this->callback($callback, $isStatic) . '\'' . (strlen($params) ? ', ' . $params : '') . ')';
   }
   
   /**
@@ -395,7 +395,7 @@ abstract class Control implements \ArrayAccess
     else 
     {
       $params = implode(', ', Utils\PHP\Tools::php2js(isset($options['params']) ? $options['params'] : [], false, View::JS_MARK));
-      $callback = 'function(event){$a.ajax.doit(\'' . addcslashes($callback, '\\') . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
+      $callback = 'function(event){$ajax.doit(\'' . addcslashes($callback, '\\') . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
     }
     $this->events[$id] = ['type' => strtolower($type), 'callback' => $callback, 'options' => $options];
     return $this;

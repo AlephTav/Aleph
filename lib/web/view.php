@@ -402,11 +402,13 @@ class View implements \ArrayAccess
    * Sets PHP variables for the template preprocessing.
    *
    * @param array $vars - PHP variables.
+   * @return self
    * @access public
    */
   public function setVars(array $vars)
   {
     $this->vars = $vars;
+    return $this;
   }
   
   /**
@@ -424,11 +426,13 @@ class View implements \ArrayAccess
    * Sets DTD of the page.
    *
    * @param string $dtd
+   * @return self
    * @access public
    */
   public function setDTD($dtd)
   {
     $this->dtd = $dtd;
+    return $this;
   }
   
   /**
@@ -436,12 +440,14 @@ class View implements \ArrayAccess
    *
    * @param string $title - the page title.
    * @param array $attributes - attributes of <title> tag.
+   * @return self
    * @access public
    */
   public function setTitle($title = null, array $attributes = null)
   {
     $this->title = ['title' => $title !== null ? $title : $this->title['title'], 
                     'attributes' => $attributes !== null ? $attributes : $this->title['attributes']];
+    return $this;
   }
   
   /**
@@ -461,11 +467,13 @@ class View implements \ArrayAccess
    * Adds meta information on the web page.
    *
    * @param array $attributes - attributes of <meta> tag.
+   * @return self
    * @access public   
    */
   public function addMeta(array $attributes)
   {
     $this->meta[] = $attributes;
+    return $this;
   }
   
   /**
@@ -473,11 +481,13 @@ class View implements \ArrayAccess
    *
    * @param string $id - unique identifier of the given meta information.
    * @param array $attributes - attributes of <meta> tag.
+   * @return self
    * @access public
    */
   public function setMeta($id, array $attributes)
   {
     $this->meta[$id] = $attributes;
+    return $this;
   }
   
   /**
@@ -497,11 +507,13 @@ class View implements \ArrayAccess
    * Removes meta information associated with the given identifier.
    *
    * @param string $id - unique identifier of the meta information.
+   * @return self
    * @access public
    */
   public function removeMeta($id)
   {
     unset($this->meta[$id]);
+    return $this;
   }
   
   /**
@@ -522,11 +534,13 @@ class View implements \ArrayAccess
    * @param array $attributes - attributes of <style> (or <link>) tag.
    * @param string $style - CSS string of the inline style.
    * @param integer $order - some integer number that determines order of the attaching styles.
+   * @return self
    * @access public
    */
   public function addCSS(array $attributes, $style = null, $order = null)
   {
     $this->css[isset($attributes['href']) ? $attributes['href'] : count($this->css)] = ['style' => $style, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->css)];
+    return $this;
   }
   
   /**
@@ -536,11 +550,13 @@ class View implements \ArrayAccess
    * @param array $attributes - attributes of the attaching styles.
    * @param string $style - CSS string of the inline style.
    * @param integer $order - some integer number that determines order of the attaching styles.
+   * @return self
    * @access public
    */
   public function setCSS($id, array $attributes, $style = null, $order = null)
   {
     $this->css[$id] = ['style' => $style, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->css)];
+    return $this;
   }
   
   /**
@@ -560,11 +576,13 @@ class View implements \ArrayAccess
    * Removes CSS by its identifier.
    *
    * @param string $id - unique identifier of CSS.
+   * @return self
    * @access public
    */
   public function removeCSS($id)
   {
     unset($this->css[$id]);
+    return $this;
   }
   
   /**
@@ -586,12 +604,14 @@ class View implements \ArrayAccess
    * @param string $script - JS code string of inline script.
    * @param boolean $inHead - determines whether the given script is placed on head section or before closed <body> tag.
    * @param integer $order - determines the order in which scripts are attached to the page.
+   * @return self
    * @access public
    */
   public function addJS(array $attributes, $script = null, $inHead = true, $order = null)
   {
     $place = $inHead ? 'top' : 'bottom';
     $this->js[$place][isset($attributes['src']) ? $attributes['src'] : count($this->js[$place])] = ['script' => $script, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->js[$place])];
+    return $this;
   }
   
   /**
@@ -602,12 +622,14 @@ class View implements \ArrayAccess
    * @param string $script - JS code string of inline script.
    * @param boolean $inHead - determines whether the given script is placed on head section or before closed <body> tag.
    * @param integer $order - determines the order in which scripts are attached to the page.
+   * @return self
    * @access public
    */
   public function setJS($id, array $attributes, $script = null, $inHead = true, $order = null)
   {
     $place = $inHead ? 'top' : 'bottom';
     $this->js[$place][$id] = ['script' => $script, 'attributes' => $attributes, 'order' => $order !== null ? (int)$order : count($this->js[$place])];
+    return $this;
   }
   
   /**
@@ -630,11 +652,13 @@ class View implements \ArrayAccess
    *
    * @param string $id - unique identifier of the script.
    * @param boolean - determines whether the required script is placed on head section or before closed <body> tag.
+   * @return self
    * @access public
    */
   public function removeJS($id, $inHead = true)
   {
     unset($this->js[$inHead ? 'top' : 'bottom'][$id]);
+    return $this;
   }
   
   /**
@@ -656,6 +680,7 @@ class View implements \ArrayAccess
    * ...
    * @param mixed $paramn - the last parameter of the command.
    * @param integer $delay - time delay of the command execution.
+   * @return self
    * @access public
    */
   public function action(/* $action, $param1, $param2, ..., $delay = 0 */)
@@ -670,45 +695,48 @@ class View implements \ArrayAccess
       case 'focus':
       case 'remove':
       case 'script':
-        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
         break;
       case 'reload':
-        $act = '$a.ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $act = '$ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
       case 'addclass':
       case 'removeclass':
       case 'toggleclass':
       case 'insert':
       case 'replace':
-        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, self::JS_MARK) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
+        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, self::JS_MARK) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
         break;
       case 'display':
       case 'message':
       case 'inject':
-        $act = '$a.ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[2]) ? $args[2] : null, true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[3]) ? $args[3] : null, true, self::JS_MARK) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
+        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[2]) ? $args[2] : null, true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[3]) ? $args[3] : null, true, self::JS_MARK) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
         break;
       case 'download':
         $_SESSION['__DOWNLOAD__'] = ['file' => $args[1], 'filename' => isset($args[2]) ? $args[2] : null, 'contentType' => isset($args[3]) ? $args[3] : null, 'deleteAfterDownload' => isset($args[4]) ? $args[4] : false];
-        $act = '$a.ajax.action(\'reload\')';
+        $act = '$ajax.action(\'reload\')';
         break;
       default:
-        $act = '$a.ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, self::JS_MARK) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $act = '$ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, self::JS_MARK) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
     }
     if (Net\Request::getInstance()->isAjax) $this->actions[] = $act;
     else $this->addJS([], $act, false);
+    return $this;
   }
   
   /**
    * Attaches control object to the view.
    *
    * @param Aleph\Web\POM\Control $ctrl - a control to be added to the view.
+   * @return self
    * @access public
    */
   public function attach(Control $ctrl)
   {
     $this->controls[$ctrl->id] = $ctrl;
     if ($ctrl instanceof Panel) foreach($ctrl as $child) $this->attach($child);
+    return $this;
   }
 
   /**
@@ -775,6 +803,7 @@ class View implements \ArrayAccess
    *
    * @param string $id - unique or logic identifier of the control.
    * @param boolean $searchRecursively - determines whether the method should be recursively applied to all child panels of the given panel.
+   * @return self
    * @access public
    */
   public function clean($id, $searchRecursively = true)
@@ -794,6 +823,7 @@ class View implements \ArrayAccess
         }
       }
     }
+    return $this;
   }
   
   /**
@@ -802,6 +832,7 @@ class View implements \ArrayAccess
    * @param string $id - unique or logic identifier of the panel.
    * @param boolean $flag - determines whether a checkbox will be checked or not.
    * @param boolean $searchRecursively - determines whether the method should be recursively applied to all child panels of the given panel.
+   * @return self
    * @access public
    */
   public function check($id, $flag = true, $searchRecursively = true)
@@ -821,6 +852,58 @@ class View implements \ArrayAccess
         }
       }
     }
+    return $this;
+  }
+  
+  /**
+   * Returns associative array of values of form (panel) controls.
+   * The method returns FALSE if the given control is not a panel or panel with the given identifier does not exist.
+   *
+   * @param string $id - the logic or unique identifier of the panel.
+   * @param boolean $searchRecursively - determines whether values of controls of nested panels will also be gathered.
+   * @return array
+   * @access public
+   */
+  public function getFormValues($id = null, $searchRecursively = true)
+  {
+    $id = $id ?: $this->UID;
+    $vs = $this->getActualVS($id) ?: $this->getActualVS($this->get($id));
+    if (empty($vs['controls'])) return false;
+    $values = [];
+    foreach ($vs['controls'] as $uniqueID)
+    {
+      $cvs = $this->getActualVS($uniqueID);
+      if (array_key_exists('value', $cvs['properties'])) $values[$cvs['properties']['id']] = $cvs['properties']['value'];
+      if ($searchRecursively && isset($cvs['controls'])) $values = array_merge($values, $this->getFormValues($uniqueID, true));
+    }
+    return $values;
+  }
+  
+  /**
+   * Assigns values to the form (panel) controls.
+   *
+   * @param string $id - the logic or unique identifier of the panel.
+   * @param array $values - values to be assigned to.
+   * @param boolean $searchRecursively - determines whether values will be also assigned to the controls of nested panels.
+   * @return self
+   * @access public
+   */
+  public function setFormValues($id, array $values, $searchRecursively = true)
+  {
+    $id = $id ?: $this->UID;
+    $vs = $this->getActualVS($id) ?: $this->getActualVS($this->get($id));
+    if (empty($vs['controls'])) return false;
+    foreach ($vs['controls'] as $uniqueID)
+    {
+      $cvs = $this->getActualVS($uniqueID);
+      if (array_key_exists('value', $cvs['properties']) && isset($values[$cvs['properties']['id']]))
+      {
+        $cvs['properties']['value'] = $values[$cvs['properties']['id']];
+        $this->get($uniqueID)->setVS($cvs);
+      }
+      if ($searchRecursively && isset($cvs['controls'])) $values = array_merge($values, $this->setFormValues($uniqueID, $values, true));
+    }
+    return $this;
   }
   
   /**
@@ -828,6 +911,7 @@ class View implements \ArrayAccess
    *
    * @param string $method - the required control method.
    * @param mixed $id - a control object or control ID. If this parameter is not defined, the unique ID of body control is used.
+   * @return self
    * @access public
    */
   public function invoke($method, $id = null)
@@ -844,6 +928,7 @@ class View implements \ArrayAccess
     {
       $this->get($vs['attributes']['id'])->{$method}();
     }
+    return $this;
   }
   
   /**
@@ -945,6 +1030,7 @@ class View implements \ArrayAccess
    * @param string $groups - comma separated validation groups or symbol "*", which means all validators.
    * @param string $classInvalid - style class that was applied to invalid controls.
    * @param string $classValid - style class that was applied to valid controls.
+   * @return self
    * @access public
    */
   public function reset($groups = 'default', $classInvalid = null, $classValid = null)
@@ -954,7 +1040,7 @@ class View implements \ArrayAccess
       foreach ($validator->getControls() as $id)
       {
         $ctrl = $this->get($id);
-        if ($ctrl) 
+        if ($ctrl)
         {
           $hasContainer = $ctrl->hasContainer();
           $ctrl->removeClass($classInvalid, $hasContainer)
@@ -963,6 +1049,7 @@ class View implements \ArrayAccess
       }
       $validator->state = true;
     }
+    return $this;
   }
   
   /**
@@ -988,6 +1075,7 @@ class View implements \ArrayAccess
    * Forms HTTP response for the result of the Ajax request execution.
    *
    * @param mixed $data - result of the Ajax request execution.
+   * @return self
    * @access public
    */
   public function process($data)
@@ -1004,11 +1092,13 @@ class View implements \ArrayAccess
       $response->body = $sep . implode(';', $this->actions) . $sep . json_encode($data);
     }
     $response->send();
+    return $this;
   }
 
   /**
    * Parses the view template.
    *
+   * @return self
    * @access public
    */   
   public function parse()
@@ -1039,6 +1129,7 @@ class View implements \ArrayAccess
         $this->push(true);
       }
     }
+    return $this;
   }
   
   /**
@@ -1053,8 +1144,8 @@ class View implements \ArrayAccess
     {
       foreach ($ctrl->getEvents() as $eid => $event)
       {
-        if ($event === false) $this->addJS([], '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')', false);
-        else $this->addJS([], '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')', false);
+        if ($event === false) $this->addJS([], '$pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')', false);
+        else $this->addJS([], '$pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')', false);
       }
     }
     $sort = function($a, $b){return $a['order'] - $b['order'];};
@@ -1281,14 +1372,14 @@ class View implements \ArrayAccess
       }
       foreach ($ctrl->getEvents() as $eid => $event)
       {
-        if ($event === false) $events[] = '$a.pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
-        else $events[] = '$a.pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')';
+        if ($event === false) $events[] = '$pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
+        else $events[] = '$pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')';
       }
       $this->vs[$uniqueID] = $ctrl->getVS();
     }
     if ($flag)
     {
-      array_unshift($events, '$a.pom._refreshPOMTree(' . Utils\PHP\Tools::php2js($tmp, true, self::JS_MARK) . ')');
+      array_unshift($events, '$pom._refreshPOMTree(' . Utils\PHP\Tools::php2js($tmp, true, self::JS_MARK) . ')');
       array_unshift($this->actions, implode(';', $events));
     }
   }  
@@ -1667,6 +1758,7 @@ class View implements \ArrayAccess
    *
    * @param mixed $obj - the control object or its ID.
    * @return array|boolean - returns FALSE if a control with such ID does not exist.
+   * @access private
    */
   private function getActualVS($obj)
   {
@@ -1680,7 +1772,7 @@ class View implements \ArrayAccess
       if ($this->controls[$obj]->isRemoved()) return false;
       return $this->controls[$obj]->getVS();
     }
-    return $this->vs[$obj];
+    return isset($this->vs[$obj]) ? $this->vs[$obj] : false;
   }
 }
 

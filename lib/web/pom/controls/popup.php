@@ -31,15 +31,15 @@ class Popup extends Panel
 
   protected $dataAttributes = ['overlay' => 1, 'overlayclass' => 1, 'overlayselector' => 1, 'closebyescape' => 1, 'closebydocument' => 1, 'closebuttons' => 1];
   
-  public function show($center = true)
+  public function show($center = true, $delay = 0)
   {
-    MVC\Page::$current->view->action('$a.pom.get(\'' . $this->attributes['id'] . '\').show(' . ($center ? 'true' : 'false') . ')');
+    MVC\Page::$current->view->action('$pom.get(\'' . $this->attributes['id'] . '\').show(' . ($center ? 'true' : 'false') . ')', $delay);
     return $this;
   }
   
-  public function hide()
+  public function hide($delay = 0)
   {
-    MVC\Page::$current->view->action('$a.pom.get(\'' . $this->attributes['id'] . '\').hide()');
+    MVC\Page::$current->view->action('$pom.get(\'' . $this->attributes['id'] . '\').hide()', $delay);
     return $this;
   }
 }
