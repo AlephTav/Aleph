@@ -100,6 +100,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   {
     return parent::getVS() + ['controls' => array_keys($this->controls),
                               'tpl' => $this->tpl->getTemplate(), 
+                              'tplVars' => $this->tpl->getVars(),
                               'tplExpire' => $this->tpl->cacheExpire,
                               'tplGroup' => $this->tpl->cacheGroup,
                               'tplID' => $this->tpl->cacheID];
@@ -116,6 +117,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   {
     $this->controls = array_combine($vs['controls'], $vs['controls']);
     $this->tpl->setTemplate($vs['tpl']);
+    $this->tpl->setVars($vs['tplVars']);
     $this->tpl->cacheID = $vs['tplID'];
     $this->tpl->cacheExpire = $vs['tplExpire'];
     $this->tpl->cacheGroup = $vs['tplGroup'];

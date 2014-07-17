@@ -857,6 +857,7 @@ class View implements \ArrayAccess
   
   /**
    * Returns associative array of values of form (panel) controls.
+   * The keys of this array are logic identifiers of the panel(s) controls and its values are values of property **value** of the panel(s) controls.
    * The method returns FALSE if the given control is not a panel or panel with the given identifier does not exist.
    *
    * @param string $id - the logic or unique identifier of the panel.
@@ -868,7 +869,7 @@ class View implements \ArrayAccess
   {
     $id = $id ?: $this->UID;
     $vs = $this->getActualVS($id) ?: $this->getActualVS($this->get($id));
-    if (empty($vs['controls'])) return false;
+    if (!isset($vs['controls'])) return false;
     $values = [];
     foreach ($vs['controls'] as $uniqueID)
     {
@@ -881,18 +882,20 @@ class View implements \ArrayAccess
   
   /**
    * Assigns values to the form (panel) controls.
+   * The keys of values array should be logic identifiers of the panel(s) controls and its values should be values of property "value" of the panel(s) controls.
+   * The method returns FALSE if the given control is not a panel or if a panel with the given identifier does not exist.
    *
    * @param string $id - the logic or unique identifier of the panel.
    * @param array $values - values to be assigned to.
    * @param boolean $searchRecursively - determines whether values will be also assigned to the controls of nested panels.
-   * @return self
+   * @return self|boolean
    * @access public
    */
   public function setFormValues($id, array $values, $searchRecursively = true)
   {
     $id = $id ?: $this->UID;
     $vs = $this->getActualVS($id) ?: $this->getActualVS($this->get($id));
-    if (empty($vs['controls'])) return false;
+    if (!isset($vs['controls'])) return false;
     foreach ($vs['controls'] as $uniqueID)
     {
       $cvs = $this->getActualVS($uniqueID);
