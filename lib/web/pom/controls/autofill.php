@@ -71,8 +71,8 @@ class Autofill extends TextBox
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    $html = '<' . $this->properties['tag'] . ' id="container_' . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>' . parent::render();
-    $html .= '<ul id="list_' . $this->attributes['id'] . '" style="display:none;"></ul></' . $this->properties['tag'] . '>';
+    $html = '<' . $this->properties['tag'] . ' id="' . self::CONTAINER_PREFIX . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>' . parent::render();
+    $html .= '<ul id="list-' . $this->attributes['id'] . '" style="display:none;"></ul></' . $this->properties['tag'] . '>';
     return $html;
   }
 }

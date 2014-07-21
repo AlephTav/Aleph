@@ -37,14 +37,28 @@ use Aleph\Core,
  */
 abstract class Control implements \ArrayAccess
 {
-  // Regular expression for checking the format of logic control identifiers.
+  /**
+   * Regular expression for checking the format of logic control identifiers.
+   */
   const ID_REG_EXP = '/^[0-9a-zA-Z_]+$/';
   
-  // Error message templates.
+  /**
+   * Prefix for attributes of container elements. 
+   */
+  const CONTAINER_PREFIX = 'cont-';
+  
+  /**
+   * Prefix for attributes.
+   */
+  const ATTRIBUTE_PREFIX = 'attr-';
+  
+  /**
+   * Error message templates.
+   */
   const ERR_CTRL_1 = 'ID of [{var}] should match /^[0-9a-zA-Z_]+$/ pattern, "[{var}]" was given.';
   const ERR_CTRL_2 = 'Web control [{var}] (full ID: [{var}]) does not have property [{var}].';
   const ERR_CTRL_3 = 'You cannot change or delete readonly attribute ID of [{var}] (full ID: [{var}]).';
-  const ERR_CTRL_4 = 'Web control with logical ID "[{var}]" exists already within the panel [{var}] (full ID: [{var}]).';
+  const ERR_CTRL_4 = 'Web control with such logical ID exists already within the panel [{var}] (full ID: [{var}]).';
   const ERR_CTRL_5 = 'You cannot inject control [{var}] (full ID: [{var}]) AFTER or BEFORE panel [{var}] (full ID: [{var}]) within this panel. Use a parent of the panel for injecting.';
   const ERR_CTRL_6 = 'You cannot inject control [{var}] (full ID: [{var}]) at TOP or BOTTOM of another control [{var}] (full ID: [{var}]). Try to use this control as a parent.';
   const ERR_CTRL_7 = 'Injecting mode [{var}] is invalid. The valid values are "top", "bottom", "after" and "before".';
@@ -85,7 +99,7 @@ abstract class Control implements \ArrayAccess
   /**
    * Unique identifier of the parent control or its object.
    *
-   * @var string|ClickBlocks\Web\POM\Control $parent
+   * @var string|Aleph\Web\POM\Control $parent
    * @access protected
    */
   protected $parent = null;
@@ -291,7 +305,7 @@ abstract class Control implements \ArrayAccess
     {
       if ($value == $this->properties[$property]) return;
       if (!preg_match(self::ID_REG_EXP, $value)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $value);
-      if ((false !== $parent = $this->getParent()) && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', $value, get_class($parent), $parent->getFullID());
+      if ((false !== $parent = $this->getParent()) && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
     }
     $this->properties[$property] = $value;
   }
@@ -436,7 +450,7 @@ abstract class Control implements \ArrayAccess
    */
   public function hasClass($class, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-class' : 'class';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'class' : 'class';
     $class = trim($class);
     if (strlen($class) == 0 || !isset($this->attributes[$attr])) return false;
     return strpos(' ' . $this->attributes[$attr] . ' ', ' ' . $class . ' ') !== false;
@@ -452,7 +466,7 @@ abstract class Control implements \ArrayAccess
    */
   public function addClass($class, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-class' : 'class';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'class' : 'class';
     $class = trim($class);
     if (strlen($class) == 0 || $this->hasClass($class, $applyToContainer)) return $this;
     if (!isset($this->attributes[$attr])) $this->attributes[$attr] = $class;
@@ -470,7 +484,7 @@ abstract class Control implements \ArrayAccess
    */
   public function removeClass($class, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-class' : 'class';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'class' : 'class';
     $class = trim($class);
     if (strlen($class) == 0 || !isset($this->attributes[$attr])) return $this;
     $this->attributes[$attr] = trim(str_replace(' ' . $class . ' ', '', ' ' . $this->attributes[$attr] . ' '));
@@ -517,7 +531,7 @@ abstract class Control implements \ArrayAccess
    */
   public function hasStyle($style, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'style' : 'style';
     $style = trim($style);
     if (strlen($style) == 0 || !isset($this->attributes[$attr])) return false;
     return strpos($this->attributes[$attr], $style) !== false;
@@ -535,7 +549,7 @@ abstract class Control implements \ArrayAccess
    */
   public function addStyle($style, $value, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'style' : 'style';
     if ($this->hasStyle($style, $applyToContainer)) $this->setStyle($style, $value, $applyToContainer);
     else
     {
@@ -559,7 +573,7 @@ abstract class Control implements \ArrayAccess
    */
   public function setStyle($style, $value, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'style' : 'style';
     if (!isset($this->attributes[$attr])) return $this;
     $this->attributes[$attr] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', $style . ':' . $value . ';', $this->attributes[$attr]);
     return $this;
@@ -575,7 +589,7 @@ abstract class Control implements \ArrayAccess
    */
   public function getStyle($style, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'style' : 'style';
     if (!isset($this->attributes[$attr])) return;
     preg_match('/' . preg_quote($style) . ' *:([^;]*);*/', $this->attributes[$attr], $matches);
     return isset($matches[1]) ? $matches[1] : null;
@@ -591,7 +605,7 @@ abstract class Control implements \ArrayAccess
    */
   public function removeStyle($style, $applyToContainer = false)
   {
-    $attr = $applyToContainer ? 'container-style' : 'style';
+    $attr = $applyToContainer ? self::CONTAINER_PREFIX . 'style' : 'style';
     if (!isset($this->attributes[$attr])) return $this;
     $this->attributes[$attr] = preg_replace('/' . preg_quote($style) . ' *:[^;]*;*/', '', $this->attributes[$attr]);
     $this->attributes[$attr] = trim(str_replace(['  ', '   '], ' ', $this->attributes[$attr]));
@@ -703,15 +717,16 @@ abstract class Control implements \ArrayAccess
   {
     if ($this->isRefreshed || $vs['properties'] != $this->properties) return $this->render();
     $tmp = ['attrs' => [], 'removed' => []];
+    $cntlen = strlen(self::CONTAINER_PREFIX);
     foreach ($this->attributes as $attr => $value)
     {
       if (!isset($vs['attributes'][$attr]) && $value !== null || $value != $vs['attributes'][$attr])
       {
         $container = '';
-        if (substr($attr, 0, 10) == 'container-') 
+        if (substr($attr, 0, $cntlen) == self::CONTAINER_PREFIX) 
         {
-          $container = 'container-';
-          $attr = substr($attr, 10);
+          $container = self::CONTAINER_PREFIX;
+          $attr = substr($attr, $cntlen);
         }
         $tmp['attrs'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
       }
@@ -721,10 +736,10 @@ abstract class Control implements \ArrayAccess
       if (!isset($this->attributes[$attr]) && $value !== null) 
       {
         $container = '';
-        if (substr($attr, 0, 10) == 'container-') 
+        if (substr($attr, 0, $cntlen) == self::CONTAINER_PREFIX) 
         {
-          $container = 'container-';
-          $attr = substr($attr, 10);
+          $container = self::CONTAINER_PREFIX;
+          $attr = substr($attr, $cntlen);
         }
         $tmp['removed'][] = $container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr);
       }
@@ -760,7 +775,7 @@ abstract class Control implements \ArrayAccess
   {
     if (!$this->parent) 
     {
-      if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', $this->properties['id'], get_class($parent), $parent->getFullID());
+      if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
       $this->parent = $parent;
     }
     else
@@ -769,7 +784,7 @@ abstract class Control implements \ArrayAccess
       if ($prnt && $prnt->id != $parent->id) 
       {
         if (!$prnt->isRemoved()) $prnt->detach($this->attributes['id']);
-        if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', $this->properties['id'], get_class($parent), $parent->getFullID());
+        if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
       }
       $this->parent = $parent;
     }
@@ -908,12 +923,13 @@ abstract class Control implements \ArrayAccess
    */
   protected function renderAttributes($renderBaseAttributes = true)
   {
+    $cntlen = strlen(self::CONTAINER_PREFIX);
     if ($renderBaseAttributes)
     {
       $tmp = ['data-ctrl="' . $this->ctrl . '"'];
       foreach ($this->attributes as $attr => $value) 
       {
-        if (substr($attr, 0, 10) == 'container-') continue;
+        if (substr($attr, 0, $cntlen) == self::CONTAINER_PREFIX) continue;
         $value = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
@@ -923,8 +939,8 @@ abstract class Control implements \ArrayAccess
       $tmp = [];
       foreach ($this->attributes as $attr => $value) 
       {
-        if (substr($attr, 0, 10) != 'container-') continue;
-        $attr = substr($attr, 10);
+        if (substr($attr, 0, $cntlen) != self::CONTAINER_PREFIX) continue;
+        $attr = substr($attr, $cntlen);
         $value = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
@@ -947,7 +963,7 @@ abstract class Control implements \ArrayAccess
     {
       if (!is_scalar($value) || strlen($value)) 
       {
-        $html .= ' attr-' . strtolower($attr) . '="';
+        $html .= ' ' . self::ATTRIBUTE_PREFIX . strtolower($attr) . '="';
         if (is_scalar($value)) $html .= htmlspecialchars($value) . '"';
         else $html .= View::PHP_MARK . 'unserialize(\'' . addcslashes(htmlspecialchars(serialize($value)), "'") . '\')"';
       }

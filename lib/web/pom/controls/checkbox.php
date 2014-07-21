@@ -62,7 +62,7 @@ class CheckBox extends Control
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    $html = '<' . $this->properties['tag'] . ' id="container_' . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>';
+    $html = '<' . $this->properties['tag'] . ' id="' . self::CONTAINER_PREFIX . $this->attributes['id'] . '"' . $this->renderAttributes(false) . '>';
     if (strlen($this->properties['caption'])) $label = '<label for="' . $this->attributes['id'] . '">' . $this->properties['caption'] . '</label>';
     if ($this->properties['align'] == 'left' && isset($label)) $html .= $label;
     $html .= '<input type="checkbox" value="' . htmlspecialchars($this->properties['value']) . '"' . $this->renderAttributes() . ' />';

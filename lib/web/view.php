@@ -904,7 +904,7 @@ class View implements \ArrayAccess
         $cvs['properties']['value'] = $values[$cvs['properties']['id']];
         $this->get($uniqueID)->setVS($cvs);
       }
-      if ($searchRecursively && isset($cvs['controls'])) $values = array_merge($values, $this->setFormValues($uniqueID, $values, true));
+      if ($searchRecursively && isset($cvs['controls'])) $this->setFormValues($uniqueID, $values, true);
     }
     return $this;
   }
@@ -1495,7 +1495,7 @@ class View implements \ArrayAccess
         }
         if ($tag == 'body')
         {
-          $ctrl = new Body('body');
+          $ctrl = new Body(isset($attributes['id']) ? $attributes['id'] : 'body');
           $vs = $ctrl->getVS();
           $vs['attributes']['id'] = $this->UID;
           $ctrl->setVS($vs);
@@ -1519,9 +1519,10 @@ class View implements \ArrayAccess
           $ctrl->tpl->setTemplate($res['html']); 
           unset($attributes['template']);
         }
+        $attrlen = strlen(Control::ATTRIBUTE_PREFIX);
         foreach ($attributes as $k => $v) 
         {
-          if (strtolower(substr($k, 0, 5)) == 'attr-') $ctrl->{substr($k, 5)} = $v;
+          if (strtolower(substr($k, 0, $attrlen)) == Control::ATTRIBUTE_PREFIX) $ctrl->{substr($k, $attrlen)} = $v;
           else if (isset($ctrl[$k])) $ctrl[$k] = $v;
           else $ctrl->{$k} = $v;
         }
