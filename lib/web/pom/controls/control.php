@@ -985,6 +985,6 @@ abstract class Control implements \ArrayAccess
    */
   protected function invisible()
   {
-    return '<span id="' . htmlspecialchars($this->attributes['id']) . '" style="display:none;"></span>';
+    return '<span id="' . htmlspecialchars($this->attributes['id']) . '" data-ctrl="' . $this->ctrl . '" style="display:none;"></span>';
   }
 }
