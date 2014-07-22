@@ -34,7 +34,7 @@ class Grid extends Panel
   {
     parent::__construct($id, $template, $expire);
     $this->properties['source'] = null;
-    $this->properties['sort'] = 1;
+    $this->properties['sort'] = -1;
     $this->properties['size'] = 10;
     $this->properties['page'] = 0;
   }
@@ -62,11 +62,11 @@ class Grid extends Panel
       if (!$ctrl) continue;
       if (!is_array($ctrl['options']) || count($ctrl['options']) == 0) 
       {
-        unset($ctrl->multiple);
         $ctrl['options'] = [10 => 10, 20 => 20, 30 => 30, 40 => 40, 50 => 50, 999999999 => 'All'];
-        $ctrl['value'] = $this->properties['size'];
-        $ctrl->addEvent('changeSize', 'change', get_class($this) . '@' . $this->attributes['id'] . '->setSize', ['params' => ['js::this.value']]);
       }
+      unset($ctrl->multiple);
+      $ctrl['value'] = $this->properties['size'];
+      $ctrl->addEvent('changeSize', 'change', get_class($this) . '@' . $this->attributes['id'] . '->setSize', ['params' => ['js::this.value']]);
     }
     return $this;
   }
@@ -139,6 +139,7 @@ class Grid extends Panel
     if ($this->properties['page'] < 0) $this->properties['page'] = 0;
     if ($this->properties['size'] < 1) $this->properties['size'] = 1;
     $last = ceil($this->count / $this->properties['size']) - 1;
+    if ($last < 0) $last = 0;
     if ($this->properties['page'] > $last) $this->properties['page'] = $last;
   }
 }

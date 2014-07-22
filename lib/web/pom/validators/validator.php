@@ -265,11 +265,11 @@ abstract class Validator extends Control
     $this->attributes['controls'] = implode(',', $ids);
     if (empty($this->attributes['hiding']))
     {
-      return '<' . $this->properties['tag'] . $this->renderAttributes() . '>' . ($this->attributes['state'] ? '' : $this->attributes['text']) . '</' . $this->properties['tag'] . '>';
+      return '<' . $this->properties['tag'] . $this->renderAttributes() . '>' . ($this->attributes['state'] ? '' : htmlspecialchars_decode($this->attributes['text'])) . '</' . $this->properties['tag'] . '>';
     }
     if (!empty($this->attributes['state'])) $this->addStyle('display', 'none');
     else $this->removeStyle('display');
     if (!isset($this->attributes['text'])) $this->attributes['text'] = '';
-    return '<' . $this->properties['tag'] . $this->renderAttributes() . '>' . $this->attributes['text'] . '</' . $this->properties['tag'] . '>';
+    return '<' . $this->properties['tag'] . $this->renderAttributes() . '>' . htmlspecialchars_decode($this->attributes['text']) . '</' . $this->properties['tag'] . '>';
   }
 }
