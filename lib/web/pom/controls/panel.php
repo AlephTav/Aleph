@@ -229,8 +229,8 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     $ctrl = $this->get($id, false);
     if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_1', $id, get_class($this), $this->getFullID());
     $ctrl->remove();
-    unset($this->controls[$ctrl->id]);
-    $this->tpl->setTemplate(str_replace(View::getControlPlaceholder($ctrl->id), '', $this->tpl->getTemplate()));
+    unset($this->controls[$ctrl->attr('id')]);
+    $this->tpl->setTemplate(str_replace(View::getControlPlaceholder($ctrl->attr('id')), '', $this->tpl->getTemplate()));
     $this->inDetach = false;
     return $this;
   }
@@ -247,16 +247,16 @@ class Panel extends Control implements \IteratorAggregate, \Countable
   {
     $ctrl = $this->get($id, false);
     if (!$ctrl) throw new Core\Exception($this, 'ERR_PANEL_1', $id, get_class($this), $this->getFullID());
-    $oph = View::getControlPlaceholder($ctrl->id);
-    $nph = View::getControlPlaceholder($new->id);
-    if (false !== $this->get($new->id, false)) 
+    $oph = View::getControlPlaceholder($ctrl->attr('id'));
+    $nph = View::getControlPlaceholder($new->attr('id'));
+    if (false !== $this->get($new->attr('id'), false)) 
     {
       $this->tpl->setTemplate(str_replace($nph, '', $this->tpl->getTemplate()));
-      unset($this->controls[$new->id]);
+      unset($this->controls[$new->attr('id')]);
     }
     $this->tpl->setTemplate(str_replace($oph, $nph, $this->tpl->getTemplate()));
     $ctrl->remove();
-    return $this->add($new, 'replace', $ctrl->id);
+    return $this->add($new, 'replace', $ctrl->attr('id'));
   }
   
   /**
@@ -273,14 +273,14 @@ class Panel extends Control implements \IteratorAggregate, \Countable
     $ctrl = new $class($id ?: $this->properties['id']);
     $vs = $this->getVS();
     $vs['parent'] = null;
-    $vs['attributes']['id'] = $ctrl->id;
-    $vs['properties']['id'] = $ctrl['id'];
+    $vs['attributes']['id'] = $ctrl->attr('id');
+    $vs['properties']['id'] = $ctrl->prop('id');
     $vs['controls'] = [];
     $ctrl->setVS($vs);
     foreach ($this as $child) 
     {
       $copy = $child->copy();
-      $ctrl->tpl->setTemplate(str_replace(View::getControlPlaceholder($child->id), View::getControlPlaceholder($copy->id), $ctrl->tpl->getTemplate()));
+      $ctrl->tpl->setTemplate(str_replace(View::getControlPlaceholder($child->attr('id')), View::getControlPlaceholder($copy->attr('id')), $ctrl->tpl->getTemplate()));
       $ctrl->add($copy);
     }
     return $ctrl;

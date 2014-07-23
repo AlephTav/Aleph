@@ -30,9 +30,9 @@ class Grid extends Panel
   
   protected $rows = null;
   
-  public function __construct($id, $template = null, $expire = 0)
+  public function __construct($id, $template = null)
   {
-    parent::__construct($id, $template, $expire);
+    parent::__construct($id, $template);
     $this->properties['source'] = null;
     $this->properties['sort'] = -1;
     $this->properties['size'] = 10;
@@ -60,12 +60,12 @@ class Grid extends Panel
     {
       $ctrl = $this->get($id, false);
       if (!$ctrl) continue;
-      if (!is_array($ctrl['options']) || count($ctrl['options']) == 0) 
+      if (!is_array($ctrl->options) || count($ctrl->options) == 0)
       {
-        $ctrl['options'] = [10 => 10, 20 => 20, 30 => 30, 40 => 40, 50 => 50, 999999999 => 'All'];
+        $ctrl->options = [10 => 10, 20 => 20, 30 => 30, 40 => 40, 50 => 50, 999999999 => 'All'];
       }
       unset($ctrl->multiple);
-      $ctrl['value'] = $this->properties['size'];
+      $ctrl->value = $this->properties['size'];
       $ctrl->addEvent('changeSize', 'change', get_class($this) . '@' . $this->attributes['id'] . '->setSize', ['params' => ['js::this.value']]);
     }
     return $this;
@@ -123,10 +123,10 @@ class Grid extends Panel
       {
         $ctrl = $this->get($id, false);
         if (!$ctrl) continue;
-        $ctrl['callback'] = $this->method('setPage', ['#page#']);
-        $ctrl['total'] = $this->count;
-        $ctrl['size'] = $this->properties['size'];
-        $ctrl['page'] = $this->properties['page'];
+        $ctrl->callback = $this->method('setPage', ['#page#']);
+        $ctrl->total = $this->count;
+        $ctrl->size = $this->properties['size'];
+        $ctrl->page = $this->properties['page'];
       }
     }
     return parent::renderInnerHTML();

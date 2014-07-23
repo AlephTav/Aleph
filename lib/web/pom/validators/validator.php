@@ -85,20 +85,6 @@ abstract class Validator extends Control
    * @abstract
    */
   abstract public function check($value);
-  
-  /**
-   * Sets value of the validator attribute.
-   *
-   * @param string $attribute - the attribute name.
-   * @param mixed $value - the attribute value.
-   * @access public
-   */
-  public function __set($attribute, $value)
-  {
-    $attribute = strtolower($attribute);
-    if ($attribute == 'groups' && strlen($value) == 0) $value = 'default';
-    parent::__set($attribute, $value);
-  }
 
   /**
    * Returns array of the validator control identifiers.
@@ -214,8 +200,8 @@ abstract class Validator extends Control
         {
           $ctrl = $view->get($ids[$i]);
           if ($ctrl === false) throw new Core\Exception($this, 'ERR_VAL_1', $ids[$i]); 
-          if ($ctrl->validate($this)) $this->result[$ctrl->id] = true;
-          else $this->result[$ctrl->id] = $flag = false;
+          if ($ctrl->validate($this)) $this->result[$ctrl->attr('id')] = true;
+          else $this->result[$ctrl->attr('id')] = $flag = false;
         }
         break;
       case 'OR':
@@ -224,8 +210,8 @@ abstract class Validator extends Control
         {
           $ctrl = $view->get($ids[$i]);
           if ($ctrl === false) throw new Core\Exception($this, 'ERR_VAL_1', $ids[$i]); 
-          if ($ctrl->validate($this)) $this->result[$ctrl->id] = $flag = true;
-          else $this->result[$ctrl->id] = false;
+          if ($ctrl->validate($this)) $this->result[$ctrl->attr('id')] = $flag = true;
+          else $this->result[$ctrl->attr('id')] = false;
         }
         break;
       case 'XOR':
@@ -236,10 +222,10 @@ abstract class Validator extends Control
           if ($ctrl === false) throw new Core\Exception($this, 'ERR_VAL_1', $ids[$i]); 
           if ($ctrl->validate($this))
           {
-            $this->result[$ctrl->id] = $n < 1;
+            $this->result[$ctrl->attr('id')] = $n < 1;
             $n++;
           }
-          else $this->result[$ctrl->id] = false;
+          else $this->result[$ctrl->attr('id')] = false;
         }
         $flag = $n == 1;
         break;
@@ -260,7 +246,7 @@ abstract class Validator extends Control
     foreach ($ids as &$id) 
     {
       $ctrl = MVC\Page::$current->view->get($id);
-      if ($ctrl) $id = $ctrl->id;
+      if ($ctrl) $id = $ctrl->attr('id');
     }
     $this->attributes['controls'] = implode(',', $ids);
     if (empty($this->attributes['hiding']))

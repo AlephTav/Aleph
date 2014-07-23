@@ -43,11 +43,15 @@ class TextBox extends Control
     $this->properties['value'] = $value;
   }
   
-  public function offsetGet($property)
+  public function &prop($property, $value = null)
   {
-    $value = parent::offsetGet($property);
-    if (strtolower($property) == 'value' && strlen($value) == 0 && isset($this->attributes['default'])) $value = $this->attributes['default'];
-    return $value;
+    if ($value === null)
+    {
+      $val = parent::prop($property);
+      if (strtolower($property) == 'value' && strlen($val) == 0 && isset($this->attributes['default'])) $val = $this->attributes['default'];
+      return $val;
+    }
+    return parent::prop($property, $value);
   }
   
   public function clean()
@@ -58,7 +62,7 @@ class TextBox extends Control
 
   public function validate(Validator $validator)
   {
-    return $validator->check($this['value']);
+    return $validator->check($this->prop('value'));
   }
 
   public function render()

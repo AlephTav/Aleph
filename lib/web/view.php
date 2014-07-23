@@ -31,7 +31,7 @@ namespace
    */
   function ID($id)
   {
-    if (false !== $ctrl = \Aleph\MVC\Page::$current->view->get($id)) return $ctrl->id;
+    if (false !== $ctrl = \Aleph\MVC\Page::$current->view->get($id)) return $ctrl->attr('id');
   }
 }
 
@@ -245,8 +245,8 @@ class View implements \ArrayAccess
       }
       $vs = $obj->getVS();
       unset($vs['attributes']['id']);
-      foreach ($vs['attributes'] as $attr => $value) if (is_scalar($value)) $obj->{$attr} = static::evaluate($value, $marks);
-      foreach ($vs['properties'] as $prop => $value) if (is_scalar($value)) $obj[$prop] = static::evaluate($value, $marks);
+      foreach ($vs['attributes'] as $attr => $value) if (is_scalar($value)) $obj->attr($attr, static::evaluate($value, $marks), true);
+      foreach ($vs['properties'] as $prop => $value) if (is_scalar($value)) $obj->prop($prop, static::evaluate($value, $marks));
       return $obj;
     }
     else if (is_array($obj))
@@ -734,7 +734,7 @@ class View implements \ArrayAccess
    */
   public function attach(Control $ctrl)
   {
-    $this->controls[$ctrl->id] = $ctrl;
+    $this->controls[$ctrl->attr('id')] = $ctrl;
     if ($ctrl instanceof Panel) foreach($ctrl as $child) $this->attach($child);
     return $this;
   }
@@ -748,7 +748,7 @@ class View implements \ArrayAccess
    */
   public function isAttached($ctrl)
   {
-    $id = $ctrl instanceof Control ? $ctrl->id : $ctrl;
+    $id = $ctrl instanceof Control ? $ctrl->attr('id') : $ctrl;
     return isset($this->controls[$id]) || isset($this->vs[$id]);
   }
   
@@ -777,13 +777,13 @@ class View implements \ArrayAccess
       $ctrl = new $vs['class']($vs['properties']['id']);
       $ctrl->setVS($vs);
       if ($context && !isset($context->getControls()[$id])) return false;
-      $this->controls[$ctrl->id] = $ctrl;
+      $this->controls[$ctrl->attr('id')] = $ctrl;
       return $ctrl;
     }
     if ($context) $controls = $context->getControls();
     else if (isset($this->controls[$this->UID])) 
     {
-      if ($id == $this->controls[$this->UID]['id']) return $this->controls[$this->UID];
+      if ($id == $this->controls[$this->UID]->prop('id')) return $this->controls[$this->UID];
       $controls = $this->controls[$this->UID]->getControls();
     }
     else if (isset($this->vs[$this->UID])) 
@@ -793,7 +793,7 @@ class View implements \ArrayAccess
     }
     else return false;
     $ctrl = $this->searchControl(explode('.', $id), $controls, $searchRecursively ? -1 : 0);
-    if ($ctrl) $this->controls[$ctrl->id] = $ctrl;
+    if ($ctrl) $this->controls[$ctrl->attr('id')] = $ctrl;
     return $ctrl;
   }
   
@@ -809,7 +809,7 @@ class View implements \ArrayAccess
   public function clean($id, $searchRecursively = true)
   {
     $ctrl = $this->get($id);
-    if (isset($ctrl['value'])) $ctrl->clean();
+    if (isset($ctrl->value)) $ctrl->clean();
     if ($ctrl instanceof Panel)
     {
       foreach ($ctrl->getControls() as $child)
@@ -1117,7 +1117,7 @@ class View implements \ArrayAccess
       if ($body)
       {
         if (!($body instanceof Body) || count($ctx['controls'])) throw new Core\Exception($this, 'ERR_VIEW_5');
-        $this->controls[$body->id] = $body;
+        $this->controls[$body->attr('id')] = $body;
         $this->commit();
         static::decodePHPTags($body, $ctx['marks']);
         $src = \Aleph::url('framework') . '/web/js/jquery/jquery.min.js';
@@ -1294,8 +1294,8 @@ class View implements \ArrayAccess
   {
     $commit = function(Control $ctrl) use(&$commit)
     {
-      $this->vs[$ctrl->id] = $ctrl->getVS();
-      $this->controls[$ctrl->id] = $ctrl;
+      $this->vs[$ctrl->attr('id')] = $ctrl->getVS();
+      $this->controls[$ctrl->attr('id')] = $ctrl;
       if ($ctrl instanceof Panel)
       {
         foreach ($ctrl as $uniqueID => $child)
@@ -1519,13 +1519,7 @@ class View implements \ArrayAccess
           $ctrl->tpl->setTemplate($res['html']); 
           unset($attributes['template']);
         }
-        $attrlen = strlen(Control::ATTRIBUTE_PREFIX);
-        foreach ($attributes as $k => $v) 
-        {
-          if (strtolower(substr($k, 0, $attrlen)) == Control::ATTRIBUTE_PREFIX) $ctrl->{substr($k, $attrlen)} = $v;
-          else if (isset($ctrl[$k])) $ctrl[$k] = $v;
-          else $ctrl->{$k} = $v;
-        }
+        foreach ($attributes as $k => $v) $ctrl->{$k} = $v;
         $ctx['stack']->push($ctrl);
       }
       else
@@ -1573,8 +1567,8 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->top();
           if ($ctrl instanceof Panel) $ctrl->tpl->setTemplate($ctrl->tpl->getTemplate() . $html);
-          else if (isset($ctrl['value'])) $ctrl['value'] .= $html;
-          else $ctrl['text'] .= $html;
+          else if (isset($ctrl->value)) $ctrl->value .= $html;
+          else $ctrl->text .= $html;
         }
       }
     };
@@ -1591,13 +1585,13 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->pop();
           $parent = $ctx['stack']->top();
-          $parent->tpl->setTemplate($parent->tpl->getTemplate() . static::getControlPlaceholder($ctrl->id));
+          $parent->tpl->setTemplate($parent->tpl->getTemplate() . static::getControlPlaceholder($ctrl->attr('id')));
           $parent->add($ctrl);
         }
         else
         {
           $ctrl = $ctx['stack']->pop();
-          $ctx['html'] .= static::getControlPlaceholder($ctrl->id);
+          $ctx['html'] .= static::getControlPlaceholder($ctrl->attr('id'));
           $ctx['controls'][] = $ctrl;
         }
       }
@@ -1614,8 +1608,8 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->top();
           if ($ctrl instanceof Panel) $ctrl->tpl->setTemplate($ctrl->tpl->getTemplate() . $html);
-          else if (isset($ctrl['value'])) $ctrl['value'] .= $html;
-          else $ctrl['text'] .= $html;
+          else if (isset($ctrl->value)) $ctrl->value .= $html;
+          else $ctrl->text .= $html;
         }
       }
     };
@@ -1682,8 +1676,8 @@ class View implements \ArrayAccess
         {
           $ctrl = $ctx['stack']->top();
           if ($ctrl instanceof Panel) $ctrl->tpl->setTemplate($ctrl->tpl->getTemplate() . $content);
-          else if (isset($ctrl['value'])) $ctrl['value'] .= $content;
-          else $ctrl['text'] .= $content;
+          else if (isset($ctrl->value)) $ctrl->value .= $content;
+          else $ctrl->text .= $content;
         }
       }
     };

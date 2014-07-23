@@ -115,7 +115,7 @@ class Page
    * @access protected
    */
   protected $ajaxPermissions = ['permitted' => ['/^Aleph\\\\(MVC|Web\\\\POM).*$/i'],
-                                'forbidden' => ['/^Aleph\\\\Web\\\\POM\\\\[^\\\\]*\[\d*\]->offset(Set|Get|Unset|Exists)$/i']];
+                                'forbidden' => ['/^Aleph\\\\Web\\\\POM\\\\[^\\\\]*\[\d*\]->(__set|__get|__unset|__isset|prop)$/i']];
   
   /**
    * The sequence of class methods that determines the class workflow.

@@ -35,7 +35,7 @@ use Aleph\Core,
  * @version 1.0.0
  * @package aleph.web.pom
  */
-abstract class Control implements \ArrayAccess
+abstract class Control
 {
   /**
    * Regular expression for checking the format of logic control identifiers.
@@ -165,9 +165,10 @@ abstract class Control implements \ArrayAccess
    * @param string $id - the logic control identifier. It should contains only numeric, alphabetic symbols and symbol "_".
    * @access public
    */
-  public function __construct($id)
+  public function __construct($id = null)
   {
-    if (!preg_match(self::ID_REG_EXP, $id)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $id);
+    if ($id === null) $id = 'c';
+    else if (!preg_match(self::ID_REG_EXP, $id)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $id);
     $this->attributes['id'] = str_replace('.', '', uniqid($id, true));
     $this->properties['id'] = $id;
     $this->properties['visible'] = true;
@@ -213,7 +214,7 @@ abstract class Control implements \ArrayAccess
   public function getVS()
   {
     return ['class' => get_class($this), 
-            'parent' => $this->parent instanceof Control ? $this->parent->id : $this->parent,
+            'parent' => $this->parent instanceof Control ? $this->parent->attr('id') : $this->parent,
             'attributes' => $this->attributes, 
             'properties' => $this->properties,
             'methods' => ['init' => method_exists($this, 'init'),
@@ -237,114 +238,119 @@ abstract class Control implements \ArrayAccess
   }
   
   /**
-   * Sets value of the control attribute.
+   * Returns value of the control attribute or property.
    *
-   * @param string $attribute - the attribute name.
-   * @param mixed $value - the attribute value.
-   * @access public
-   */
-  public function __set($attribute, $value)
-  {
-    $attribute = strtolower($attribute);
-    if ($attribute == 'id') throw new Core\Exception($this, 'ERR_CTRL_3', get_class($this), $this->getFullID());
-    $this->attributes[$attribute] = $value;
-  }
-  
-  /**
-   * Returns value of the control attribute.
-   *
-   * @param string $attribute - the attribute name.
+   * @param string $attribute - the attribute or property name.
    * @return mixed
    * @access public
    */
-  public function &__get($attribute)
+  public function &__get($name)
   {
-    $attribute = strtolower($attribute);
-    if (isset($this->attributes[$attribute])) return $this->attributes[$attribute];
-    $value = null;
-    return $value;
+    $name = strtolower($name);
+    if (array_key_exists($name, $this->properties)) return $this->prop($name);
+    if (substr($name, 0, strlen(self::ATTRIBUTE_PREFIX)) == self::ATTRIBUTE_PREFIX) $name = substr($name, strlen(self::ATTRIBUTE_PREFIX));
+    return $this->attr($name);
   }
   
   /**
-   * Returns TRUE if value of the given attribute is defined and FALSE otherwise.
+   * Sets value of the control attribute or property.
    *
-   * @param string $attribute - the attribute name.
-   * @return boolean
+   * @param string $name - the attribute or property name.
+   * @param mixed $value - the attribute or property value.
    * @access public
    */
-  public function __isset($attribute)
+  public function __set($name, $value)
   {
-    return isset($this->attributes[strtolower($attribute)]);
-  }
-  
-  /**
-   * Removes the control attributes.
-   *
-   * @param string $attribute - the attribute name.
-   * @access public
-   */
-  public function __unset($attribute)
-  {
-    $attribute = strtolower($attribute);
-    if ($attribute == 'id') throw new Core\Exception($this, 'ERR_CTRL_3', get_class($this), $this->getFullID());
-    unset($this->attributes[$attribute]);
-  }
-  
-  /**
-   * Sets value of the control property.
-   *
-   * @param string $property - the property name.
-   * @param mixed $value - the property value.
-   * @access public
-   */
-  public function offsetSet($property, $value)
-  {
-    $property = strtolower($property);
-    if (!array_key_exists($property, $this->properties)) throw new Core\Exception($this, 'ERR_CTRL_2', get_class($this), $this->getFullID(), $property);
-    if ($property == 'id')
+    $name = strtolower($name);
+    if (array_key_exists($name, $this->properties)) $this->prop($name, $value);
+    else
     {
-      if ($value == $this->properties[$property]) return;
-      if (!preg_match(self::ID_REG_EXP, $value)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $value);
-      if ((false !== $parent = $this->getParent()) && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
+      if (substr($name, 0, strlen(self::ATTRIBUTE_PREFIX)) == self::ATTRIBUTE_PREFIX) $name = substr($name, strlen(self::ATTRIBUTE_PREFIX));
+      $this->attr($name, $value);
     }
-    $this->properties[$property] = $value;
   }
   
   /**
-   * Returns value of the control property.
-   *
-   * @param string $property - the property name.
-   * @return mixed
-   * @access public   
-   */
-  public function &offsetGet($property)
-  {
-    $property = strtolower($property);
-    if (!array_key_exists($property, $this->properties)) throw new Core\Exception($this, 'ERR_CTRL_2', get_class($this), $this->getFullID(), $property);
-    return $this->properties[$property];
-  }
-  
-  /**
-   * Returns TRUE if the control has the given property and FALSE otherwise.
+   * Returns TRUE if the given property exists and FALSE otherwise.
    *
    * @param string $property - the property name.
    * @return boolean
    * @access public
    */
-  public function offsetExists($property)
+  public function __isset($property)
   {
     return array_key_exists(strtolower($property), $this->properties);
   }
   
   /**
-   * Removes value (sets it to NULL) of the control property.
+   * Removes the control attribute or sets property value to NULL.
    *
-   * @param string $property - the property name.
+   * @param string $name - the attribute or property name.
    * @access public
    */
-  public function offsetUnset($property)
+  public function __unset($name)
   {
-    $this[$property] = null;
+    $name = strtolower($name);
+    if (array_key_exists($name, $this->properties)) $this->prop($name, null);
+    if (substr($name, 0, strlen(self::ATTRIBUTE_PREFIX)) == self::ATTRIBUTE_PREFIX) $name = substr($name, strlen(self::ATTRIBUTE_PREFIX));
+    $this->attr($name, null, true);
+  }
+  
+  /**
+   * Sets or returns attribute value.
+   * If $value is not defined, the method returns the current attribute value. Otherwise, it will set new attribute value.
+   *
+   * @param string $attribute - the attribute name.
+   * @param mixed $value - the attribute value.
+   * @param boolean $removeEmpty - determines whether the empty attribute (having value NULL) should be removed.
+   * @return mixed
+   * @access public
+   */
+  public function &attr($attribute, $value = null, $removeEmpty = false)
+  {
+    $attribute = strtolower($attribute);
+    if ($value === null)
+    {
+      if (!$removeEmpty) 
+      {
+        if (!isset($this->attributes[$attribute])) $this->attributes[$attribute] = null;
+        return $this->attributes[$attribute];
+      }
+      if ($attribute == 'id') throw new Core\Exception($this, 'ERR_CTRL_3', get_class($this), $this->getFullID());
+      unset($this->attributes[$attribute]);
+    }
+    else
+    {
+      if ($attribute == 'id') throw new Core\Exception($this, 'ERR_CTRL_3', get_class($this), $this->getFullID());
+      $this->attributes[$attribute] = $value;
+    }
+    return $this;
+  }
+  
+  /**
+   * Sets or returns property value.
+   * If $value is not defined, the method returns the current property value. Otherwise, it will set new property value.
+   *
+   * @param string $property - the property name.
+   * @param mixed $value - the property value.
+   * @return mixed
+   * @access public
+   */
+  public function &prop($property, $value = null)
+  {
+    $property = strtolower($property);
+    if (!array_key_exists($property, $this->properties)) throw new Core\Exception($this, 'ERR_CTRL_2', get_class($this), $this->getFullID(), $property);
+    if ($value === null) return $this->properties[$property];
+    if ($property == 'id')
+    {
+      if ($value != $this->properties[$property])
+      {
+        if (!preg_match(self::ID_REG_EXP, $value)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $value);
+        if ((false !== $parent = $this->getParent()) && $parent->get($value, false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
+      }
+    }
+    $this->properties[$property] = $value;
+    return $this;
   }
   
   /**
@@ -720,7 +726,12 @@ abstract class Control implements \ArrayAccess
     $cntlen = strlen(self::CONTAINER_PREFIX);
     foreach ($this->attributes as $attr => $value)
     {
-      if (!isset($vs['attributes'][$attr]) && $value !== null || $value != $vs['attributes'][$attr])
+      if ($value === null) 
+      {
+        unset($this->attributes[$attr]);
+        continue;
+      }
+      if (!isset($vs['attributes'][$attr]) || $value != $vs['attributes'][$attr])
       {
         $container = '';
         if (substr($attr, 0, $cntlen) == self::CONTAINER_PREFIX) 
@@ -781,7 +792,7 @@ abstract class Control implements \ArrayAccess
     else
     {
       $prnt = $this->getParent();
-      if ($prnt && $prnt->id != $parent->id) 
+      if ($prnt && $prnt->attr('id') != $parent->attr('id')) 
       {
         if (!$prnt->isRemoved()) $prnt->detach($this->attributes['id']);
         if ($parent->get($this->properties['id'], false)) throw new Core\Exception($this, 'ERR_CTRL_4', get_class($parent), $parent->getFullID());
@@ -789,7 +800,7 @@ abstract class Control implements \ArrayAccess
       $this->parent = $parent;
     }
     $this->creationInfo = ['mode' => $mode, 'id' => $id];
-    if ($id === null || $id == $parent->id)
+    if ($id === null || $id == $parent->attr('id'))
     {
       if ($mode !== null) 
       {
@@ -809,13 +820,13 @@ abstract class Control implements \ArrayAccess
           default:
             throw new Core\Exception($this, 'ERR_CTRL_7', $mode);
         }
-        $this->creationInfo = ['mode' => $mode, 'id' => $parent->id];
+        $this->creationInfo = ['mode' => $mode, 'id' => $parent->attr('id')];
       }
     }
     else if (false !== $ctrl = $parent->get($id, false))
     {
       $ph = View::getControlPlaceholder($this->attributes['id']);
-      $ch = View::getControlPlaceholder($ctrl->id);
+      $ch = View::getControlPlaceholder($ctrl->attr('id'));
       if (!empty($prnt) && $prnt->id == $parent->id) $tpl = str_replace($ph, '', $parent->tpl->getTemplate());
       else $tpl = $parent->tpl->getTemplate();
       switch ($mode)
@@ -870,8 +881,8 @@ abstract class Control implements \ArrayAccess
     $ctrl = new $class($id ?: $this->properties['id']);
     $vs = $this->getVS();
     $vs['parent'] = null;
-    $vs['attributes']['id'] = $ctrl->id;
-    $vs['properties']['id'] = $ctrl['id'];
+    $vs['attributes']['id'] = $ctrl->attr('id');
+    $vs['properties']['id'] = $ctrl->prop('id');
     $ctrl->setVS($vs);
     return $ctrl;
   }

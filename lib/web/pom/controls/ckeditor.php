@@ -52,7 +52,7 @@ class CKEditor extends Control
 
   public function validate(Validator $validator)
   {
-    return $validator->check($this['value']);
+    return $validator->check($this->prop('value'));
   }
 
   public function render()
