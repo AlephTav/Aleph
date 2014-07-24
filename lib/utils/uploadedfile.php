@@ -988,10 +988,10 @@ class UploadedFile
         $message = 'Only the following file mime types are allowed: ' . implode(', ', $this->types);
         break;
       case 12:
-        $message = 'The file size should not exceed ' . number_format($this->maxSize / (1024 * 1024), 2) . 'M';
+        $message = 'The file size should not exceed ' . number_format($this->max / (1024 * 1024), 2) . 'M';
         break;
       case 13:
-        $message = 'The file size should not be less than ' . number_format($this->minSize / (1024 * 1024), 2) . 'M';
+        $message = 'The file size should not be less than ' . number_format($this->min / (1024 * 1024), 2) . 'M';
         break;
       case 14:
         $message = 'The file has not been uploaded via HTTP.';
