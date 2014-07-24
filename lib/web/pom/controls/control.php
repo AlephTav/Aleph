@@ -167,10 +167,16 @@ abstract class Control
    */
   public function __construct($id = null)
   {
-    if ($id === null) $id = 'c';
-    else if (!preg_match(self::ID_REG_EXP, $id)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $id);
-    $this->attributes['id'] = str_replace('.', '', uniqid($id, true));
-    $this->properties['id'] = $id;
+    if ($id === null) 
+    {
+      $this->properties['id'] = $this->attributes['id'] = str_replace('.', '', uniqid('c', true));
+    }
+    else 
+    {
+      if (!preg_match(self::ID_REG_EXP, $id)) throw new Core\Exception($this, 'ERR_CTRL_1', get_class($this), $id);
+      $this->attributes['id'] = str_replace('.', '', uniqid($id, true));
+      $this->properties['id'] = $id;
+    }
     $this->properties['visible'] = true;
   }
   
@@ -199,7 +205,7 @@ abstract class Control
     $ctrl = $this;
     while ($parent = $ctrl->getParent())
     {
-      $id = $parent['id'] . '.' . $id;
+      $id = $parent->prop('id') . '.' . $id;
       $ctrl = $parent;
     }
     return $id;

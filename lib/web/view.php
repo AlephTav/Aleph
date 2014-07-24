@@ -244,9 +244,13 @@ class View implements \ArrayAccess
         foreach ($obj as $ctrl) static::decodePHPTags($ctrl, $marks);
       }
       $vs = $obj->getVS();
-      unset($vs['attributes']['id']);
-      foreach ($vs['attributes'] as $attr => $value) if (is_scalar($value)) $obj->attr($attr, static::evaluate($value, $marks), true);
-      foreach ($vs['properties'] as $prop => $value) if (is_scalar($value)) $obj->prop($prop, static::evaluate($value, $marks));
+      foreach ($vs['attributes'] as $attr => &$value) 
+      {
+        if (is_scalar($value)) $value = static::evaluate($value, $marks);
+        if ($value === null) unset($vs['attributes'][$attr]);
+      }
+      foreach ($vs['properties'] as &$value) if (is_scalar($value)) $value = static::evaluate($value, $marks);
+      $obj->setVS($vs);
       return $obj;
     }
     else if (is_array($obj))
@@ -1511,8 +1515,9 @@ class View implements \ArrayAccess
           $ctrl = 'Aleph\Web\POM\\' . $tag;
           $ctrl = new $ctrl(isset($attributes['id']) ? $attributes['id'] : null);
         }
-        if (($ctrl instanceof Panel) && isset($attributes['template']))
+        if (($ctrl instanceof Panel) && (isset($attributes['template']) || strlen($ctrl->tpl->getTemplate())))
         {
+          $attributes['template'] = isset($attributes['template']) ? $attributes['template'] : $ctrl->tpl->getTemplate();
           $res = static::analyze(static::evaluate($attributes['template'], $ctx['marks']), $this->vars);
           $ctx['marks'] = array_merge($ctx['marks'], $res['marks']);
           foreach ($res['controls'] as $control) $ctrl->add($control);
