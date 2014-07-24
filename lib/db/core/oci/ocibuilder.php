@@ -403,7 +403,7 @@ class OCIBuilder extends SQLBuilder
     $info = ['constraints' => []];
     $clean = function($column, $smart = false)
     {
-      $column = explode('.', $column);
+      $column = explode(',', $column);
       foreach ($column as &$col) if (substr($col, 0, 1) == '"') $col = substr(trim($col), 1, -1);
       return $smart && count($column) == 1 ? $column[0] : $column;
     };

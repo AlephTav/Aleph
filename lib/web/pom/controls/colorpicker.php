@@ -22,8 +22,7 @@
 
 namespace Aleph\Web\POM;
 
-use Aleph\MVC,
-    Aleph\Utils\PHP;
+use Aleph\MVC;
 
 class ColorPicker extends Input
 {

@@ -54,7 +54,7 @@ class View implements \ArrayAccess
 {
   // Error message templates.
   const ERR_VIEW_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
-  const ERR_VIEW_2 = "Property ID of element [{var}] is not defined or empty[{var}]\nLine: [{var}], column: [{var}].";
+  const ERR_VIEW_2 = "Property ID of element [{var}] is empty[{var}]\nLine: [{var}], column: [{var}].";
   const ERR_VIEW_3 = "Attribute \"path\" of element \"template\"[{var}] is not defined or such path does not exist.\nLine: [{var}], column: [{var}].";
   const ERR_VIEW_4 = "Path to the master template is not defined or incorrect.\nFile: [{var}]";
   const ERR_VIEW_5 = 'Page template should have only one element body containing all other web controls.';
@@ -1502,14 +1502,14 @@ class View implements \ArrayAccess
         }
         else
         {
-          if (empty($attributes['id'])) 
+          if (isset($attributes['id']) && empty($attributes['id']))
           {
             $line = xml_get_current_line_number($parser);
             $column = xml_get_current_column_number($parser);
             throw new Core\Exception($this, 'ERR_VIEW_2', $tag, $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
           }
-          $ctrl = '\Aleph\Web\POM\\' . $tag;
-          $ctrl = new $ctrl($attributes['id']);
+          $ctrl = 'Aleph\Web\POM\\' . $tag;
+          $ctrl = new $ctrl(isset($attributes['id']) ? $attributes['id'] : null);
         }
         if (($ctrl instanceof Panel) && isset($attributes['template']))
         {

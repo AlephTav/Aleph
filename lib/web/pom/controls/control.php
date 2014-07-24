@@ -937,7 +937,7 @@ abstract class Control
     $cntlen = strlen(self::CONTAINER_PREFIX);
     if ($renderBaseAttributes)
     {
-      $tmp = ['data-ctrl="' . $this->ctrl . '"'];
+      $tmp = ['data-ctrl="' . $this->ctrl . '"', 'data-fullid="' . $this->getFullID() . '"'];
       foreach ($this->attributes as $attr => $value) 
       {
         if (substr($attr, 0, $cntlen) == self::CONTAINER_PREFIX) continue;
@@ -996,6 +996,6 @@ abstract class Control
    */
   protected function invisible()
   {
-    return '<span id="' . htmlspecialchars($this->attributes['id']) . '" data-ctrl="' . $this->ctrl . '" style="display:none;"></span>';
+    return '<span id="' . htmlspecialchars($this->attributes['id']) . '" data-ctrl="' . $this->ctrl . '" data-fullid="' . $this->getFullID() . '" style="display:none;"></span>';
   }
 }
