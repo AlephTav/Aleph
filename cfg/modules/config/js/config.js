@@ -44,10 +44,12 @@ cfg.addModule('config',
         info.cache.password = $('#redisPassword').val();
       }
       info['autoload'] = {'search': $('#alSearchYes').prop('checked') ? 1 : 0, 'unique': $('#alUniqueYes').prop('checked') ? 1 : 0};
+      if ((tmp = $('#alType').val()) != '') info['autoload']['type'] = tmp;
       if ((tmp = $('#alClassMap').val()) != '') info['autoload']['classmap'] = tmp;
       if ((tmp = $('#alMask').val()) != '') info['autoload']['mask'] = tmp;
       if ((tmp = $('#alCallback').val()) != '') info['autoload']['callback'] = tmp;
       if ((tmp = $('#alTimeout').val()) != '') info['autoload']['timeout'] = tmp;
+      if ((tmp = $('#alNamespaces').val()) != '') info['autoload']['namespaces'] = tmp;
       if ((tmp = $('#alDirectories').val()) != '') info['autoload']['directories'] = tmp;
       if ((tmp = $('#alExclusions').val()) != '') info['autoload']['exclusions'] = tmp;
       info['mvc'] = {'locked': $('#appLocked').prop('checked') ? 1 : 0};

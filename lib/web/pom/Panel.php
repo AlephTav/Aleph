@@ -296,7 +296,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
    */
   public function check($flag = true, $searchRecursively = true)
   {
-    MVC\Page::$current->view->check($this->attributes['id'], $flag, $searchRecursively);
+    $this->view->check($this->attributes['id'], $flag, $searchRecursively);
     return $this;
   }
   
@@ -309,7 +309,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
    */
   public function clean($searchRecursively = true)
   {
-    MVC\Page::$current->view->clean($this->attributes['id'], $searchRecursively);
+    $this->view->clean($this->attributes['id'], $searchRecursively);
     return $this;
   }
   
@@ -324,7 +324,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
    */
   public function get($id, $searchRecursively = true)
   {
-    return MVC\Page::$current->view->get($id, $searchRecursively, $this);
+    return $this->view->get($id, $searchRecursively, $this);
   }
   
   /**
@@ -336,7 +336,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
    */
   public function getFormValues($searchRecursively = true)
   {
-    return MVC\Page::$current->view->getFormValues($this, $searchRecursively);
+    return $this->view->getFormValues($this, $searchRecursively);
   }
   
   /**
@@ -349,7 +349,7 @@ class Panel extends Control implements \IteratorAggregate, \Countable
    */
   public function setFormValues(array $values, $searchRecursively = true)
   {
-    MVC\Page::$current->view->setFormValues($this, $values, $searchRecursively);
+    $this->view->setFormValues($this, $values, $searchRecursively);
     return $this;
   }
   

@@ -39,6 +39,7 @@ class Page
   // Error message templates.
   const ERR_PAGE_1 = 'Method [{var}] is not allowed to be invoked.';
   const ERR_PAGE_2 = 'Incorrect request to the page.';
+  const ERR_PAGE_3 = 'Property [{var}] is undefined.';
 
   /**
    * Default cache of page classes.
@@ -79,7 +80,7 @@ class Page
   /**
    * Represents the view of a page.
    *
-   * @var Aleph\Web\POM $view
+   * @var Aleph\Web\POM\View $view
    * @access public
    */
   public $view = null;
@@ -144,6 +145,22 @@ class Page
   private $storage = null;
   
   /**
+   * The instance of Body control.
+   *
+   * @var Aleph\Web\POM\Body $body
+   * @access private
+   */
+  private $body = null;
+  
+  /**
+   * The instance of the Body template engine.
+   *
+   * @var Aleph\Core\Template $tpl
+   * @access private
+   */
+  private $tpl = null;
+  
+  /**
    * Constructor. Creates unique identifier of the page based on page template, page class and site unique ID. 
    * This UID can be used for caching of page rendering.
    *
@@ -155,6 +172,21 @@ class Page
     $this->UID = md5(get_class($this) . $template . \Aleph::getSiteUniqueID());
     $this->view = new POM\View($template);
     $this->storage = static::$cache ?: \Aleph::getInstance()->getCache();
+  }
+  
+  /**
+   * Used for overloading the dynamic properties "body" and "tpl" that 
+   * represent the Body control and its template engine object respectively.
+   *
+   * @param string $param - the property name.
+   * @return mixed
+   * @access public
+   */
+  public function __get($param)
+  {
+    if ($param == 'body') return $this->body ? $this->body : $this->body = $this->view->get('body');
+	if ($param == 'tpl') return $this->tpl ? $this->tpl : $this->tpl = $this->__get('body')->tpl;
+	return new Core\Exception($this, 'ERR_PAGE_3', get_class($this) . '::$' . $param);
   }
   
   /**

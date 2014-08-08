@@ -1,16 +1,17 @@
 <?php
 
-use Aleph\DB;
+use Aleph\DB,
+    Aleph\DB\Drivers\MySQL;
 
-require_once(__DIR__ . '/../db/core/sqlbuilder.php');
-require_once(__DIR__ . '/../db/core/mysql/mysqlbuilder.php');
+require_once(__DIR__ . '/../DB/SQLBuilder.php');
+require_once(__DIR__ . '/../DB/Drivers/MySQL/SQLBuilder.php');
 
 /**
  * Test for Aleph\DB\MySQLBuilder;
  */
 function test_mysqlbuilder()
 {
-  $sql = new DB\MySQLBuilder();
+  $sql = new MySQL\SQLBuilder();
   // Checks method "wrap".
   $error = 'Method "wrap" does not work.';
   if ($sql->wrap('foo') !== '`foo`') return $error;

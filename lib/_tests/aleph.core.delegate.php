@@ -2,7 +2,7 @@
 
 namespace Aleph\Core;
 
-require_once(__DIR__ . '/../core/delegate.php');
+require_once(__DIR__ . '/../Core/Delegate.php');
 
 /**
  * Test for Aleph\Core\Delegate;

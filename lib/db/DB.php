@@ -24,7 +24,12 @@ namespace Aleph\DB;
 
 use Aleph\Core,
     Aleph\Cache,
-    Aleph\Net;
+    Aleph\Net,
+    Aleph\DB\Drivers\MySQL,
+    Aleph\DB\Drivers\SQLite,
+    Aleph\DB\Drivers\MSSQL,
+    Aleph\DB\Drivers\PostgreSQL,
+    Aleph\DB\Drivers\OCI;
 
 /**
  * Base class for database interaction. Provides low-level operation with relation databases via PDO extension.
@@ -343,16 +348,16 @@ class DB
     switch ($this->idsn['driver'])
     {
       case 'oci8':
-        $this->pdo = new OCI8($dsn, $username, $password, isset($this->idsn['charset']) ? array_merge((array)$options, ['charset' => $this->idsn['charset']]) : $options);
+        $this->pdo = new OCI\PDO8($dsn, $username, $password, isset($this->idsn['charset']) ? array_merge((array)$options, ['charset' => $this->idsn['charset']]) : $options);
         break;
       default:
         switch ($this->engines[$this->idsn['driver']])
         {
           case 'MSSQL':
-            $this->pdo = new MSSQL($this->idsn['dsn'], $username, $password, $options);
+            $this->pdo = new MSSQL\PDO($this->idsn['dsn'], $username, $password, $options);
             break;
           case 'OCI':
-            $this->pdo = new OCI($this->idsn['dsn'], $username, $password, $options);
+            $this->pdo = new OCI\PDO($this->idsn['dsn'], $username, $password, $options);
             break;
           default:
             $this->pdo = new \PDO($this->idsn['dsn'], $username, $password, $options);

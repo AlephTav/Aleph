@@ -20,7 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\DB\Sync;
+namespace Aleph\DB\Sync\MySQL;
 
 /**
  * Class for reading MySQL database structure.
@@ -30,7 +30,7 @@ namespace Aleph\DB\Sync;
  * @package aleph.db.sync
  * @abstract
  */
-class MySQLReader extends DBReader
+class DBReader extends \Aleph\DB\Sync\DBReader
 {
   /**
    * Reads database structure.

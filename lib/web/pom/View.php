@@ -1092,7 +1092,7 @@ class View implements \ArrayAccess
     $response = Net\Response::getInstance();
     $response->setContentType('json', isset(\Aleph::getInstance()['pom']['charset']) ? \Aleph::getInstance()['pom']['charset'] : 'utf-8');
     $response->cache(false);
-    if (count($this->actions) == 0 && strlen($data) == 0) $response->body = '';
+    if (count($this->actions) == 0 && $data === null) $response->body = '';
     else
     {
       $sep = uniqid();

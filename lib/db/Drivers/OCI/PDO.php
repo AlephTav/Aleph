@@ -20,36 +20,33 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Web\POM;
+namespace Aleph\DB\Drivers\OCI;
 
-use Aleph\MVC,
-    Aleph\Utils\PHP;
+use Aleph\Core,
+    Aleph\Cache,
+    Aleph\Net;
 
-class Upload extends Control
+/**
+ * The class defines the interface for accessing Oracle databases in PHP via PDO extension. 
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.db
+ */
+class PDO extends \PDO
 {
-  protected $ctrl = 'upload';
-  
-  protected $dataAttributes = ['settings' => 1, 'callback' => 1];
-  
-  public function __construct($id)
+  /**
+   * Returns the last value from a sequence object.
+   *
+   * @param string $sequenceName - name of the sequence object from which the ID should be returned.
+   * @return string
+   * @access public
+   */
+  public function lastInsertId($seqname = null)
   {
-    parent::__construct($id);
-    $this->attributes['settings'] = [];
-  }
-  
-  public function init()
-  {
-    $url = \Aleph::url('framework');
-    $view = MVC\Page::$current->view;
-    $view->addJS(['src' => $url . '/web/js/jquery/upload/vendor/jquery.ui.widget.js']);
-    $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.iframe-transport.js']);
-    $view->addJS(['src' => $url . '/web/js/jquery/upload/jquery.fileupload.js']);
-    return $this;
-  }
-
-  public function render()
-  {
-    if (!$this->properties['visible']) return $this->invisible();
-    return '<input type="file"' . $this->renderAttributes() . ' />';
+    if (!$seqname) return;
+    $st = $this->prepare('SELECT "' . $seqname . '".currval FROM dual');
+    $st->execute();
+    return $st->fetchColumn();
   }
 }

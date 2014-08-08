@@ -2,7 +2,7 @@
 
 use Aleph\Net;
 
-require_once(__DIR__ . '/../net/url.php');
+require_once(__DIR__ . '/../Net/URL.php');
 
 /**
  * Test for Aleph\Net\URL;

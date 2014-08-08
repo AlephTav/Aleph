@@ -135,7 +135,7 @@
 	/* Gestaltung der einzelnen Formularelemente mit annähend gleicher Breite */
 	.ym-form .ym-fbox-text input,
 	.ym-form .ym-fbox-text textarea {
-		line-height: 1em;
+		line-height: 1.2em;
 		padding: 0.25em 0.3em;
 		margin-top: -2px;
 	}

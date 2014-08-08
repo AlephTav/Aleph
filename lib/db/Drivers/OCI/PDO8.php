@@ -20,7 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\DB;
+namespace Aleph\DB\Drivers\OCI;
 
 use Aleph\Core,
     Aleph\Cache,
@@ -33,7 +33,7 @@ use Aleph\Core,
  * @version 1.0.0
  * @package aleph.db
  */
-class OCI8
+class PDO8
 {
   /**
    * The connection identifier needed for most other OCI8 operations.

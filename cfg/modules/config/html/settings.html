@@ -37,6 +37,14 @@
 				<input type="text" id="customLogMethod" name="tplBug" value="<?php echo @$cfg['customLogMethod']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>
   <h6 class="subtitle">Autoload Settings</h6>
+  <div class="ym-fbox-select">
+    <label class="ym-label" for="alType">Autoload type</label>
+				<select id="alType" name="alType" <?php echo ($editable ? '' : 'disabled="disabled"'); ?>>
+      <?php foreach (['PSR-4', 'classmap'] as $type){ ?>
+      <option value="<?php echo $type; ?>" <?php echo ($type == @$cfg['autoload']['type'] ? 'selected="selected"' : ''); ?>><?php echo $type; ?></option>
+      <?php } ?>
+    </select>
+  </div>
   <div class="ym-fbox-check">
     <span class="ym-label">Class search enabled</span>
     <input type="radio" id="alSearchYes" value="1" name="alSearch" <?php echo (empty($cfg['autoload']['search']) ? '' : 'checked="checked"'); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
@@ -66,6 +74,10 @@
   <div class="ym-fbox-text">
     <label class="ym-label" for="alCallback">Callback</label>
 				<input type="text" id="alCallback" name="alCallback" value="<?php echo @$cfg['autoload']['callback']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+  </div>
+  <div class="ym-fbox-text">
+    <label class="ym-label" for="alDirectories">Namespaces (json format)</label>
+    <textarea id="alNamespaces" name="alNamespaces" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['autoload']['namespaces']) ? json_encode($cfg['autoload']['namespaces']) : ''); ?></textarea>
   </div>
   <div class="ym-fbox-text">
     <label class="ym-label" for="alDirectories">Directories (json format)</label>

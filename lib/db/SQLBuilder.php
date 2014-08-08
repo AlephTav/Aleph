@@ -22,7 +22,12 @@
 
 namespace Aleph\DB;
 
-use Aleph\Core;
+use Aleph\Core,
+    Aleph\DB\Drivers\MySQL,
+    Aleph\DB\Drivers\SQLite,
+    Aleph\DB\Drivers\MSSQL,
+    Aleph\DB\Drivers\PostgreSQL,
+    Aleph\DB\Drivers\OCI;
 
 /**
  * Base abstract class for all sql building classes.
@@ -100,15 +105,15 @@ abstract class SQLBuilder
     switch ($engine)
     {
       case 'MySQL':
-        return new MySQLBuilder($db);
+        return new MySQL\SQLBuilder($db);
       case 'SQLite':
-        return new SQLiteBuilder($db);
+        return new SQLite\SQLBuilder($db);
       case 'PostgreSQL':
-        return new PostgreSQLBuilder($db);
+        return new PostgreSQL\SQLBuilder($db);
       case 'MSSQL':
-        return new MSSQLBuilder($db);
+        return new MSSQL\SQLBuilder($db);
       case 'OCI':
-        return new OCIBuilder($db);
+        return new OCI\SQLBuilder($db);
     }
     throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_1', $engine);
   }

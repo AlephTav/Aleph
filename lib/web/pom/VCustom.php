@@ -64,11 +64,10 @@ class VCustom extends Validator
   public function validate()
   {
     if (!empty($this->attributes['serverfunction'])) return $this->attributes['state'] = \Aleph::delegate($this->attributes['serverfunction'], $this);
-    if (empty($this->attributes['clientfunction'])) $flag = true;
-    else $flag = isset($this->attributes['state']) ? (bool)$this->attributes['state'] : true;
+    $flag = isset($this->attributes['state']) ? (bool)$this->attributes['state'] : true;
     foreach ($this->getControls() as $id) $this->result[$id] = $flag;
     $this->attributes['state'] = $flag;
-    return true;
+    return empty($this->attributes['clientfunction']) ? $flag : true;
   }
   
   /**

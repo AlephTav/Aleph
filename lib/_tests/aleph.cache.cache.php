@@ -2,8 +2,8 @@
 
 use Aleph\Cache;
 
-require_once(__DIR__ . '/../cache/cache.php');
-require_once(__DIR__ . '/../cache/file.php');
+require_once(__DIR__ . '/../Cache/Cache.php');
+require_once(__DIR__ . '/../Cache/File.php');
 
 /**
  * Test for Aleph\Cache\Cache (basic functionality)

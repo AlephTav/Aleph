@@ -18,8 +18,8 @@ class Slider extends Control
   
   public function init()
   {
-    MVC\Page::$current->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/jquery/nouislider/jquery.nouislider.css']);
-    MVC\Page::$current->view->addJS(['src' => \Aleph::url('framework') . '/web/js/jquery/nouislider/jquery.nouislider.min.js']);
+    $this->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/jquery/nouislider/jquery.nouislider.css']);
+    $this->view->addJS(['src' => \Aleph::url('framework') . '/web/js/jquery/nouislider/jquery.nouislider.min.js']);
     return $this;
   }
   

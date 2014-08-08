@@ -3,7 +3,7 @@
 use Aleph\Core,
     Aleph\Cache;
 
-require_once(__DIR__ . '/../core/template.php');
+require_once(__DIR__ . '/../Core/Template.php');
 
 /**
  * Test for Aleph\Core\Template

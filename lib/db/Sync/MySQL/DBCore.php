@@ -20,7 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\DB\Sync;
+namespace Aleph\DB\Sync\MySQL;
 
 /**
  * Main class for all MySQL databases operations. 
@@ -29,7 +29,7 @@ namespace Aleph\DB\Sync;
  * @version 1.0.0
  * @package aleph.db.sync
  */
-class MySQLCore extends DBCore
+class DBCore extends \Aleph\DB\Sync\DBCore
 {
   /**
    * Array of SQL query templates for different database operations.

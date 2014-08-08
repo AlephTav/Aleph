@@ -55,6 +55,17 @@ abstract class DBCore
    */
   protected $sql = array();
   
+  protected $engines = ['mysql' => 'MySQL',
+                        'mysqli' => 'MySQL',
+                        'pgsql' => 'PostgreSQL',
+                        'sqlite' => 'SQLite',
+                        'sqlite2' => 'SQLite',
+                        'mssql' => 'MSSQL',
+                        'dblib' => 'MSSQL',
+                        'sqlsrv' => 'MSSQL',
+                        'oci' => 'OCI',
+                        'oci8' => 'OCI'];
+  
   /**
    * Returns a class instance for database interaction based on the type of DBMS.
    *
@@ -162,7 +173,7 @@ abstract class DBCore
    */
   public function getReader()
   {
-    $class = __namespace__ . '\\' . $this->params['driver'] . 'reader';
+    $class = __namespace__ . '\\' . $this->engines[$this->params['driver']] . '\Reader';
     return new $class($this);
   }
   
@@ -174,7 +185,7 @@ abstract class DBCore
    */
   public function getWriter()
   {
-    $class = __namespace__ . '\\'. $this->params['driver'] . 'writer';
+    $class = __namespace__ . '\\' . $this->engines[$this->params['driver']] . '\Writer';
     return new $class($this);
   }
   

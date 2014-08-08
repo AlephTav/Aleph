@@ -2,7 +2,7 @@
 
 use Aleph\Core;
 
-require_once(__DIR__ . '/../core/exception.php');
+require_once(__DIR__ . '/../Core/Exception.php');
 
 // Test class
 class TestExceptionClass

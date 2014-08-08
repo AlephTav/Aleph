@@ -38,8 +38,8 @@ class ColorPicker extends Input
   
   public function init()
   {
-    MVC\Page::$current->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/jquery/colorpicker/spectrum.css']);
-    MVC\Page::$current->view->addJS(['src' => \Aleph::url('framework') . '/web/js/jquery/colorpicker/spectrum.js']);
+    $this->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/jquery/colorpicker/spectrum.css']);
+    $this->view->addJS(['src' => \Aleph::url('framework') . '/web/js/jquery/colorpicker/spectrum.js']);
     return $this;
   }
 }

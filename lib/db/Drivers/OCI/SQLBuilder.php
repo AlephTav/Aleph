@@ -20,28 +20,34 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\DB;
+namespace Aleph\DB\Drivers\OCI;
 
 use Aleph\Core;
 
 /**
- * Class for building SQLite queries.
+ * Class for building Oracle database queries.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
  * @package aleph.db
  */
-class SQLiteBuilder extends SQLBuilder
+class SQLBuilder extends \Aleph\DB\SQLBuilder
 {
   /**
    * Error message templates.
    */
-  const ERR_SQLITE_1 = 'Renaming a DB column is not supported by SQLite.';
-  const ERR_SQLITE_2 = 'Adding a foreign key constraint to an existing table is not supported by SQLite.';
-  const ERR_SQLITE_3 = 'Dropping a foreign key constraint is not supported by SQLite.';
+  const ERR_OCI_1 = 'You are trying to rename column during its modifying. It\'s not possible in OCI. To rename column you should use renameColumn method.';
   
   /**
-   * Returns SQLite data type that mapped to PHP type.
+   * Determines whether the named ($seq > 0) or question mark placeholder ($seq is 0 or FALSE) are used in the SQL statement.
+   *
+   * @var integer $seq
+   * @access protected
+   */
+  protected $seq = 1;
+  
+  /**
+   * Returns OCI data type that mapped to PHP type.
    *
    * @param string $type - SQL type.
    * @return string
@@ -52,23 +58,17 @@ class SQLiteBuilder extends SQLBuilder
     switch ($type)
     {
       case 'int':
-      case 'int2':
-      case 'int8':
       case 'integer':
-      case 'tinyint':
       case 'smallint':
-      case 'mediumint':
-      case 'bigint':
         return 'int';
-      case 'numeric':
+      case 'number':
       case 'float':
-      case 'real':
+      case 'numeric':
       case 'decimal':
+      case 'dec':
       case 'double':
-      case 'double precision':
+      case 'real':
         return 'float';
-      case 'bool':
-        return 'bool';
     }
     return 'string';
   }
@@ -88,12 +88,9 @@ class SQLiteBuilder extends SQLBuilder
     foreach ($name as &$part)
     {
       if ($part == '*') continue;
-      if (substr($part, 0, 1) == '"' && substr($part, -1, 1) == '"')
-      {
-        $part = str_replace('""', '"', substr($part, 1, -1));
-      }
+      if (substr($part, 0, 1) == '"' && substr($part, -1, 1) == '"') $part = substr($part, 1, -1);
       if (trim($part) == '') throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
-      $part = '"' . str_replace('"', '""', $part) . '"';
+      $part = '"' . $part . '"';
     }
     return implode('.', $name);
   }
@@ -120,13 +117,13 @@ class SQLiteBuilder extends SQLBuilder
       case self::ESCAPE_VALUE:
         return str_replace("'", "''", $value);
       case self::ESCAPE_LIKE:
-        return addcslashes(str_replace("'", "''", $value), '_%');
+        return addcslashes(str_replace("'", "''", $value), '\_%');
       case self::ESCAPE_QUOTED_LIKE:
-        return "'%" . addcslashes(str_replace("'", "''", $value), '_%') . "%'";
+        return "'%" . addcslashes(str_replace("'", "''", $value), '\_%') . "%' ESCAPE '\'";
       case self::ESCAPE_LEFT_LIKE:
-        return "'%" . addcslashes(str_replace("'", "''", $value), '_%') . "'";
+        return "'%" . addcslashes(str_replace("'", "''", $value), '\_%') . "' ESCAPE '\'";
       case self::ESCAPE_RIGHT_LIKE:
-        return "'" . addcslashes(str_replace("'", "''", $value), '_%') . "%'";
+        return "'" . addcslashes(str_replace("'", "''", $value), '\_%') . "%' ESCAPE '\'";
     }
     throw new Core\Exception($this, 'ERR_SQL_4', $format);
   }
@@ -140,7 +137,8 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function tableList($scheme = null)
   {
-    return 'SELECT tbl_name FROM sqlite_master WHERE type = \'table\' AND tbl_name <> \'sqlite_sequence\' ORDER BY name';
+    if ($scheme === null) return 'SELECT table_name FROM user_tables';
+    return 'SELECT object_name FROM all_objects WHERE object_type = \'TABLE\' AND owner = ' . $this->quote($scheme);
   }
   
   /**
@@ -152,7 +150,7 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function tableInfo($table)
   {
-    return 'SELECT sql FROM sqlite_master WHERE type = \'table\' AND tbl_name = ' . $this->quote($table);
+    return 'SELECT dbms_metadata.get_ddl(\'TABLE\', ' . $this->quote($table) . ') AS "info" FROM dual';
   }
   
   /**
@@ -164,7 +162,12 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function columnsInfo($table)
   {
-    return 'PRAGMA table_info(' . $this->quote($table) . ')';
+    return 'SELECT t1.*,
+                   (SELECT t3.constraint_type FROM all_cons_columns t2
+                    INNER JOIN all_constraints t3 ON t3.owner = t2.owner AND t3.constraint_name = t2.constraint_name
+                    WHERE t2.table_name = t1.table_name AND t2.column_name = t1.column_name AND t3.constraint_type = \'P\' GROUP BY t3.constraint_type) AS key 
+            FROM user_tab_cols t1
+            WHERE t1.table_name = ' . $this->quote($table);
   }
   
   /**
@@ -197,9 +200,9 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function renameTable($oldName, $newName)
   {
-    return 'ALTER TABLE ' . $this->wrap($oldName, true) . ' RENAME TO ' . $this->quote($newName);
+    return 'ALTER TABLE ' . $this->wrap($oldName, true) . ' RENAME TO ' . $this->wrap($newName, true);
   }
-
+  
   /**
    * Returns SQL that can be used for removing the particular table.
    *
@@ -221,7 +224,7 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function truncateTable($table)
   {
-    return 'DELETE FROM ' . $this->wrap($table, true);
+    return 'TRUNCATE TABLE ' . $this->wrap($table, true);
   }
   
   /**
@@ -235,7 +238,7 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function addColumn($table, $column, $type)
   {
-    return 'ALTER TABLE ' . $this->wrap($table, true) . ' ADD ' . $this->quote($column) . ' ' . $type;
+    return 'ALTER TABLE ' . $this->wrap($table, true) . ' ADD ' . $this->wrap($column) . ' ' . $type;
   }
   
   /**
@@ -249,7 +252,7 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function renameColumn($table, $oldName, $newName)
   {
-    throw new Core\Exception($this, 'ERR_SQLITE_1');
+    return 'ALTER TABLE ' . $this->wrap($table, true) . ' RENAME COLUMN ' . $this->wrap($oldName) . ' TO ' . $this->wrap($newName);
   }
   
   /**
@@ -264,7 +267,8 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function changeColumn($table, $oldName, $newName, $type)
   {
-    return 'ALTER TABLE '. $this->wrap($table, true) . ' CHANGE ' . $this->wrap($oldName) . ' ' . $this->quote($newName) . ' ' . $type;
+    if ($oldName != $newName) throw new Core\Exception($this, 'ERR_OCI_1'); 
+    return 'ALTER TABLE ' . $this->wrap($table, true) . ' MODIFY ' . $this->wrap($newName) . ' ' . $type;
   }
   
   /**
@@ -277,7 +281,7 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function dropColumn($table, $column)
   {
-    return 'ALTER TABLE ' . $this->wrap($table, true) . ' DROP ' . $this->wrap($column);
+    return 'ALTER TABLE ' . $this->wrap($table, true) . ' DROP COLUMN ' . $this->wrap($column);
   }
   
   /**
@@ -288,14 +292,19 @@ class SQLiteBuilder extends SQLBuilder
    * @param array $columns - the column(s) to that the constraint will be added on.
    * @param string $refTable - the table that the foreign key references to.
    * @param array $refColumns - the column(s) that the foreign key references to.
-   * @param string $delete - the ON DELETE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL
-   * @param string $update - the ON UPDATE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL
+   * @param string $delete - the ON DELETE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL.
+   * @param string $update - the ON UPDATE option. Most DBMS support these options: RESTRICT, CASCADE, NO ACTION, SET DEFAULT, SET NULL.
    * @return string
    * @access public
    */
   public function addForeignKey($name, $table, array $columns, $refTable, array $refColumns, $delete = null, $update = null)
   {
-    throw new Core\Exception($this, 'ERR_SQLITE_2');
+    foreach ($columns as &$column) $column = $this->wrap($column);
+    foreach ($refColumns as &$column) $column = $this->wrap($column);
+    $sql = 'ALTER TABLE ' . $this->wrap($table, true) . ' ADD CONSTRAINT ' . $this->wrap($name) . ' FOREIGN KEY (' . implode(', ', $columns) . ') REFERENCES ' . $this->wrap($refTable, true) . ' (' . implode(', ', $refColumns) . ')';
+    if ($update != '') $sql .= ' ON UPDATE ' . $update;
+    if ($delete != '') $sql .= ' ON DELETE ' . $delete;
+    return $sql;
   }
   
   /**
@@ -308,7 +317,7 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function dropForeignKey($name, $table)
   {
-    throw new Core\Exception($this, 'ERR_SQLITE_3');
+    return 'ALTER TABLE ' . $this->wrap($table, true) . ' DROP CONSTRAINT ' . $this->wrap($name);
   }
   
   /**
@@ -330,7 +339,7 @@ class SQLiteBuilder extends SQLBuilder
       if (is_string($column)) $tmp[] = $this->wrap($column) . '(' . (int)$length . ')';
       else $tmp[] = $this->wrap($length);
     }
-    return 'CREATE ' . ($class ? $class . ' ' : '') . 'INDEX ' . $this->quote($name) . ' ON ' . $this->wrap($table, true) . ' (' . implode(', ' , $tmp) . ')';
+    return 'CREATE ' . ($class ? $class . ' ' : '') . 'INDEX ' . $this->wrap($name, true) . ' ON ' . $this->wrap($table, true) . ' (' . implode(', ' , $tmp) . ')' . ($type ? ' ' . $type : '');
   }
   
   /**
@@ -358,27 +367,23 @@ class SQLiteBuilder extends SQLBuilder
     $tmp = [];
     foreach ($info as $row)
     {
-      $row['type'] = strtolower($row['type']);
-      preg_match('/(.*)\((.*)\)|[^()]*/', str_replace('unsigned', '', $row['type']), $arr);
-      $column = $row['name'];
+      preg_match('/(.*)\((.*)\)|[^()]*/', $row['DATA_TYPE'], $arr);
+      $column = $row['COLUMN_NAME'];
       $tmp[$column]['column'] = $column;
-      $tmp[$column]['type'] = $type = isset($arr[1]) ? $arr[1] : $arr[0];
-      $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
-      $tmp[$column]['isPrimaryKey'] = (bool)$row['pk'];
-      $tmp[$column]['isNullable'] = ($row['notnull'] == 0);
-      $tmp[$column]['isAutoincrement'] = ($tmp[$column]['type'] == 'integer');
-      $tmp[$column]['isUnsigned'] = strpos($row['type'], 'unsigned') !== false;
-      $tmp[$column]['default'] = $row['dflt_value'];
-      $tmp[$column]['maxLength'] = 0;
-      $tmp[$column]['precision'] = 0;
+      $tmp[$column]['type'] = $type = strtolower(isset($arr[1]) ? $arr[1] : $arr[0]);
+      $tmp[$column]['phpType'] = $this->getPHPType($type);
+      $tmp[$column]['isPrimaryKey'] = $row['KEY'] == 'P';
+      $tmp[$column]['isNullable'] = $row['NULLABLE'] == 'Y';
+      $tmp[$column]['isAutoincrement'] = false;
+      $tmp[$column]['isUnsigned'] = false;
+      $tmp[$column]['default'] = $tmp[$column]['isNullable'] ? $row['DATA_DEFAULT'] : substr($row['DATA_DEFAULT'], 0, -1);
+      $tmp[$column]['maxLength'] = strlen($row['DATA_PRECISION']) ? (int)$row['DATA_PRECISION'] : (int)$row['DATA_LENGTH'];
+      $tmp[$column]['precision'] = (int)$row['DATA_SCALE'];
       $tmp[$column]['set'] = false;
-      if (empty($arr[2])) continue;
-      $arr = explode(',', $arr[2]);
-      if (count($arr) == 1) $tmp[$column]['maxLength'] = (int)trim($arr[0]);
-      else
+      if (strlen($tmp[$column]['default']))
       {
-        $tmp[$column]['maxLength'] = (int)trim($arr[0]);
-        $tmp[$column]['precision'] = (int)trim($arr[1]);
+        if (($type == 'timestamp' || $type == 'date') && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
+        else if ($tmp[$column]['default'][0] == "'" && $tmp[$column]['default'][strlen($tmp[$column]['default']) - 1] == "'") $tmp[$column]['default'] = str_replace("''", "'", substr($tmp[$column]['default'], 1, -1));
       }
     }
     return $tmp;
@@ -393,44 +398,97 @@ class SQLiteBuilder extends SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
-    $sql = $info['sql'];
+    if (is_object($info['info'])) $sql = $info['info']->load();
+    else $sql = stream_get_contents($info['info']);
     $info = ['constraints' => []];
     $clean = function($column, $smart = false)
     {
       $column = explode(',', $column);
-      foreach ($column as &$col) if (substr($col, 0, 1) == '"') $col = substr(trim($col), 1, -1);
+      foreach ($column as &$col) if (substr(trim($col), 0, 1) == '"') $col = substr(trim($col), 1, -1);
       return $smart && count($column) == 1 ? $column[0] : $column;
     };
-    $action = function($match)
-    {
-      $actions = [];
-      foreach (explode('ON', trim($match)) as $act)
-      {
-        if ($act == '') continue;
-        $act = explode(' ', trim($act));
-        $actions[strtolower($act[0])] = $act[1];
-      }
-      return $actions;
-    };
     $n = 0;
-    preg_match_all('/[(,\r\n]\s*(.+)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
-    foreach ($matches as $k => $match)
-    {
-      $column = trim(explode(' ', $match[1])[0]);
-      if (strtolower($column) == 'constraint') continue;
-      $actions = isset($match[4]) ? $action($match[4]) : [];
-      $info['constraints'][$n++] = ['columns' => $clean($column), 
-                                    'reference' => ['table' => $clean($match[2], true), 'columns' => $clean($match[3])],
-                                    'actions' => $actions];
-    }
     preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
     foreach ($matches as $k => $match)
     {
-      $actions = isset($match[6]) ? $action($match[6]) : [];
+      $actions = [];
+      if (isset($match[6]))
+      {
+        foreach (explode('ON', trim($match[6])) as $act)
+        {
+          if ($act == '') continue;
+          $act = explode(' ', trim($act));
+          $actions[strtolower($act[0])] = $act[1];
+        }
+      }
       $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 
                                                                                 'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
                                                                                 'actions' => $actions];
     }
     return $info;
+  }
+  
+  /**
+   * Returns completed SQL query of INSERT type.
+   *
+   * @param array $insert - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildInsert(array $insert, &$data)
+  {
+    $res = $this->insertExpression($insert['columns'], $data);
+    if (!is_array($res['values'])) $sql .= $res['values'];
+    else if (count($res['values']) == 1)
+    {
+      $sql = 'INSERT INTO ' . $this->wrap($insert['table'], true) . ' ';
+      foreach ($res['values'] as &$values) $values = '(' . implode(', ', $values) . ')';
+      $sql .= '(' . implode(', ', $res['columns']) . ') VALUES ' . implode(', ', $res['values']);
+    }
+    else
+    {
+      $sql = 'INSERT ALL';
+      $tb = $this->wrap($insert['table'], true);
+      $cols = '(' . implode(', ', $res['columns']) . ')';
+      foreach ($res['values'] as $values) $sql .= ' INTO ' . $tb . ' ' . $cols . ' VALUES (' . implode(', ', $values) . ')';
+      $sql .= ' SELECT 1 FROM DUAL';
+    }
+    return $sql;
+  }
+  
+  /**
+   * Returns completed SQL query of SELECT type.
+   *
+   * @param array $select - the query data.
+   * @param mixed $data - a variable in which the data array for the SQL query will be written.
+   * @return string
+   * @access protected
+   */
+  protected function buildSelect(array $select, &$data)
+  {
+    if ($this->db && substr($this->db->getClientVersion(), 0, 2) == '12') return parent::buildSelect($select, $data);
+    if (empty($select['limit'])) return parent::buildSelect($select, $data);
+    $limit = $select['limit'];
+    unset($select['limit']);
+    $alias = 'a' . rand(111111, 999999);
+    $sql = parent::buildSelect($select, $data);
+    $sql = 'SELECT ' . $alias . '.*' . ($limit['offset'] !== null ? ', ROWNUM rnum' : '') . ' FROM (' . $sql . ') ' . $alias;
+    if ($limit['limit'] !== null) $sql .= ' WHERE ROWNUM <= ' . ((int)$limit['limit'] + (int)$limit['offset']);
+    if ($limit['offset']  !== null) $sql = 'SELECT * FROM (' . $sql . ') WHERE rnum > ' . (int)$limit['offset'];
+    return $sql;
+  }
+  
+  /**
+   * Returns LIMIT clause of the SQL statement.
+   *
+   * @param array $limit - the LIMIT data.
+   * @return string
+   * @access protected
+   */
+  protected function buildLimit(array $limit)
+  {
+    if (count($limit) == 1) return ' OFFSET ' . $limit[0] . ' ROWS';
+    return ' OFFSET ' . $limit[0] . ' ROWS FETCH NEXT ' . $limit[1] . ' ROWS ONLY';
   }
 }

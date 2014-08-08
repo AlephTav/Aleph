@@ -22,24 +22,24 @@
 
 namespace Aleph\Web\POM;
 
-use Aleph\MVC;
+use Aleph\Core,
+    Aleph\MVC;
 
-class DateTimePicker extends Input
+class Popup extends Panel
 {
-  protected $ctrl = 'datetimepicker';
-  
-  protected $dataAttributes = ['settings' => 1];
+  protected $ctrl = 'popup';
 
-  public function __construct($id, $value = null)
+  protected $dataAttributes = ['overlay' => 1, 'overlayclass' => 1, 'overlayselector' => 1, 'closebyescape' => 1, 'closebydocument' => 1, 'closebuttons' => 1];
+  
+  public function show($center = true, $delay = 0)
   {
-    parent::__construct($id, 'text', $value);
-    $this->attributes['settings'] = [];
+    $this->view->action('$pom.get(\'' . $this->attributes['id'] . '\').show(' . ($center ? 'true' : 'false') . ')', $delay);
+    return $this;
   }
   
-  public function init()
+  public function hide($delay = 0)
   {
-    MVC\Page::$current->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/jquery/datetimepicker/datetimepicker.css']);
-    MVC\Page::$current->view->addJS(['src' => \Aleph::url('framework') . '/web/js/jquery/datetimepicker/datetimepicker.js']);
+    $this->view->action('$pom.get(\'' . $this->attributes['id'] . '\').hide()', $delay);
     return $this;
   }
 }

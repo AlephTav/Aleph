@@ -20,34 +20,26 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\DB;
+namespace Aleph\DB\Drivers\MySQL;
 
 use Aleph\Core;
 
 /**
- * Class for building Oracle database queries.
+ * Class for building MySQL queries.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
  * @package aleph.db
  */
-class OCIBuilder extends SQLBuilder
+class SQLBuilder extends \Aleph\DB\SQLBuilder
 {
   /**
    * Error message templates.
    */
-  const ERR_OCI_1 = 'You are trying to rename column during its modifying. It\'s not possible in OCI. To rename column you should use renameColumn method.';
+  const ERR_MYSQL_1 = 'Renaming a DB column is not supported by MySQL.';
   
   /**
-   * Determines whether the named ($seq > 0) or question mark placeholder ($seq is 0 or FALSE) are used in the SQL statement.
-   *
-   * @var integer $seq
-   * @access protected
-   */
-  protected $seq = 1;
-  
-  /**
-   * Returns OCI data type that mapped to PHP type.
+   * Returns MySQL data type that mapped to PHP type.
    *
    * @param string $type - SQL type.
    * @return string
@@ -60,19 +52,25 @@ class OCIBuilder extends SQLBuilder
       case 'int':
       case 'integer':
       case 'smallint':
+      case 'tinyint':
+      case 'mediumint':
+      case 'bigint':
+      case 'year':
+      case 'bit':
+      case 'serial':
         return 'int';
-      case 'number':
-      case 'float':
-      case 'numeric':
-      case 'decimal':
-      case 'dec':
       case 'double':
+      case 'float':
       case 'real':
+      case 'decimal':
         return 'float';
+      case 'boolean':
+      case 'bool':
+        return 'bool';
     }
     return 'string';
   }
-  
+
   /**
    * Quotes a table or column name for use in SQL queries.
    *
@@ -88,9 +86,12 @@ class OCIBuilder extends SQLBuilder
     foreach ($name as &$part)
     {
       if ($part == '*') continue;
-      if (substr($part, 0, 1) == '"' && substr($part, -1, 1) == '"') $part = substr($part, 1, -1);
+      if (substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
+      {
+        $part = str_replace('``', '`', substr($part, 1, -1));
+      }
       if (trim($part) == '') throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
-      $part = '"' . $part . '"';
+      $part = '`' . str_replace('`', '``', $part) . '`';
     }
     return implode('.', $name);
   }
@@ -113,17 +114,17 @@ class OCIBuilder extends SQLBuilder
     switch ($format)
     {
       case self::ESCAPE_QUOTED_VALUE:
-        return "'" . str_replace("'", "''", $value) . "'";
+        return "'" . addcslashes($value, "\\'\n\r\t\x00\x08\x1a") . "'";
       case self::ESCAPE_VALUE:
-        return str_replace("'", "''", $value);
+        return addcslashes($value, "\\'\"\n\r\t\x00\x08\x1a");
       case self::ESCAPE_LIKE:
-        return addcslashes(str_replace("'", "''", $value), '\_%');
+        return addcslashes($value, "\\'\"_%\n\r\t\x00\x08\x1a");
       case self::ESCAPE_QUOTED_LIKE:
-        return "'%" . addcslashes(str_replace("'", "''", $value), '\_%') . "%' ESCAPE '\'";
+        return "'%" . addcslashes($value, "\\'_%\n\r\t\x00\x08\x1a") . "%'";
       case self::ESCAPE_LEFT_LIKE:
-        return "'%" . addcslashes(str_replace("'", "''", $value), '\_%') . "' ESCAPE '\'";
+        return "'%" . addcslashes($value, "\\'_%\n\r\t\x00\x08\x1a") . "'";
       case self::ESCAPE_RIGHT_LIKE:
-        return "'" . addcslashes(str_replace("'", "''", $value), '\_%') . "%' ESCAPE '\'";
+        return "'" . addcslashes($value, "\\'_%\n\r\t\x00\x08\x1a") . "%'";
     }
     throw new Core\Exception($this, 'ERR_SQL_4', $format);
   }
@@ -137,8 +138,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function tableList($scheme = null)
   {
-    if ($scheme === null) return 'SELECT table_name FROM user_tables';
-    return 'SELECT object_name FROM all_objects WHERE object_type = \'TABLE\' AND owner = ' . $this->quote($scheme);
+    return 'SHOW TABLES' . ($scheme !== null ? ' FROM ' . $this->wrap($scheme, true) : '');
   }
   
   /**
@@ -150,7 +150,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function tableInfo($table)
   {
-    return 'SELECT dbms_metadata.get_ddl(\'TABLE\', ' . $this->quote($table) . ') AS "info" FROM dual';
+    return 'SHOW CREATE TABLE ' . $this->wrap($table, true);
   }
   
   /**
@@ -162,12 +162,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function columnsInfo($table)
   {
-    return 'SELECT t1.*,
-                   (SELECT t3.constraint_type FROM all_cons_columns t2
-                    INNER JOIN all_constraints t3 ON t3.owner = t2.owner AND t3.constraint_name = t2.constraint_name
-                    WHERE t2.table_name = t1.table_name AND t2.column_name = t1.column_name AND t3.constraint_type = \'P\' GROUP BY t3.constraint_type) AS key 
-            FROM user_tab_cols t1
-            WHERE t1.table_name = ' . $this->quote($table);
+    return 'SHOW COLUMNS FROM ' . $this->wrap($table, true);
   }
   
   /**
@@ -200,7 +195,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function renameTable($oldName, $newName)
   {
-    return 'ALTER TABLE ' . $this->wrap($oldName, true) . ' RENAME TO ' . $this->wrap($newName, true);
+    return 'RENAME TABLE ' . $this->wrap($oldName, true) . ' TO ' . $this->wrap($newName, true);
   }
   
   /**
@@ -252,7 +247,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function renameColumn($table, $oldName, $newName)
   {
-    return 'ALTER TABLE ' . $this->wrap($table, true) . ' RENAME COLUMN ' . $this->wrap($oldName) . ' TO ' . $this->wrap($newName);
+    throw new Core\Exception($this, 'ERR_MYSQL_1');
   }
   
   /**
@@ -267,8 +262,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function changeColumn($table, $oldName, $newName, $type)
   {
-    if ($oldName != $newName) throw new Core\Exception($this, 'ERR_OCI_1'); 
-    return 'ALTER TABLE ' . $this->wrap($table, true) . ' MODIFY ' . $this->wrap($newName) . ' ' . $type;
+    return 'ALTER TABLE ' . $this->wrap($table, true) . ' CHANGE ' . $this->wrap($oldName) . ' ' . $this->wrap($newName) . ' ' . $type;
   }
   
   /**
@@ -317,7 +311,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function dropForeignKey($name, $table)
   {
-    return 'ALTER TABLE ' . $this->wrap($table, true) . ' DROP CONSTRAINT ' . $this->wrap($name);
+    return 'ALTER TABLE ' . $this->wrap($table, true) . ' DROP FOREIGN KEY ' . $this->wrap($name);
   }
   
   /**
@@ -352,7 +346,7 @@ class OCIBuilder extends SQLBuilder
    */
   public function dropIndex($name, $table)
   {
-    return 'DROP INDEX ' . $this->wrap($name, true);
+    return 'DROP INDEX ' . $this->wrap($name, true) . ' ON ' . $this->wrap($table, true);
   }
   
   /**
@@ -367,23 +361,54 @@ class OCIBuilder extends SQLBuilder
     $tmp = [];
     foreach ($info as $row)
     {
-      preg_match('/(.*)\((.*)\)|[^()]*/', $row['DATA_TYPE'], $arr);
-      $column = $row['COLUMN_NAME'];
+      preg_match('/(.*)\((.*)\)|[^()]*/', str_replace('unsigned', '', $row['Type']), $arr);
+      $column = $row['Field'];
       $tmp[$column]['column'] = $column;
-      $tmp[$column]['type'] = $type = strtolower(isset($arr[1]) ? $arr[1] : $arr[0]);
-      $tmp[$column]['phpType'] = $this->getPHPType($type);
-      $tmp[$column]['isPrimaryKey'] = $row['KEY'] == 'P';
-      $tmp[$column]['isNullable'] = $row['NULLABLE'] == 'Y';
-      $tmp[$column]['isAutoincrement'] = false;
-      $tmp[$column]['isUnsigned'] = false;
-      $tmp[$column]['default'] = $tmp[$column]['isNullable'] ? $row['DATA_DEFAULT'] : substr($row['DATA_DEFAULT'], 0, -1);
-      $tmp[$column]['maxLength'] = strlen($row['DATA_PRECISION']) ? (int)$row['DATA_PRECISION'] : (int)$row['DATA_LENGTH'];
-      $tmp[$column]['precision'] = (int)$row['DATA_SCALE'];
+      $tmp[$column]['type'] = $type = isset($arr[1]) ? $arr[1] : $arr[0];
+      $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
+      $tmp[$column]['isPrimaryKey'] = ($row['Key'] == 'PRI');
+      $tmp[$column]['isNullable'] = ($row['Null'] != 'NO');
+      $tmp[$column]['isAutoincrement'] = ($row['Extra'] == 'auto_increment');
+      $tmp[$column]['isUnsigned'] = strpos($row['Type'], 'unsigned') !== false;
+      $tmp[$column]['default'] = ($type == 'bit') ? substr($row['Default'], 2, 1) : $row['Default'];
+      if ($type == 'timestamp' && $tmp[$column]['default']) $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
+      $tmp[$column]['maxLength'] = 0;
+      $tmp[$column]['precision'] = 0;
       $tmp[$column]['set'] = false;
-      if (strlen($tmp[$column]['default']))
+      if (empty($arr[2])) continue;
+      if ($type == 'enum' || $type == 'set') 
       {
-        if (($type == 'timestamp' || $type == 'date') && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
-        else if ($tmp[$column]['default'][0] == "'" && $tmp[$column]['default'][strlen($tmp[$column]['default']) - 1] == "'") $tmp[$column]['default'] = str_replace("''", "'", substr($tmp[$column]['default'], 1, -1));
+        $set = [];
+        for ($i = 0, $l = strlen($arr[2]) - 1; $i <= $l; $i++)
+        {
+          $chr = $arr[2][$i];
+          if ($chr == "'") 
+          {
+            $j = $i;
+            while ($i < $l)
+            {
+              $i++;
+              $chr = $arr[2][$i];
+              if ($chr == "'")
+              {
+                if ($i < $l && $arr[2][$i + 1] == "'") $i++;
+                else break;
+              }
+            }
+            $set[] = str_replace("''", "'", substr($arr[2], $j + 1, $i - $j - 1));
+          }
+        }
+        $tmp[$column]['set'] = $set;
+      }
+      else
+      {
+        $arr = explode(',', $arr[2]);
+        if (count($arr) == 1) $tmp[$column]['maxLength'] = (int)trim($arr[0]);
+        else
+        {
+          $tmp[$column]['maxLength'] = (int)trim($arr[0]);
+          $tmp[$column]['precision'] = (int)trim($arr[1]);
+        }
       }
     }
     return $tmp;
@@ -398,13 +423,12 @@ class OCIBuilder extends SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
-    if (is_object($info['info'])) $sql = $info['info']->load();
-    else $sql = stream_get_contents($info['info']);
-    $info = ['constraints' => []];
+    $sql = $info['Create Table'];
+    $info = ['constraints' => [], 'keys' => []];
     $clean = function($column, $smart = false)
     {
       $column = explode(',', $column);
-      foreach ($column as &$col) if (substr($col, 0, 1) == '"') $col = substr(trim($col), 1, -1);
+      foreach ($column as &$col) if (substr(trim($col), 0, 1) == '`') $col = substr(trim($col), 1, -1);
       return $smart && count($column) == 1 ? $column[0] : $column;
     };
     $n = 0;
@@ -425,6 +449,14 @@ class OCIBuilder extends SQLBuilder
                                                                                 'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
                                                                                 'actions' => $actions];
     }
+    preg_match_all('/[^YN]+\s+KEY\s+(.+)\s*\(([^\)]+)\)/mi', $sql, $matches, PREG_SET_ORDER);
+    foreach ($matches as $match)
+    {
+      $info['keys'][$clean($match[1], true)] = array_map($clean, explode(',', $match[2]));
+    }
+    if (preg_match('/\s+ENGINE\s*=\s*([^\s]+)/mi', $sql, $match)) $info['engine'] = $match[1];
+    if (preg_match('/\s+DEFAULT CHARSET\s*=\s*([^\s]+)/mi', $sql, $match)) $info['charset'] = $match[1];
+    if (preg_match('/\s+AUTO_INCREMENT\s*=\s*([^\s]+)/mi', $sql, $match)) $info['autoincrementInitialValue'] = $match[1];
     return $info;
   }
   
@@ -438,57 +470,9 @@ class OCIBuilder extends SQLBuilder
    */
   protected function buildInsert(array $insert, &$data)
   {
-    $res = $this->insertExpression($insert['columns'], $data);
-    if (!is_array($res['values'])) $sql .= $res['values'];
-    else if (count($res['values']) == 1)
-    {
-      $sql = 'INSERT INTO ' . $this->wrap($insert['table'], true) . ' ';
-      foreach ($res['values'] as &$values) $values = '(' . implode(', ', $values) . ')';
-      $sql .= '(' . implode(', ', $res['columns']) . ') VALUES ' . implode(', ', $res['values']);
-    }
-    else
-    {
-      $sql = 'INSERT ALL';
-      $tb = $this->wrap($insert['table'], true);
-      $cols = '(' . implode(', ', $res['columns']) . ')';
-      foreach ($res['values'] as $values) $sql .= ' INTO ' . $tb . ' ' . $cols . ' VALUES (' . implode(', ', $values) . ')';
-      $sql .= ' SELECT 1 FROM DUAL';
-    }
+    $columns = $insert['columns'];
+    $sql = parent::buildInsert($insert, $data);
+    if (!empty($insert['options']['updateOnKeyDuplicate'])) $sql .= ' ON DUPLICATE KEY UPDATE ' . $this->updateExpression($columns, $data);
     return $sql;
-  }
-  
-  /**
-   * Returns completed SQL query of SELECT type.
-   *
-   * @param array $select - the query data.
-   * @param mixed $data - a variable in which the data array for the SQL query will be written.
-   * @return string
-   * @access protected
-   */
-  protected function buildSelect(array $select, &$data)
-  {
-    if ($this->db && substr($this->db->getClientVersion(), 0, 2) == '12') return parent::buildSelect($select, $data);
-    if (empty($select['limit'])) return parent::buildSelect($select, $data);
-    $limit = $select['limit'];
-    unset($select['limit']);
-    $alias = 'a' . rand(111111, 999999);
-    $sql = parent::buildSelect($select, $data);
-    $sql = 'SELECT ' . $alias . '.*' . ($limit['offset'] !== null ? ', ROWNUM rnum' : '') . ' FROM (' . $sql . ') ' . $alias;
-    if ($limit['limit'] !== null) $sql .= ' WHERE ROWNUM <= ' . ((int)$limit['limit'] + (int)$limit['offset']);
-    if ($limit['offset']  !== null) $sql = 'SELECT * FROM (' . $sql . ') WHERE rnum > ' . (int)$limit['offset'];
-    return $sql;
-  }
-  
-  /**
-   * Returns LIMIT clause of the SQL statement.
-   *
-   * @param array $limit - the LIMIT data.
-   * @return string
-   * @access protected
-   */
-  protected function buildLimit(array $limit)
-  {
-    if (count($limit) == 1) return ' OFFSET ' . $limit[0] . ' ROWS';
-    return ' OFFSET ' . $limit[0] . ' ROWS FETCH NEXT ' . $limit[1] . ' ROWS ONLY';
   }
 }

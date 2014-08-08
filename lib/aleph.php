@@ -977,22 +977,54 @@ final class Aleph implements \ArrayAccess
    */
   private function al($class, $auto = true)
   {
-    if ($auto && isset($this->config['autoload']['callback']))
-    {
-      $callback = $this->config['autoload']['callback'];
-      if (class_exists('Aleph\Core\Delegate', false)) return self::delegate($callback, $class);
-      if (is_callable($callback, true)) return call_user_func_array($callback, [$class]);
-      throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
-    }
+    if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false)) return true;
     $classes = $this->getClassMap();
     $cs = strtolower(ltrim($class, '\\'));
-    if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     if (isset($classes[$cs]) && is_file($classes[$cs]))
     {
       require_once($classes[$cs]);
       if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
     }
-    if (empty($this->config['autoload']['search']))
+    $cfg = isset($this->config['autoload']) && is_array($this->config['autoload']) ? $this->config['autoload'] : [];
+    if (isset($cfg['type']) && strtolower($cfg['type']) == 'psr-4')
+    {
+      if ($auto && isset($cfg['callback']))
+      {
+        $callback = $cfg['callback'];
+        if (class_exists('Aleph\Core\Delegate', false)) return self::delegate($callback, $class);
+        if (is_callable($callback, true)) return call_user_func_array($callback, [$class]);
+      }
+      if (empty($cfg['namespaces']['Aleph'])) $cfg['namespaces']['Aleph'] = __DIR__;
+      $namespaces = $cfg['namespaces'];
+      $prefix = $class;
+      while (false !== $pos = strrpos($prefix, '\\'))
+      {
+        $prefix = substr($class, 0, $pos);
+        if (isset($namespaces[$prefix]))
+        {
+          $cs = substr($class, $pos + 1);
+          foreach ((array)$namespaces[$prefix] as $dir)
+          {
+            $file = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $cs) . '.php';
+            if (file_exists($file))
+            {
+              require_once($file);
+              return true;
+            }
+          }         
+        }
+        $prefix = rtrim($prefix, '\\');   
+      }
+      return false;  
+    }
+    if ($auto && isset($cfg['callback']))
+    {
+      $callback = $cfg['callback'];
+      if (class_exists('Aleph\Core\Delegate', false)) return self::delegate($callback, $class);
+      if (is_callable($callback, true)) return call_user_func_array($callback, [$class]);
+      throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
+    }
+    if (empty($cfg['search']))
     {
       if (!$auto) return false;
       throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));

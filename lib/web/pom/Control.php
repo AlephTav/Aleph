@@ -97,6 +97,14 @@ abstract class Control
   protected $creationInfo = null;
   
   /**
+   * The View instance of the current page.
+   *
+   * @var ClickBlocks\Web\POM $view
+   * @access protected
+   */
+  protected $view = null;
+  
+  /**
    * Unique identifier of the parent control or its object.
    *
    * @var string|Aleph\Web\POM\Control $parent
@@ -167,7 +175,7 @@ abstract class Control
    */
   public function __construct($id = null)
   {
-    if ($id === null) 
+    if ($id === null)
     {
       $this->properties['id'] = $this->attributes['id'] = str_replace('.', '', uniqid('c', true));
     }
@@ -178,6 +186,7 @@ abstract class Control
       $this->properties['id'] = $id;
     }
     $this->properties['visible'] = true;
+	$this->view = MVC\Page::$current->view;
   }
   
   /**
@@ -188,7 +197,7 @@ abstract class Control
    */
   public function isAttached()
   {
-    return MVC\Page::$current->view->isAttached($this);
+    return $this->view->isAttached($this);
   }
   
   /**
@@ -775,7 +784,7 @@ abstract class Control
   {
     if (!$this->parent) return false;
     if ($this->parent instanceof Control) return $this->parent;
-    return $this->parent = MVC\Page::$current->view->get($this->parent);
+    return $this->parent = $this->view->get($this->parent);
   }
 
   /**
@@ -866,7 +875,7 @@ abstract class Control
     $parent->setControls($controls);
     if ($parent->isAttached())
     {
-      if (!$this->isAttached()) MVC\Page::$current->view->attach($this);
+      if (!$this->isAttached()) $this->view->attach($this);
       $this->isCreated = true;
       $this->isRemoved = false;
     }

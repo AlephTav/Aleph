@@ -1,6 +1,6 @@
 <?php
 
-require_once(__DIR__ . '/../aleph.php');
+require_once(__DIR__ . '/../Aleph.php');
 
 /**
  * Test for \Aleph;

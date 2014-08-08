@@ -2,7 +2,7 @@
 
 namespace Aleph\Core;
 
-require_once(__DIR__ . '/../core/event.php');
+require_once(__DIR__ . '/../Core/Event.php');
 
 /**
  * Test for Aleph\Core\Event;

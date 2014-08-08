@@ -2,7 +2,7 @@
 
 use Aleph\Utils\PHP;
 
-require_once(__DIR__ . '/../utils/php/tokenizer.php');
+require_once(__DIR__ . '/../Utils/PHP/Tokenizer.php');
 
 /**
  * Test for Aleph\Utils\PHP\Tokenizer

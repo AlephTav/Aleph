@@ -40,7 +40,7 @@ class CKEditor extends Control
   
   public function init()
   {
-    MVC\Page::$current->view->addJS(['src' => \Aleph::url('framework') . '/web/js/ckeditor/ckeditor.js']);
+    $this->view->addJS(['src' => \Aleph::url('framework') . '/web/js/ckeditor/ckeditor.js']);
     return $this;
   }
   

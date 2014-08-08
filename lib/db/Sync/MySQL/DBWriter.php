@@ -20,7 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\DB\Sync;
+namespace Aleph\DB\Sync\MySQL;
 
 use Aleph\Core;
 
@@ -32,7 +32,7 @@ use Aleph\Core;
  * @package aleph.db.sync
  * @abstract
  */
-class MySQLWriter extends DBWriter
+class DBWriter extends \Aleph\DB\Sync\DBWriter
 {
   /**
    * Makes changes in database structure and information tables data.

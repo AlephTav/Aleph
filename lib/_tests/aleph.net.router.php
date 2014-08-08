@@ -2,9 +2,9 @@
 
 namespace Aleph\Net;
 
-require_once(__DIR__ . '/../net/headers.php');
-require_once(__DIR__ . '/../net/request.php');
-require_once(__DIR__ . '/../net/router.php');
+require_once(__DIR__ . '/../Net/Headers.php');
+require_once(__DIR__ . '/../Net/Request.php');
+require_once(__DIR__ . '/../Net/Router.php');
 
 /**
  * Test for Aleph\Net\Router;

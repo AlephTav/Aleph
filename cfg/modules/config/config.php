@@ -100,6 +100,11 @@ class Config extends Module
         $cfg['autoload']['search'] = (bool)$cfg['autoload']['search'];
         $cfg['autoload']['unique'] = (bool)$cfg['autoload']['unique'];
         if (isset($cfg['autoload']['timeout']) && (int)$cfg['autoload']['timeout'] > 0) $cfg['autoload']['timeout'] = (int)$cfg['autoload']['timeout'];
+        if (isset($cfg['autoload']['namespaces'])) 
+        {
+          $cfg['autoload']['namespaces'] = json_decode($cfg['autoload']['namespaces'], true);
+          if (!is_array($cfg['autoload']['namespaces'])) unset($cfg['autoload']['namespaces']); 
+        }
         if (isset($cfg['autoload']['directories'])) 
         {
           $cfg['autoload']['directories'] = json_decode($cfg['autoload']['directories'], true);
