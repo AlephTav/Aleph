@@ -1,1 +1,0 @@
-<template attr1="<?php echo $attr1; ?>" attr2="<?php echo $attr2; ?>"><?php echo $tpl; ?></template>

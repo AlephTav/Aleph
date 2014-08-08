@@ -1,1 +1,0 @@
-Template #<?php echo $number; ?>: <?php echo $var; ?> | <?php echo $tpl; ?>
