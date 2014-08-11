@@ -39,9 +39,9 @@ class Config extends Module
                           'unlockKeyExpire' => 108000,
                           'templateLock' => 'lib/tpl/bug.tpl'],
                 'pom' => ['charset' => 'utf-8',
-                          'prefix' => 'c',
-                          'ppOpenTag' => '<!--{',
-                          'ppCloseTag' => '}-->',
+                          'namespaces' => ['c' => 'Aleph\Web\POM'],
+                          'ppOpenTag' => '<![PP[',
+                          'ppCloseTag' => ']PP]!>',
                           'cacheEnabled' => false]];
 
   private $defaults = ['app/core/config.php' => 1, 'app/core/.local.php' => 1];
@@ -125,6 +125,11 @@ class Config extends Module
         }
         $cfg['mvc']['locked'] = (bool)$cfg['mvc']['locked'];
         $cfg['pom']['cacheEnabled'] = (bool)$cfg['pom']['cacheEnabled'];
+        if (isset($cfg['pom']['namespaces'])) 
+        {
+          $cfg['pom']['namespaces'] = json_decode($cfg['pom']['namespaces'], true);
+          if (!is_array($cfg['pom']['namespaces'])) unset($cfg['pom']['namespaces']); 
+        }
         $cfg['db']['logging'] = (bool)$cfg['db']['logging'];
         if (isset($cfg['db']['cacheExpire'])) $cfg['db']['cacheExpire'] = (int)$cfg['db']['cacheExpire'];
         if (isset($cfg['ar']['cacheExpire'])) $cfg['ar']['cacheExpire'] = (int)$cfg['ar']['cacheExpire'];

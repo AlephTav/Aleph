@@ -76,7 +76,7 @@
 				<input type="text" id="alCallback" name="alCallback" value="<?php echo @$cfg['autoload']['callback']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
   </div>
   <div class="ym-fbox-text">
-    <label class="ym-label" for="alDirectories">Namespaces (json format)</label>
+    <label class="ym-label" for="alNamespaces">Namespaces (json format)</label>
     <textarea id="alNamespaces" name="alNamespaces" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['autoload']['namespaces']) ? json_encode($cfg['autoload']['namespaces']) : ''); ?></textarea>
   </div>
   <div class="ym-fbox-text">
@@ -170,10 +170,6 @@
 				<input type="text" id="pomCharset" name="pomCharset" value="<?php echo @$cfg['pom']['charset']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>
   <div class="ym-fbox-text">
-		  <label class="ym-label" for="pomPrefix">Prefix of controls' tags</label>
-				<input type="text" id="pomPrefix" name="pomPrefix" value="<?php echo @$cfg['pom']['prefix']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
-		</div>
-  <div class="ym-fbox-text">
 		  <label class="ym-label" for="pomPPOpenTag">Preprocessor's open tag</label>
 				<input type="text" id="pomPPOpenTag" name="pomPPOpenTag" value="<?php echo @$cfg['pom']['ppOpenTag']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>
@@ -181,6 +177,10 @@
 		  <label class="ym-label" for="pomPPCloseTag">Preprocessor's close tag</label>
 				<input type="text" id="pomPPCloseTag" name="pomPPCloseTag" value="<?php echo @$cfg['pom']['ppCloseTag']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>
+  <div class="ym-fbox-text">
+    <label class="ym-label" for="pomNamespaces">Controls' namespaces (json format)</label>
+    <textarea id="pomNamespaces" name="pomNamespaces" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['pom']['namespaces']) ? json_encode($cfg['pom']['namespaces']) : ''); ?></textarea>
+  </div>
   <h6 class="subtitle">Database Settings</h6>
   <div class="ym-fbox-check">
     <span class="ym-label">Logging</span>

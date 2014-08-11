@@ -1404,7 +1404,9 @@ class View implements \ArrayAccess
   {
     $cfg = \Aleph::getInstance()->getConfig();
     $config = \Aleph::getInstance()['pom'];
-    $prefix = empty($config['prefix']) ? '' : strtolower($config['prefix']) . ':';
+    $ns = [];
+    $namespaces = isset($config['namespaces']) && is_array($config['namespaces']) ? $config['namespaces'] : [];
+    foreach ($namespaces as $prefix => $namespace) $ns[strtolower($prefix)] = $namespace;
     $ppOpenTag = empty($config['ppOpenTag']) ? '<!--{' : $config['ppOpenTag'];
     $ppCloseTag = empty($config['ppCloseTag']) ? '}-->' : $config['ppCloseTag'];
     if (is_file($template))
@@ -1418,10 +1420,10 @@ class View implements \ArrayAccess
       $xhtml = $template;
     }
     $placeholders = [];
-    $qprefix = preg_quote($prefix);
-    while (strtolower(substr(ltrim($xhtml), 0, strlen($prefix) + 9)) == '<' . $prefix . 'template')
+    if (count($ns) == 0) $qprefix = '';
+    else $qprefix = count($ns) == 1 ? preg_quote(key($ns)) . ':' : '(?:' . implode('|', array_map('preg_quote', array_keys($ns))) . '):';
+    while (preg_match('/\A\s*<' . $qprefix . 'template\s*placeholder\s*=\s*"([^"]*)"\s*>(.*)<\/' . $qprefix . 'template>/i', $xhtml, $matches))
     {
-      preg_match('/\A\s*<' . $qprefix . 'template\s*placeholder\s*=\s*"([^"]*)"\s*>(.*)<\/' . $qprefix . 'template>/i', $xhtml, $matches);
       $master = \Aleph::exe($matches[2], ['config' => $cfg]);
       if (!file_exists($master)) throw new Core\Exception($this, 'ERR_VIEW_4', $file);
       $xhtml = ltrim(substr($xhtml, strlen($matches[0])));
@@ -1446,7 +1448,7 @@ class View implements \ArrayAccess
     return ['file' => $file,
             'xhtml' => $xhtml,
             'charset' => isset($config['charset']) ? $config['charset'] : 'utf-8',
-            'prefix' => $prefix,
+            'ns' => $ns,
             'controls' => [],
             'marks' => $marks,
             'stack' => new \SplStack(),
@@ -1465,13 +1467,24 @@ class View implements \ArrayAccess
    */
   protected function parseTemplate(array $ctx)
   {
-    $parseStart = function($parser, $tag, array $attributes) use(&$ctx)
+    $extractTag = function(&$tag) use($ctx)
     {
-      $tag = $ctx['tag'] = strtolower($tag);
-      $p = strpos($tag, $ctx['prefix']);
-      if ($p === 0)
+      $tag = strtolower($tag);
+      foreach ($ctx['ns'] as $prefix => $namespace)
       {
-        $tag = substr($tag, strlen($ctx['prefix']));
+        if (substr($tag, 0, strlen($prefix) + 1) == $prefix . ':')
+        {
+          $tag = substr($tag, strlen($prefix) + 1);
+          return rtrim($namespace, '\\') . '\\';
+        }
+      }
+      return false;
+    };
+    $parseStart = function($parser, $tag, array $attributes) use(&$ctx, $extractTag)
+    {
+      $ctx['tag'] = strtolower($tag);
+      if (false !== $namespace = $extractTag($tag))
+      {
         if ($tag == 'template')
         {
           $path = isset($attributes['path']) ? static::evaluate($attributes['path'], $ctx['marks']) : null;
@@ -1512,7 +1525,7 @@ class View implements \ArrayAccess
             $column = xml_get_current_column_number($parser);
             throw new Core\Exception($this, 'ERR_VIEW_2', $tag, $ctx['file'] ? ' in file "' . realpath($ctx['file']) . '"' : '.', $line, $column);
           }
-          $ctrl = 'Aleph\Web\POM\\' . $tag;
+          $ctrl = $namespace . $tag;
           $ctrl = new $ctrl(isset($attributes['id']) ? $attributes['id'] : null);
         }
         if (($ctrl instanceof Panel) && (isset($attributes['template']) || strlen($ctrl->tpl->getTemplate())))
@@ -1577,14 +1590,11 @@ class View implements \ArrayAccess
         }
       }
     };
-    $parseEnd = function($parser, $tag) use(&$ctx)
+    $parseEnd = function($parser, $tag) use(&$ctx, $extractTag)
     {
       $ctx['tag'] = '';
-      $tag = strtolower($tag);
-      $p = strpos($tag, $ctx['prefix']);
-      if ($p === 0)
+      if (false !== $extractTag($tag))
       {
-        $tag = substr($tag, strlen($ctx['prefix']));
         if ($tag == 'template') return;
         if (count($ctx['stack']) > 1)
         {

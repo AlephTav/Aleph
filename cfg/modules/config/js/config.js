@@ -58,7 +58,7 @@ cfg.addModule('config',
       if ((tmp = $('#templateLock').val()) != '') info['mvc']['templateLock'] = tmp;
       info['pom'] = {'cacheEnabled': $('#pomCacheEnabled').prop('checked') ? 1 : 0};
       if ((tmp = $('#pomCharset').val()) != '') info['pom']['charset'] = tmp;
-      if ((tmp = $('#pomPrefix').val()) != '') info['pom']['prefix'] = tmp;
+      if ((tmp = $('#pomNamespaces').val()) != '') info['pom']['namespaces'] = tmp;
       if ((tmp = $('#pomPPOpenTag').val()) != '') info['pom']['ppOpenTag'] = tmp;
       if ((tmp = $('#pomPPCloseTag').val()) != '') info['pom']['ppCloseTag'] = tmp;
       info['db'] = {'logging': $('#dbLogOn').prop('checked') ? 1 : 0};

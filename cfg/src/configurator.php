@@ -6,7 +6,7 @@ require_once(__DIR__ . '/module.php');
 
 final class Configurator
 {
-  const CORE_PATH = '/lib/aleph.php';
+  const CORE_PATH = '/lib/Aleph.php';
 
   private static $instance = null;
   private static $configs = [];
