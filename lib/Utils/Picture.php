@@ -39,6 +39,7 @@ class Picture
   const PIC_AUTOWIDTH = 1;
   const PIC_AUTOHEIGHT = 2;
   const PIC_AUTO = 3;
+  const PIC_FIT = 4;
 
   /**
    * The image resource identifier.
@@ -300,11 +301,11 @@ class Picture
   public function resize($width, $height, $mode = self::PIC_AUTO, $maxWidth = null, $maxHeight = null)
   {
     $img = $this->getResource();
-    $w = imagesx($img);
-    $h = imagesy($img);
-    list($width, $height) = $this->getRightSize($mode, $width, $height, $w, $h, $maxWidth, $maxHeight);
+    $srcWidth = imagesx($img);
+    $srcHeight = imagesy($img);
+    list($width, $height, $srcWidth, $srcHeight, $left, $top) = $this->getRightSize($mode, $width, $height, $srcWidth, $srcHeight, $maxWidth, $maxHeight);
     $new = $this->createNewImage($width, $height);
-    if (false !== $res = imagecopyresampled($new, $img, 0, 0, 0, 0, $width, $height, $w, $h)) return $this->img = $new;
+    if (false !== $res = imagecopyresampled($new, $img, 0, 0, $left, $top, $width, $height, $srcWidth, $srcHeight)) return $this->img = $new;
     return false;
   }
 
@@ -367,7 +368,7 @@ class Picture
 
   /**
    * Returns new width and height for resizing image according to the specified scale mode.
-   * New dimension of the image is returned as a two-element numeric array in which the first element is the width and the second one is the height.
+   * New dimension of the image is returned as an array of the following structure: [width, height, crop width, crop height, left offset, top offset].
    *
    * @param integer $mode - the resizing mode.
    * @param integer $dstWidth - the desired width of the resizing image. This parameter is ignored if the resizing mode is PIC_AUTO or PIC_AUTOWIDTH.
@@ -381,6 +382,7 @@ class Picture
    */
   protected function getRightSize($mode, $dstWidth, $dstHeight, $srcWidth, $srcHeight, $maxWidth = 0, $maxHeight = 0)
   {
+    $top = $left = 0;
     switch ($mode)
     {
       case self::PIC_MANUAL;
@@ -401,6 +403,22 @@ class Picture
         $h = $w / $srcWidth * $srcHeight;
         if ($maxHeight > 0 && $h > $maxHeight) $h = $maxHeight;
         break;
+      case self::PIC_FIT:
+        if ($dstWidth / $dstHeight > $srcWidth / $srcHeight)
+        {
+          $h = $dstHeight * $srcWidth / $dstWidth;
+          $top = ($srcHeight - $h) / 2;
+          $srcHeight = $h;
+        }
+        else
+        {
+          $w = $dstWidth * $srcHeight / $dstHeight;
+          $left = ($srcWidth - $w) / 2;
+          $srcWidth = $w;
+        }
+        $w = $dstWidth;
+        $h = $dstHeight;
+        break;
       case self::PIC_AUTO:
       default:
         $w = $srcWidth;
@@ -417,7 +435,7 @@ class Picture
         }
         break;
     }
-    return [(int)$w, (int)$h];
+    return [(int)$w, (int)$h, (int)$srcWidth, (int)$srcHeight, (int)$left, (int)$top];
   }
   
   /**
