@@ -1090,7 +1090,7 @@ class View implements \ArrayAccess
     $this->compare();
     $this->push();
     $response = Net\Response::getInstance();
-    $response->setContentType('json', isset(\Aleph::getInstance()['pom']['charset']) ? \Aleph::getInstance()['pom']['charset'] : 'utf-8');
+    $response->setContentType('text', isset(\Aleph::getInstance()['pom']['charset']) ? \Aleph::getInstance()['pom']['charset'] : 'utf-8');
     $response->cache(false);
     if (count($this->actions) == 0 && $data === null) $response->body = '';
     else

@@ -186,7 +186,7 @@ abstract class Control
       $this->properties['id'] = $id;
     }
     $this->properties['visible'] = true;
-	$this->view = MVC\Page::$current->view;
+    $this->view = MVC\Page::$current->view;
   }
   
   /**

@@ -1076,7 +1076,6 @@ class UploadedFile
       return false;
     }
     $file = $this->destination;
-    if (substr($file, -1) != '/') $file .= '/';
     if (!is_dir($file)) mkdir($file, 0775, true);
     if (!is_writable($file) && !chmod($file, 0775))
     {
@@ -1086,12 +1085,19 @@ class UploadedFile
     $ext = $this->getExtension() ?: $this->getExtensionByType();
     if (!$this->unique) $name = $this->name ?: $this->data['name'];
     else $name = md5(microtime() . mt_rand()) . ($ext ? '.' . $ext : '');
-    $file .= $name;
+    $file .= DIRECTORY_SEPARATOR . $name;
     if (!move_uploaded_file($this->data['path'], $file))
     {
       $this->error = 16;
       return false;
     }
-    return ['path' => $file, 'name' => $name, 'extension' => $ext, 'originalName' => $this->data['name'], 'size' => filesize($file), 'type' => mime_content_type($file)];
+    $file = realpath($file);
+    return ['path' => $file,
+            'url' => strpos($file, \Aleph::getRoot()) === 0 ? '/' . str_replace('\\', '/', ltrim(substr($file, strlen(\Aleph::getRoot())), '\\/')) : false,
+            'name' => $name, 
+            'extension' => $ext, 
+            'originalName' => $this->data['name'], 
+            'size' => filesize($file), 
+            'type' => mime_content_type($file)];
   }
 }

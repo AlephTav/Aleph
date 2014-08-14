@@ -185,8 +185,8 @@ class Page
   public function __get($param)
   {
     if ($param == 'body') return $this->body ? $this->body : $this->body = $this->view->get('body');
-	if ($param == 'tpl') return $this->tpl ? $this->tpl : $this->tpl = $this->__get('body')->tpl;
-	return new Core\Exception($this, 'ERR_PAGE_3', get_class($this) . '::$' . $param);
+    if ($param == 'tpl') return $this->tpl ? $this->tpl : $this->tpl = $this->__get('body')->tpl;
+    return new Core\Exception($this, 'ERR_PAGE_3', get_class($this) . '::$' . $param);
   }
   
   /**
@@ -360,8 +360,7 @@ class Page
       if (!$method->isPermitted($this->ajaxPermissions)) throw new Core\Exception($this, 'ERR_PAGE_1', $method);
       ob_start();
       $response = $method->call(empty($data['ajax-args']) ? [] : $data['ajax-args']);
-      $output = trim(ob_get_contents());
-      ob_end_clean();
+      $output = trim(ob_get_clean());
       if (strlen($output)) $this->view->action('alert', $output);
     }
     $this->view->process($response);
