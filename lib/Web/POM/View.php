@@ -244,6 +244,7 @@ class View implements \ArrayAccess
         foreach ($obj as $ctrl) static::decodePHPTags($ctrl, $marks);
       }
       $vs = $obj->getVS();
+      if (isset($vs['controls'])) $controls = $obj->getControls();
       foreach ($vs['attributes'] as $attr => &$value) 
       {
         if (is_scalar($value)) $value = static::evaluate($value, $marks);
@@ -251,6 +252,7 @@ class View implements \ArrayAccess
       }
       foreach ($vs['properties'] as &$value) if (is_scalar($value)) $value = static::evaluate($value, $marks);
       $obj->setVS($vs);
+      if (isset($controls)) $obj->setControls($controls);
       return $obj;
     }
     else if (is_array($obj))
