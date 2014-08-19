@@ -64,16 +64,16 @@ class Picture
    * @param integer $red - value of red component.
    * @param integer $green - value of green component.
    * @param integer $blue - value of blue component.
-   * @param float $alpha - a value between 0 and 1. 0 indicates completely opaque while 1 indicates completely transparent.
+   * @param float $alpha - a value between 0 and 1. 1 indicates completely opaque while 0 indicates completely transparent.
    * @return integer
    * @access public
    * @static
    */
-  public static function rgb2int($red, $green, $blue, $alpha = 0)
+  public static function rgb2int($red, $green, $blue, $alpha = 1)
   {
     $c = abs((float)$alpha);
     if ($c > 1) $c = 1;
-    $c = floor(127 * $alpha);
+    $c = floor(127 * (1 - $alpha));
     $c <<= 8;
     $c += abs((int)$red) % 256;
     $c <<= 8;
@@ -220,11 +220,7 @@ class Picture
            $this->img = imagecreatefromjpeg($this->info['image']);
            break;
       }
-      if ($this->info['type'] == IMAGETYPE_PNG || $this->info['type'] == IMAGETYPE_GIF)
-      {
-        imagealphablending($this->img, false);
-        imagesavealpha($this->img, true);
-      }
+      imagepalettetotruecolor($this->img);
     }
     return $this->img;
   }
@@ -243,7 +239,13 @@ class Picture
   {
     $img = $this->getResource();
     imagesetinterpolation($img, $interpolationMethod);
-    if (false !== $res = imagerotate($img, $angle, $bgcolor)) $this->img = $res;
+    if ($bgcolor >> 24) imagecolortransparent($img, $bgcolor);
+    if (false !== $res = imagerotate($img, $angle, $bgcolor)) 
+    {
+      $this->img = $res;
+      $this->info['width'] = imagesx($res);
+      $this->info['height'] = imagesy($res);
+    }
     return $res;
   }
   
@@ -282,7 +284,12 @@ class Picture
       $height = $bottom - $y + 1;
     }
     $new = $this->createNewImage($width, $height, $bgcolor);
-    if (false !== $res = imagecopy($new, $img, $left < 0 ? -$left : 0, $top < 0 ? -$top : 0, $x, $y, $right - $x + 1, $bottom - $y + 1)) return $this->img = $new;
+    if (false !== $res = imagecopy($new, $img, $left < 0 ? -$left : 0, $top < 0 ? -$top : 0, $x, $y, $right - $x + 1, $bottom - $y + 1)) 
+    {
+      $this->info['width'] = imagesx($new);
+      $this->info['height'] = imagesy($new);
+      return $this->img = $new;
+    }
     return false;
   }
   
@@ -305,7 +312,12 @@ class Picture
     $srcHeight = imagesy($img);
     list($width, $height, $srcWidth, $srcHeight, $left, $top) = $this->getRightSize($mode, $width, $height, $srcWidth, $srcHeight, $maxWidth, $maxHeight);
     $new = $this->createNewImage($width, $height);
-    if (false !== $res = imagecopyresampled($new, $img, 0, 0, $left, $top, $width, $height, $srcWidth, $srcHeight)) return $this->img = $new;
+    if (false !== $res = imagecopyresampled($new, $img, 0, 0, $left, $top, $width, $height, $srcWidth, $srcHeight)) 
+    {
+      $this->info['width'] = imagesx($new);
+      $this->info['height'] = imagesy($new);
+      return $this->img = $new;
+    }
     return false;
   }
 
@@ -382,7 +394,7 @@ class Picture
    */
   protected function getRightSize($mode, $dstWidth, $dstHeight, $srcWidth, $srcHeight, $maxWidth = 0, $maxHeight = 0)
   {
-    $top = $left = 0;
+    $left = $top = 0;
     switch ($mode)
     {
       case self::PIC_MANUAL;
@@ -455,7 +467,11 @@ class Picture
       imagealphablending($new, false);
       imagesavealpha($new, true);
     }
-    if ($bgcolor !== null) imagefilledrectangle($new, 0, 0, $width, $height, $bgcolor);
+    if ($bgcolor !== null) 
+    {
+      if ($bgcolor >> 24) imagecolortransparent($new, $bgcolor);
+      imagefilledrectangle($new, 0, 0, $width, $height, $bgcolor);
+    }
     return $new;
   }
 }
