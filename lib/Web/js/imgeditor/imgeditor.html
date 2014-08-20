@@ -1,0 +1,67 @@
+<div class="row">
+  <h2 class="title">Image Editor</h2>
+  <div class="left-column">
+    <div class="tools">
+      <div class="tools-heading">
+        <h3 class="caption">Edit your image to fit into the webpage</h3>
+      </div>
+      <div class="tools-body">
+        <table>
+          <tr>
+            <th style="width:32%;text-align:center;">WIDTH</th>
+            <th style="width:35%;text-align:center;">HEIGHT</th>
+            <th style="width:33%;text-align:center;">BG COLOR</th>
+          </tr>
+          <tr>
+            <td><span id="width_<?=$id;?>">0</span>px</td>
+            <td><span id="height_<?=$id;?>">0</span>px</td>
+            <td><c:colorpicker id="bgcolor" value="rgb(0, 0, 0)" /></td>
+          </tr>
+          <tr>
+            <th colspan="3">ROTATE (&#176;) <input type="text" id="angle_<?=$id;?>" class="field" /></th>
+          </tr>
+          <tr>
+            <td colspan="3">
+              <c:slider id="rotate" />
+            </td>
+          </tr>
+          <tr>
+            <th colspan="3">ZOOM (%) <input type="textbox" id="scale_<?=$id;?>" class="field" /></th>
+          </tr>
+          <tr>
+            <td colspan="3">
+              <c:slider id="zoom" />
+            </td>
+          </tr>
+          <tr>
+            <th colspan="3"><c:checkbox id="smartCrop" checked="checked" caption="SMART CROP" /></th>
+          </tr>
+        </table>
+      </div>
+    </div>
+    <div class="frame buttons">
+      <c:button id="btnApply" class="btn">Apply</c:button>
+      <c:button id="btnUseOriginal" class="btn">Use original</c:button>
+      <c:button id="btnCancel" class="btn btn-cancel">Cancel</c:button>
+    </div>
+  </div>
+  <div id="canvas_<?=$id;?>" class="right-column">
+    <div id="shadowTop_<?=$id;?>" class="shadow"></div>
+    <div id="shadowLeft_<?=$id;?>" class="shadow"></div>
+    <div id="shadowRight_<?=$id;?>" class="shadow"></div>
+    <div id="shadowBottom_<?=$id;?>" class="shadow"></div>
+    <div id="crop_<?=$id;?>" class="crop"></div>
+    <div id="cropLineLeft_<?=$id;?>" class="crop-line"></div>
+    <div id="cropLineTop_<?=$id;?>" class="crop-line"></div>
+    <div id="cropLineRight_<?=$id;?>" class="crop-line"></div>
+    <div id="cropLineBottom_<?=$id;?>" class="crop-line"></div>
+    <div id="cropSnapNW_<?=$id;?>" class="crop-snap" style="cursor:nw-resize;"></div>
+    <div id="cropSnapN_<?=$id;?>" class="crop-snap" style="cursor:n-resize;"></div>
+    <div id="cropSnapNE_<?=$id;?>" class="crop-snap" style="cursor:ne-resize;"></div>
+    <div id="cropSnapW_<?=$id;?>" class="crop-snap" style="cursor:w-resize;"></div>
+    <div id="cropSnapE_<?=$id;?>" class="crop-snap" style="cursor:e-resize;"></div>
+    <div id="cropSnapSW_<?=$id;?>" class="crop-snap" style="cursor:sw-resize;"></div>
+    <div id="cropSnapS_<?=$id;?>" class="crop-snap" style="cursor:s-resize;"></div>
+    <div id="cropSnapSE_<?=$id;?>" class="crop-snap" style="cursor:se-resize;"></div>
+  </div>
+</div>

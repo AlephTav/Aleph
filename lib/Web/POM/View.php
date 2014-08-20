@@ -684,7 +684,7 @@ class View implements \ArrayAccess
    * @param string $action - command name which determines actions that should be executed on the client side.
    * @param mixed $param1 - the first parameter of the command.
    * ...
-   * @param mixed $paramn - the last parameter of the command.
+   * @param mixed $paramN - the last parameter of the command.
    * @param integer $delay - time delay of the command execution.
    * @return self
    * @access public

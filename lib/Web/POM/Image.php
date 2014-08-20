@@ -33,10 +33,37 @@ class Image extends Control
     $this->properties['fitsize'] = false;
   }
 
+  /**
+   * Sets or returns attribute value.
+   * If $value is not defined, the method returns the current attribute value. Otherwise, it will set new attribute value.
+   *
+   * @param string $attribute - the attribute name.
+   * @param mixed $value - the attribute value.
+   * @param boolean $removeEmpty - determines whether the empty attribute (having value NULL) should be removed.
+   * @return mixed
+   * @access public
+   */
+  public function &attr($attribute, $value = null, $removeEmpty = false)
+  {
+    if ($value !== null)
+    {
+      switch (strtolower($attribute))
+      {
+        case 'src':
+          if ($this->properties['autorefresh']) $value .= (strpos($value, '?') === false ? '?' : '&') . 'p' . rand(0, 1000000);
+        case 'width':
+        case 'height':
+          if ($this->properties['fitsize']) $this->refresh();
+          break;
+      }
+    }
+    return parent::attr($attribute, $value, $removeEmpty);
+  }
+
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
-    $src = $this->src;
+    $src = $this->attr('src');
     if (!empty($src))
     {
       if ($this->properties['fitsize'])
@@ -44,12 +71,10 @@ class Image extends Control
         $image = \Aleph::dir($src);
         if (is_file($image))
         {
-          list($w, $h, $type, $attr) = getimagesize($image);
-          $this->setSize($this->width, $this->height, $w, $h);
+          $size = getimagesize($image);
+          $this->setSize($this->attr('width'), $this->attr('height'), $size[0], $size[1]);
         }
-        $this->properties['fitsize'] = false;
       }
-      if ($this->properties['autorefresh']) $this->attributes['src'] = $src . (strpos($src, '?') === false ? '?' : '&') . 'p' . rand(0, 1000000);
     }
     $html = '<img' . $this->renderAttributes() . ' />';
     if ($src !== null) $this->attributes['src'] = $src;
