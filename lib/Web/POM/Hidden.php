@@ -22,30 +22,36 @@
 
 namespace Aleph\Web\POM;
 
-class Hidden extends Control
+/**
+ * Represents the <input type="hidden"> HTML element.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * value - the value of the <input> element.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
+class Hidden extends Input
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'hidden';
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $value - the control value.
+   * @access public
+   */
   public function __construct($id, $value = null)
   {
-    parent::__construct($id);
-    $this->properties['value'] = $value;
-  }
-  
-  public function clean()
-  {
-    $this->properties['value'] = '';
-    return $this;
-  }
-
-  public function validate(Validator $validator)
-  {
-    return $validator->check($this->properties['value']);
-  }
-  
-  public function render()
-  {
-    if (!$this->properties['visible']) return $this->invisible();
-    return '<input type="hidden" value="' . htmlspecialchars($this->properties['value']) . '"' . $this->renderAttributes() . ' />';
+    parent::__construct($id, 'hidden', $value);
   }
 }

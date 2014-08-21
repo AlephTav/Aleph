@@ -25,6 +25,23 @@ namespace Aleph\Web\POM;
 /**
  * This validator checks whether the value of the validating control matches the given regular expression.
  *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines the tag of the validator's container element.
+ *
+ * The special control attributes:
+ * controls - comma separated logical or unique identifiers of the validating controls.
+ * groups - comma separated names of validation groups.
+ * mode - the validation mode. Valid values are "AND", "OR" and "XOR".
+ * index - the order of the validator launch.
+ * hiding - determines whether the validator element will be invisible (CSS property "display" equals "none") on the client when the validator is valid.
+ * text - the validator's message.
+ * state - the validator's status.
+ * locked - determines whether the validator is locked. The locked validator does not participate in the validation process.
+ * empty - determines whether or not the empty validation value should be treated as valid.
+ * expression - the regular expression.
+ *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
  * @package aleph.web.pom

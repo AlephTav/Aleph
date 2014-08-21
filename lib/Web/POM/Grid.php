@@ -22,14 +22,55 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * This control can be used for representation any data as a table with pagination.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines HTML tag of the container element.
+ * expire - determines the cache lifetime (in seconds) of the render process. The default value is 0 (no cache).
+ * source - the delegate for obtaining grid data or an array of data.
+ * sort - determines the number of table column to sort. The sort order is determined by sign of the number: "+" - ascending and "-" - descending.
+ * size - determines the number of data rows per page.
+ * page - determines the page number.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Grid extends Panel
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'grid';
   
+  /**
+   * The total number of rows.
+   *
+   * @var integer $count
+   * @access protected
+   */
   protected $count = null;
   
+  /**
+   * The rows of the obtained data set.
+   *
+   * @var array $rows
+   * @access protected
+   */
   protected $rows = null;
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $template - the grid template or the path to the template file.
+   * @access public
+   */
   public function __construct($id, $template = null)
   {
     parent::__construct($id, $template);
@@ -39,21 +80,51 @@ class Grid extends Panel
     $this->properties['page'] = 0;
   }
   
+  /**
+   * Sets sorting for the retrieving data.
+   *
+   * @param integer $sort - the number of table column to sort. The sort order is determined by sign of the number: "+" - ascending and "-" - descending.
+   * @return self
+   * @access public
+   */
   public function setSort($sort)
   {
-    $this->properties['sort'] = $sort;
+    $this->properties['sort'] = (int)$sort;
+    return $this;
   }
   
+  /**
+   * Sets the number of data rows per page.
+   *
+   * @param integer $size - the rows number.
+   * @return self
+   * @access public
+   */
   public function setSize($size)
   {
-    $this->properties['size'] = $size;
+    $this->properties['size'] = (int)$size;
+    return $this;
   }
   
+  /**
+   * Sets the page number.
+   *
+   * @param integer $page - the page number.
+   * @return self
+   * @access public
+   */
   public function setPage($page)
   {
-    $this->properties['page'] = $page;
+    $this->properties['page'] = (int)$page;
+    return $this;
   }
   
+  /**
+   * Initializes the control.
+   *
+   * @return self
+   * @access public
+   */
   public function init()
   {
     foreach (['size', 'size1', 'size2'] as $id)
@@ -71,12 +142,26 @@ class Grid extends Panel
     return $this;
   }
   
+  /**
+   * Returns string that represents the javascript for invoking sort method via Ajax request.
+   *
+   * @param integer $sort - the number of table column to sort.
+   * @return string
+   * @access public
+   */
   public function getSortMethod($sort)
   {
     if (abs($this->properties['sort']) == $sort) $sort = $this->properties['sort'];
     return $this->method('setSort', [-$sort]);
   }
   
+  /**
+   * Returns the total number of rows.
+   *
+   * @param boolean $cache - determines whether the returning result will be stored in the protected property $count.
+   * @return integer
+   * @access public
+   */
   public function getCount($cache = true)
   {
     if ($cache && $this->count !== null) return $this->count;
@@ -84,6 +169,13 @@ class Grid extends Panel
     return $this->count = \Aleph::delegate($this->properties['source'], 'count', $this->properties);
   }
   
+  /**
+   * Returns the data rows.
+   *
+   * @param boolean $cache - determines whether the returning result will be stored in the protected property $rows.
+   * @return array
+   * @access public
+   */
   public function getRows($cache = true)
   {
     if ($cache && $this->rows !== null) return $this->rows;
@@ -96,11 +188,25 @@ class Grid extends Panel
     return $this->rows = \Aleph::delegate($this->properties['source'], 'rows', $this->properties);
   }
   
+  /**
+   * If the property "source" is an array of data this method is used for sorting.
+   *
+   * @param array $a - the first argument to compare.
+   * @param array $b - the second argument to compare.
+   * @return integer - an integer less than, equal to, or greater than zero if the first argument is considered to be respectively less than, equal to, or greater than the second.
+   * @access public
+   */
   public function cmp($a, $b)
   {
     return 0;
   }
   
+  /**
+   * Returns the inner HTML of the grid.
+   *
+   * @return string
+   * @access public
+   */
   public function renderInnerHTML()
   {
     if ($this->tpl->isExpired())
@@ -132,6 +238,12 @@ class Grid extends Panel
     return parent::renderInnerHTML();
   }
   
+  /**
+   * Normalizes values of the properties page and size.
+   *
+   * @return self
+   * @access public
+   */
   public function normalize()
   {
     $this->properties['page'] = (int)$this->properties['page'];

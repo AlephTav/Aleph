@@ -1098,7 +1098,7 @@ class View implements \ArrayAccess
     else
     {
       $sep = uniqid();
-      $response->body = $sep . implode(';', $this->actions) . $sep . json_encode($data);
+      $response->body = $sep . implode(';', $this->actions) . $sep . json_encode($data instanceof Control ? null : $data);
     }
     $response->send();
     return $this;

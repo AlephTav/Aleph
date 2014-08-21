@@ -22,10 +22,34 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * Represents the <button> HTML element.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * text - the inner HTML of the button.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Button extends Control
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected   
+   */
   protected $ctrl = 'button';
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $text - the inner HTML of the <button> element.
+   * @access public
+   */
   public function __construct($id, $text = null)
   {
     parent::__construct($id);
@@ -33,6 +57,12 @@ class Button extends Control
     $this->properties['text'] = $text;
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();

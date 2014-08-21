@@ -275,8 +275,8 @@ class Picture
     $x = $left; $y = $top;
     if ($x < 0) $x = 0;
     if ($y < 0) $y = 0;
-    if ($right >= $w) $right = $w - 1;
-    if ($bottom >= $h) $bottom = $h - 1;
+    if ($right >= $w) $right = $w;
+    if ($bottom >= $h) $bottom = $h;
     if (!$fixedSize)
     {
       $left = $top = 0;

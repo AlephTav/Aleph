@@ -27,6 +27,23 @@ use Aleph\MVC;
 /**
  * This validator checks whether the values of the validating controls matches the user defined conditions.
  *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines the tag of the validator's container element.
+ *
+ * The special control attributes:
+ * controls - comma separated logical or unique identifiers of the validating controls.
+ * groups - comma separated names of validation groups.
+ * mode - the validation mode. Valid values are "AND", "OR" and "XOR".
+ * index - the order of the validator launch.
+ * hiding - determines whether the validator element will be invisible (CSS property "display" equals "none") on the client when the validator is valid.
+ * text - the validator's message.
+ * state - the validator's status.
+ * locked - determines whether the validator is locked. The locked validator does not participate in the validation process.
+ * clientFunction - the validation function on the client side.
+ * serverFunction - the validation function (delegate) on the server side.
+ *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
  * @package aleph.web.pom

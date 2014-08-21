@@ -22,10 +22,37 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * Represents the <input type="checkbox"> HTML element.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * value - the value of the checkbox control.
+ * caption - the checkbox title.
+ * align - the caption alignment. Valid values are "right" and "left".
+ * tag - determines HTML tag of the external HTML element of the checkbox control.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class CheckBox extends Control
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'checkbox';
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $value - the value of the <input> element.
+   * @access public
+   */
   public function __construct($id, $value = null)
   {
     parent::__construct($id);
@@ -35,11 +62,24 @@ class CheckBox extends Control
     $this->properties['tag'] = 'div';
   }
   
+  /**
+   * Always returns TRUE as a sign of a control having complex structure (more than one HTML element).
+   *
+   * @return boolean
+   * @access public
+   */
   public function hasContainer()
   {
     return true;
   }
   
+  /**
+   * Turns the checkbox to checked/unchecked state.
+   *
+   * @param boolean $flag - if it is TRUE, the checkbox will be checked. Otherwise, it will be unchecked.
+   * @return self
+   * @access public
+   */
   public function check($flag = true)
   {
     if ($flag) $this->attributes['checked'] = 'checked';
@@ -47,18 +87,38 @@ class CheckBox extends Control
     return $this;
   }
   
+  /**
+   * Turns the checkbox to unchecked state.
+   *
+   * @return self
+   * @access public
+   */
   public function clean()
   {
     unset($this->attributes['checked']);
     return $this;
   }
 
+  /**
+   * Returns TRUE if the checkbox is checked and FALSE otherwise.
+   * This method is only affected by the required validator.
+   *
+   * @param Aleph\Web\POM\Validator $validator - the instance of the validator control.
+   * @return boolean
+   * @access public
+   */
   public function validate(Validator $validator)
   {
     if ($validator instanceof VRequired) return $validator->check(!empty($this->attributes['checked']));
     return true;
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();

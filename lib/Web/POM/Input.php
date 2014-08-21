@@ -22,10 +22,35 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * Represents the arbitrary <input> HTML element.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * value - the value of the <input> element.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Input extends Control
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'input';
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $type - the input type.
+   * @param string $value - the value of the <input> element.
+   * @access public
+   */
   public function __construct($id, $type = 'text', $value = null)
   {
     parent::__construct($id);
@@ -33,17 +58,36 @@ class Input extends Control
     $this->properties['value'] = $value;
   }
   
+  /**
+   * Sets the control value to empty string.
+   *
+   * @return self
+   * @access public
+   */
   public function clean()
   {
     $this->properties['value'] = '';
     return $this;
   }
 
+  /**
+   * Validates the control value.
+   *
+   * @param Aleph\Web\POM\Validator $validator - the instance of the validator control.
+   * @return boolean
+   * @access public
+   */
   public function validate(Validator $validator)
   {
     return $validator->check($this->properties['value']);
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();

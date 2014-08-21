@@ -22,15 +22,55 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * Use this control if you need to organize some pagination of the data.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * type - the type of pagination. Valid values are "short" and "long".
+ * total - the total number of items.
+ * size - the number of items displayed on each page.
+ * page - determines the selected page.
+ * links - affects how many page numbers should be visible while navigating.
+ * last - the number of the last page. This value is automatically calculated.
+ * callback - the delegate to call when a page is clicked.
+ * tag - determines the tag of the external HTML element of the paginator.
+ * text - array of the paginator's components or the paginator's template.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Paginator extends Control
 {
+  /**
+   * Error message templates.
+   */
   const ERR_PAGINATOR_1 = 'Incorrect type value "[{var}]". Property "type" can take only one of the following values: "short" and "long".';
 
+  /**
+   * The paginator's types.
+   */
   const TYPE_SHORT = 'short';
   const TYPE_LONG = 'long';
 
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'paginator';
 
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param integer $total - the total number of items.
+   * @param integer $size - the number of items displayed on each page.
+   * @param integer $page - the selected page.
+   * @access public
+   */
   public function __construct($id, $total = null, $size = 10, $page = 0)
   {
     parent::__construct($id);
@@ -45,12 +85,25 @@ class Paginator extends Control
     $this->properties['text'] = null;
   }
   
+  /**
+   * Sets the selected page.
+   *
+   * @param integer $page - the selected page.
+   * @return self
+   * @access public
+   */
   public function setPage($page)
   {
     $this->properties['page'] = $page;
     return $this;
   }
   
+  /**
+   * Normalizes values of the paginator's properties.
+   *
+   * @return self
+   * @access public
+   */
   public function normalize()
   {
     $this->properties['total'] = (int)$this->properties['total'];
@@ -67,6 +120,12 @@ class Paginator extends Control
     return $this;
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
@@ -173,11 +232,11 @@ class Paginator extends Control
     return $html;
   }
   
-  protected function replaceTplPart($part, $page, $callback)
-  {
-    return strtr($this->properties['text'][$part], ['#item#' => $page + 1, '#page#' => $page, '#callback#' => str_replace('#page#', $page, $callback)]);
-  }
-  
+  /**
+   * Parses the paginator's template.
+   *
+   * @access private
+   */
   protected function parseTemplate()
   {
     $tpl = $this->properties['text'];
@@ -204,5 +263,19 @@ class Paginator extends Control
       }
     }
     $this->properties['text'] = $parts;
+  }
+  
+  /**
+   * Replaces the special template variables with their values.
+   *
+   * @param string $part - the name of the template part.
+   * @param integer $page - the number of the selected page.
+   * @param string $callback - the callback delegate.
+   * @return string
+   * @access private
+   */
+  protected function replaceTplPart($part, $page, $callback)
+  {
+    return strtr($this->properties['text'][$part], ['#item#' => $page + 1, '#page#' => $page, '#callback#' => str_replace('#page#', $page, $callback)]);
   }
 }

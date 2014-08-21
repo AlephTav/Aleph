@@ -1025,7 +1025,7 @@ class UploadedFile
     }
     if (is_array($this->extensions) && count($this->extensions) > 0)
     {
-      if (!in_array($this->getExtensionByType(), $this->extensions))
+      if (!in_array($this->getExtension(), $this->extensions) && !in_array($this->getExtensionByType(), $this->extensions))
       {
         $this->error = 10;
         return false;

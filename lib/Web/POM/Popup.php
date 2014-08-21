@@ -25,18 +25,65 @@ namespace Aleph\Web\POM;
 use Aleph\Core,
     Aleph\MVC;
 
+/**
+ * Represents the simple popup panel.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines HTML tag of the container element.
+ * expire - determines the cache lifetime (in seconds) of the render process. The default value is 0 (no cache).
+ *
+ * The special control attributes:
+ * overlay - if this attribute is defined, the popup will have the overlay.
+ * overlayClass - the CSS class of the popup overlay.
+ * overlaySelector - the popup overlay selector.
+ * closeByEscape - determines whether the popup should be closed when the escape button is pressed.
+ * closeByDocument - determines whether the popup should be closed when the document is clicked.
+ * closeButtons - the selector for buttons that should close the popup when they are clicked.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Popup extends Panel
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'popup';
 
+  /**
+   * Non-standard control attributes, that should be rendered as "data-" attributes on the web page.
+   *
+   * @var array $dataAttributes
+   * @access protected
+   */
   protected $dataAttributes = ['overlay' => 1, 'overlayclass' => 1, 'overlayselector' => 1, 'closebyescape' => 1, 'closebydocument' => 1, 'closebuttons' => 1];
   
+  /**
+   * Shows the popup on the client side.
+   *
+   * @param boolean $center - if it is TRUE, the popup will be displayed in the center of the screen.
+   * @param integer $delay - the delay before the popup appearance.
+   * @return self
+   * @access public
+   */
   public function show($center = true, $delay = 0)
   {
     $this->view->action('$pom.get(\'' . $this->attributes['id'] . '\').show(' . ($center ? 'true' : 'false') . ')', $delay);
     return $this;
   }
   
+  /**
+   * Hides the popup on the client side.
+   *
+   * @param integer $delay - the delay before the popup disappearance.
+   * @return self
+   * @access public
+   */
   public function hide($delay = 0)
   {
     $this->view->action('$pom.get(\'' . $this->attributes['id'] . '\').hide()', $delay);

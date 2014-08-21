@@ -22,10 +22,36 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * Represents the <select> HTML element. 
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * value - the value of the control.
+ * caption - determines the first option with empty value.
+ * options - the option array of the <select> element.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class DropDownBox extends Control
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'dropdownbox';
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $value - the control value.
+   * @access public
+   */
   public function __construct($id, $value = null)
   {
     parent::__construct($id);
@@ -34,17 +60,36 @@ class DropDownBox extends Control
     $this->properties['options'] = [];
   }
   
+  /**
+   * Sets the control value to empty string.
+   *
+   * @return self
+   * @access public
+   */
   public function clean()
   {
     $this->properties['value'] = '';
     return $this;
   }
 
+  /**
+   * Validates the control value.
+   *
+   * @param Aleph\Web\POM\Validator $validator - the instance of the validator control.
+   * @return boolean
+   * @access public
+   */
   public function validate(Validator $validator)
   {
     return $validator->check(is_array($this->properties['value']) ? implode('', $this->properties['value']) : $this->properties['value']);
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();
@@ -67,6 +112,14 @@ class DropDownBox extends Control
     return $html;
   }
   
+  /**
+   * Returns inner HTML of the <select> element.
+   *
+   * @param mixed $value - the control value.
+   * @param string $text - the option that corresponds to the given value.
+   * @return string
+   * @access protected
+   */
   protected function getOptionHTML($value, $text)
   {
     if (is_array($this->properties['value'])) 

@@ -24,7 +24,19 @@ namespace Aleph\Web\POM;
 
 /**
  * This control represents the Ajax autocomplete combobox that
- * enables users to quickly find and select from a pre-populated list of values as they type. 
+ * enables users to quickly find and select from a pre-populated list of values as they type.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines tag of the external HTML element of the autofill control.
+ * value - the value of the autofill control.
+ *
+ * The special attributes of the control:
+ * default - the default value of the control.
+ * callback - the delegate for getting of the list values.
+ * timeout - the delay (in seconds) between calls of the callback.
+ * activeItemClass - the CSS class that is used for highlighting of the active item of the list values.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0

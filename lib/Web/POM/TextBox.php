@@ -24,18 +24,58 @@ namespace Aleph\Web\POM;
 
 use Aleph\Core;
 
+/**
+ * Represents the <input type="text">, <input type="password"> and <textarea> HTML elements.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * type - type of the control. Valid values are "text", "password" and "memo".
+ * value - the control value.
+ *
+ * The special control attributes:
+ * default - the default control value.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class TextBox extends Control
 {
+  /**
+   * Error message templates.
+   */
   const ERR_TEXTBOX_1 = 'Incorrect type value "[{var}]". Property "type" can take only one of the following values: "text", "password" and "memo".';
   
+  /**
+   * The control types.
+   */
   const TYPE_TEXT = 'text';
   const TYPE_PASSWORD = 'password';
   const TYPE_MEMO = 'memo';
 
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'textbox';
   
+  /**
+   * Non-standard control attributes, that should be rendered as "data-" attributes on the web page.
+   *
+   * @var array $dataAttributes
+   * @access protected
+   */
   protected $dataAttributes = ['default' => 1];
 
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param mixed $value - the control value.
+   * @access public
+   */
   public function __construct($id, $value = null)
   {
     parent::__construct($id);
@@ -43,6 +83,15 @@ class TextBox extends Control
     $this->properties['value'] = $value;
   }
   
+  /**
+   * Sets or returns property value.
+   * If $value is not defined, the method returns the current property value. Otherwise, it will set new property value.
+   *
+   * @param string $property - the property name.
+   * @param mixed $value - the property value.
+   * @return mixed
+   * @access public
+   */
   public function &prop($property, $value = null)
   {
     if ($value === null)
@@ -54,17 +103,36 @@ class TextBox extends Control
     return parent::prop($property, $value);
   }
   
+  /**
+   * Sets the control value to empty string.
+   *
+   * @return self
+   * @access public
+   */
   public function clean()
   {
     $this->properties['value'] = isset($this->attributes['default']) ? $this->attributes['default'] : '';
     return $this;
   }
 
+  /**
+   * Validates the control value.
+   *
+   * @param ClickBlocks\Web\POM\Validator $validator - the instance of the validator control.
+   * @return boolean
+   * @access public
+   */
   public function validate(Validator $validator)
   {
     return $validator->check($this->prop('value'));
   }
 
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();

@@ -25,6 +25,12 @@ namespace Aleph\Web\POM;
 /**
  * By using this control you can manage any HTML element on the server side.
  *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines tag of the desired HTML element.
+ * text - the inner HTML of the given element.
+ *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
  * @package aleph.web.pom

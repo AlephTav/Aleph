@@ -22,10 +22,35 @@
 
 namespace Aleph\Web\POM;
 
+/**
+ * Represents the <a> HTML element.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * text - the inner HTML of the <a> element.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class HyperLink extends Control
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'hyperlink';
   
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $href - the URL of the page the link goes to.
+   * @param string $text - the inner HTML of the <a> element.
+   * @access public
+   */
   public function __construct($id, $href = null, $text = null)
   {
     parent::__construct($id);
@@ -33,6 +58,12 @@ class HyperLink extends Control
     $this->properties['text'] = $text;
   }
   
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();

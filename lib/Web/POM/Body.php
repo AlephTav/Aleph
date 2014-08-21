@@ -25,6 +25,12 @@ namespace Aleph\Web\POM;
 /**
  * Represents the main container control that maps to <body> HTML element.
  *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines HTML tag of the container element.
+ * expire - determines the cache lifetime (in seconds) of the render process. The default value is 0 (no cache).
+ *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
  * @package aleph.web.pom

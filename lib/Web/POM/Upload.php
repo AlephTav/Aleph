@@ -22,21 +22,56 @@
 
 namespace Aleph\Web\POM;
 
-use Aleph\MVC,
-    Aleph\Utils\PHP;
-
+/**
+ * The wrapper around the jQuery Upload plugin (http://blueimp.github.io/jQuery-File-Upload).
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ *
+ * The special control attributes:
+ * settings - the array that represents the Upload plugin configuration options (see more info here https://github.com/blueimp/jQuery-File-Upload/wiki/Options).
+ * callback - the delegate to call when a file is uploaded.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class Upload extends Control
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'upload';
   
+  /**
+   * Non-standard control attributes, that should be rendered as "data-" attributes on the web page.
+   *
+   * @var array $dataAttributes
+   * @access protected
+   */
   protected $dataAttributes = ['settings' => 1, 'callback' => 1];
   
+  /**
+   * Initializes the control.
+   *
+   * @return self
+   * @access public
+   */
   public function __construct($id)
   {
     parent::__construct($id);
     $this->attributes['settings'] = [];
   }
   
+  /**
+   * Initializes the control.
+   *
+   * @return self
+   * @access public
+   */
   public function init()
   {
     $url = \Aleph::url('framework');
@@ -46,6 +81,12 @@ class Upload extends Control
     return $this;
   }
 
+  /**
+   * Returns HTML of the control.
+   *
+   * @return string
+   * @access public
+   */
   public function render()
   {
     if (!$this->properties['visible']) return $this->invisible();

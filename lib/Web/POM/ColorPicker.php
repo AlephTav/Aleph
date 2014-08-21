@@ -24,18 +24,57 @@ namespace Aleph\Web\POM;
 
 use Aleph\MVC;
 
+/**
+ * The wrapper around the jQuery Spectrum Color Picker plugin (http://bgrins.github.io/spectrum).
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * value - the value of the control (color of the Color Picker).
+ *
+ * The special control attributes:
+ * settings - the array that represents the Color Picker configuration options (see more info here http://bgrins.github.io/spectrum/#options).
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class ColorPicker extends Input
 {
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'colorpicker';
   
+  /**
+   * Non-standard control attributes, that should be rendered as "data-" attributes on the web page.
+   *
+   * @var array $dataAttributes
+   * @access protected
+   */
   protected $dataAttributes = ['settings' => 1];
 
+  /**
+   * Constructor. Initializes the control properties and attributes.
+   *
+   * @param string $id - the logic identifier of the control.
+   * @param string $value - the Color Picker's color.
+   * @access public
+   */
   public function __construct($id, $value = null)
   {
     parent::__construct($id, 'text', $value);
     $this->attributes['settings'] = ['showInput' => true, 'allowEmpty' => true, 'showInitial' => true, 'showAlpha' => true, 'preferredFormat' => 'rgb'];
   }
   
+  /**
+   * Initializes the control.
+   *
+   * @return self
+   * @access public
+   */
   public function init()
   {
     $this->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/jquery/colorpicker/spectrum.css']);

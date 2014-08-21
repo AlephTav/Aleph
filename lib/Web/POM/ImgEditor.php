@@ -25,6 +25,26 @@ namespace Aleph\Web\POM;
 use Aleph\Core,
     Aleph\Utils;
 
+/**
+ * Use this control when you need simple functionality for uploading and editing images.
+ *
+ * The control has the following properties:
+ * id - the logic identifier of the control.
+ * visible - determines whether or not the control is visible on the client side.
+ * tag - determines HTML tag of the container element.
+ * expire - determines the cache lifetime (in seconds) of the render process. The default value is 0 (no cache).
+ *
+ * The special control attributes:
+ * overlay - if this attribute is defined, the popup will have the overlay.
+ * overlayClass - the CSS class of the popup overlay.
+ * overlaySelector - the popup overlay selector.
+ * closeByEscape - determines whether the popup should be closed when the escape button is pressed.
+ * closeByDocument - determines whether the popup should be closed when the document is clicked.
+ * closeButtons - the selector for buttons that should close the popup when they are clicked.
+ *
+ * @version 1.0.0
+ * @package aleph.web.pom
+ */
 class ImgEditor extends Popup
 {
   /**
@@ -33,10 +53,28 @@ class ImgEditor extends Popup
   const ERR_IMGEDITOR_1 = 'Control with ID "[{var}]" is not found.';
   const ERR_IMGEDITOR_2 = 'Control with ID "[{var}]" is not an upload control.';
 
+  /**
+   * The control type.
+   *
+   * @var string $ctrl
+   * @access protected
+   */
   protected $ctrl = 'imgeditor';
   
+  /**
+   * Allowed file extensions.
+   *
+   * @var array $extensions
+   * @access protected
+   */
   protected $extensions = ['png', 'jpg', 'jpeg', 'gif'];
   
+  /**
+   * Configuration options of the image editor on the client side.
+   *
+   * @var array $options
+   * @access protected
+   */
   protected $options = ['scale' => 1,
                         'angle' => 1,
                         'cropEnabled' => 1,
@@ -48,12 +86,26 @@ class ImgEditor extends Popup
                         'cropMaxWidth' => 1,
                         'cropMaxHeight' => 1];
   
+  /**
+   * Constructor. Initializes the panel template object.
+   *
+   * @param string $id - the logic identifier of the image editor.
+   * @param string $template - the image editor's template or the full path to the template file.
+   * @param integer $expire - the cache lifetime of the panel template.
+   * @access public
+   */
   public function __construct($id, $template = null, $expire = 0)
   {
     parent::__construct($id, $template ?: \Aleph::dir('framework') . '/web/js/imgeditor/imgeditor.html', $expire);
     $this->attributes['class'] = 'imgeditor';
   }
   
+  /**
+   * Initializes the control.
+   *
+   * @return self
+   * @access public
+   */
   public function init()
   {
     $this->view->addCSS(['href' => \Aleph::url('framework') . '/web/js/imgeditor/imgeditor.css']);
@@ -67,10 +119,18 @@ class ImgEditor extends Popup
                                     'connect' => 'lower', 
                                     'range' => ['min' => 1, 'max' => 1000], 
                                     'serialization' => ['lower' => ['js::$.Link({target: $("#scale_' . $id . '")})']]];
-    $this->attributes['closebuttons'] = '#' . $this->get('btnCancel')->attr('id') . ',#' . $this->get('btnApply')->attr('id') . ',#' . $this->get('btnUseOriginal')->attr('id');
+    $this->attributes['closebuttons'] = '#' . $this->get('btnCancel')->attr('id');
     return $this;
   }
   
+  /**
+   * Returns information about uploaded image.
+   * It returns TRUE on success and FALSE on failure.
+   *
+   * @param string $uniqueID - the unique identifier of the uploaded image.
+   * @return boolean
+   * @access public
+   */
   public function getImageInfo($uniqueID)
   {
     if (isset($this->tpl->uploads[$uniqueID]))
@@ -81,6 +141,13 @@ class ImgEditor extends Popup
     return false;
   }
   
+  /**
+   * Removes uploaded image.
+   *
+   * @param string $uniqueID - the unique identifier of the uploaded image.
+   * @return self
+   * @access public
+   */
   public function removeImage($uniqueID)
   {
     $info = $this->getImageInfo($uniqueID);
@@ -90,8 +157,33 @@ class ImgEditor extends Popup
       if (isset($info['originalPath']) && is_file($info['originalPath'])) unlink($info['originalPath']);
     }
     unset($this->tpl->uploads[$uniqueID]['info']);
+    return $this;
   }
   
+  /**
+   * Binds the given upload controls with the image editor.
+   * For each upload control can be set own unique set of options. Available options are:
+   * cropEnabled - determines whether or not the crop operation is used.
+   * cropResizable - determines whether the crop is resizable.
+   * cropWidth - the crop width.
+   * cropHeight - the crop height.
+   * cropMinWidth - the minimal crop width.
+   * cropMinHeight - the minimal crop height.
+   * cropMaxWidth - the maximal crop width.
+   * cropMaxHeight - the maximal crop height.
+   * destination - the path to the directory for storing edited image.
+   * extensions - the array of permitted file extensions.
+   * types - the array of permitted mime types of the image.
+   * maxSize - the maximum size of the image.
+   * preserveOriginal - determines whether the original image should be saved.
+   * onSuccess - the delegate to call when the given image is successfully edited.
+   * onFail - the delegate to call when the editing of the given image is failed.
+   * onAlways - the delegate that always called after the image editing, no matter whether the editing has been successful or not.
+   *
+   * @param array $uploads - the image editor options for each upload control.
+   * @return self
+   * @access public
+   */
   public function setup(array $uploads)
   {
     $tmp = [];
@@ -107,8 +199,16 @@ class ImgEditor extends Popup
       $tmp[$ctrl->attr('id')] = $data;
     }
     $this->tpl->uploads = $tmp;
+    return $this;
   }
   
+  /**
+   * Validates the uploaded image and launches the image editor.
+   *
+   * @param string $uniqueID - the unique identifier of the uploaded image.
+   * @return self
+   * @access public
+   */
   public function upload($uniqueID)
   {
     if (empty($this->tpl->uploads[$uniqueID])) return false;
@@ -131,8 +231,18 @@ class ImgEditor extends Popup
       else $this->view->action('alert', 'Error! ' . $error);
       if (isset($data['onAlways'])) \Aleph::delegate($data['onAlways'], $uniqueID, $error);
     }
+    return $this;
   }
   
+  /**
+   * Launches the image editor to edit the given image.
+   *
+   * @param string $url - the image URL.
+   * @param string $uniqueID - the unique identifier of the image.
+   * @param array $data - the additional options of editing.
+   * @return self   
+   * @access public
+   */
   public function edit($url, $uniqueID, array $data = null)
   {
     $path = \Aleph::dir($url);
@@ -162,25 +272,37 @@ class ImgEditor extends Popup
       else $this->view->action('alert', 'Error! ' . $error);
       if (isset($data['onAlways'])) \Aleph::delegate($data['onAlways'], $uniqueID, $error);
     }
+    return $this;
   }
   
+  /**
+   * Launches the image editor to edit the previously uploaded image.
+   *
+   * @param string $uniqueID - the unique identifier of the uploaded image.
+   * @return self   
+   * @access public
+   */
   public function launch($uniqueID)
   {
     if (empty($this->tpl->uploads[$uniqueID])) return false;
     $data = $this->tpl->uploads[$uniqueID];
     if (empty($data['info'])) return false;
     $info = $data['info'];
-    $btn = $this->get('btnApply');
-    if ($btn->visible) $btn->onclick = $this->method('apply', [$uniqueID, View::JS_MARK . '$pom.get(\'' . $this->attributes['id'] . '\').getTransformData()']);
-    $btn = $this->get('btnUseOriginal');
-    if ($btn->visible) $btn->onclick = $this->method('apply', [$uniqueID]);
-    $ops = [];
+    $ops = ['callback' => stripslashes($this->callback('apply')), 'UID' => $uniqueID];
     foreach ($data as $k => $v) if (isset($this->options[$k])) $ops[$k] = $v;
     $ops = Utils\PHP\Tools::php2js($ops, true, View::JS_MARK);
     $size = getimagesize($info['path']);
-    $this->view->action('$pom.get(\'' . $this->attributes['id'] . '\').load(\'' . $info['url'] . '?' . rand(999, 999999) . '\', ' . (int)$size[0] . ', ' . (int)$size[1] . ', ' . $ops . ')');
+    $this->view->action('$pom.get(\'' . $this->attributes['id'] . '\').load(\'' . $info['url'] . '?' . rand(999, 999999) . '\', ' . (int)$size[0] . ', ' . (int)$size[1] . ', ' . $ops . ')', 100);
+    return $this;
   }
   
+  /**
+   * Applies all changes that set up on the client side to the image.
+   *
+   * @param string $uniqueID - the unique identifier of the image.
+   * @return self
+   * @access public
+   */
   public function apply($uniqueID, array $transformData = null)
   {
     if (empty($this->tpl->uploads[$uniqueID])) return false;
@@ -208,5 +330,6 @@ class ImgEditor extends Popup
     }
     if (isset($data['onSuccess'])) \Aleph::delegate($data['onSuccess'], $uniqueID, $info);
     if (isset($data['onAlways'])) \Aleph::delegate($data['onAlways'], $uniqueID, $info);
+    return $this;
   }
 }
