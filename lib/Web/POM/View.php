@@ -1154,7 +1154,7 @@ class View implements \ArrayAccess
       foreach ($ctrl->getEvents() as $eid => $event)
       {
         if ($event === false) $this->addJS([], '$pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')', false);
-        else $this->addJS([], '$pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')', false);
+        else $this->addJS([], '$pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . (empty($event['options']['data']) ? '' : ', ' . $event['options']['data']) . ')', false);
       }
     }
     $sort = function($a, $b){return $a['order'] - $b['order'];};
@@ -1382,7 +1382,7 @@ class View implements \ArrayAccess
       foreach ($ctrl->getEvents() as $eid => $event)
       {
         if ($event === false) $events[] = '$pom.get(\'' . $uniqueID . '\').unbind(\'' . $eid . '\')';
-        else $events[] = '$pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . ')';
+        else $events[] = '$pom.get(\'' . $uniqueID . '\').bind(\'' . $eid . '\', \'' . $event['type'] . '\', ' . $event['callback'] . (empty($event['options']['check']) ? ', false' : ', ' . $event['options']['check']) . (empty($event['options']['toContainer']) ? ', false' : ', true') . (empty($event['options']['data']) ? '' : ', ' . $event['options']['data']) .  ')';
       }
       $this->vs[$uniqueID] = $ctrl->getVS();
     }

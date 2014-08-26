@@ -77,7 +77,10 @@ class VCompare extends Validator
   
   /**
    * Validates controls of the validator.
-   * The method returns TRUE if all controls values are equal to each other and FALSE otherwise.
+   * The returning result depends on the validator's mode:
+   * AND - it returns TRUE if all controls values are equal to each other and FALSE otherwise.
+   * OR - it returns TRUE if value of one control is equal to the value of at least one other control and FALSE otherwise.
+   * XOR - it returns TRUE if exactly two controls have equal values and FALSE otherwise. 
    *
    * @return boolean
    * @access public

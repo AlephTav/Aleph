@@ -411,9 +411,10 @@ abstract class Control
    * Adds new JS event to the control.
    * Parameter $options can have the following elements:
    * [
-   *  'params'      => [string], // parameters of the control method if $callback represents the control method.
-   *  'check'       => [string], // JS function that will determine whether or not to trigger the given event handler.
-   *  'toContainer' => [boolean] // determines whether or not the given event should be applied to the container tag of the control.
+   *  'params'      => [string],  // parameters of the control method if $callback represents the control method.
+   *  'check'       => [string],  // JS function that will determine whether or not to trigger the given event handler.
+   *  'toContainer' => [boolean], // determines whether or not the given event should be applied to the container tag of the control.
+   *  'data'        => [string]   // data (js code) to be passed to the event handler in event.data when an event is triggered.
    * ]
    *
    * @param string $id - the unique event identifier.
