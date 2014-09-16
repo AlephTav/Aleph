@@ -336,6 +336,19 @@ abstract class SQLBuilder
   abstract public function normalizeTableInfo(array $info);
   
   /**
+   * Starts to form the SQL query by using the given query fragment.
+   *
+   * @param string $sql - any SQL query string beginning with one of the following keywords: SELECT, INSERT, UPDATE, DELETE.
+   * @return self
+   * @access public
+   */
+  public function start($sql)
+  {
+    $this->sql[] = ['type' => strtolower(substr($sql, 0, 6)), 'sql' => $sql];
+    return $this;
+  }
+  
+  /**
    * Starts to form the SQL query of INSERT type.
    * Value of $columns can be one of the following possible variants:
    * <ul>
@@ -430,6 +443,7 @@ abstract class SQLBuilder
    */
   public function select($table, $columns = '*', $distinct = null, array $options = null)
   {
+    if ($table === null) return $this;
     $tmp = [];
     $tmp['type'] = 'select';
     $tmp['table'] = $table;
@@ -451,6 +465,7 @@ abstract class SQLBuilder
    */
   public function join($table, $conditions, $type = 'INNER')
   {
+    if ($table === null) return $this;
     $tmp = array_pop($this->sql);
     $tmp['join'][] = ['type' => $type ?: 'INNER', 'table' => $table, 'conditions' => $conditions];
     $this->sql[] = $tmp;
@@ -466,6 +481,7 @@ abstract class SQLBuilder
    */
   public function where($conditions, $conjunction = 'AND')
   {
+    if ($conditions === null) return $this;
     $tmp = array_pop($this->sql);
     $tmp['where'][] = ['conditions' => $conditions, 'conjunction' => $conjunction ?: 'AND'];
     $this->sql[] = $tmp;
@@ -481,6 +497,7 @@ abstract class SQLBuilder
    */
   public function group($group)
   {
+    if ($group === null) return $this;
     $tmp = array_pop($this->sql);
     $tmp['group'][] = $group;
     $this->sql[] = $tmp;
@@ -496,6 +513,7 @@ abstract class SQLBuilder
    */
   public function having($conditions, $conjunction = 'AND')
   {
+    if ($conditions === null) return $this;
     $tmp = array_pop($this->sql);
     $tmp['having'][] = ['conditions' => $conditions, 'conjunction' => $conjunction ?: 'AND'];
     $this->sql[] = $tmp;
@@ -511,6 +529,7 @@ abstract class SQLBuilder
    */
   public function order($order)
   {
+    if ($order === null) return $this;
     $tmp = array_pop($this->sql);
     $tmp['order'][] = $order;
     $this->sql[] = $tmp;
@@ -527,6 +546,7 @@ abstract class SQLBuilder
    */
   public function limit($limit, $offset = null)
   {
+    if ($limit === null && $offset === null) return $this;
     $tmp = array_pop($this->sql);
     if (isset($tmp['limit'])) throw new Core\Exception($this, 'ERR_SQL_3', 'limit');
     $tmp['limit'] = ['limit' => $limit, 'offset' => $offset];
@@ -564,7 +584,8 @@ abstract class SQLBuilder
    */
   protected function buildInsert(array $insert, &$data)
   {
-    $sql = 'INSERT INTO ' . $this->wrap($insert['table'], true) . ' ';
+    if (empty($insert['table'])) $sql = $insert['sql'];
+    else $sql = 'INSERT INTO ' . $this->wrap($insert['table'], true) . ' ';
     $res = $this->insertExpression($insert['columns'], $data);
     if (!is_array($res['values'])) $sql .= $res['values'];
     else 
@@ -585,7 +606,8 @@ abstract class SQLBuilder
    */
   protected function buildUpdate(array $update, &$data)
   {
-    $sql = 'UPDATE ' . $this->selectExpression($update['table'], true);
+    if (empty($update['table'])) $sql = $update['sql'];
+    else $sql = 'UPDATE ' . $this->selectExpression($update['table'], true);
     if (!empty($update['join'])) $sql .= $this->buildJoin($update['join'], $data);
     $sql .= ' SET ' . $this->updateExpression($update['columns'], $data);
     if (!empty($update['where'])) $sql .= $this->buildWhere($update['where'], $data);
@@ -604,7 +626,8 @@ abstract class SQLBuilder
    */
   protected function buildDelete(array $delete, &$data)
   {
-    $sql = 'DELETE FROM ' . $this->selectExpression($delete['table'], true);
+    if (empty($delete['table'])) $sql = $delete['sql'];
+    else $sql = 'DELETE FROM ' . $this->selectExpression($delete['table'], true);
     if (!empty($delete['join'])) $sql .= $this->buildJoin($delete['join'], $data);
     if (!empty($delete['where'])) $sql .= $this->buildWhere($delete['where'], $data);
     if (!empty($delete['order'])) $sql .= $this->buildOrder($delete['order']);
@@ -622,7 +645,8 @@ abstract class SQLBuilder
    */
   protected function buildSelect(array $select, &$data)
   {
-    $sql = 'SELECT ' . ltrim($select['distinct'] . ' ') . $this->selectExpression($select['columns']) . ' FROM ' . $this->selectExpression($select['table'], true);
+    if (empty($select['table'])) $sql = $select['sql'];
+    else $sql = 'SELECT ' . ltrim($select['distinct'] . ' ') . $this->selectExpression($select['columns']) . ' FROM ' . $this->selectExpression($select['table'], true);
     if (!empty($select['join'])) $sql .= $this->buildJoin($select['join'], $data);
     if (!empty($select['where'])) $sql .= $this->buildWhere($select['where'], $data);
     if (!empty($select['group'])) $sql .= $this->buildGroup($select['group']);

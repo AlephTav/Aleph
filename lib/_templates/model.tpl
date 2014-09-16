@@ -18,19 +18,7 @@
  * @copyright Copyright &copy; 2014 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
+ 
+namespace <?=$namespace;?>;
 
-namespace <?php echo $namespace; ?>;
-
-/**
- * Active Record class for interaction with <?php echo $table; ?> table.
- *
-<?php echo $properties; ?>
- */
-class <?php echo $class; ?> extends <?php echo ($namespace == 'Aleph\DB' ? 'AR' : '\Aleph\DB\AR') . PHP_EOL; ?>
-{
-  public function __construct($where = null, $order = null, $cacheExpire = null, $cacheGroup = null)
-  {
-    parent::__construct('<?php echo $table; ?>', '<?php echo $alias; ?>', $cacheExpire, $cacheGroup);
-    $this->assign($where, $order);
-  }
-}
+class <?php echo $class; ?> extends <?php echo $parent; ?>Model {}

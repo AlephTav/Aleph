@@ -398,6 +398,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
+    $info = reset($info);
     if (is_object($info['info'])) $sql = $info['info']->load();
     else $sql = stream_get_contents($info['info']);
     $info = ['constraints' => []];
@@ -414,11 +415,11 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       $actions = [];
       if (isset($match[6]))
       {
-        foreach (explode('ON', trim($match[6])) as $act)
+        foreach (preg_split('/\bON\b/mi', trim($match[6])) as $act)
         {
           if ($act == '') continue;
           $act = explode(' ', trim($act));
-          $actions[strtolower($act[0])] = $act[1];
+          $actions[strtolower($act[0])] = implode(' ', array_slice($act, 1));
         }
       }
       $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 

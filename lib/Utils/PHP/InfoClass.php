@@ -20,7 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Utils;
+namespace Aleph\Utils\PHP;
 
 /**
  * This class is designed to work with the source code of a class (or interface), receive information about the class.
@@ -28,7 +28,7 @@ namespace Aleph\Utils;
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
- * @package aleph.utils
+ * @package aleph.utils.php
  */
 class InfoClass implements \ArrayAccess
 {
@@ -369,6 +369,7 @@ class InfoClass implements \ArrayAccess
         $arg = [];
         $arg['name'] = $parameter->getName();
         $arg['class'] = $class ?: '';
+        $arg['position'] = $parameter->getPosition();
         $arg['isDefaultValueAvailable'] = $parameter->isDefaultValueAvailable();
         $arg['isArray'] = $parameter->isArray();
         $arg['isOptional'] = $parameter->isOptional();
@@ -376,7 +377,7 @@ class InfoClass implements \ArrayAccess
         $arg['allowsNull'] = $parameter->allowsNull();
         $arg['defaultValue'] = $parameter->isDefaultValueAvailable() ? $parameter->getDefaultValue() : null;
         if (method_exists($parameter, 'canBePassedByValue')) $arg['canBePassedByValue'] = $parameter->canBePassedByValue();
-        $tmp['arguments'][$parameter->getPosition()] = $arg;
+        $tmp['arguments'][$arg['name']] = $arg;
       }
       $tmp['code'] = $this->getMethodBody(implode(PHP_EOL, array_slice($lines, $tmp['startLine'] - 1, $tmp['endLine'] - $tmp['startLine'] + 1)));
       $info['methods'][$name] = $tmp;

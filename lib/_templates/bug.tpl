@@ -19,7 +19,7 @@ input,button,textarea,select,optgroup,option{font-family:inherit;font-size:inher
 input,button,textarea,select{*font-size:100%;}
 body{background:white;font-family:arial;font-size:16px;color:#a5b1bb;}
 div.main_screen{}
-div.screen_bgr{margin:0 auto;background:url(bgr1.png) 0 0 repeat-x;height:196px;clear:both;}
+div.screen_bgr{margin:0 auto;background:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAADECAIAAADRUtzZAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAALJJREFUeNpsUssVBCEMAvuvawuZEqYBJus3qAefioQEk/J73gKggCgU2rnfARbGWVLFmDGo7o0Xb4EjMM0zUkwswfhDBwxtse0DSzUQcCzhpjPxpoMtbtW+3gduvKnFU4vOO/3jzt1yVG11v9SKHVraczF5kN+V/njWnP8leaDX988jsnvR1Kgx4qXu/EdcPuU94ZUP51/6oqOX6PM04rK/NaPos5h7UD2QPje3WfL1CTAA3HwphiCwK/EAAAAASUVORK5CYII=) 0 0 repeat-x;height:196px;clear:both;}
 div.align_center{text-align:center;}
 div.app_logo{margin:0 auto;height:74px;width:281px;}
 div.sorry{text-align:center;padding-top:100px; font-size: 24px;}

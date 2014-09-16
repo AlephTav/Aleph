@@ -96,6 +96,11 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
     return implode('.', $name);
   }
   
+  public function unwrap($name, $isTableName = false)
+  {
+    
+  }
+  
   /**
    * Quotes a value (or an array of values) to produce a result that can be used as a properly escaped data value in an SQL statement.
    *
@@ -142,7 +147,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
   }
   
   /**
-   * Returns SQL for getting metadata of the specified table.
+   * Returns SQL for getting information about table metadata, columns, constraints and keys.
    *
    * @param string $table
    * @return string
@@ -150,7 +155,16 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function tableInfo($table)
   {
-    return 'SHOW CREATE TABLE ' . $this->wrap($table, true);
+    $schema = $this->quote($this->db->getSchema());
+    $tb = $this->quote($table);
+    $meta = 'SELECT ENGINE engine, MAX_DATA_LENGTH maxDataLength, AUTO_INCREMENT autoincrementInitialValue, TABLE_COLLATION collation, CREATE_OPTIONS options FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = ' . $schema . ' AND TABLE_NAME = ' . $tb . ' AND TABLE_TYPE = \'BASE TABLE\'';
+    $cnst = 'SELECT k.CONSTRAINT_NAME, k.COLUMN_NAME, k.REFERENCED_TABLE_SCHEMA, k.REFERENCED_TABLE_NAME, k.REFERENCED_COLUMN_NAME, r.UPDATE_RULE, r.DELETE_RULE FROM information_schema.KEY_COLUMN_USAGE k
+             INNER JOIN information_schema.REFERENTIAL_CONSTRAINTS r ON r.CONSTRAINT_SCHEMA = k.CONSTRAINT_SCHEMA AND r.TABLE_NAME = k.TABLE_NAME AND r.CONSTRAINT_NAME = k.CONSTRAINT_NAME
+             WHERE k.CONSTRAINT_SCHEMA = ' . $schema . ' AND k.TABLE_NAME = ' . $tb;
+    $keys = 'SELECT INDEX_NAME, COLUMN_NAME INDEX_COLUMN, INDEX_TYPE, NON_UNIQUE FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = ' . $schema . ' AND TABLE_NAME = ' . $tb;
+    return ['meta' => $meta, 'columns' => $this->columnsInfo($table), 'constraints' => $cnst, 'keys' => $keys];
   }
   
   /**
@@ -423,41 +437,26 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
-    $sql = $info['Create Table'];
-    $info = ['constraints' => [], 'keys' => []];
-    $clean = function($column, $smart = false)
+    $tmp['meta'] = $info['meta'];
+    $tmp['columns'] = $this->normalizeColumnsInfo($info['columns']);
+    $tmp['keys'] = $tmp['constraints'] = $tmp['pk'] = [];
+    foreach ($info['constraints'] as $cnst)
     {
-      $column = explode(',', $column);
-      foreach ($column as &$col) if (substr(trim($col), 0, 1) == '`') $col = substr(trim($col), 1, -1);
-      return $smart && count($column) == 1 ? $column[0] : $column;
-    };
-    $n = 0;
-    preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
-    foreach ($matches as $k => $match)
+      $tmp['constraints'][$cnst['CONSTRAINT_NAME']]['columns'][$cnst['COLUMN_NAME']] = ['schema' => $cnst['REFERENCED_TABLE_SCHEMA'], 'table' => $cnst['REFERENCED_TABLE_NAME'], 'column' => $cnst['REFERENCED_COLUMN_NAME']];
+      $tmp['constraints'][$cnst['CONSTRAINT_NAME']]['actions'] = ['update' => $cnst['UPDATE_RULE'], 'delete' => $cnst['DELETE_RULE']];
+    }
+    foreach ($info['keys'] as $key)
     {
-      $actions = [];
-      if (isset($match[6]))
+      if ($key['INDEX_NAME'] == 'PRIMARY') 
       {
-        foreach (explode('ON', trim($match[6])) as $act)
-        {
-          if ($act == '') continue;
-          $act = explode(' ', trim($act));
-          $actions[strtolower($act[0])] = $act[1];
-        }
+        $tmp['pk'][] = $key['INDEX_COLUMN'];
+        continue;
       }
-      $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 
-                                                                                'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
-                                                                                'actions' => $actions];
+      $tmp['keys'][$key['INDEX_NAME']]['columns'][] = $key['INDEX_COLUMN'];
+      $tmp['keys'][$key['INDEX_NAME']]['type'] = $key['INDEX_TYPE'];
+      $tmp['keys'][$key['INDEX_NAME']]['isUnique'] = (bool)(1 - $key['NON_UNIQUE']);
     }
-    preg_match_all('/[^YN]+\s+KEY\s+(.+)\s*\(([^\)]+)\)/mi', $sql, $matches, PREG_SET_ORDER);
-    foreach ($matches as $match)
-    {
-      $info['keys'][$clean($match[1], true)] = array_map($clean, explode(',', $match[2]));
-    }
-    if (preg_match('/\s+ENGINE\s*=\s*([^\s]+)/mi', $sql, $match)) $info['engine'] = $match[1];
-    if (preg_match('/\s+DEFAULT CHARSET\s*=\s*([^\s]+)/mi', $sql, $match)) $info['charset'] = $match[1];
-    if (preg_match('/\s+AUTO_INCREMENT\s*=\s*([^\s]+)/mi', $sql, $match)) $info['autoincrementInitialValue'] = $match[1];
-    return $info;
+    return $tmp;
   }
   
   /**

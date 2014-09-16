@@ -90,10 +90,8 @@ class Tools
     $m = count($x);
     if ($m == 0) return false;
     $y = Tokenizer::parse($haystack);
-    $n = count($y) - $m;
-    if ($n < 0) return false;
     $res = [];
-    for ($i = 0, $k = 0; $i < $n; $i++)
+    for ($i = 0, $k = 0, $n = count($y); $i < $n; $i++)
     {
       $token = $y[$i];
       if (!Tokenizer::isSemanticToken($token)) continue;

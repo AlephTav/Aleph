@@ -45,6 +45,7 @@ class DB
    */
   const ERR_DB_1 = 'DSN is empty. You should set DSN to be able to connect to database.';
   const ERR_DB_2 = 'DSN is wrong.';
+  const ERR_DB_3 = 'Alias "[{var}]" is not connected with any connection settings in the configuration file.';
 
   /**
    * These constants affect the format of the output data of method "execute".
@@ -55,6 +56,15 @@ class DB
   const ROW = 'row';
   const ROWS = 'rows';
   const COUPLES = 'couples';
+  
+  /**
+   * Collection of the database connection objects.
+   *
+   * @var array $dbs
+   * @access private
+   * @static
+   */
+  private static $dbs = [];
   
   /**
    * An instance of PDO class.
@@ -186,6 +196,22 @@ class DB
    * @access public
    */
   public $options = [];
+
+  /**
+   * Returns database connection object.
+   *
+   * @param string $dbalias - the name of a configuration section that contains database connection settings.
+   * @return Aleph\DB\DB
+   * @access public
+   * @static
+   */   
+  public static function getConnection($dbalias)
+  {
+    if (isset(static::$dbs[$dbalias])) return self::$dbs[$dbalias];
+    $a = \Aleph::getInstance()[$dbalias];
+    if (empty($a['dsn'])) throw new Core\Exception($this, 'ERR_DB_3', $dbalias);
+    return self::$dbs[$dbalias] = new DB($a['dsn'], isset($a['username']) ? $a['username'] : null, isset($a['password']) ? $a['password'] : null, isset($a['options']) ? $a['options'] : null);
+  }
 
   /**
    * Constructor of this class. Allows to set parameters of the default connection.
@@ -394,12 +420,26 @@ class DB
   {
     return $this->pdo !== null;
   }
+  
+  /**
+   * Returns name of the current database schema.
+   * The method returns FALSE if the connection is not set.
+   *
+   * @return string|boolean
+   * @access public
+   */
+  public function getSchema()
+  {
+    if (!$this->isConnected()) return false;
+    if ($this->getEngine() == 'OCI') return $this->idsn['username'];
+    return $this->idsn['dbname'];
+  }
 
   /** 
    * Returns the database name for the current connection.
    * The method returns FALSE if the connection is not set.
    *
-   * @return string
+   * @return string|boolean
    * @access public
    */
   public function getDBName()
@@ -411,7 +451,7 @@ class DB
    * Returns the host of the current connection.
    * The method returns FALSE if the connection is not set.
    *
-   * @return string
+   * @return string|boolean
    * @access public
    */
   public function getHost()
@@ -423,7 +463,7 @@ class DB
    * Returns the port of the current connection.
    * The method returns FALSE if the connection is not set.
    *
-   * @return integer
+   * @return integer|boolean
    * @access public
    */
   public function getPort()
@@ -435,7 +475,7 @@ class DB
    * Returns the driver name of the current connection.
    * The method returns FALSE if the connection is not set.
    *
-   * @return string
+   * @return string|boolean
    * @access public
    */
   public function getDriver()
@@ -447,7 +487,7 @@ class DB
    * Returns all DSN information of the current connection.
    * The method returns FALSE if the connection is not set.
    *
-   * @return array
+   * @return array|boolean
    * @access public
    */
   public function getDSN()
@@ -459,7 +499,7 @@ class DB
    * Returns the engine of the current connection.
    * The method returns FALSE if the connection is not set.
    *
-   * @return string
+   * @return string|boolean
    * @access public
    */
   public function getEngine()
@@ -1005,11 +1045,7 @@ class DB
   public function getTableList($schema = null)
   {
     if (!$this->isConnected()) $this->connect();
-    if ($schema === null)
-    {
-      if ($this->getEngine() == 'OCI') $schema = $this->idsn['username'];
-      else $schema = $this->idsn['dbname'];
-    }
+    if ($schema === null) $schema = $this->getSchema();
     return $this->column($this->sql->tableList($schema));
   }
   
@@ -1023,7 +1059,12 @@ class DB
   public function getTableInfo($table)
   {
     if (!$this->isConnected()) $this->connect();
-    return $this->sql->normalizeTableInfo($this->row($this->sql->tableInfo($table)));
+    $sql = $this->sql->tableInfo($table);
+    $sql['meta'] = $sql['meta'] ? $this->row($sql['meta']) : [];
+    $sql['columns'] = $this->rows($sql['columns']);
+    $sql['constraints'] = $sql['constraints'] ? $this->rows($sql['constraints']) : [];
+    $sql['keys'] = $sql['keys'] ? $this->rows($sql['keys']) : [];
+    return $this->sql->normalizeTableInfo($sql);
   }
   
   /**

@@ -36,14 +36,14 @@ class AR
   /**
    * Error message templates.
    */
-  const ERR_AR_1 = 'The first argument (table name) of method Aleph\DB\AR::getInstance is missed.';
-  const ERR_AR_2 = 'The second argument of method Aleph\DB\AR::getInstance is wrong. It should be an instance of Aleph\DB\DB.';
-  const ERR_AR_3 = 'None of Aleph\DB\DB instance was passed to the constructor of Aleph\DB\AR class. You should set a global variable with name "db" or pass the instance to the constructor.';
+  const ERR_AR_1 = 'The first argument (table name) of the class constructor is missed.';
+  const ERR_AR_2 = 'The second argument of the class constructor is wrong. It should be an instance of Aleph\DB\DB.';
+  const ERR_AR_3 = 'None of Aleph\DB\DB instance was passed to the constructor of Aleph\DB\AR class. You should set a global variable with name "db" or pass database alias to the constructor.';
   const ERR_AR_4 = 'Column "[{var}]" doesn\'t exist in table "[{var}]".';
   const ERR_AR_5 = 'Column "[{var}]" of table "[{var}]" cannot be NULL.';
   const ERR_AR_6 = 'Column "[{var}]" of table "[{var}]" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
   const ERR_AR_7 = 'Maximum length of column "[{var}]" in table "[{var}]" cannot be more than [{var}].';
-  const ERR_AR_8 = 'Enumeration type column "[{var}]" of table "[{var}]" has invalid value.';
+  const ERR_AR_8 = 'Enumeration column "[{var}]" of table "[{var}]" has invalid value.';
   const ERR_AR_9 = 'Primary key of a row of table "[{var}]" is not filled yet. You can\'t [{var}] the row.';
   const ERR_AR_10 = 'The row in table "[{var}]" was deleted, and now, you can use this Aleph\DB\AR object only as a read-only object.';
   const ERR_AR_11 = 'Relation "[{var}]" doesn\'t exist in table "[{var}]".';
@@ -95,7 +95,7 @@ class AR
   protected $db = null;
   
   /**
-   * The databese table name.
+   * The database table name.
    *
    * @var string $table
    * @access protected
@@ -122,7 +122,7 @@ class AR
    * Name of the auto-increment column.
    *
    * @var string $ai
-   * @acess protected
+   * @access protected
    */
   protected $ai = null;
   
@@ -154,18 +154,23 @@ class AR
    * Constructor. Gets all table metadata and put it into the database cache.
    *
    * @param string $table - the table name
-   * @param Aleph\DB\DB $db - the database connection object.
-   * @param integer | boolean $cacheExpire - lifetime (in seconds) of the table metadata cache.
+   * @param Aleph\DB\DB|string $db - the database connection object or database alias.
+   * @param integer|boolean $cacheExpire - lifetime (in seconds) of the table metadata cache.
    * @param string $cacheGroup - group name of the table metadata cache.
    * @access public
    */
-  public function __construct(/* $table, DB $db = null, $cacheExpire = null, $cacheGroup = null */)
+  public function __construct(/* $table, DB|string $db = null, $cacheExpire = null, $cacheGroup = null */)
   {
     $args = func_get_args();
     if (empty($args[0])) throw new Core\Exception('Aleph\DB\AR::ERR_AR_1');
     if (isset($args[1]))
     {
       $db = $args[1];
+      if (is_scalar($db)) 
+      {
+        $cfg = \Aleph::getInstance()[$db];
+        if ($cfg) $db = new DB($cfg['dsn'], isset($cfg['username']) ? $cfg['username'] : null, isset($cfg['password']) ? $cfg['password'] : null, isset($cfg['options']) ? $cfg['options'] : null);
+      }
       if (!($db instanceof DB)) throw new Core\Exception('Aleph\DB\AR::ERR_AR_2');
     }
     else
@@ -296,6 +301,52 @@ class AR
   }
   
   /**
+   * Returns TRUE if the given column is a numeric one. Otherwise, it returns FALSE. 
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
+  public function isNumeric($column)
+  {
+    $type = $this->getColumnPHPType($column);
+    return $type == 'int' || $type == 'float';
+  }
+
+  /**
+   * Returns TRUE if the given column is a text one. Otherwise, it returns FALSE. 
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
+  public function isText($column)
+  {
+    return $this->getColumnPHPType($column) == 'string';
+  }
+
+  /**
+   * Returns TRUE if the given column has one of date or time column types. Otherwise, it returns FALSE. 
+   *
+   * @param string $column - the column name.
+   * @return boolean
+   * @access public
+   */
+  public function isDateTime($column)
+  {
+    switch ($this->getColumnType($column))
+    {
+      case 'datetime':
+      case 'timestamp':
+      case 'date':
+      case 'time':
+      case 'year':
+        return true;
+    }
+    return false;
+  }
+  
+  /**
    * Returns DBMS data type of the given column.
    *
    * @param string $column - the column name.
@@ -375,19 +426,7 @@ class AR
    */
   public function getAffectedRows()
   {
-    return $this->affectedRows;
-  }
-  
-  /**
-   * Converts the given string to Aleph\DB\SQLExpression object.
-   *
-   * @param string $sql - the string to convert.
-   * @return Aleph\DB\SQLExpression
-   * @access public
-   */
-  public function exp($sql)
-  {
-    return new SQLExpression($sql);
+    return $this->db->getAffectedRows();
   }
   
   /**
@@ -477,52 +516,6 @@ class AR
   }
   
   /**
-   * Returns TRUE if the given column is a numeric one. Otherwise, it returns FALSE. 
-   *
-   * @param string $column - the column name.
-   * @return boolean
-   * @access public
-   */
-  public function isNumericColumn($column)
-  {
-    $type = $this->getColumnPHPType($column);
-    return $type == 'int' || $type == 'float';
-  }
-
-  /**
-   * Returns TRUE if the given column is a text one. Otherwise, it returns FALSE. 
-   *
-   * @param string $column - the column name.
-   * @return boolean
-   * @access public
-   */
-  public function isTextColumn($column)
-  {
-    return $this->getColumnPHPType($column) == 'string';
-  }
-
-  /**
-   * Returns TRUE if the given column has one of date or time column types. Otherwise, it returns FALSE. 
-   *
-   * @param string $column - the column name.
-   * @return boolean
-   * @access public
-   */
-  public function isDTColumn($column)
-  {
-    switch ($this->getColumnType($column))
-    {
-      case 'datetime':
-      case 'timestamp':
-      case 'date':
-      case 'time':
-      case 'year':
-        return true;
-    }
-    return false;
-  }
-  
-  /**
    * Returns TRUE if a column with the given name exists in the table and FALSE if it doesn't.
    *
    * @param string $column - the column name.
@@ -561,11 +554,11 @@ class AR
     if ($value === null && !$this->isNullable($column)) throw new Core\Exception($this, 'ERR_AR_5', $column, $this->table);
     if (is_array($value) || is_object($value) && !($value instanceof SQLExpression)) throw new Core\Exception($this, 'ERR_AR_6', $column, $this->table);
     if ($value === $this->columns[$column]) return;
-    $type = $this->getColumnType($column);
-    if ($type == 'enum' && !in_array($value, $this->getEnumeration($column))) throw new Core\Exception($this, 'ERR_AR_8', $column, $this->table);
     if (!($value instanceof SQLExpression))
     {
-      if ($type == 'string' && !$this->isDTColumn($column) && ($max = $this->getMaxLength($column)) > 0)
+      $type = $this->getColumnType($column);
+      if ($type == 'enum' && !in_array($value, $this->getColumnEnumeration($column))) throw new Core\Exception($this, 'ERR_AR_8', $column, $this->table);
+      if (($this->isText($column) && !$this->isDateTime($column) || $type == 'bit') && ($max = $this->getColumnMaxLength($column)) > 0)
       {
         $length = $type == 'bit' ? strlen(decbin($value)) : strlen($value);
         if ($length > $max) throw new Core\Exception($this, 'ERR_AR_7', $column, $this->table, $max);
@@ -585,6 +578,7 @@ class AR
    */
   public function assign($where, $order = null)
   {
+    if (empty($where)) return $this;
     $tmp = [];
     if (!is_array($where)) 
     {
@@ -696,10 +690,11 @@ class AR
   {
     if ($where !== null) return $this->db->update($this->table, $this->columns, $where);
     if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
-    if (!$this->changed) return;
+    if (!$this->changed) return 0;
     if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'update');
+    $res = $this->db->update($this->table, $this->columns, $this->getWhereData());
     $this->changed = false;
-    return $this->db->update($this->table, $this->columns, $this->getWhereData());
+    return $res;
   }
   
   /**
@@ -715,8 +710,9 @@ class AR
     if ($where !== null) return $this->db->delete($this->table, $where);
     if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
     if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'delete');
+    $res = $this->db->delete($this->table, $this->getWhereData());
     $this->deleted = true;
-    return $this->db->delete($this->table, $this->getWhereData());
+    return $res;
   }
   
   /**
@@ -728,7 +724,7 @@ class AR
    */
   public function count($where = null)
   {
-    return $this->db->cell($this->db->sql->select($this->table, $this->exp('COUNT(*)'))->where($where)->build($data), $data);
+    return $this->db->cell($this->db->sql->select($this->table, $this->db->sql->exp('COUNT(*)'))->where($where)->build($data), $data);
   }
   
   /**
@@ -781,7 +777,7 @@ class AR
     {
       $my = $this->table . '.' . $column;
       $ref = $info['reference']['table'] . '.' . $info['reference']['columns'][$k];
-      $tmp1[$my] = $sql->exp($sql->wrap($ref));
+      $tmp1[$my] = $sql->db->sql->exp($sql->wrap($ref));
       $tmp2[$my] = $this->columns[$column];
     }
     $sql = $sql->select($this->table, $columns)
