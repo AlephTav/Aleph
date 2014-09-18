@@ -46,16 +46,18 @@ class InfoClass implements \ArrayAccess
    * @var integer $tab
    * @access public
    */
-  public $tab = 2;
+  public $tab = null;
 
   /**
    * Constructor.
    *
    * @param mixed $class - class name or class object.
+   * @param integer $tab - the number of spaces of indentation.
    * @access public
    */
-  public function __construct($class)
+  public function __construct($class, $tab = 2)
   {
+    $this->tab = (int)$tab;
     $this->extraction($class);
   }
   
@@ -81,7 +83,7 @@ class InfoClass implements \ArrayAccess
   public function getCodeConstant($constant)
   {
     if (empty($this->info['constants'][$constant])) return false;
-    return str_repeat(' ', $this->tab) . 'const ' . $constant . ' = ' . $this->getCodeType($this->info['constants'][$constant]) . ';';
+    return str_repeat(' ', $this->tab) . 'const ' . $constant . ' = ' . Tools::php2str($this->info['constants'][$constant], false) . ';';
   }
   
   /**
@@ -102,7 +104,7 @@ class InfoClass implements \ArrayAccess
     if ($prop['isPrivate']) $code[] = 'private';
     if ($prop['isStatic']) $code[] = 'static';
     $code[] = '$' . $property;
-    if ($prop['isDefault']) $code[] = '= ' . $this->getCodeType($prop['defaultValue']);
+    if ($prop['isDefault']) $code[] = '= ' . Tools::php2str($prop['defaultValue'], true, 2 * $this->tab, $this->tab);
     $space = str_repeat(' ', $this->tab);
     return ($prop['comment'] ? $space . $prop['comment'] . PHP_EOL : '') . $space . implode(' ', $code) . ';';
   }
@@ -130,7 +132,7 @@ class InfoClass implements \ArrayAccess
       }
       if ($parameter['isArray']) $param .= 'array ';
       $param .= ($parameter['isPassedByReference'] ? '&' : '') . '$' . $parameter['name'];
-      if ($parameter['isDefaultValueAvailable']) $param .= ' = ' . $this->getCodeType($parameter['defaultValue']);
+      if ($parameter['isDefaultValueAvailable']) $param .= ' = ' . Tools::php2str($parameter['defaultValue'], false);
       else if ($parameter['allowsNull'] && $parameter['isOptional']) $param .= ' = null';
       $parameters[] = $param;
     }
@@ -509,27 +511,6 @@ class InfoClass implements \ArrayAccess
       }
     }
     return $code;
-  }
-  
-  /**
-   * Converts PHP value to code string according to type of value.
-   *
-   * @param mixed $value
-   * @return string
-   * @access private
-   */
-  private function getCodeType($value)
-  {
-    if (is_string($value)) return "'" . str_replace("'", "\'", $value) . "'";
-    if (is_bool($value)) return $value ? 'true' : 'false';
-    if (is_null($value)) return 'null';
-    if (is_array($value))
-    {
-      $tmp = [];
-      foreach ($value as $k => $v) $tmp[] = $this->getCodeType($k) . ' => ' . $this->getCodeType($v);
-      return '[' . implode(', ', $tmp) . ']';
-    }
-    return $value;
   }
   
   /**

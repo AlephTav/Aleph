@@ -275,17 +275,32 @@ HELP;
     $tmp = []; $isInteger = array_keys($a) === range(0, count($a) - 1);
     foreach ($a as $k => $v)
     {
-      if (is_string($k)) $k = "'" . addcslashes($k, "'") . "'";
+      if (is_string($k)) $k = $this->formString($k);
       if (!is_numeric($v))
       {
         if (is_array($v)) $v = $this->formArray($v, $indent + strlen($k) + 5);
-        else if (is_string($v)) $v = "'" . addcslashes($v, "'") . "'";
+        else if (is_string($v)) $v = $this->formString($v);
         else if (is_bool($v)) $v = $v ? 'true' : 'false';
         else if ($v === null) $v = 'null';
       }
       $tmp[] = $isInteger ? $v : $k . ' => ' . $v;
     }
     return '[' . implode(',' . PHP_EOL . str_repeat(' ', $indent), $tmp) . ']';
+  }
+  
+  private function formString($value)
+  {
+    $flag = false;
+    $rep = ['\\' => '\\\\', "\n" => '\n', "\r" => '\r', "\t" => '\t', "\v" => '\v', "\e" => '\e', "\f" => '\f'];
+    $value = preg_replace_callback('/([^\x20-\x7e]|\\\\)/', function($m) use($rep, &$flag)
+    {
+      $m = $m[0];
+      if ($m == '\\') return '\\\\';
+      $flag = true;
+      return isset($rep[$m]) ? $rep[$m] : '\x' . str_pad(dechex(ord($m)), 2, '0', STR_PAD_LEFT);
+    }, $value);
+    if ($flag) return '"' . str_replace('"', '\"', $value) . '"';
+    return "'" . str_replace("'", "\\'", $value) . "'";
   }
   
   private function getConfigFile($n)

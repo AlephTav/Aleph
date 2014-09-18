@@ -199,7 +199,7 @@ class Tools
    */
   public static function php2js($value, $isArray = true, $jsMark = null)
   {
-    $rep = ["\r" => '\\r', "\n" => '\\n', "'" => "\'", '\\' => '\\\\'];
+    static $rep = ["\r" => '\\r', "\n" => '\\n', "'" => "\'", '\\' => '\\\\'];
     if (is_object($value)) $value = get_object_vars($value);
     if (is_array($value)) 
     {
@@ -216,15 +216,15 @@ class Tools
         }
         if ($isNumeric)
         {
-          foreach ($value as $k => $v) $tmp[] = static::php2js($v, true, $jsMark);
+          foreach ($value as $k => $v) $tmp[] = self::php2js($v, true, $jsMark);
           return '[' . implode(', ', $tmp) . ']';
         }
-        foreach ($value as $k => $v) $tmp[] = "'" . strtr($k, $rep) . "': " . static::php2js($v, true, $jsMark);
+        foreach ($value as $k => $v) $tmp[] = "'" . strtr($k, $rep) . "': " . self::php2js($v, true, $jsMark);
         return '{' . implode(', ', $tmp) . '}';
       }
       else
       {
-        foreach ($value as &$v) $v = static::php2js($v, true, $jsMark);
+        foreach ($value as &$v) $v = self::php2js($v, true, $jsMark);
         return $value;
       }
     }
@@ -233,5 +233,79 @@ class Tools
     if (is_numeric($value)) return $value;
     if (strlen($jsMark) && substr($value, 0, strlen($jsMark)) == $jsMark) return substr($value, strlen($jsMark));
     return "'" . strtr($value, $rep) . "'";
+  }
+  
+  /**
+   * Converts a PHP variable to PHP code string.
+   *
+   * @param mixed $value - any PHP value.
+   * @param boolean $formatOutput - determines whether the code of arrays should be pretty formatted.
+   * @param integer $indent - the initial indent for the output.
+   * @param integer $tab - the number of spaces before each nesting level of an array.
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function php2str($value, $formatOutput = true, $indent = 0, $tab = 2)
+  {
+    static $rep = ['\\' => '\\\\', "\n" => '\n', "\r" => '\r', "\t" => '\t', "\v" => '\v', "\e" => '\e', "\f" => '\f'];
+    if (is_array($value))
+    {
+      if (count($value) == 0) return '[]';
+      $tmp = []; $n = 0;
+      foreach ($value as $k => $v) 
+      {
+        if ($k !== $n) break;
+        $n++;
+      }
+      if ($formatOutput)
+      {
+        $indent += $tab;
+        if ($n == count($value))
+        {
+          foreach ($value as $v)
+          {
+            $tmp[] = self::php2str($v, true, $indent, $tab);
+          }
+        }
+        else
+        {
+          foreach ($value as $k => $v)
+          {
+            $tmp[] = self::php2str($k) . ' => ' . self::php2str($v, true, $indent, $tab);
+          }
+        }
+        $space = PHP_EOL . str_repeat(' ', $indent);
+        return '[' . $space . implode(', ' . $space, $tmp) . PHP_EOL . str_repeat(' ', $indent - $tab) . ']';
+      }
+      if ($n == count($value))
+      {
+        foreach ($value as $v)
+        {
+          $tmp[] = self::php2str($v);
+        }
+      }
+      else
+      {
+        foreach ($value as $k => $v)
+        {
+          $tmp[] = self::php2str($k) . ' => ' . self::php2str($v);
+        }
+      }
+      return '[' . implode(', ', $tmp) . ']';
+    }
+    if (is_null($value)) return 'null';
+    if (is_bool($value)) return $value ? 'true' : 'false';
+    if (is_numeric($value)) return $value;
+    $flag = false;
+    $value = preg_replace_callback('/([^\x20-\x7e]|\\\\)/', function($m) use($rep, &$flag)
+    {
+      $m = $m[0];
+      if ($m == '\\') return '\\\\';
+      $flag = true;
+      return isset($rep[$m]) ? $rep[$m] : '\x' . str_pad(dechex(ord($m)), 2, '0', STR_PAD_LEFT);
+    }, $value);
+    if ($flag) return '"' . str_replace('"', '\"', $value) . '"';
+    return "'" . str_replace("'", "\\'", $value) . "'";
   }
 }

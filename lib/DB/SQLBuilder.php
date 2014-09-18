@@ -42,7 +42,7 @@ abstract class SQLBuilder
    * Error message templates.
    */
   const ERR_SQL_1 = 'Database engine "[{var}]" doesn\'t exist or is not supported.';
-  const ERR_SQL_2 = 'Cannot wrap empty string.';
+  const ERR_SQL_2 = 'Cannot wrap or unwrap empty string.';
   const ERR_SQL_3 = 'You can\'t invoke method "[{var}]" twice within the current SQL-construction.';
   const ERR_SQL_4 = 'Escaping format "[{var}]" is invalid.';
   const ERR_SQL_5 = 'Operator "[{var}]" is invalid.';

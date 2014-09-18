@@ -82,23 +82,40 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
   public function wrap($name, $isTableName = false)
   {
     if (strlen($name) == 0) throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
+    $tmp = [];
     $name = explode('.', $name);
     foreach ($name as &$part)
     {
-      if ($part == '*') continue;
-      if (substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
+      if ($part != '*' && substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
       {
         $part = str_replace('``', '`', substr($part, 1, -1));
       }
-      if (trim($part) == '') throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
-      $part = '`' . str_replace('`', '``', $part) . '`';
+      if (strlen($part)) $tmp[] = '`' . str_replace('`', '``', $part) . '`';
     }
-    return implode('.', $name);
+    return implode('.', $tmp);
   }
   
+  /**
+   * Removes quotes from a table or column name.
+   *
+   * @param string $name - a column or table name.
+   * @param boolean $isTableName - determines whether table name is used.
+   * @return string
+   * @access public
+   */
   public function unwrap($name, $isTableName = false)
   {
-    
+    $tmp = [];
+    $name = explode('.', $name);
+    foreach ($name as $part)
+    {
+      if ($part != '*' && substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
+      {
+        $part = str_replace('``', '`', substr($part, 1, -1));
+      }
+      if (strlen($part)) $tmp[] = $part;
+    }
+    return implode('.', $tmp);
   }
   
   /**
