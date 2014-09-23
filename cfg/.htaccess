@@ -1,1 +1,6 @@
+AuthName "Aleph Restricted Area" 
+AuthType Basic 
+AuthUserFile C:\sites\smartypassword\cfg\.htpasswd 
+require valid-user
+
 DirectoryIndex index.php

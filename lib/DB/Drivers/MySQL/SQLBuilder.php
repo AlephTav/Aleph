@@ -86,11 +86,15 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
     $name = explode('.', $name);
     foreach ($name as &$part)
     {
-      if ($part != '*' && substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
+      if ($part == '*') $tmp[] = $part;
+      else
       {
-        $part = str_replace('``', '`', substr($part, 1, -1));
+        if (substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
+        {
+          $part = str_replace('``', '`', substr($part, 1, -1));
+        }
+        if (strlen($part)) $tmp[] = '`' . str_replace('`', '``', $part) . '`';
       }
-      if (strlen($part)) $tmp[] = '`' . str_replace('`', '``', $part) . '`';
     }
     return implode('.', $tmp);
   }

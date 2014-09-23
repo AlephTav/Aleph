@@ -166,6 +166,10 @@
 				<label for="pomCacheDisabled">No</label>
   </div>
   <div class="ym-fbox-text">
+		  <label class="ym-label" for="pomCacheGroup">Cache group</label>
+				<input type="text" id="pomCacheGroup" name="pomCacheGroup" value="<?php echo @$cfg['pom']['cacheGroup']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+		</div>
+  <div class="ym-fbox-text">
 		  <label class="ym-label" for="pomCharset">Charset</label>
 				<input type="text" id="pomCharset" name="pomCharset" value="<?php echo @$cfg['pom']['charset']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
 		</div>

@@ -1,0 +1,67 @@
+<div class="box info">
+  <h2>ORM</h2>
+  <div class="ym-form" style="display:none;">
+    <div class="ym-fbox-text" style="margin-bottom:0;">
+      <label class="ym-label">Select database<div id="btnRefreshDBs" class="ym-refresh" title="Refresh aliases and table list"></div></label>
+      <div class="ym-fbox ym-fbox-select" style="padding-left:0;padding-right:0;">
+        <select id="ormAliases"><?php $aliases = $data['aliases']; $alias = reset($aliases); require_once(__DIR__ . '/aliases.html'); ?></select>
+      </div>
+    </div>
+    <div id="ormTables" class="ym-grid ym-fbox-text">
+      <?php $tables = $data['tables']; require_once(__DIR__ . '/tables.html'); ?>
+    </div>
+    <div class="ym-fbox-button">
+      <button id="btnCheckTables" class="ym-button" title="Click to select all tables">Check all tables</button>
+      <button id="btnUncheckTables" class="ym-button" title="Click to cancel the selection of all tables">Uncheck all tables</button>
+      <button id="btnCheckByRegExp" class="ym-button" title="Click to select tables which names match the given RegExp (see text field right)">Check according to RegExp</button>
+      <button id="btnUncheckByRegExp" class="ym-button" title="Click to cancel the selection of tables which names match the given RegExp (see text field right)">Uncheck according to RegExp</button>
+				  <input id="ormRegExp" type="text" class="ym-form ym-inline" style="width:190px;" title="Regular expression for more flexible tables selection" />
+    </div>
+    <div class="ym-grid">
+      <div class="ym-g33 ym-gl">
+        <div class="ym-fbox ym-fbox-text">
+          <span class="ym-label">Class creation mode</span>
+          <div class="ym-fbox-wrap">
+            <div id="ormMode" class="ym-fbox-check">
+              <div class="ym-fbox-check">
+			  	          <input type="radio" value="1" name="ormMode">
+				  		        <label for="ormMode1">Replace if exists</label>
+              </div>
+              <div class="ym-fbox-check">
+                <input type="radio" value="2" name="ormMode">
+				  		        <label for="ormMode2">Ignore if exists</label>
+              </div>
+              <div class="ym-fbox-check">
+                <input type="radio" value="3" name="ormMode" checked="checked">
+				  		        <label for="ormMode3">Replace important data</label>
+              </div>
+              <div class="ym-fbox-check">
+                <input type="radio" value="4" name="ormMode">
+				  		        <label for="ormMode4">Add only new data</label>
+              </div>
+		      	  	</div>
+          </div>
+        </div>
+      </div>
+      <div class="ym-g66 ym-gl">
+        <div class="ym-fbox-text">
+		        <label for="ormModelNamespace" class="ym-label">Model's namespace</label>
+				      <input id="ormModelNamespace" type="text" name="ormModelNamespace" value="Aleph\DB\ORM" />
+		      </div>
+        <div class="ym-fbox-text">
+		        <label for="ormARNamespace" class="ym-label">AR's namespace</label>
+				      <input id="ormARNamespace" type="text" name="ormARNamespace" value="Aleph\DB\AR" />
+		      </div>
+        <div class="ym-fbox-text">
+		        <label for="ormBaseDirectory" class="ym-label">Base directory</label>
+				      <input id="ormBaseDirectory" type="text" name="ormBaseDirectory" value="app/core/model" />
+		      </div>
+      </div>
+    </div>
+    <div class="ym-fbox-button">
+      <button id="btnCreateXML" class="ym-button ym-success" title="Creates XML file for database model description">Create XML</button>
+      <button id="btnCreateAR" class="ym-button ym-success" title="Creates classes of Active Record">Create Active Records</button>
+      <button id="btnCreateORM" class="ym-button ym-success" title="Creates classes of database model">Create models</button>
+    </div>
+  </div>
+</div>

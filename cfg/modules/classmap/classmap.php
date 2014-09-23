@@ -3,9 +3,7 @@
 namespace Aleph\Configurator;
 
 class Classmap extends Module
-{ 
-  public function init(){}
-  
+{
   public function process($command, array $args = null)
   {
     switch ($command)

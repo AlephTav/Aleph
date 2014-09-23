@@ -199,22 +199,14 @@ class Tools
    */
   public static function php2js($value, $isArray = true, $jsMark = null)
   {
-    static $rep = ["\r" => '\\r', "\n" => '\\n', "'" => "\'", '\\' => '\\\\'];
+    static $rep = ["\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\'", '\\' => '\\\\'];
     if (is_object($value)) $value = get_object_vars($value);
     if (is_array($value)) 
     {
       if ($isArray)
       {
-        $tmp = []; $isNumeric = true;
-        foreach ($value as $k => $v) 
-        {
-          if (!is_numeric($k))
-          {
-            $isNumeric = false;
-            break;
-          }
-        }
-        if ($isNumeric)
+        $tmp = [];
+        if (array_keys($value) === range(0, count($value) - 1))
         {
           foreach ($value as $k => $v) $tmp[] = self::php2js($v, true, $jsMark);
           return '[' . implode(', ', $tmp) . ']';
@@ -230,7 +222,8 @@ class Tools
     }
     if (is_null($value)) return 'undefined';
     if (is_bool($value)) return $value ? 'true' : 'false';
-    if (is_numeric($value)) return $value;
+    if (is_int($value)) return $value;
+    if (is_float($value)) return str_replace(',', '.', $value);
     if (strlen($jsMark) && substr($value, 0, strlen($jsMark)) == $jsMark) return substr($value, strlen($jsMark));
     return "'" . strtr($value, $rep) . "'";
   }
@@ -252,16 +245,12 @@ class Tools
     if (is_array($value))
     {
       if (count($value) == 0) return '[]';
-      $tmp = []; $n = 0;
-      foreach ($value as $k => $v) 
-      {
-        if ($k !== $n) break;
-        $n++;
-      }
+      $tmp = [];
+      $isInteger = array_keys($value) === range(0, count($value) - 1);
       if ($formatOutput)
       {
         $indent += $tab;
-        if ($n == count($value))
+        if ($isInteger)
         {
           foreach ($value as $v)
           {
@@ -278,7 +267,7 @@ class Tools
         $space = PHP_EOL . str_repeat(' ', $indent);
         return '[' . $space . implode(', ' . $space, $tmp) . PHP_EOL . str_repeat(' ', $indent - $tab) . ']';
       }
-      if ($n == count($value))
+      if ($isInteger)
       {
         foreach ($value as $v)
         {
@@ -296,7 +285,8 @@ class Tools
     }
     if (is_null($value)) return 'null';
     if (is_bool($value)) return $value ? 'true' : 'false';
-    if (is_numeric($value)) return $value;
+    if (is_int($value)) return $value;
+    if (is_float($value)) return str_replace(',', '.', $value);
     $flag = false;
     $value = preg_replace_callback('/([^\x20-\x7e]|\\\\)/', function($m) use($rep, &$flag)
     {

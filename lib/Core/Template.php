@@ -55,7 +55,7 @@ class Template implements \ArrayAccess
    * @var string $cacheGroup
    * @access public
    */
-  public $cacheGroup = 'templates';
+  public $cacheGroup = null;
   
   /**
    * An instance of Aleph\Cache\Cache class.

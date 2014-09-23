@@ -1287,8 +1287,10 @@ class View implements \ArrayAccess
       $vs['dtd'] = $this->dtd;
       $vs['tpl'] = $this->tpl->getTemplate();
     }
+    $group = \Aleph::getInstance()['pom'];
+    $group = isset($group['cacheGroup']) ? $group['cacheGroup'] : null;
     $cache = MVC\Page::$current->getCache();
-    $cache->set($this->getCacheID($init), $vs, $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), 'pages');
+    $cache->set($this->getCacheID($init), $vs, $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), $group);
   }
   
   /**

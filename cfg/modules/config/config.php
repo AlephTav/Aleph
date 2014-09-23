@@ -5,44 +5,59 @@ namespace Aleph\Configurator;
 class Config extends Module
 {
   private $defaultConfiguration = [
-                'debugging' => true,
-                'logging' => true,
-                'templateDebug' => 'lib/tpl/debug.tpl',
-                'templateBug' => 'lib/tpl/bug.tpl',
-                'autoload' => ['search' => true,
-                               'unique' => true,
-                               'classmap' => 'classmap.php',
-                               'timeout' => 300,
-                               'mask' => '/.+\.php\z/i'],
-                'cache' => ['type' => 'file',
-                            'directory' => 'cache',
-                            'gcProbability' => 33.333],
-                'dirs' => ['application' => 'app',
-                           'framework' => 'lib',
-                           'logs' => 'app/tmp/logs',
-                           'cache' => 'app/tmp/cache',
-                           'temp' => 'app/tmp/null',
-                           'ar' => 'app/core/model/ar',
-                           'orm' => 'app/core/model/orm',
-                           'js' => 'app/inc/js',
-                           'css' => 'app/inc/css',
-                           'tpl' => 'app/inc/tpl',
-                           'elements' => 'app/inc/tpl/elements'],
-                'db' => ['logging' => true,
-                         'log' => 'app/tmp/sql.log',
-                         'cacheExpire' => 0,
-                         'cacheGroup' => 'db'],
-                'ar' => ['cacheExpire' => -1,
-                         'cacheGroup' => 'ar'],
-                'mvc' => ['locked' => false,
-                          'unlockKey' => 'iwanttosee',
-                          'unlockKeyExpire' => 108000,
-                          'templateLock' => 'lib/tpl/bug.tpl'],
-                'pom' => ['charset' => 'utf-8',
-                          'namespaces' => ['c' => 'Aleph\Web\POM'],
-                          'ppOpenTag' => '<![PP[',
-                          'ppCloseTag' => ']PP]!>',
-                          'cacheEnabled' => false]];
+    'debugging' => true,
+    'logging' => true,
+    'templateDebug' => 'lib/tpl/debug.tpl',
+    'templateBug' => 'lib/tpl/bug.tpl',
+    'autoload' => [
+      'search' => true,
+      'unique' => true,
+      'classmap' => 'classmap.php',
+      'timeout' => 300,
+      'mask' => '/.+\.php\z/i'
+    ],
+    'cache' => [
+      'type' => 'file',
+      'directory' => 'cache',
+      'gcProbability' => 33.333
+    ],
+    'dirs' => [
+      'application' => 'app',
+      'framework' => 'lib',
+      'logs' => 'app/tmp/logs',
+      'cache' => 'app/tmp/cache',
+      'temp' => 'app/tmp/null',
+      'js' => 'app/inc/js',
+      'css' => 'app/inc/css',
+      'tpl' => 'app/inc/tpl'
+    ],
+    'db' => [
+      'logging' => true,
+      'log' => 'app/tmp/sql.log',
+      'cacheExpire' => 0,
+      'cacheGroup' => 'db'
+    ],
+    'ar' => [
+      'cacheExpire' => -1,
+      'cacheGroup' => 'ar'
+    ],
+    'mvc' => [
+      'locked' => false,
+      'unlockKey' => 'iwanttosee',
+      'unlockKeyExpire' => 108000,
+      'templateLock' => 'lib/tpl/bug.tpl'
+    ],
+    'pom' => [
+      'cacheEnabled' => false,
+      'cacheGroup' => 'pom',
+      'charset' => 'utf-8',
+      'namespaces' => [
+        'c' => 'Aleph\Web\POM'
+      ],
+      'ppOpenTag' => '<![PP[',
+      'ppCloseTag' => ']PP]!>',
+    ]
+  ];
 
   private $defaults = ['app/core/config.php' => 1, 'app/core/.local.php' => 1];
   
@@ -221,7 +236,7 @@ HELP;
           if ($j == $i) break;
           $res .= is_array($token) ? $token[1] : $token;
         }
-        $res .= 'return ' . $this->formArray($cfg, 8) . ';';
+        $res .= 'return ' . $this->formArray($cfg) . ';';
       }
       else
       {
@@ -270,22 +285,25 @@ HELP;
     return implode(PHP_EOL, array_merge($tmp1, $tmp2));
   }
   
-  private function formArray(array $a, $indent = 1)
+  private function formArray(array $a, $indent = 0, $tab = 2)
   {
-    $tmp = []; $isInteger = array_keys($a) === range(0, count($a) - 1);
+    $tmp = [];
+    $indent += $tab;
+    $isInteger = array_keys($a) === range(0, count($a) - 1);
     foreach ($a as $k => $v)
     {
       if (is_string($k)) $k = $this->formString($k);
       if (!is_numeric($v))
       {
-        if (is_array($v)) $v = $this->formArray($v, $indent + strlen($k) + 5);
+        if (is_array($v)) $v = $this->formArray($v, $indent, $tab);
         else if (is_string($v)) $v = $this->formString($v);
         else if (is_bool($v)) $v = $v ? 'true' : 'false';
         else if ($v === null) $v = 'null';
       }
-      $tmp[] = $isInteger ? $v : $k . ' => ' . $v;
+      $tmp[] = $isInteger ? $v : $k . ' => ' . (is_int($v) ? $v : str_replace(',', '.', $v));
     }
-    return '[' . implode(',' . PHP_EOL . str_repeat(' ', $indent), $tmp) . ']';
+    $space = PHP_EOL . str_repeat(' ', $indent);
+    return '[' . $space . implode(', ' . $space, $tmp) . PHP_EOL . str_repeat(' ', $indent - $tab) . ']';
   }
   
   private function formString($value)

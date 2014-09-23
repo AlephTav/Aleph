@@ -4,7 +4,7 @@ namespace Aleph\Configurator;
 
 abstract class Module
 {
-  abstract public function init();
+  public function init(){}
 
   abstract public function process($command, array $args = null);
   

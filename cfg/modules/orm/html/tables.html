@@ -1,0 +1,26 @@
+<?php
+
+$len = ceil(count($tables) / 3);
+if ($len == 0){ ?>
+<div>No tables found.</div>
+<?php }else{ ?>
+<label class="ym-label">Select tables for processing</label>
+<?php
+  
+$col1 = array_slice($tables, 0, $len);
+$col2 = array_slice($tables, $len, $len);
+$col3 = array_slice($tables, 2 * $len);
+for ($n = 1; $n <= 3; $n++){ 
+
+?>
+<div class="ym-g33 ym-gl">
+  <div class="ym-fbox-wrap">
+    <?php foreach (${'col' . $n} as $table){ $table = htmlspecialchars($table); ?>
+		  <div class="ym-fbox-check">
+		 	  <input id="tb<?php echo $table; ?>" type="checkbox" value="<?php echo $table; ?>">
+		  		<label for="tb<?php echo $table; ?>"><?php echo $table; ?></label>
+		 	</div>
+    <?php } ?>
+		</div>
+</div>
+<?php }} ?>

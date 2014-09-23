@@ -3,9 +3,7 @@
 namespace Aleph\Configurator;
 
 class SQLLog extends Module
-{ 
-  public function init(){}
-  
+{
   public function process($command, array $args = null)
   {
     switch ($command)

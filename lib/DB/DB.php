@@ -147,7 +147,7 @@ class DB
    * @var integer $cacheExpire
    * @access public
    */
-  public $cacheExpire = 0;
+  public $cacheExpire = null;
   
   /**
    * Default cache group of all cached query results.
@@ -155,7 +155,7 @@ class DB
    * @var string $cacheGroup
    * @access public
    */
-  public $cacheGroup = 'db';
+  public $cacheGroup = null;
   
   /**
    * Default charset is used for database connection.

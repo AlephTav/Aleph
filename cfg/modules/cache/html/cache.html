@@ -8,24 +8,16 @@
 								<label for="groupAll">All</label>
 						</div>
       <div>
-						  <input type="radio" id="groupTemplates" value="templates" name="cacheGroup" />
-						  <label for="groupTemplates">Templates</label>
+						  <input type="radio" id="groupDB" value="db" name="cacheGroup" />
+								<label for="groupDB">Database</label>
 						</div>
       <div>
-						  <input type="radio" id="groupLocalization" value="localization" name="cacheGroup" />
-						  <label for="groupLocalization">Localization</label>
+						  <input type="radio" id="groupAR" value="ar" name="cacheGroup" />
+								<label for="groupAR">Active Record</label>
 						</div>
       <div>
-						  <input type="radio" id="groupDatabase" value="db" name="cacheGroup" />
-								<label for="groupDatabase">Database</label>
-						</div>
-      <div>
-						  <input type="radio" id="groupActiveRecord" value="ar" name="cacheGroup" />
-								<label for="groupActiveRecord">Active Record</label>
-						</div>
-      <div>
-						  <input type="radio" id="groupPages" value="pom" name="cacheGroup" />
-								<label for="groupPages">Pages</label>
+						  <input type="radio" id="groupPOM" value="pom" name="cacheGroup" />
+								<label for="groupPOM">POM</label>
 						</div>
       <div>
 						  <input type="radio" id="groupOther" value="other" name="cacheGroup" />
@@ -34,8 +26,8 @@
 						</div>
 				</div>
     <div class="ym-fbox-button">
-				  <input type="button" id="btnClean" value="Clean" title="Clear group cache" />
-      <input type="button" id="btnGC" value="Run GC" title="Run garbage collector" />
+				  <button id="btnClean" class="ym-button" title="Clear group cache">Clean</button>
+      <button id="btnGC" class="ym-button" title="Run garbage collector">Run GC</button>
 				</div>
   </div>
 </div>

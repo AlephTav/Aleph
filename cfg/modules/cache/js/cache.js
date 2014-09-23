@@ -17,8 +17,10 @@ cfg.addModule('cache',
     // Cache cleanig
     $('#btnClean').click(function()
     {
-      var group = $('input:checked[name="cacheGroup"]').val();
-      $.ajax({'type': 'POST', 'data': {'module': 'cache', 'command': 'clean', 'args': {'group': group == 'other' ? $('#otherGroup').val() : group}}}).done(function(html)
+      var section = $('input:checked[name="cacheGroup"]').val();
+      var tmp = {'section': section};
+      if (section == 'other') tmp['group'] = $('#otherGroup').val();
+      $.ajax({'type': 'POST', 'data': {'module': 'cache', 'command': 'clean', 'args': tmp}}).done(function(html)
       {
         if (cfg.hasError(html)) return;
         cfg.showMsg('Cache has been successfully cleaned.');

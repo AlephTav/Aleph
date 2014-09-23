@@ -57,6 +57,7 @@ cfg.addModule('config',
       if ((tmp = $('#unlockKeyExpire').val()) != '') info['mvc']['unlockKeyExpire'] = tmp;
       if ((tmp = $('#templateLock').val()) != '') info['mvc']['templateLock'] = tmp;
       info['pom'] = {'cacheEnabled': $('#pomCacheEnabled').prop('checked') ? 1 : 0};
+      if ((tmp = $('#pomCacheGroup').val()) != '') info['pom']['cacheGroup'] = tmp;
       if ((tmp = $('#pomCharset').val()) != '') info['pom']['charset'] = tmp;
       if ((tmp = $('#pomNamespaces').val()) != '') info['pom']['namespaces'] = tmp;
       if ((tmp = $('#pomPPOpenTag').val()) != '') info['pom']['ppOpenTag'] = tmp;

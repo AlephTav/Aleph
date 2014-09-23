@@ -150,6 +150,16 @@ abstract class SQLBuilder
   abstract public function wrap($name, $isTableName = false);
   
   /**
+   * Removes quotes from a table or column name.
+   *
+   * @param string $name - a column or table name.
+   * @param boolean $isTableName - determines whether table name is used.
+   * @return string
+   * @access public
+   */
+  abstract public function unwrap($name, $isTableName = false);
+  
+  /**
    * Quotes a value (or an array of values) to produce a result that can be used as a properly escaped data value in an SQL statement.
    *
    * @param string | array $value - if this value is an array then all its elements will be quoted.

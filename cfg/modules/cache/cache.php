@@ -3,9 +3,7 @@
 namespace Aleph\Configurator;
 
 class Cache extends Module
-{ 
-  public function init(){}
-  
+{
   public function process($command, array $args = null)
   {
     switch ($command)
@@ -15,9 +13,22 @@ class Cache extends Module
         if (Configurator::isCLI()) echo PHP_EOL . 'The garbage collector has been successfully launched.' . PHP_EOL;
         break;
       case 'clean':
-        $cache = \Aleph\Cache\Cache::getInstance();
-        if (empty($args['group'])) $cache->clean();
-        else $cache->cleanByGroup($args['group']);
+        $a = Configurator::getAleph();
+        $cache = $a->getCache();
+        if (isset($args['group'])) $cache->cleanByGroup($args['group']);
+        else if (isset($args['section']))
+        {
+          $group = $args['section'];
+          if (isset($a[$group]))
+          {
+            $group = $a[$group];
+            if (isset($group['cacheGroup'])) $cache->cleanByGroup($group['cacheGroup']);
+          }
+        }
+        else
+        {
+          $cache->clean();
+        }
         if (Configurator::isCLI()) echo PHP_EOL . 'The cache has been successfully cleaned' . PHP_EOL;
         break;
       default:
