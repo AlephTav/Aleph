@@ -33,20 +33,28 @@ namespace Aleph\Utils\PHP;
 class InfoClass implements \ArrayAccess
 {
   /**
+   * Number of spaces of indentation.
+   *
+   * @var integer $tab
+   * @access public
+   */
+  public $tab = null;
+  
+  /**
+   * Permissions for newly created file.
+   *
+   * @var integer $fileMode
+   * @access public
+   */
+  public $fileMode = 0666;
+  
+  /**
    * Information about the class.
    *
    * @var array $info
    * @access protected
    */
   protected $info = [];
-  
-  /**
-   * Number of spaces of indentation. 
-   *
-   * @var integer $tab
-   * @access public
-   */
-  public $tab = null;
 
   /**
    * Constructor.
@@ -55,9 +63,10 @@ class InfoClass implements \ArrayAccess
    * @param integer $tab - the number of spaces of indentation.
    * @access public
    */
-  public function __construct($class, $tab = 2)
+  public function __construct($class, $tab = 2, $fileMode = 0666)
   {
     $this->tab = (int)$tab;
+    $this->fileMode = (int)$fileMode;
     $this->extraction($class);
   }
   
@@ -203,14 +212,14 @@ class InfoClass implements \ArrayAccess
       $code = '<?php' . PHP_EOL . PHP_EOL;
       if ($this->info['inNamespace']) $code .= 'namespace ' . $this->info['namespace'] . ';' . PHP_EOL . PHP_EOL;
       $code .= $this->getCodeClass() . PHP_EOL . PHP_EOL . '?>';
-      return file_put_contents($file, $code);
+      return $this->setFileContent($file, $code);
     }
     if ($this->info['isInternal']) return false;
     $lines = $this->getFileContent($this->info['file']);
     $code = implode(PHP_EOL, array_slice($lines, 0, $this->info['startLine'] - 1));
     $code .= PHP_EOL . $this->getCodeClass();
     $code .= implode(PHP_EOL, array_slice($lines, $this->info['endLine']));
-    return file_put_contents($this->info['file'], $code);
+    return $this->setFileContent($this->info['file'], $code);
   }
   
   /**
@@ -524,5 +533,21 @@ class InfoClass implements \ArrayAccess
   {
     if (!is_file($file)) return [];
     return explode("\n", str_replace("\r", '', file_get_contents($file)));
+  }
+  
+  /**
+   * Writes a file content.
+   * It returns the number of bytes that were written to the file, or FALSE on failure.
+   *
+   * @param string $file - a file to write.
+   * @param string $content - new file content.
+   * @return boolean|integer
+   * @access private
+   */
+  private function setFileContent($file, $content)
+  {
+    $res = file_put_contents($file, $content, LOCK_EX);
+    chmod($file, $this->fileMode);
+    return $res;
   }
 }

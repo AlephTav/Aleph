@@ -58,80 +58,6 @@ class DB
   const COUPLES = 'couples';
   
   /**
-   * Collection of the database connection objects.
-   *
-   * @var array $dbs
-   * @access private
-   * @static
-   */
-  private static $dbs = [];
-  
-  /**
-   * An instance of PDO class.
-   *
-   * @var PDO $pdo
-   * @access private
-   */
-  private $pdo = null;
-  
-  /**
-   * An instance of Aleph\DB\SQLBuilder class.
-   *
-   * @var Aleph\DB\SQLBuilder $sql
-   * @access private
-   */
-  private $sql = null;
-  
-  /**
-   * DSN information of the current connection.
-   *
-   * @var array $idsn
-   * @access protected
-   */
-  protected $idsn = [];
-  
-  /**
-   * Contains regular expression patterns for query caching.
-   *
-   * @var array $patterns
-   * @access protected
-   */
-  protected $patterns = [];
-  
-  /**
-   * An instance of Aleph\Cache\Cache class.
-   *
-   * @var Aleph\Cache\Cache $cache
-   * @access protected
-   */
-  protected $cache = null;
-  
-  /**
-   * Contains a number of affected rows as the result of the last operation.
-   *
-   * @var integer $affectedRows
-   * @access protected
-   */
-  protected $affectedRows = null;
-  
-  /**
-   * The mapping between PDO drivers and database engines.
-   *
-   * @var array $engines
-   * @access protected
-   */
-  protected $engines = ['mysql' => 'MySQL',
-                        'mysqli' => 'MySQL',
-                        'pgsql' => 'PostgreSQL',
-                        'sqlite' => 'SQLite',
-                        'sqlite2' => 'SQLite',
-                        'mssql' => 'MSSQL',
-                        'dblib' => 'MSSQL',
-                        'sqlsrv' => 'MSSQL',
-                        'oci' => 'OCI',
-                        'oci8' => 'OCI'];
-  
-  /**
    * if this variable is TRUE then each query execution will be logged, otherwise won't.   
    *
    * @var boolean $logging
@@ -196,6 +122,80 @@ class DB
    * @access public
    */
   public $options = [];
+  
+  /**
+   * DSN information of the current connection.
+   *
+   * @var array $idsn
+   * @access protected
+   */
+  protected $idsn = [];
+  
+  /**
+   * Contains regular expression patterns for query caching.
+   *
+   * @var array $patterns
+   * @access protected
+   */
+  protected $patterns = [];
+  
+  /**
+   * An instance of Aleph\Cache\Cache class.
+   *
+   * @var Aleph\Cache\Cache $cache
+   * @access protected
+   */
+  protected $cache = null;
+  
+  /**
+   * Contains a number of affected rows as the result of the last operation.
+   *
+   * @var integer $affectedRows
+   * @access protected
+   */
+  protected $affectedRows = null;
+  
+  /**
+   * The mapping between PDO drivers and database engines.
+   *
+   * @var array $engines
+   * @access protected
+   */
+  protected $engines = ['mysql' => 'MySQL',
+                        'mysqli' => 'MySQL',
+                        'pgsql' => 'PostgreSQL',
+                        'sqlite' => 'SQLite',
+                        'sqlite2' => 'SQLite',
+                        'mssql' => 'MSSQL',
+                        'dblib' => 'MSSQL',
+                        'sqlsrv' => 'MSSQL',
+                        'oci' => 'OCI',
+                        'oci8' => 'OCI'];
+  
+  /**
+   * Collection of the database connection objects.
+   *
+   * @var array $dbs
+   * @access private
+   * @static
+   */
+  private static $dbs = [];
+  
+  /**
+   * An instance of PDO class.
+   *
+   * @var PDO $pdo
+   * @access private
+   */
+  private $pdo = null;
+  
+  /**
+   * An instance of Aleph\DB\SQLBuilder class.
+   *
+   * @var Aleph\DB\SQLBuilder $sql
+   * @access private
+   */
+  private $sql = null;
 
   /**
    * Returns database connection object.
@@ -734,6 +734,19 @@ class DB
   public function wrap($name, $isTableName = false)
   {
     return $this->__get('sql')->wrap($name, $isTableName);
+  }
+  
+  /**
+   * Removes quotes from a table or column name.
+   *
+   * @param string $name - a column or table name.
+   * @param boolean $isTableName - determines whether table name is used.
+   * @return string
+   * @access public
+   */
+  public function unwrap($name, $isTableName = false)
+  {
+    return $this->__get('sql')->unwrap($name, $isTableName);
   }
 
   /**

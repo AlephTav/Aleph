@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <xsd:element name="Database">
+    <xsd:complexType>
+      <xsd:sequence>
+        <xsd:element name="Model" minOccurs="1" maxOccurs="unbounded">
+          <xsd:complexType>
+            <xsd:sequence>
+              <xsd:element name="Mapping">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="Table" minOccurs="1" maxOccurs="unbounded">
+                      <xsd:complexType>
+                        <xsd:attribute name="Name" type="xsd:string" use="required" />
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+              <xsd:element name="Properties">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="Property" minOccurs="1" maxOccurs="unbounded">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="Transformation" minOccurs="0" maxOccurs="1">
+                            <xsd:complexType>
+                              <xsd:sequence>
+                                <xsd:element name="Options">
+                                  <xsd:complexType>
+                                    <xsd:sequence>
+                                      <xsd:element name="Option" minOccurs="0" maxOccurs="unbounded">
+                                        <xsd:complexType>
+                                          <xsd:attribute name="Name" type="xsd:string" use="required" />
+                                          <xsd:attribute name="Value" type="xsd:string" use="required" />
+                                        </xsd:complexType>
+                                      </xsd:element>
+                                    </xsd:sequence>
+                                  </xsd:complexType>
+                                </xsd:element>
+                              </xsd:sequence>
+                              <xsd:attribute name="Type" type="transformType" fixed="datetime" use="required" />
+                            </xsd:complexType>
+                          </xsd:element>
+                        </xsd:sequence>
+                        <xsd:attribute name="Name" type="xsd:string" use="required" />
+                        <xsd:attribute name="Table" type="xsd:string" use="required" />
+                        <xsd:attribute name="Column" type="xsd:string" use="required" />
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+              <xsd:element name="Relations" minOccurs="0" maxOccurs="1">
+                <xsd:complexType>
+                  <xsd:sequence>
+                    <xsd:element name="Relation" minOccurs="0" maxOccurs="unbounded">
+                      <xsd:complexType>
+                        <xsd:sequence>
+                          <xsd:element name="Join" minOccurs="1" maxOccurs="unbounded">
+                            <xsd:complexType>
+                              <xsd:sequence>
+                                <xsd:element name="From">
+                                  <xsd:complexType>
+                                    <xsd:sequence>
+                                      <xsd:element name="Column" minOccurs="1" maxOccurs="unbounded">
+                                        <xsd:complexType>
+                                          <xsd:attribute name="Name" type="xsd:string" use="required" />
+                                        </xsd:complexType>
+                                      </xsd:element>
+                                    </xsd:sequence>
+                                    <xsd:attribute name="Table" type="xsd:string" use="required" />
+                                  </xsd:complexType>
+                                </xsd:element>
+                                <xsd:element name="To">
+                                  <xsd:complexType>
+                                    <xsd:sequence>
+                                      <xsd:element name="Column" minOccurs="1" maxOccurs="unbounded">
+                                        <xsd:complexType>
+                                          <xsd:attribute name="Name" type="xsd:string" use="required" />
+                                        </xsd:complexType>
+                                      </xsd:element>
+                                    </xsd:sequence>
+                                    <xsd:attribute name="Table" type="xsd:string" use="required" />
+                                  </xsd:complexType>
+                                </xsd:element>
+                              </xsd:sequence>
+                            </xsd:complexType>
+                          </xsd:element>
+                        </xsd:sequence>
+                        <xsd:attribute name="Name" type="xsd:string" use="required" />
+                        <xsd:attribute name="Model" type="xsd:string" use="required" />
+                        <xsd:attribute name="Type" type="relationType" use="required" />
+                      </xsd:complexType>
+                    </xsd:element>
+                  </xsd:sequence>
+                </xsd:complexType>
+              </xsd:element>
+            </xsd:sequence>
+            <xsd:attribute name="Class" type="xsd:string" use="required" />
+          </xsd:complexType>
+        </xsd:element>
+      </xsd:sequence>
+      <xsd:attribute name="Alias" type="xsd:string" use="required" />
+				  <xsd:attribute name="Namespace" type="xsd:string" use="required" />
+    </xsd:complexType>
+  </xsd:element>
+  <xsd:simpleType name="transformType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="datetime" />
+    </xsd:restriction>
+  </xsd:simpleType>
+  <xsd:simpleType name="relationType">
+    <xsd:restriction base="xsd:string">
+      <xsd:enumeration value="one" />
+      <xsd:enumeration value="many" />
+    </xsd:restriction>
+  </xsd:simpleType>
+</xsd:schema>

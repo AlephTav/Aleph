@@ -61,10 +61,8 @@ cfg.addModule('orm',
     // Creates XML.
     $('#btnCreateXML').click(function()
     {
-      var tmp, info = {'alias': $('#ormAliases').val(), 'tables': self.getExcludedTables(), 'mode': $('#ormMode').find('input:checked[name="ormMode"]').val()};
-      if ((tmp = $('#ormBaseDirectory').val()) != '') info['dir'] = tmp;
       $('#shadow').show();
-      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'xml', 'args': info}}).done(function(html)
+      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'xml', 'args': self.getArgs('XML')}}).done(function(html)
       {
         if (cfg.hasError(html)) return;
         $('#shadow').hide();
@@ -74,11 +72,8 @@ cfg.addModule('orm',
     // Creates models.
     $('#btnCreateORM').click(function()
     {
-      var tmp, info = {'alias': $('#ormAliases').val(), 'tables': self.getExcludedTables(), 'mode': $('#ormMode').find('input:checked[name="ormMode"]').val()};
-      if ((tmp = $('#ormModelNamespace').val()) != '') info['ns'] = tmp;
-      if ((tmp = $('#ormBaseDirectory').val()) != '') info['dir'] = tmp;
       $('#shadow').show();
-      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'model', 'args': info}}).done(function(html)
+      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'model', 'args': self.getArgs('ORM')}}).done(function(html)
       {
         if (cfg.hasError(html)) return;
         $('#shadow').hide();
@@ -88,17 +83,33 @@ cfg.addModule('orm',
     // Creates AR.
     $('#btnCreateAR').click(function()
     {
-      var tmp, info = {'alias': $('#ormAliases').val(), 'tables': self.getExcludedTables(), 'mode': $('#ormMode').find('input:checked[name="ormMode"]').val()};
-      if ((tmp = $('#ormARNamespace').val()) != '') info['ns'] = tmp;
-      if ((tmp = $('#ormBaseDirectory').val()) != '') info['dir'] = tmp;
       $('#shadow').show();
-      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'ar', 'args': info}}).done(function(html)
+      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'ar', 'args': self.getArgs('AR')}}).done(function(html)
       {
         if (cfg.hasError(html)) return;
         $('#shadow').hide();
         cfg.showMsg('Active Record\'s classes have been successfully created.');
       });
     });
+  },
+  
+  'getArgs': function(mode)
+  {
+    var tmp, args = {'alias': $('#ormAliases').val(), 
+                     'tables': this.getExcludedTables(),
+                     'mode': $('#ormMode').find('input:checked[name="ormMode"]').val(),
+                     'useTransformation': $('#ormTransformation').prop('checked') ? 1 : 0,
+                     'useInheritance': $('#ormInheritance').prop('checked') ? 1 : 0};
+    if ((tmp = $('#ormBaseDirectory').val()) != '') args['dir'] = tmp;
+    if (mode == 'AR') 
+    {
+      if ((tmp = $('#ormARNamespace').val()) != '') args['ns'] = tmp;
+    }
+    else if (mode == 'ORM')
+    {
+      if ((tmp = $('#ormModelNamespace').val()) != '') args['ns'] = tmp;
+    }
+    return args;
   },
   
   'getExcludedTables': function()

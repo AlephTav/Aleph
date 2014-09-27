@@ -17,7 +17,7 @@ for ($n = 1; $n <= 3; $n++){
   <div class="ym-fbox-wrap">
     <?php foreach (${'col' . $n} as $table){ $table = htmlspecialchars($table); ?>
 		  <div class="ym-fbox-check">
-		 	  <input id="tb<?php echo $table; ?>" type="checkbox" value="<?php echo $table; ?>">
+		 	  <input id="tb<?php echo $table; ?>" type="checkbox" value="<?php echo $table; ?>" checked="checked">
 		  		<label for="tb<?php echo $table; ?>"><?php echo $table; ?></label>
 		 	</div>
     <?php } ?>

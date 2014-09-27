@@ -21,8 +21,8 @@
       <div class="ym-g33 ym-gl">
         <div class="ym-fbox ym-fbox-text">
           <span class="ym-label">Class creation mode</span>
-          <div class="ym-fbox-wrap">
-            <div id="ormMode" class="ym-fbox-check">
+          <div class="ym-fbox-wrap" >
+            <div id="ormMode" class="ym-fbox-check" style="margin-bottom:20px;">
               <div class="ym-fbox-check">
 			  	          <input type="radio" value="1" name="ormMode">
 				  		        <label for="ormMode1">Replace if exists</label>
@@ -40,6 +40,16 @@
 				  		        <label for="ormMode4">Add only new data</label>
               </div>
 		      	  	</div>
+          </div>
+          <div class="ym-fbox-wrap">
+            <div class="ym-fbox-check">
+								      <input id="ormTransformation" type="checkbox" checked="checked" />
+								      <label for="ormTransformation">Use data types transformation</label>
+								    </div>
+            <div class="ym-fbox-check">
+								      <input id="ormInheritance" type="checkbox" checked="checked" />
+								      <label for="ormInheritance">Use auto inheritance</label>
+								    </div>
           </div>
         </div>
       </div>

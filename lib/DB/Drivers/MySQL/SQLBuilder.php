@@ -406,7 +406,11 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       $tmp[$column]['isAutoincrement'] = ($row['Extra'] == 'auto_increment');
       $tmp[$column]['isUnsigned'] = strpos($row['Type'], 'unsigned') !== false;
       $tmp[$column]['default'] = ($type == 'bit') ? substr($row['Default'], 2, 1) : $row['Default'];
-      if ($type == 'timestamp' && $tmp[$column]['default']) $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
+      if ($type == 'timestamp' && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') 
+      {
+        $tmp[$column]['default'] = null;
+        $tmp[$column]['isNullable'] = true;
+      }
       $tmp[$column]['maxLength'] = 0;
       $tmp[$column]['precision'] = 0;
       $tmp[$column]['set'] = false;
@@ -476,6 +480,15 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       $tmp['keys'][$key['INDEX_NAME']]['columns'][] = $key['INDEX_COLUMN'];
       $tmp['keys'][$key['INDEX_NAME']]['type'] = $key['INDEX_TYPE'];
       $tmp['keys'][$key['INDEX_NAME']]['isUnique'] = (bool)(1 - $key['NON_UNIQUE']);
+    }
+    $tmp['ai'] = null;
+    foreach ($tmp['columns'] as $column => $info) 
+    {
+      if ($info['isAutoincrement'])
+      {
+        $tmp['ai'] = $column;
+        break;
+      }
     }
     return $tmp;
   }

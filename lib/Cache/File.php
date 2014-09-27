@@ -37,6 +37,22 @@ class File extends Cache
    * Error message templates.
    */
   const ERR_CACHE_FILE_1 = 'Cache directory "[{var}]" is not writable.';
+  
+  /**
+   * Permissions for newly created directories.
+   *
+   * @var integer $directoryMode
+   * @access public
+   */
+  public $directoryMode = 0777;
+  
+  /**
+   * Permissions for newly created files.
+   *
+   * @var integer $fileMode
+   * @access public
+   */
+  public $fileMode = 0666;
 
   /**
    * The directory in which cache files will be stored.
@@ -56,8 +72,8 @@ class File extends Cache
   public function setDirectory($path = null)
   {
     $dir = \Aleph::dir($path ?: 'cache');
-    if (!is_dir($dir)) mkdir($dir, 0775, true);
-    if (!is_writable($dir) && !chmod($dir, 0775)) throw new Core\Exception($this, 'ERR_CACHE_FILE_1', $dir);
+    if (!is_dir($dir)) mkdir($dir, $this->directoryMode, true);
+    if (!is_writable($dir) && !chmod($dir, $this->directoryMode)) throw new Core\Exception($this, 'ERR_CACHE_FILE_1', $dir);
     $this->dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
   }
   
@@ -89,7 +105,7 @@ class File extends Cache
     file_put_contents($file, serialize($content), LOCK_EX);
     $enabled = \Aleph::isErrorHandlingEnabled();
     $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
-    chmod($file, 0777);
+    chmod($file, $this->fileMode);
     touch($file, $expire + time());
     \Aleph::errorHandling($enabled, $level);
     $this->saveKeyToVault($key, $expire, $group);
