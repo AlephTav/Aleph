@@ -224,14 +224,33 @@ class Generator
     $this->createDirectory($dir);
     $info = $this->getInfoFromDB($namespace);
     $file = $dir . '/' . $this->alias . '.xml';
-    if (!file_exists($file) || $this->mode == self::MODE_REPLACE_IF_EXISTS)
+    if (!file_exists($file))
     {
       $this->createXML($file, $namespace, $info);
     }
     else
     {
       $xinfo = $this->getInfoFromXML($file);
-
+      foreach ($info as $class => $data)
+      {
+        if (empty($xinfo[$class]) || $this->mode == self::MODE_REPLACE_IF_EXISTS) $xinfo[$class] = $data;
+        else if ($this->mode == self::MODE_IGNORE_IF_EXISTS) continue;
+        else
+        {
+          foreach (['ai', 'tables', 'columns', 'properties', 'relations'] as $property)
+          {
+            $value = $data[$property];
+            if (!isset($xinfo[$class][$property]) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
+            {
+              $xinfo[$class][$property] = $value;
+            }
+            else if (is_array($value))
+            {
+              $xinfo[$class][$property] += $value;
+            }
+          }
+        }
+      }
       $this->createXML($file, $namespace, $xinfo);
     }
   }
@@ -357,6 +376,10 @@ class Generator
           if (empty($orig['properties'][$property]) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
           {
             $orig['properties'][$property] = $sample['properties'][$property];
+          }
+          else
+          {
+            $orig['properties'][$property]['defaultValue'] += $sample['properties'][$property]['defaultValue'];
           }
         }
         $orig->save();
@@ -594,7 +617,7 @@ class Generator
             }
             if ($n < $len) $sql->join($toTable, new DB\SQLExpression(implode(' AND ', $columns)), 'LEFT');
           }
-          $dbal[$class][$relation] = ['type' => $type, 'model' => $rmodel, 'properties' => $properties, 'sql' => $sql->build()];
+          $dbal[$class]['relations'][$relation] = ['type' => $type, 'model' => $rmodel, 'properties' => $properties, 'sql' => $sql->build()];
         }
       }
     }

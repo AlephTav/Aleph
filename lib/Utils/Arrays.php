@@ -79,6 +79,31 @@ class Arrays
   }
   
   /**
+   * Merges two arrays recursively without formation of duplicate values having the same keys.
+   *
+   * @param array $a1 - the first array to merge.
+   * @param array $a2 - the second array to merge.
+   * @return array
+   * @access public
+   * @static
+   */
+  public static function merge(array $a1, array $a2)
+  {
+    foreach ($a2 as $k => $v)
+    {
+      if (is_array($v) && isset($a1[$k]) && is_array($a1[$k]))
+      {
+        $a1[$k] = static::merge($a1[$k], $v);
+      }
+      else
+      {
+        $a1[$k] = $v;
+      }
+    }
+    return $a1;
+  }
+  
+  /**
    * Completely removes the element of a multidimensional array, defined by its keys.
    *
    * @param array $array - the array from which an element will be removed.
