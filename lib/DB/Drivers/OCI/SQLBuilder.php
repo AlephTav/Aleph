@@ -74,28 +74,6 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
   }
   
   /**
-   * Quotes a table or column name for use in SQL queries.
-   *
-   * @param string $name - a column or table name.
-   * @param boolean $isTableName - determines whether table name is used.
-   * @return string
-   * @access public
-   */
-  public function wrap($name, $isTableName = false)
-  {
-    if (strlen($name) == 0) throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
-    $name = explode('.', $name);
-    foreach ($name as &$part)
-    {
-      if ($part == '*') continue;
-      if (substr($part, 0, 1) == '"' && substr($part, -1, 1) == '"') $part = substr($part, 1, -1);
-      if (trim($part) == '') throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
-      $part = '"' . $part . '"';
-    }
-    return implode('.', $name);
-  }
-  
-  /**
    * Quotes a value (or an array of values) to produce a result that can be used as a properly escaped data value in an SQL statement.
    *
    * @param string | array $value - if this value is an array then all its elements will be quoted.

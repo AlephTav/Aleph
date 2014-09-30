@@ -27,6 +27,13 @@ use Aleph\Core,
     Aleph\Utils,
     Aleph\Utils\PHP;
 
+/**
+ * Utility class that intended for navigation on related data of a model.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.db.orm
+ */
 class Relation implements \Iterator
 {
   /**
@@ -34,10 +41,25 @@ class Relation implements \Iterator
    */
   const ERR_RELATION_1 = 'The first argument should be an instance of Aleph\DB\ORM\Model or Aleph\DB\DB';
   
+  /**
+   * Instance of the database connection object.
+   *
+   * @var Aleph\DB\DB $db
+   * @access protected
+   */
   protected $db = null;
   
+  /**
+   * SQL statement that represents the related data of a model.
+   *
+   * @var string $sql
+   * @access protected
+   */
   protected $sql = null;
   
+  /**
+   *
+   */
   protected $bind = null;
 
   protected $model = null;

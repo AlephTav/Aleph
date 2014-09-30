@@ -39,6 +39,14 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
   const ERR_MYSQL_1 = 'Renaming a DB column is not supported by MySQL.';
   
   /**
+   * Symbol that used for quoting of identifiers.
+   *
+   * @var string $delimiter
+   * @access protected
+   */
+  protected $delimiter = '`';
+  
+  /**
    * Returns MySQL data type that mapped to PHP type.
    *
    * @param string $type - SQL type.
@@ -69,57 +77,6 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
         return 'bool';
     }
     return 'string';
-  }
-
-  /**
-   * Quotes a table or column name for use in SQL queries.
-   *
-   * @param string $name - a column or table name.
-   * @param boolean $isTableName - determines whether table name is used.
-   * @return string
-   * @access public
-   */
-  public function wrap($name, $isTableName = false)
-  {
-    if (strlen($name) == 0) throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_2');
-    $tmp = [];
-    $name = explode('.', $name);
-    foreach ($name as &$part)
-    {
-      if ($part == '*') $tmp[] = $part;
-      else
-      {
-        if (substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
-        {
-          $part = str_replace('``', '`', substr($part, 1, -1));
-        }
-        if (strlen($part)) $tmp[] = '`' . str_replace('`', '``', $part) . '`';
-      }
-    }
-    return implode('.', $tmp);
-  }
-  
-  /**
-   * Removes quotes from a table or column name.
-   *
-   * @param string $name - a column or table name.
-   * @param boolean $isTableName - determines whether table name is used.
-   * @return string
-   * @access public
-   */
-  public function unwrap($name, $isTableName = false)
-  {
-    $tmp = [];
-    $name = explode('.', $name);
-    foreach ($name as $part)
-    {
-      if ($part != '*' && substr($part, 0, 1) == '`' && substr($part, -1, 1) == '`')
-      {
-        $part = str_replace('``', '`', substr($part, 1, -1));
-      }
-      if (strlen($part)) $tmp[] = $part;
-    }
-    return implode('.', $tmp);
   }
   
   /**

@@ -82,6 +82,14 @@ abstract class SQLBuilder
   protected $seq = 0;
   
   /**
+   * Symbol that used for quoting of identifiers.
+   *
+   * @var string $delimiter
+   * @access protected
+   */
+  protected $delimiter = '"';
+  
+  /**
    * Constuctor.
    *
    * @param Aleph\DB\DB $db - the database connection object.
@@ -119,6 +127,51 @@ abstract class SQLBuilder
   }
   
   /**
+   * Quotes a table or column name for use in SQL queries.
+   *
+   * @param string $name - a column or table name.
+   * @param boolean $isTableName - determines whether table name is used.
+   * @return string
+   * @access public
+   */
+  public function wrap($name, $isTableName = false)
+  {
+    $d = $this->delimiter;
+    if (substr($name, 0, 1) == $d && substr($name, -1, 1) == $d) return $name;
+    $dd = $d . $d;
+    $parts = explode('.', $name);
+    foreach ($parts as &$part) 
+    {
+      if ($part == '*') continue;
+      if (strlen($part) == 0) throw new Core\Exception($this, 'ERR_SQL_2');
+      $part = $d . str_replace($d, $dd, $part) . $d;
+    }
+    return implode('.', $parts);
+  }
+  
+  /**
+   * Removes quotes from a table or column name.
+   *
+   * @param string $name - a column or table name.
+   * @param boolean $isTableName - determines whether table name is used.
+   * @return string
+   * @access public
+   */
+  public function unwrap($name, $isTableName = false)
+  {
+    $d = $this->delimiter;
+    if (substr($name, 0, 1) != $d || substr($name, -1, 1) != $d) return $name;
+    $dd = $d . $d;
+    preg_match_all('/' . $d . '((?:[^' . $d . ']|(?:' . $dd . ')+)*)' . $d . '/', $name, $matches);
+    foreach ($matches[1] as &$part) 
+    {
+      $part = str_replace($dd, $d, $part);
+      if (strlen($part) == 0) throw new Core\Exception($this, 'ERR_SQL_2');
+    }
+    return implode('.', $matches[1]);
+  }
+  
+  /**
    * Converts any string to Aleph\DB\SQLExpression object.
    *
    * @param string $sql - string to convert.
@@ -138,26 +191,6 @@ abstract class SQLBuilder
    * @access public
    */
   abstract public function getPHPType($type);
-  
-  /**
-   * Quotes a table or column name for use in SQL queries.
-   *
-   * @param string $name - a column or table name.
-   * @param boolean $isTableName - determines whether table name is used.
-   * @return string
-   * @access public
-   */
-  abstract public function wrap($name, $isTableName = false);
-  
-  /**
-   * Removes quotes from a table or column name.
-   *
-   * @param string $name - a column or table name.
-   * @param boolean $isTableName - determines whether table name is used.
-   * @return string
-   * @access public
-   */
-  abstract public function unwrap($name, $isTableName = false);
   
   /**
    * Quotes a value (or an array of values) to produce a result that can be used as a properly escaped data value in an SQL statement.

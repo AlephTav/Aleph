@@ -32,7 +32,7 @@ use Aleph\Core,
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
- * @package aleph.orm
+ * @package aleph.db.orm
  */
 class Generator
 {
