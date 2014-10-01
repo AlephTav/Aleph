@@ -419,6 +419,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
+    $tmp = [];
     $tmp['meta'] = $info['meta'];
     $tmp['columns'] = $this->normalizeColumnsInfo($info['columns']);
     $tmp['keys'] = $tmp['constraints'] = $tmp['pk'] = [];

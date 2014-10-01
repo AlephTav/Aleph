@@ -127,7 +127,10 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function tableInfo($table)
   {
-    return 'SELECT sql FROM sqlite_master WHERE type = \'table\' AND tbl_name = ' . $this->quote($table);
+    $tb = $this->quote($table);
+    $cnst = 'PRAGMA foreign_key_list(' . $tb . ')';
+    $keys = 'PRAGMA index_list(' . $tb . ')';
+    return ['meta' => '', 'columns' => $this->columnsInfo($table), 'constraints' => $cnst, 'keys' => $keys];
   }
   
   /**
@@ -330,18 +333,23 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function normalizeColumnsInfo(array $info)
   {
-    $tmp = [];
+    $tmp = []; $ai = null;
     foreach ($info as $row)
     {
       $row['type'] = strtolower($row['type']);
       preg_match('/(.*)\((.*)\)|[^()]*/', str_replace('unsigned', '', $row['type']), $arr);
       $column = $row['name'];
+      if ($ai !== false && $row['pk']) 
+      {
+        if ($ai !== null) $ai = false;
+        else $ai = $column;
+      }
       $tmp[$column]['column'] = $column;
       $tmp[$column]['type'] = $type = isset($arr[1]) ? $arr[1] : $arr[0];
       $tmp[$column]['phpType'] = $this->getPHPType($tmp[$column]['type']);
       $tmp[$column]['isPrimaryKey'] = (bool)$row['pk'];
       $tmp[$column]['isNullable'] = ($row['notnull'] == 0);
-      $tmp[$column]['isAutoincrement'] = ($tmp[$column]['type'] == 'integer');
+      $tmp[$column]['isAutoincrement'] = false;
       $tmp[$column]['isUnsigned'] = strpos($row['type'], 'unsigned') !== false;
       $tmp[$column]['default'] = $row['dflt_value'];
       $tmp[$column]['maxLength'] = 0;
@@ -356,6 +364,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
         $tmp[$column]['precision'] = (int)trim($arr[1]);
       }
     }
+    if (!empty($ai) && !strncasecmp($tmp[$ai]['type'], 'int', 3)) $tmp[$ai]['isAutoincrement'] = true;
     return $tmp;
   }
   
@@ -368,44 +377,35 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
-    $sql = reset($info)['sql'];
-    $info = ['constraints' => []];
-    $clean = function($column, $smart = false)
+    $tmp = [];
+    $tmp['meta'] = $info['meta'];
+    $tmp['columns'] = $this->normalizeColumnsInfo($info['columns']);
+    $tmp['keys'] = $tmp['constraints'] = $tmp['pk'] = [];
+    $schema = $this->db->getSchema();
+    foreach ($info['constraints'] as $cnst)
     {
-      $column = explode(',', $column);
-      foreach ($column as &$col) if (substr(trim($col), 0, 1) == '"') $col = substr(trim($col), 1, -1);
-      return $smart && count($column) == 1 ? $column[0] : $column;
-    };
-    $action = function($match)
+      $tmp['constraints'][$cnst['id']]['columns'][$cnst['from']] = ['schema' => $schema, 'table' => $cnst['table'], 'column' => $cnst['to']];
+      $tmp['constraints'][$cnst['id']]['actions'] = ['update' => $cnst['on_update'], 'delete' => $cnst['on_delete']];
+    }
+    foreach ($info['keys'] as $key)
     {
-      $actions = [];
-      foreach (preg_split('/\bON\b/mi', trim($match[6])) as $act)
+      $columns = $this->db->rows('PRAGMA index_info(' . $this->quote($key['name']) . ')');
+      foreach ($columns as $column) $tmp['keys'][$key['seq']]['columns'][] = $column['name'];
+      $tmp['keys'][$key['seq']]['isUnique'] = $key['unique']; 
+    }
+    foreach ($info['columns'] as $column) 
+    {
+      if ($column['pk']) $tmp['pk'][] = $column['name'];
+    }
+    $tmp['ai'] = null;
+    foreach ($tmp['columns'] as $column => $info) 
+    {
+      if ($info['isAutoincrement'])
       {
-        if ($act == '') continue;
-        $act = explode(' ', trim($act));
-        $actions[strtolower($act[0])] = implode(' ', array_slice($act, 1));
+        $tmp['ai'] = $column;
+        break;
       }
-      return $actions;
-    };
-    $n = 0;
-    preg_match_all('/[(,\r\n]\s*(.+)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
-    foreach ($matches as $k => $match)
-    {
-      $column = trim(explode(' ', $match[1])[0]);
-      if (strtolower($column) == 'constraint') continue;
-      $actions = isset($match[4]) ? $action($match[4]) : [];
-      $info['constraints'][$n++] = ['columns' => $clean($column), 
-                                    'reference' => ['table' => $clean($match[2], true), 'columns' => $clean($match[3])],
-                                    'actions' => $actions];
     }
-    preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
-    foreach ($matches as $k => $match)
-    {
-      $actions = isset($match[6]) ? $action($match[6]) : [];
-      $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 
-                                                                                'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
-                                                                                'actions' => $actions];
-    }
-    return $info;
+    return $tmp;
   }
 }

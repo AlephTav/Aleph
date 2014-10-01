@@ -58,38 +58,117 @@ class Relation implements \Iterator
   protected $sql = null;
   
   /**
+   * Instance of a model that bound with related data.
    *
+   * @var Aleph\DB\ORM\Model $bind
+   * @access protected
    */
   protected $bind = null;
 
+  /**
+   * Class name of related model.
+   *
+   * @var string $model
+   * @access protected
+   */
   protected $model = null;
   
+  /**
+   * Array of links between the given model $bind and columns of table(s) in SQL statement $sql.
+   *
+   * @var array $properties
+   * @access protected
+   */
   protected $properties = null;
   
+  /**
+   * If it is TRUE, every row of data will be returned as array on each iteration.
+   *
+   * @var boolean $asArray
+   * @access private
+   */
   private $asArray = false;
   
+  /**
+   * WHERE clause conditions.
+   *
+   * @var mixed $where
+   * @access private
+   */
   private $where = null;
   
+  /**
+   * GROUP BY clause conditions.
+   *
+   * @var mixed $group
+   * @access private
+   */
   private $group = null;
   
+  /**
+   * HAVING clause conditions.
+   *
+   * @var mixed $having
+   * @access private
+   */
   private $having = null;
   
+  /**
+   * ORDER BY clause conditions.
+   *
+   * @var mixed $order
+   * @access private
+   */
   private $order = null;
   
+  /**
+   * Offset part of LIMIT clause.
+   *
+   * @var mixed $offset
+   * @access private
+   */
   private $offset = null;
   
+  /**
+   * Limit part of LIMIT clause.
+   *
+   * @var mixed $limit
+   * @access private
+   */
   private $limit = null;
   
-  private $batch = null;
+  /**
+   * If it is TRUE, on each iteration batch of rows will be returned instead of one row per iteration.
+   *
+   * @var boolean $batch
+   * @access private
+   */
+  private $batch = false;
   
+  /**
+   * Instance of data reader.
+   *
+   * @var Aleph\DB\Reader $ds
+   * @access private
+   */
   private $ds = null;
   
+  /**
+   * Constructor. Initializes the class properties.
+   *
+   * @param Aleph\DB\DB|Aleph\DB\ORM\Model $bind - determines a model or database connection object.
+   * @param string $model - class name of the related model.
+   * @param string $sql - SQL statement that represents the related data of a model.
+   * @param array $properties - array of links between the given model $bind and columns of table(s) in SQL statement $sql.
+   * @access public
+   */
   public function __construct($bind, $model, $sql, array $properties = [])
   {
     if ($bind instanceof Model)
     {
-      $this->bind = $bind;
       $this->db = $bind->getConnection();
+      $this->bind = $bind;
+      $this->properties = $properties;
     }
     else
     {
@@ -98,7 +177,6 @@ class Relation implements \Iterator
     }
     $this->sql = $sql;
     $this->model = $model;
-    $this->properties = $properties;
   }
   
   public function rewind() 
