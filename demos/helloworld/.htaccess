@@ -1,0 +1,9 @@
+RewriteEngine On
+
+# If a directory or a file exists, use it directly.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+
+# Otherwise forward it to controller.php
+RewriteRule . /demos/helloworld/controller.php
+DirectoryIndex /demos/helloworld/controller.php

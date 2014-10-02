@@ -423,6 +423,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
     $tmp['meta'] = $info['meta'];
     $tmp['columns'] = $this->normalizeColumnsInfo($info['columns']);
     $tmp['keys'] = $tmp['constraints'] = $tmp['pk'] = [];
+    $tmp['ai'] = null;
     foreach ($info['constraints'] as $cnst)
     {
       $tmp['constraints'][$cnst['CONSTRAINT_NAME']]['columns'][$cnst['COLUMN_NAME']] = ['schema' => $cnst['REFERENCED_TABLE_SCHEMA'], 'table' => $cnst['REFERENCED_TABLE_NAME'], 'column' => $cnst['REFERENCED_COLUMN_NAME']];
@@ -439,7 +440,6 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       $tmp['keys'][$key['INDEX_NAME']]['type'] = $key['INDEX_TYPE'];
       $tmp['keys'][$key['INDEX_NAME']]['isUnique'] = (bool)(1 - $key['NON_UNIQUE']);
     }
-    $tmp['ai'] = null;
     foreach ($tmp['columns'] as $column => $info) 
     {
       if ($info['isAutoincrement'])

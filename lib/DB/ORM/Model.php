@@ -29,6 +29,9 @@ use Aleph\Core,
 
 abstract class Model
 {
+  /**
+   * Error message templates.
+   */
   const ERR_MODEL_1 = 'Property "[{var}]" does not exist in model "[{var}]".';
   const ERR_MODEL_2 = 'The model instance "[{var}]" was marked as deleted, and now, you can use it only as a read-only object.';
   const ERR_MODEL_3 = 'Property "[{var}]" of model "[{var}]" cannot be NULL.';
@@ -117,12 +120,12 @@ abstract class Model
     return new Relation(static::getDB(), get_called_class(), static::$RSQL);
   }
   
-  protected static function str2date($value, array $options = null)
+  public static function str2date($value, array $options = null)
   {
     return new Utils\DT($value, null, isset($options['timezone']) ? $options['timezone'] : null);
   }
   
-  protected static function date2str($value, array $options = null)
+  public static function date2str($value, array $options = null)
   {
     return $value instanceof \DateTimeInterface ? $value->format(isset($options['format']) ? $options['format'] : 'Y-m-d H:i:s') : $value;
   }
@@ -134,11 +137,23 @@ abstract class Model
     else $this->reset();
   }
   
+  /**
+   * Returns the database connection object.
+   *
+   * @return Aleph\DB\DB
+   * @access public
+   */
   public function getConnection()
   {
     return $this->db;
   }
   
+  /**
+   * Sets the database connection object.
+   *
+   * @param Aleph\DB\DB $db - the database connection object.
+   * @access public
+   */
   public function setConnection(DB\DB $db)
   {
     $this->db = $db;
@@ -720,8 +735,8 @@ abstract class Model
         $info = static::$columns[$column];
         $value = $this->values[$info['alias']];
         if ($n == 0 && $info['alias'] == static::$ai && !is_object($value) && strlen($value) == 0) continue;
-        if ($info['isNullable'] && $value === null) continue;
-        $tmp[$column] = $value;
+        if (!empty($info['isNullable']) && $value === null) continue;
+        $tmp[$this->db->wrap($info['column'])] = $value;
       }
       $res = $this->db->insert($table, $tmp, $options);
       if ($n == 0 && static::$ai) $this->values[static::$ai] = $res;
@@ -737,8 +752,16 @@ abstract class Model
     foreach (static::$tables as $table => $data)
     {
       $columns = $where = [];
-      foreach ($data['columns'] as $column) $columns[$column] = $this->values[static::$columns[$column]['alias']];
-      foreach ($data['pk'] as $column) $where[$column] = $this->values[static::$columns[$column]['alias']];
+      foreach ($data['columns'] as $column) 
+      {
+        $column = static::$columns[$column];
+        $columns[$this->db->wrap($column['column'])] = $this->values[$column['alias']];
+      }
+      foreach ($data['pk'] as $column) 
+      {
+        $column = static::$columns[$column];
+        $where[$this->db->wrap($column['column'])] = $this->values[$column['alias']];
+      }
       $res += $this->db->update($table, $columns, $where);
     }
     return $res;

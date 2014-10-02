@@ -22,7 +22,8 @@
 
 namespace Aleph\DB\Drivers\OCI;
 
-use Aleph\Core;
+use Aleph\Core,
+    Aleph\DB;
 
 /**
  * Class for building Oracle database queries.
@@ -116,7 +117,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
   public function tableList($scheme = null)
   {
     if ($scheme === null) return 'SELECT table_name FROM user_tables';
-    return 'SELECT object_name FROM all_objects WHERE object_type = \'TABLE\' AND owner = ' . $this->quote($scheme);
+    return 'SELECT object_name FROM all_objects WHERE object_type = \'TABLE\' AND owner = ' . $this->quote($scheme) . ' ORDER BY object_name';
   }
   
   /**
@@ -128,7 +129,24 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function tableInfo($table)
   {
-    return 'SELECT dbms_metadata.get_ddl(\'TABLE\', ' . $this->quote($table) . ') AS "info" FROM dual';
+    $schema = $this->quote($this->db->getSchema());
+    $tb = $this->quote($table);
+    $meta = 'SELECT (SELECT a.* FROM (SELECT d.referenced_name FROM user_dependencies d JOIN user_triggers tr ON tr.trigger_name = d.name WHERE tr.table_name = ' . $tb . ' AND d.type = \'TRIGGER\' AND d.referenced_type = \'SEQUENCE\') a WHERE ROWNUM <= 1) "sequenceName",
+             t.num_rows "rows", t.avg_space "availableSpace", t.AVG_ROW_LEN "rowLength", t.temporary "isTemporary"
+             FROM all_all_tables t
+             WHERE t.owner = ' . $schema . ' AND t.table_name = ' . $tb;
+    $cnst = 'SELECT c.constraint_name name, c.column_name, t1.owner ref_schema, t2.table_name ref_table, t3.column_name ref_column, t1.delete_rule
+             FROM all_cons_columns c
+             JOIN all_constraints t1 ON c.owner = t1.owner AND c.constraint_name = t1.constraint_name
+             JOIN all_constraints t2 ON t1.r_owner = t2.owner AND t1.r_constraint_name = t2.constraint_name
+             JOIN all_cons_columns t3 ON t2.owner = t3.owner AND t2.constraint_name = t3.constraint_name AND t3.position = c.position
+             WHERE c.owner = ' . $schema . ' AND c.table_name = ' . $tb . ' AND t1.constraint_type = \'R\'
+             ORDER BY t1.constraint_name';
+    $keys = 'SELECT i.index_name, c.column_name, i.index_type, i.uniqueness FROM user_indexes i
+             JOIN user_ind_columns c ON i.index_name = c.index_name
+             WHERE i.table_owner = ' . $schema . ' AND i.table_name = ' . $tb . '
+             ORDER BY i.index_name';
+    return ['meta' => $meta, 'columns' => $this->columnsInfo($table), 'constraints' => $cnst, 'keys' => $keys];
   }
   
   /**
@@ -145,7 +163,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
                     INNER JOIN all_constraints t3 ON t3.owner = t2.owner AND t3.constraint_name = t2.constraint_name
                     WHERE t2.table_name = t1.table_name AND t2.column_name = t1.column_name AND t3.constraint_type = \'P\' GROUP BY t3.constraint_type) AS key 
             FROM user_tab_cols t1
-            WHERE t1.table_name = ' . $this->quote($table);
+            WHERE t1.table_name = ' . $this->quote($table) . ' ORDER BY key, t1.column_name';
   }
   
   /**
@@ -360,8 +378,15 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       $tmp[$column]['set'] = false;
       if (strlen($tmp[$column]['default']))
       {
-        if (($type == 'timestamp' || $type == 'date') && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') $tmp[$column]['default'] = new SQLExpression($tmp[$column]['default']);
-        else if ($tmp[$column]['default'][0] == "'" && $tmp[$column]['default'][strlen($tmp[$column]['default']) - 1] == "'") $tmp[$column]['default'] = str_replace("''", "'", substr($tmp[$column]['default'], 1, -1));
+        if (($type == 'timestamp' || $type == 'date') && $tmp[$column]['default'] == 'CURRENT_TIMESTAMP') 
+        {
+          $tmp[$column]['default'] = null;
+          $tmp[$column]['isNullable'] = true;
+        }
+        else if ($tmp[$column]['default'][0] == "'" && $tmp[$column]['default'][strlen($tmp[$column]['default']) - 1] == "'") 
+        {
+          $tmp[$column]['default'] = str_replace("''", "'", substr($tmp[$column]['default'], 1, -1));
+        }
       }
     }
     return $tmp;
@@ -376,35 +401,28 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function normalizeTableInfo(array $info)
   {
-    $info = reset($info);
-    if (is_object($info['info'])) $sql = $info['info']->load();
-    else $sql = stream_get_contents($info['info']);
-    $info = ['constraints' => []];
-    $clean = function($column, $smart = false)
+    $tmp = [];
+    $tmp['meta'] = $info['meta'];
+    $tmp['meta']['isTemporary'] = $tmp['meta']['isTemporary'] == 'Y';
+    $tmp['columns'] = $this->normalizeColumnsInfo($info['columns']);
+    $tmp['keys'] = $tmp['constraints'] = $tmp['pk'] = [];
+    $tmp['ai'] = $tmp['meta']['sequenceName'];
+    foreach ($info['constraints'] as $cnst)
     {
-      $column = explode(',', $column);
-      foreach ($column as &$col) if (substr(trim($col), 0, 1) == '"') $col = substr(trim($col), 1, -1);
-      return $smart && count($column) == 1 ? $column[0] : $column;
-    };
-    $n = 0;
-    preg_match_all('/(CONSTRAINT\s+(.+)\s+)?FOREIGN\s+KEY\s*\((.+)\)\s*REFERENCES\s*(.+)\s*\((.+)\)\s*(ON\s+[^,\r\n\)]+)?/mi', $sql, $matches, PREG_SET_ORDER);
-    foreach ($matches as $k => $match)
-    {
-      $actions = [];
-      if (isset($match[6]))
-      {
-        foreach (preg_split('/\bON\b/mi', trim($match[6])) as $act)
-        {
-          if ($act == '') continue;
-          $act = explode(' ', trim($act));
-          $actions[strtolower($act[0])] = implode(' ', array_slice($act, 1));
-        }
-      }
-      $info['constraints'][$match[2] == '' ? $n++ : $clean($match[2], true)] = ['columns' => $clean($match[3]), 
-                                                                                'reference' => ['table' => $clean($match[4], true), 'columns' => $clean($match[5])],
-                                                                                'actions' => $actions];
+      $tmp['constraints'][$cnst['NAME']]['columns'][$cnst['COLUMN_NAME']] = ['schema' => $cnst['REF_SCHEMA'], 'table' => $cnst['REF_TABLE'], 'column' => $cnst['REF_COLUMN']];
+      $tmp['constraints'][$cnst['NAME']]['actions'] = ['update' => null, 'delete' => $cnst['DELETE_RULE']];
     }
-    return $info;
+    foreach ($info['keys'] as $key)
+    {
+      $tmp['keys'][$key['INDEX_NAME']]['columns'][] = $key['COLUMN_NAME'];
+      $tmp['keys'][$key['INDEX_NAME']]['type'] = $key['INDEX_TYPE'];
+      $tmp['keys'][$key['INDEX_NAME']]['isUnique'] = $key['UNIQUENESS'] == 'UNIQUE';
+    }
+    foreach ($tmp['columns'] as $column)
+    {
+      if ($column['isPrimaryKey']) $tmp['pk'][] = $column['column'];
+    }
+    return $tmp;
   }
   
   /**

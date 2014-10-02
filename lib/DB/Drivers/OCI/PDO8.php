@@ -272,7 +272,7 @@ class OCI8Statement
    * @param resource $stdid - the prepared statement identifier.
    * @access public   
    */
-  public function __construct(OCI8 $db, $stid)
+  public function __construct(PDO8 $db, $stid)
   {
     $this->st = $stid;
     $this->db = $db;

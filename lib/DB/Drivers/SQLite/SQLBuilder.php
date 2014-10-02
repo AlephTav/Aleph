@@ -381,6 +381,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
     $tmp['meta'] = $info['meta'];
     $tmp['columns'] = $this->normalizeColumnsInfo($info['columns']);
     $tmp['keys'] = $tmp['constraints'] = $tmp['pk'] = [];
+    $tmp['ai'] = null;
     $schema = $this->db->getSchema();
     foreach ($info['constraints'] as $cnst)
     {
@@ -397,7 +398,6 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
     {
       if ($column['pk']) $tmp['pk'][] = $column['name'];
     }
-    $tmp['ai'] = null;
     foreach ($tmp['columns'] as $column => $info) 
     {
       if ($info['isAutoincrement'])

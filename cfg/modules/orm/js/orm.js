@@ -8,8 +8,10 @@ cfg.addModule('orm',
     // Refresh databases aliases and tables.
     $('#btnRefreshDBs').click(function()
     {
+      $('#shadow').show();
       $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'refresh', 'args': {'alias': $('#ormAliases').val()}}}).done(function(data)
       {
+        $('#shadow').hide();
         if (cfg.hasError(data)) return;
         data = JSON.parse(data);
         $('#ormAliases').html(data['aliases']);
@@ -20,8 +22,10 @@ cfg.addModule('orm',
     // Display tables of the selected database.
     $('#ormAliases').change(function()
     {
+      $('#shadow').show();
       $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'show', 'args': {'alias': $('#ormAliases').val()}}}).done(function(html)
       {
+        $('#shadow').hide();
         if (cfg.hasError(html)) return;
         $('#ormTables').html(html);
       });
@@ -64,8 +68,8 @@ cfg.addModule('orm',
       $('#shadow').show();
       $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'xml', 'args': self.getArgs('XML')}}).done(function(html)
       {
-        if (cfg.hasError(html)) return;
         $('#shadow').hide();
+        if (cfg.hasError(html)) return;
         cfg.showMsg('XML has been successfully created.');
       });
     });
@@ -75,8 +79,8 @@ cfg.addModule('orm',
       $('#shadow').show();
       $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'model', 'args': self.getArgs('ORM')}}).done(function(html)
       {
-        if (cfg.hasError(html)) return;
         $('#shadow').hide();
+        if (cfg.hasError(html)) return;
         cfg.showMsg('Model\'s classes have been successfully created.');
       });
     });
@@ -86,8 +90,8 @@ cfg.addModule('orm',
       $('#shadow').show();
       $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'ar', 'args': self.getArgs('AR')}}).done(function(html)
       {
-        if (cfg.hasError(html)) return;
         $('#shadow').hide();
+        if (cfg.hasError(html)) return;
         cfg.showMsg('Active Record\'s classes have been successfully created.');
       });
     });

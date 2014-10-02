@@ -51,6 +51,7 @@ class Relation implements \Iterator
   
   /**
    * SQL statement that represents the related data of a model.
+   * This SQL query should not have WHERE, GROUP BY, HAVING, ORDER BY and LIMIT clauses.
    *
    * @var string $sql
    * @access protected
@@ -179,12 +180,24 @@ class Relation implements \Iterator
     $this->model = $model;
   }
   
+  /**
+   * Sets the internal pointer to the first row of the dataset.
+   *
+   * @access public
+   */
   public function rewind() 
   {
     $this->ds = $this->db->query($this->getSQL($tmp), $tmp);
     $this->ds->rewind();
   }
   
+  /**
+   * Returns TRUE if the dataset is empty or current position of the internal pointer is valid.
+   * Otherwise, it returns FALSE.
+   *
+   * @return boolean
+   * @access public
+   */
   public function valid()
   {
     $flag = $this->ds->valid();
@@ -192,6 +205,12 @@ class Relation implements \Iterator
     return $flag;
   }
   
+  /**
+   * Returns current row or batch of rows of the dataset.
+   *
+   * @return array|Aleph\DB\Model
+   * @access public
+   */
   public function current()
   {
     if ($this->asArray) 
@@ -219,22 +238,51 @@ class Relation implements \Iterator
     return $tmp;
   }
   
+  /**
+   * Returns the key of the current row.
+   *
+   * @return integer
+   * @access public
+   */
   public function key()
   {
     return $this->ds->key();
   }
   
+  /**
+   * Moves the current position to the next row of the dataset.
+   *
+   * @access public
+   */
   public function next()
   {
     $this->ds->next();
   }
   
+  /**
+   * Equivalent of call of two methods asArray() and limit().
+   *
+   * @param integer $limit - the limit part of the LIMIT clause.
+   * @param integer $offset - the offset part of the LIMIT clause.
+   * @param boolean $asArray - determines whether the each row should be presented as array or as model instance.
+   * @return self
+   * @access public
+   */
   public function __invoke($limit = null, $offset = null, $asArray = false)
   {
     $this->asArray = $asArray;
     return $this->limit($limit, $offset);
   }
   
+  /**
+   * Returns dataset rows or part of dataset.
+   *
+   * @param integer $limit - the limit part of the LIMIT clause.
+   * @param integer $offset - the offset part of the LIMIT clause.
+   * @param boolean $asArray - determines whether each row should be presented as array or as model instance.
+   * @return array
+   * @access public
+   */
   public function slice($limit = null, $offset = null, $asArray = false)
   {
     $this->limit($limit, $offset);
@@ -246,53 +294,117 @@ class Relation implements \Iterator
     return $tmp;
   }
   
+  /**
+   * Returns the first row of the dataset.
+   * If $asArray is TRUE and the dataset is empty, the method returns NULL. 
+   *
+   * @param boolean $asArray - determines whether the row should be presented as array or as model instance.
+   * @return array|Aleph\DB\Model
+   */
   public function one($asArray = false)
   {
     $res = $this->slice(1, 0, $asArray);
-    return isset($res[0]) ? $res[0] : [];
+    return isset($res[0]) ? $res[0] : ($asArray ? [] : null);
   }
   
+  /**
+   * Returns all rows of the dataset.
+   *
+   * @param boolean $asArray - determines whether each row should be presented as array or as model instance.
+   * @return array
+   * @access public
+   */
   public function all($asArray = false)
   {
     return $this->slice(null, null, $asArray);
   }
   
-  public function asArray()
+  /**
+   * Sets representation of each row of the dataset to an array ($flag is TRUE) or model instance ($flag is FALSE).
+   *
+   * @param boolean $flag - determines whether each row of the dataset should be presented as array or as model instance.
+   * @return self
+   * @access public
+   */
+  public function asArray($flag = true)
   {
-    $this->asArray = true;
+    $this->asArray = (bool)$flag;
     return $this;
   }
   
+  /**
+   * Sets fetching rows in batches.
+   *
+   * @param integer|boolean - the number of records to be fetched in each batch. If it is FALSE, the batch operation will not applied.
+   * @return self
+   * @access public
+   */
   public function batch($size)
   {
-    if ((int)$size) $this->batch = $size;
+    $this->batch = (int)$size == 0 ? false : $size;
     return $this;
   }
   
+  /**
+   * Sets WHERE part of the query.
+   *
+   * @param mixed $where - the WHERE conditions.
+   * @return self
+   * @access public
+   */
   public function where($where)
   {
     $this->where = $where;
     return $this;
   }
   
+  /**
+   * Sets GROUP BY part of the query.
+   *
+   * @param mixed $group - the GROUP BY conditions.
+   * @return self
+   * @access public
+   */
   public function group($group)
   {
     $this->group = $group;
     return $this;
   }
   
+  /**
+   * Sets HAVING part of the query.
+   *
+   * @param mixed $having - the HAVING conditions.
+   * @return self
+   * @access public
+   */
   public function having($having)
   {
     $this->having = $having;
     return $this;
   }
   
+  /**
+   * Sets ORDER BY part of the query.
+   *
+   * @param mixed $order - the ORDER BY conditions.
+   * @return self
+   * @access public
+   */
   public function order($order)
   {
     $this->order = $order;
     return $this;
   }
   
+  /**
+   * Sets LIMIT part of the query.
+   *
+   * @param integer $limit - the limit part of the LIMIT clause.
+   * @param integer $offset - the offset part of the LIMIT clause.
+   * @return self
+   * @access public
+   */
   public function limit($limit, $offset = null)
   {
     $this->offset = $offset;
@@ -300,6 +412,12 @@ class Relation implements \Iterator
     return $this;
   }
   
+  /**
+   * Resets all previously set conditions.
+   *
+   * @return self
+   * @access public
+   */
   public function reset()
   {
     $this->where = null;
@@ -308,11 +426,18 @@ class Relation implements \Iterator
     $this->order = null;
     $this->offset = null;
     $this->limit = null;
-    $this->batch = null;
+    $this->batch = false;
     $this->asArray = false;
     return $this;
   }
   
+  /**
+   * Builds the SQL query to iterate the dataset.
+   *
+   * @param mixed $tmp - a variable in which the query parameters will be written.
+   * @return string
+   * @access protected
+   */
   protected function getSQL(&$tmp)
   {
     $sql = $this->db->sql->start($this->sql);

@@ -2,7 +2,7 @@
 
 use Aleph\Utils;
 
-require_once(__DIR__ . '/../../connect.php');
+require_once(__DIR__ . '/../connect.php');
 
 $process = Utils\Process::operate();
 
@@ -63,10 +63,11 @@ class PI
   {
     $max = $process->data;
     $randmax = mt_getrandmax();
+    $randmax2 = $randmax * $randmax;
     for ($i = $j = 0; $i < $max; $i++)
     {
       $x = mt_rand(); $y = mt_rand();
-      if ($x + $y <= $randmax || $x * $x + $y * $y <= $randmax * $randmax) $j++;
+      if ($x + $y <= $randmax || $x * $x + $y * $y <= $randmax2) $j++;
     }
     $process->write(['count' => $max, 'target' => $j]);
     exit;
