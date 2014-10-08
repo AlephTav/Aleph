@@ -38,7 +38,7 @@ class <?=$class;?> extends <?php echo ($namespace == 'Aleph\DB\ORM' ? 'Model' : 
   protected static $alias = <?php echo $alias; ?>;
 
   /**
-   * Name of the autoincrement property.
+   * Name of the autoincrement property or sequence name.
    *
    * @var string $ai
    * @access protected

@@ -274,7 +274,10 @@ abstract class Model
       $column = static::$columns[$column];
       if ($insert && $column['alias'] == static::$ai) continue;
       $type = $column['phpType'];
-      if (($type == 'int' || $type == 'float') && strlen($this->values[$column['alias']]) == 0 && strlen($column['default']) == 0) return false;
+      if (($type == 'int' || $type == 'float') && strlen($this->values[$column['alias']]) == 0 && strlen($column['default']) == 0) 
+      {
+        if (!$insert || empty(static::$ai)) return false;
+      }
     }
     return true;
   }
@@ -625,7 +628,7 @@ abstract class Model
     $this->changed = false;
     $this->assigned = true;
     if (static::$onAfterInsert) \Aleph::delegate(static::$onAfterInsert, $this, $res);
-    if (static::$ai || isset($options['sequenceName'])) return $res;
+    return $res;
   }
   
   public function update()
@@ -649,6 +652,18 @@ abstract class Model
     $this->deleted = true;
     if (static::$onAfterDelete) \Aleph::delegate(static::$onAfterDelete, $this, $res);
     return $res;
+  }
+  
+  /**
+   * Fixes inconsistency between inherited tables.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function fix()
+  {
+    if ($this->deleted || !$this->isPrimaryKeyFilled()) return false;
+    return $this->doAction('fix');
   }
   
   protected function setter($property, $setter, array $options = null)
@@ -720,6 +735,7 @@ abstract class Model
   private function doInsert(array $options = null)
   {
     $n = 0;
+    if (empty($options['sequenceName']) && !empty(static::$ai) && empty($this->properties[static::$ai])) $options['sequenceName'] = static::$ai;
     foreach (static::$tables as $table => $data)
     {
       if ($n)
@@ -739,11 +755,27 @@ abstract class Model
         $tmp[$this->db->wrap($info['column'])] = $value;
       }
       $res = $this->db->insert($table, $tmp, $options);
-      if ($n == 0 && static::$ai) $this->values[static::$ai] = $res;
+      if ($n == 0 && !empty(static::$ai)) 
+      {
+        if (isset($this->values[static::$ai]))
+        {
+          $this->values[static::$ai] = $res;
+        }
+        else
+        {
+          $sv = $res;
+          foreach ($data['pk'] as $column)
+          {
+            $column = static::$columns[$column];
+            if ($column['phpType'] == 'int' || $column['phpType'] == 'float') $this->values[$column['alias']] = $res;
+          }
+        }
+      }
       $pdata = $data;
       $n++;
     }
-    return static::$ai ? $this->values[static::$ai] : null;
+    if (empty(static::$ai)) return null;
+    return isset($this->values[static::$ai]) ? $this->values[static::$ai] : $sv;
   }
   
   private function doUpdate()
@@ -775,6 +807,41 @@ abstract class Model
       $where = [];
       foreach ($data['pk'] as $column) $where[$column] = $this->values[static::$columns[$column]['alias']];
       $res += $this->db->delete($table, $where);
+    }
+    return $res;
+  }
+  
+  private function doFix()
+  {
+    $tbs = static::$tables;
+    $pk = array_shift(static::$tables)['pk'];
+    foreach (static::$tables as $table => $data)
+    {
+      foreach ($data['pk'] as $k => $column)
+      {
+        $this->values[static::$columns[$column]['alias']] = $this->values[static::$columns[$pk[$k]]['alias']];
+      }
+    }
+    $res = 0;
+    foreach (static::$tables as $table => $data)
+    {
+      $columns = $where = [];
+      foreach ($data['pk'] as $column) 
+      {
+        $column = static::$columns[$column];
+        $where[$this->db->wrap($column['column'])] = $this->values[$column['alias']];
+      }
+      if (!$this->db->cell($this->db->sql->select($table, new DB\SQLExpression('COUNT(*)'))->where($where)->build($tmp), $tmp))
+      {
+        foreach ($data['columns'] as $column)
+        {
+          $column = static::$columns[$column];
+          $value = $this->values[$column['alias']];
+          if (!empty($column['isNullable']) && $value === null) continue;
+          $columns[$this->db->wrap($column['column'])] = $value;
+        }
+        $res += $this->db->insert($table, $columns);
+      }
     }
     return $res;
   }

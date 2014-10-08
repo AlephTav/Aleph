@@ -103,7 +103,9 @@ cfg.addModule('orm',
                      'tables': this.getExcludedTables(),
                      'mode': $('#ormMode').find('input:checked[name="ormMode"]').val(),
                      'useTransformation': $('#ormTransformation').prop('checked') ? 1 : 0,
-                     'useInheritance': $('#ormInheritance').prop('checked') ? 1 : 0};
+                     'useInheritance': $('#ormInheritance').prop('checked') ? 1 : 0,
+                     'usePrettyClassName': $('#ormPrettyClassName').prop('checked') ? 1 : 0,
+                     'usePrettyPropertyName': $('#ormPrettyPropertyName').prop('checked') ? 1 : 0};
     if ((tmp = $('#ormBaseDirectory').val()) != '') args['dir'] = tmp;
     if (mode == 'AR') 
     {

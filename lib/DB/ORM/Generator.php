@@ -99,6 +99,22 @@ class Generator
    * @access public
    */
   public $useInheritance = true;
+  
+  /**
+   * Determines whether each class name should be normalizes.
+   *
+   * @var boolean $usePrettyClassName
+   * @access public
+   */
+  public $usePrettyClassName = false;
+  
+  /**
+   * Determines whether each property name should be normalizes.
+   *
+   * @var boolean $usePrettyPropertyName
+   * @access public
+   */
+  public $usePrettyPropertyName = false;
 
   /**
    * Database connection object.
@@ -233,6 +249,7 @@ class Generator
       $xinfo = $this->getInfoFromXML($file);
       foreach ($info as $class => $data)
       {
+        $class = $this->normalizeClass($class);
         if (empty($xinfo[$class]) || $this->mode == self::MODE_REPLACE_IF_EXISTS) $xinfo[$class] = $data;
         else if ($this->mode == self::MODE_IGNORE_IF_EXISTS) continue;
         else
@@ -273,7 +290,8 @@ class Generator
     foreach ($info as $table => $data)
     {
       if (in_array($table, $this->excludedTables)) continue;
-      $file = $dir . '/' . $this->normalizeFile($table) . '.php';
+      $class = $this->normalizeClass($table);
+      $file = $dir . '/' . $class . '.php';
       $exists = is_file($file);
       if ($exists && $this->mode == self::MODE_IGNORE_IF_EXISTS) continue;
       $properties = [];
@@ -283,7 +301,7 @@ class Generator
       }
       $properties = implode(PHP_EOL, $properties) . PHP_EOL;
       $tpl->table = $table;
-      $tpl->class = $this->normalizeClass($table);
+      $tpl->class = $class;
       $tpl->properties = $properties;
       if (!$exists || $this->mode == self::MODE_REPLACE_IF_EXISTS)
       {
@@ -340,7 +358,9 @@ class Generator
     $tpl->alias = PHP\Tools::php2str($this->alias);
     foreach ($info as $model => $data)
     {
-      $file = $dir . '/' . $this->normalizeFile($model) . '.php';
+      if (!$xml && in_array($model, $this->excludedTables)) continue;
+      $model = $this->normalizeClass($model);
+      $file = $dir . '/' . $model . '.php';
       $exists = is_file($file);
       if ($exists && $this->mode == self::MODE_IGNORE_IF_EXISTS) continue;
       $properties = [];
@@ -348,7 +368,7 @@ class Generator
       {
         $properties[] = ' * @property ' . $data['columns'][$dta['column']]['phpType'] . ' $' . $property;
       }
-      $tpl->class = $this->normalizeClass($model);
+      $tpl->class = $model;
       $tpl->tableList = implode(', ', array_keys($data['tables']));
       $tpl->propertyList = implode(PHP_EOL, $properties) . PHP_EOL;
       $tpl->ai = PHP\Tools::php2str($data['ai']);
@@ -371,7 +391,9 @@ class Generator
         require_once($file);
         $sample = new PHP\InfoClass($namespace . '\\' . $tpl->class, $this->tab, $this->fileMode);
         if (empty($orig['comment']) || $this->mode == self::MODE_REPLACE_IMPORTANT) $orig['comment'] = $sample['comment'];
-        foreach (['alias', 'ai', 'tables', 'columns', 'properties', 'relations'] as $property)
+        if (empty($orig['properties']['alias']) || $this->mode == self::MODE_REPLACE_IMPORTANT) $orig['properties']['alias'] = $sample['properties']['alias'];
+        if (empty($orig['properties']['ai']) || $this->mode == self::MODE_REPLACE_IMPORTANT) $orig['properties']['ai'] = $sample['properties']['ai'];
+        foreach (['tables', 'columns', 'properties', 'relations'] as $property)
         {
           if (empty($orig['properties'][$property]) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
           {
@@ -401,7 +423,6 @@ class Generator
     $info = $this->getDBInfo();
     foreach ($info as $table => $data)
     {
-      if (in_array($table, $this->excludedTables)) continue;
       $tbs = [$table];
       // Determining model inheritance.
       if ($this->useInheritance)
@@ -433,13 +454,27 @@ class Generator
       foreach ($tbs as $tb)
       {
         $pk = $clist = $columns = [];
+        // Determining the autoincrement field or sequence name.
+        if ($info[$tb]['ai'] && !$dbal[$table]['ai'])
+        {
+          $ai = $this->db->wrap($tb) . '.' . $this->db->wrap($info[$tb]['ai']);
+          if (isset($dbal[$table]['columns'][$ai]))
+          {
+            $dbal[$table]['ai'] = $dbal[$table]['columns'][$ai]['alias'];
+          }
+          else
+          {
+            $dbal[$table]['ai'] = $info[$tb]['ai'];
+          }
+        }
+        // Extracting columns info.
         foreach ($info[$tb]['columns'] as $column => $cinfo) 
         {
           $clist[] = $col = $this->db->wrap($tb, true) . '.' . $this->db->wrap($column);
-          $property = $column;
-          if (isset($dbal[$table]['properties'][$column]))
+          $property = $this->normalizeProperty($column);
+          if (isset($dbal[$table]['properties'][$property]))
           {
-            $property = strtolower($this->singularize($tb)) . ucfirst($column);
+            $property = $this->singularize($this->normalizeProperty($tb)) . ucfirst($property);
           }
           if (empty($cinfo['isPrimaryKey'])) unset($cinfo['isPrimaryKey']);
           if (empty($cinfo['isNullable'])) unset($cinfo['isNullable']);
@@ -460,13 +495,10 @@ class Generator
             $dbal[$table]['properties'][$property]['column'] = $col;
           }
         }
+        // Extracting primary key columns.
         foreach ($info[$tb]['pk'] as $column) 
         {
           $pk[] = $col = $this->db->wrap($tb, true) . '.' . $this->db->wrap($column);
-          if (empty($dbal[$table]['ai']) && $info[$tb]['columns'][$column]['isAutoincrement'])
-          {
-            $dbal[$table]['ai'] = $dbal[$table]['columns'][$col]['alias'];
-          }
         }
         $dbal[$table]['tables'][$this->db->wrap($tb, true)] = ['pk' => $pk, 'columns' => $clist];
       }
@@ -478,7 +510,6 @@ class Generator
     // Extracting relations.
     foreach ($info as $table => $data)
     {
-      if (in_array($table, $this->excludedTables)) continue;
       foreach ($data['constraints'] as $cnst => $params)
       {
         $prms = $params['columns'];
@@ -580,7 +611,7 @@ class Generator
           $relation = (string)$rel['Name'];
           $rmodel = (string)$rel['Model'];
           if (PHP\Tools::getNamespace($rmodel) != $namespace) throw new Core\Exception($this, 'ERR_GENERATOR_6', $rmodel);
-          $rclass = PHP\Tools::getClassName($rmodel);
+          $rclass = $this->normalizeClass(PHP\Tools::getClassName($rmodel));
           $type = (string)$rel['Type'];
           $len = count($rel->Join) - 1;
           $table = (string)$rel->Join[0]->From['Table'];
@@ -643,7 +674,7 @@ class Generator
     {
       if (in_array($class, $this->excludedTables)) continue;
       $model = $dom->createElement('Model');
-      $model->setAttribute('Class', $class);
+      $model->setAttribute('Class', $this->normalizeClass($class));
       $mapping = $dom->createElement('Mapping');
       foreach ($data['tables'] as $table => $details)
       {
@@ -848,10 +879,10 @@ class Generator
       $property = $dbal[$from]['columns'][$this->db->wrap($from . '.' . $column)]['alias'];
       $properties[$property] = $this->db->wrap($data['table'] . '.' . $data['column']);
     }
-    if ($type != 'one') $relation = $this->pluralize($to);
+    if ($type != 'one') $relation = $this->pluralize($this->normalizeProperty($to));
     else
     {
-      $relation = $this->singularize($to);
+      $relation = $this->singularize($this->normalizeProperty($to));
       if ($to == $from) $relation = 'parent' . ucfirst($relation);
     }
     $relation = isset($dbal[$from]['relations']) ? $this->prefix($relation, [$dbal[$from]['relations'], $dbal[$from]['properties']]) : $relation;
@@ -986,24 +1017,35 @@ class Generator
    */
   private function normalizeClass($class)
   {
+    $class = str_replace(['\\', '/', '<', '>', '"', '*', ':', '?', '|'], '', $class);
+    if (!$this->usePrettyClassName) return $class;
     $tmp = explode('_', $class);
+    if (count($tmp) == 1) return strtoupper($class) == $class ? ucfirst(strtolower($class)) : ucfirst($class); 
     foreach ($tmp as $k => $v) 
     {
-      if ($v = trim($v)) $tmp[$k] = ucfirst($v);
+      if (trim($v)) $tmp[$k] = ucfirst(strtolower(trim($v)));
       else unset($tmp[$k]);
     }
     return implode('', $tmp);
   }
-  
+
   /**
-   * Normalizes a file name.
+   * Normalizes a property name.
    *
-   * @param string $file
+   * @param string $property - a property name to normalize.
    * @return string
    * @access private
    */
-  private function normalizeFile($file)
+  private function normalizeProperty($property)
   {
-    return str_replace(['\\', '/', '<', '>', '"', '*', ':', '?', '|'], '', $file);
+    if (!$this->usePrettyPropertyName) return $property;
+    $tmp = explode('_', $property);
+    if (count($tmp) == 1) return strtoupper($property) == $property ? lcfirst(strtolower($property)) : lcfirst($property);
+    foreach ($tmp as $k => $v) 
+    {
+      if (trim($v)) $tmp[$k] = ucfirst(strtolower(trim($v)));
+      else unset($tmp[$k]);
+    }
+    return lcfirst(implode('', $tmp));
   }
 }

@@ -46,17 +46,6 @@ class ORM extends Module
         }
         echo $this->renderTables($args['alias']);
         break;
-      case 'xml':
-        if (empty($args['alias'])) self::error('The database alias is not defined.');
-        else
-        {
-          $gen = new Generator($args['alias'], isset($args['dir']) ? $args['dir'] : null, isset($args['mode']) ? $args['mode'] : Generator::MODE_REPLACE_IMPORTANT);
-          $gen->setExcludedTables($this->extractTables($args));
-          $gen->useInheritance = isset($args['useInheritance']) ? (bool)$args['useInheritance'] : false;
-          $gen->useTransformation = isset($args['useTransformation']) ? (bool)$args['useTransformation'] : false;
-          $gen->xml(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM');
-          if (Configurator::isCLI()) echo PHP_EOL . 'XML file have been successfully generated.' . PHP_EOL;
-        }
       case 'ar':
         if (empty($args['alias'])) self::error('The database alias is not defined.');
         else
@@ -67,6 +56,19 @@ class ORM extends Module
           if (Configurator::isCLI()) echo PHP_EOL . 'Active Record\'s classes have been successfully generated.' . PHP_EOL;
         }
         break;
+      case 'xml':
+        if (empty($args['alias'])) self::error('The database alias is not defined.');
+        else
+        {
+          $gen = new Generator($args['alias'], isset($args['dir']) ? $args['dir'] : null, isset($args['mode']) ? $args['mode'] : Generator::MODE_REPLACE_IMPORTANT);
+          $gen->setExcludedTables($this->extractTables($args));
+          $gen->useInheritance = isset($args['useInheritance']) ? (bool)$args['useInheritance'] : false;
+          $gen->useTransformation = isset($args['useTransformation']) ? (bool)$args['useTransformation'] : false;
+          $gen->usePrettyClassName = isset($args['usePrettyClassName']) ? (bool)$args['usePrettyClassName'] : false;
+          $gen->usePrettyPropertyName = isset($args['usePrettyPropertyName']) ? (bool)$args['usePrettyPropertyName'] : false;
+          $gen->xml(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM');
+          if (Configurator::isCLI()) echo PHP_EOL . 'XML file have been successfully generated.' . PHP_EOL;
+        }
       case 'model':
         if (empty($args['alias'])) self::error('The database alias is not defined.');
         else
@@ -75,6 +77,8 @@ class ORM extends Module
           $gen->setExcludedTables($this->extractTables($args));
           $gen->useInheritance = isset($args['useInheritance']) ? (bool)$args['useInheritance'] : false;
           $gen->useTransformation = isset($args['useTransformation']) ? (bool)$args['useTransformation'] : false;
+          $gen->usePrettyClassName = isset($args['usePrettyClassName']) ? (bool)$args['usePrettyClassName'] : false;
+          $gen->usePrettyPropertyName = isset($args['usePrettyPropertyName']) ? (bool)$args['usePrettyPropertyName'] : false;
           $gen->orm(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM');
           if (Configurator::isCLI()) echo PHP_EOL . 'Model\'s classes have been successfully generated.' . PHP_EOL;
         }
@@ -104,22 +108,22 @@ The use cases:
     
        Outputs the database alias list and table list of each database. If DATABASE_ALIAS is defined it outputs table list of the given database.
 
-    2. cfg orm xml [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] [--useInheritance 1|0] [--useTransformation 1|0]
-
-       Creates XML file in directory BASE_DIRECTORY that describes model of the given database.
-       DATABASE_ALIAS - alias of the needed database.
-       NAMESPACE - namespace of all model classes.
-       CREATION_MODE - determines what need to do with already existing XML file. The valid values are: 1 - replace existing XML file, 2 - ignore if XML already exists, 3 - replace only important data and don't touch user changes, 4 - add only new data.
-       EXCLUDED_TABLES - comma-separated list of tables that will be excluded from processing.
-
-    3. cfg orm ar [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES]
+    2. cfg orm ar [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES]
     
        Creates Active Record classes in directory BASE_DIRECTORY for database that determined by its alias - DATABASE_ALIAS.
        NAMESPACE - namespace of all Active Record classes.
        CREATION_MODE - determines what need to do with already existing classes. The valid values are the same as in item 2.
        EXCLUDED_TABLES - comma-separated list of tables that will be excluded from processing.
     
-    4. cfg orm model [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] [--useInheritance 1|0] [--useTransformation 1|0]
+    3. cfg orm xml [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]
+
+       Creates XML file in directory BASE_DIRECTORY that describes model of the given database.
+       DATABASE_ALIAS - alias of the needed database.
+       NAMESPACE - namespace of all model classes.
+       CREATION_MODE - determines what need to do with already existing XML file. The valid values are: 1 - replace existing XML file, 2 - ignore if XML already exists, 3 - replace only important data and don't touch user changes, 4 - add only new data.
+       EXCLUDED_TABLES - comma-separated list of tables that will be excluded from processing.
+    
+    4. cfg orm model [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]
     
        Creates model classes in directory BASE_DIRECTORY for database that determined by its alias - DATABASE_ALIAS.
        NAMESPACE - namespace of all model classes.

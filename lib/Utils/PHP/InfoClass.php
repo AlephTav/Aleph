@@ -193,7 +193,8 @@ class InfoClass implements \ArrayAccess
     if ($properties) $code[] = implode(PHP_EOL . PHP_EOL, $properties) . PHP_EOL;
     if ($info['methods']) foreach ($info['methods'] as $method => $value) $methods[] = $this->getCodeMethod($method);
     if ($methods) $code[] = implode(PHP_EOL . PHP_EOL, $methods);
-    return implode(PHP_EOL, $code) . '}';
+    $code[] = '}';
+    return implode(PHP_EOL, $code);
   }
   
   /**
