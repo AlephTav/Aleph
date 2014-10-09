@@ -1231,7 +1231,7 @@ class View implements \ArrayAccess
    */
   protected function getCacheID($init)
   {
-    return $this->UID . ($init ? '_init_vs' : session_id() . '_vs');
+    return $init ? $this->UID . '_init_vs' : $this->UID;
   }
   
   /**
@@ -1243,7 +1243,8 @@ class View implements \ArrayAccess
    */
   protected function isExpired($init = false)
   {
-    return MVC\Page::$current->getCache()->isExpired($this->getCacheID($init));
+    if ($init) return MVC\Page::$current->getCache()->isExpired($this->getCacheID(true));
+    return isset($_SESSION['__VS__'][$this->getCacheID(false)]);
   }
   
   /**
@@ -1254,15 +1255,19 @@ class View implements \ArrayAccess
    */
   protected function pull($init = false)
   {
-    $vs = MVC\Page::$current->getCache()->get($this->getCacheID($init));
     if ($init)
     {
+      $vs = MVC\Page::$current->getCache()->get($this->getCacheID(true));
       $this->title = $vs['title'];
       $this->meta = $vs['meta'];
       $this->css = $vs['css'];
       $this->js = $vs['js'];
       $this->dtd = $vs['dtd'];
       $this->tpl->setTemplate($vs['tpl']);
+    }
+    else
+    {
+      $vs = $_SESSION['__VS__'][$this->getCacheID(false)]; 
     }
     $this->vs = $vs['vs'];
     $this->ts = $vs['ts'];
@@ -1286,11 +1291,15 @@ class View implements \ArrayAccess
       $vs['js'] = $this->js;
       $vs['dtd'] = $this->dtd;
       $vs['tpl'] = $this->tpl->getTemplate();
+      $group = \Aleph::getInstance()['pom'];
+      $group = isset($group['cacheGroup']) ? $group['cacheGroup'] : null;
+      $cache = MVC\Page::$current->getCache();
+      $cache->set($this->getCacheID(true), $vs, $cache->getVaultLifeTime(), $group);
     }
-    $group = \Aleph::getInstance()['pom'];
-    $group = isset($group['cacheGroup']) ? $group['cacheGroup'] : null;
-    $cache = MVC\Page::$current->getCache();
-    $cache->set($this->getCacheID($init), $vs, $init ? $cache->getVaultLifeTime() : ini_get('session.gc_maxlifetime'), $group);
+    else
+    {
+      $_SESSION['__VS__'][$this->getCacheID(false)] = $vs;
+    }
   }
   
   /**
