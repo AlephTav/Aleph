@@ -27,6 +27,13 @@ use Aleph\Core,
     Aleph\Utils,
     Aleph\Utils\PHP;
 
+/**
+ * Base class of a model that contains all ORM functionality.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.db.orm
+ */
 abstract class Model
 {
   /**
@@ -41,22 +48,84 @@ abstract class Model
   const ERR_MODEL_7 = 'Primary key of model "[{var}]" is not filled yet. You can\'t [{var}] the row.';
   const ERR_MODEL_8 = 'Call to undefined method [{var}]';
   
+  /**
+   * Callback that will be called before saving (inserting or updating) data in the database.
+   *
+   * @var mixed $onBeforeSave
+   * @access public
+   * @static
+   */
   public static $onBeforeSave = null;
   
+  /**
+   * Callback that will be called before inserting data in the database.
+   *
+   * @var mixed $onBeforeInsert
+   * @access public
+   * @static
+   */
   public static $onBeforeInsert = null;
   
+  /**
+   * Callback that will be called before updating data in the database.
+   *
+   * @var mixed $onBeforeUpdate
+   * @access public
+   * @static
+   */
   public static $onBeforeUpdate = null;
  
+  /**
+   * Callback that will be called before deleting data from the database.
+   *
+   * @var mixed $onBeforeDelete
+   * @access public
+   * @static
+   */
   public static $onBeforeDelete = null;
   
+  /**
+   * Callback that will be called after saving (inserting or updating) data in the database.
+   *
+   * @var mixed $onAfterSave
+   * @access public
+   * @static
+   */
   public static $onAfterSave = null;
   
+  /**
+   * Callback that will be called after inserting data in the database.
+   *
+   * @var mixed $onAfterInsert
+   * @access public
+   * @static
+   */
   public static $onAfterInsert = null;
   
+  /**
+   * Callback that will be called after updating data in the database.
+   *
+   * @var mixed $onAfterUpdate
+   * @access public
+   * @static
+   */
   public static $onAfterUpdate = null;
   
+  /**
+   * Callback that will be called after deleting data from the database.
+   *
+   * @var mixed $onAfterDelete
+   * @access public
+   * @static
+   */
   public static $onAfterDelete = null;
   
+  /**
+   * Alias of the database that used in model queries.
+   *
+   * @var string $alias
+   * @access protected
+   */
   protected static $alias = null;
   
   /**
@@ -68,8 +137,20 @@ abstract class Model
    */
   protected static $ai = null;
   
+  /**
+   * Information about model's tables (column list and primary key).
+   *
+   * @var array $tables
+   * @access protected
+   */
   protected static $tables = [];
   
+  /**
+   * Meta iInformation about model's columns.
+   *
+   * @var array $columns
+   * @access protected
+   */
   protected static $columns = [];
 
   /**
@@ -79,9 +160,21 @@ abstract class Model
    * @access protected
    */
   protected $db = null;
-  
+
+  /**
+   * Information about model's relations.
+   *
+   * @var array $relations
+   * @access protected
+   */
   protected $relations = [];
   
+  /**
+   * Information about model's properties.
+   *
+   * @var array $properties
+   * @access protected
+   */
   protected $properties = [];
   
   /**
@@ -92,44 +185,121 @@ abstract class Model
    */
   private $values = [];
   
+  /**
+   * Active relation objects.
+   *
+   * @var array $rels
+   * @access private
+   */
   private $rels = [];
   
+  /**
+   * Determines whether a model is initiated from database.
+   *
+   * @var boolean $assigned
+   * @access private
+   */
   private $assigned = false;
   
+  /**
+   * Determines whether at least one property value is changed.
+   *
+   * @var boolean $changed
+   * @access private
+   */
   private $changed = false;
   
+  /**
+   * Determines whether the model is marked as deleted.
+   *
+   * @var boolean $deleted
+   * @access private
+   */
   private $deleted = false;
   
+  /**
+   * Returns information about model structure.
+   *
+   * @return array
+   * @access public
+   * @static
+   */
   public static function getInfo()
   {
     return ['alias' => static::$alias, 'ai' => static::$ai, 'tables' => static::$tables, 'columns' => static::$columns];
   }
   
+  /**
+   * Returns database connection object that used by the model.
+   *
+   * @return Aleph\DB\DB
+   * @access public
+   * @static
+   */
   public static function getDB()
   {
     return DB\DB::getConnection(static::$alias);
   }
   
+  /**
+   * Returns SQLBuilder instance associated with the current database.
+   *
+   * @return Aleph\DB\SQLBuilder
+   * @access public
+   * @static
+   */
   public static function getSQL()
   {
     return static::getDB()->sql;
   }
   
+  /**
+   * Returns Relation object to iterate rows of the received model dataset.
+   *
+   * @return Aleph\DB\ORM\Relation
+   * @access public
+   * @static
+   */
   public static function find()
   {
     return new Relation(static::getDB(), get_called_class(), static::$RSQL);
   }
   
+  /**
+   * Converts the given string into datetime object.
+   *
+   * @param mixed $value - date string or DateTime object.
+   * @param array $options - option array that can contain timezone of the given date.
+   * @return Aleph\Utils\DT
+   * @access public
+   * @static   
+   */
   public static function str2date($value, array $options = null)
   {
     return new Utils\DT($value, null, isset($options['timezone']) ? $options['timezone'] : null);
   }
   
+  /**
+   * Converts datatime object to the formated date string.
+   *
+   * @param mixed $value - the datatime object.
+   * @param array $options - option array that can contain output date format value.
+   * @return string
+   * @access public
+   * @static
+   */
   public static function date2str($value, array $options = null)
   {
     return $value instanceof \DateTimeInterface ? $value->format(isset($options['format']) ? $options['format'] : 'Y-m-d H:i:s') : $value;
   }
 
+  /**
+   * Constructor. Initiates the model.
+   *
+   * @param mixed $values - the property values of the model.
+   * @param mixed $order - the ORDER BY clause condition.
+   * @access public
+   */
   public function __construct($values = null, $order = null)
   {
     $this->db = static::getDB();
@@ -159,6 +329,14 @@ abstract class Model
     $this->db = $db;
   }
   
+  /**
+   * Finds record in the model's tables by the given property values and assigns column values to the properties of the model instance.
+   *
+   * @param mixed $values - the WHERE clause condition.
+   * @param mixed $order - the ORDER BY clause condition.
+   * @return self
+   * @access public
+   */
   public function assign($values, $order = null)
   {
     $tmp = [];
@@ -177,6 +355,14 @@ abstract class Model
     return $this->assignFromCondition($tmp, $order);
   }
   
+  /**
+   * Finds record in the model's tables by the given criteria and assigns column values to the properties of the model instance.
+   *
+   * @param mixed $where - the WHERE clause condition.
+   * @param mixed $order - the ORDER BY clause condition.
+   * @return self
+   * @access public
+   */
   public function assignFromCondition($where, $order = null)
   {
     $this->values = $this->db->row($this->db->sql->start(static::$RSQL)->where($where)->order($order)->limit(1)->build($tmp), $tmp);
@@ -604,6 +790,14 @@ abstract class Model
     $this->changed = true;
   }
   
+  /**
+   * Returns Relation object by its name.
+   *
+   * @param string $method - the name of relation.
+   * @param array $args - the relation parameters: $limit, $offset, $asArray.
+   * @return Aleph\DB\ORM\Relation
+   * @access public   
+   */
   public function __call($method, array $args)
   {
     if (empty($this->relations[$method])) throw new Core\Exception($this, 'ERR_MODEL_8', get_class($this) . '::' . $method . '()');
@@ -611,6 +805,14 @@ abstract class Model
     return $rel(isset($args[0]) ? $args[0] : null, isset($args[1]) ? $args[1] : null, isset($args[2]) ? $args[2] : false);
   }
   
+  /**
+   * Updates model records in the database table(s) if this records exist or inserts new records otherwise.
+   * It returns numbers of affected rows.
+   *
+   * @param array $options - contains additional parameters (for example, updateOnKeyDuplicate or sequenceName) required by some DBMS for row insertion.
+   * @return integer
+   * @access public
+   */
   public function save(array $options = null)
   {
     if (static::$onBeforeSave) \Aleph::delegate(static::$onBeforeSave, $this);
@@ -619,6 +821,15 @@ abstract class Model
     return $res;
   }
   
+  /**
+   * Inserts new model row(s) to the database table(s).
+   * The method returns the ID of the last inserted row, or the last value from a sequence object, depending on the underlying driver.
+   * If a database table doesn't have the auto-incremental column or the sequence name is not passed as a parameter, the method returns NULL.
+   *
+   * @param array $options - contains additional parameters (for example, updateOnKeyDuplicate or sequenceName) required by some DBMS.
+   * @return integer
+   * @access public
+   */
   public function insert(array $options = null)
   {
     if ($this->deleted) throw new Core\Exception($this, 'ERR_MODEL_2', get_class($this));
@@ -631,6 +842,13 @@ abstract class Model
     return $res;
   }
   
+  /**
+   * Updates existing model row (or rows) in the database table(s).
+   * It returns the number of affected rows.
+   *
+   * @return integer
+   * @access public
+   */
   public function update()
   {
     if ($this->deleted) throw new Core\Exception($this, 'ERR_MODEL_2', get_class($this));
@@ -643,6 +861,13 @@ abstract class Model
     return $res;
   }
   
+  /**
+   * Deletes existing model row (or rows) from the database table(s).
+   * The method returns numbers of affected rows.
+   *
+   * @return integer
+   * @access public
+   */
   public function delete()
   {
     if ($this->deleted) throw new Core\Exception($this, 'ERR_MODEL_2', get_class($this));
@@ -656,6 +881,7 @@ abstract class Model
   
   /**
    * Fixes inconsistency between inherited tables.
+   * It returns FALSE if the model is deleted or the primary key is not filled. Otherwise, it returns TRUE.
    *
    * @return boolean
    * @access public
@@ -666,6 +892,15 @@ abstract class Model
     return $this->doAction('fix');
   }
   
+  /**
+   * Sets setter callback for the given model property.
+   *
+   * @param string $property - the property name.
+   * @param mixed $setter - the callback that will be automatically invoked when property gets new value.
+   * @param array $options - the setter additional arguments.
+   * @return self
+   * @access protected
+   */
   protected function setter($property, $setter, array $options = null)
   {
     if ($setter === false) 
@@ -679,6 +914,15 @@ abstract class Model
     return $this;
   }
   
+  /**
+   * Sets getter callback for the given model property.
+   *
+   * @param string $property - the property name.
+   * @param mixed $setter - the callback that will be automatically invoked when property value is returned.
+   * @param array $options - the getter additional arguments.
+   * @return self
+   * @access protected
+   */
   protected function getter($property, $getter, array $options = null)
   {
     if ($getter === false) 
@@ -692,6 +936,17 @@ abstract class Model
     return $this;
   }
   
+  /**
+   * Sets new model relation.
+   *
+   * @param string $name - the relation name.
+   * @param string $type - the relation type. Valid values are "one" (one to one relation) and "many" (one to many relation).
+   * @param string $model - the class name of the related model.
+   * @param array $properties - mapping between the current model properties and related model's columns.
+   * @param string $sql - the SQL that determines relation structure.
+   * @return self
+   * @access protected   
+   */
   protected function relation($name, $type, $model, array $properties, $sql)
   {
     if ($type === false) 
@@ -709,6 +964,14 @@ abstract class Model
     return $this;
   }
   
+  /**
+   * Performs some SQL queries.
+   *
+   * @param string $action - type of queries.
+   * @param array $options - additional options.
+   * @return mixed
+   * @access private
+   */
   private function doAction($action, $options = null)
   {
     if (count(static::$tables) <= 1 || $this->db->inTransaction())
@@ -732,6 +995,13 @@ abstract class Model
     return $res;
   }
   
+  /**
+   * Inserts row(s) in the database.
+   *
+   * @param array $options - additional options for insert operation.
+   * @return mixed
+   * @access private   
+   */
   private function doInsert(array $options = null)
   {
     $n = 0;
@@ -778,6 +1048,12 @@ abstract class Model
     return isset($this->values[static::$ai]) ? $this->values[static::$ai] : $sv;
   }
   
+  /**
+   * Updates model row(s) in the database.
+   *
+   * @return integer
+   * @access private
+   */
   private function doUpdate()
   {
     $res = 0;
@@ -799,6 +1075,12 @@ abstract class Model
     return $res;
   }
   
+  /**
+   * Deletes model row(s) from the database.
+   *
+   * @return integer
+   * @access private
+   */
   private function doDelete()
   {
     $res = 0;
@@ -811,6 +1093,12 @@ abstract class Model
     return $res;
   }
   
+  /**
+   * Inserts missed row(s) of the model in the database.
+   *
+   * @return integer
+   * @access private
+   */
   private function doFix()
   {
     $tbs = static::$tables;
@@ -846,6 +1134,12 @@ abstract class Model
     return $res;
   }
   
+  /**
+   * Returns related model object by the given relation name.
+   *
+   * @param string $relation - the relation name.
+   * @return Aleph\DB\ORM
+   */
   private function getRelationModel($relation)
   {
     $data = $this->relations[$relation];
