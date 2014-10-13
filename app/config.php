@@ -11,12 +11,14 @@ return [
     'gcProbability' => 33.333
   ], 
   'autoload' => [
-    'search' => true, 
-    'unique' => true, 
-    'type' => 'classmap', 
-    'classmap' => 'classmap.php', 
-    'mask' => '/.+\\.php\\z/i', 
-    'timeout' => 300
+    'type' => 'PSR-4',
+    'namespaces' => ['Aleph\MVC' => ['app/pages']]
+    //'type' => 'classmap',
+    //'search' => true, 
+    //'unique' => true, 
+    //'classmap' => 'classmap.php', 
+    //'mask' => '/.+\\.php\\z/i', 
+    //'timeout' => 300
   ], 
   'mvc' => [
     'locked' => false, 
@@ -50,20 +52,5 @@ return [
     'logs' => 'tmp/logs', 
     'cache' => 'tmp/cache', 
     'temp' => 'tmp/null'
-  ], 
-  'db0' => [
-    'dsn' => 'mysql:dbname=addon;host=127.0.0.1;charset=utf8', 
-    'username' => 'root', 
-    'password' => 1
-  ], 
-  'db1' => [
-    'dsn' => 'sqlite:C:\sites\smartypassword\blog.sqlite', 
-    'username' => null, 
-    'password' => null
-  ],
-  'db2' => [
-    'dsn' => 'oci8:dbname=127.0.0.1:1522/xe;schema=CUMMINS_STAGING;charset=UTF8;',
-    'username' => 'CUMMINS_STAGING',
-    'password' => 'Cummins100!',
   ]
 ];

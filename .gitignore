@@ -1,0 +1,5 @@
+/classmap.php
+/tmp/cache/*
+/tmp/logs/*
+/tmp/null/*
+/tmp/sql.log

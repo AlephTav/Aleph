@@ -1,0 +1,13 @@
+RewriteEngine On
+
+# Restrict access to cache and error log data.
+RewriteRule ^/?tmp/cache/?(.*)$ /controller.php
+RewriteRule ^/?tmp/logs/?(.*)$ /controller.php
+
+# If a directory or a file exists, use it directly.
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+
+# Otherwise forward it to controller.php
+RewriteRule . /controller.php
+DirectoryIndex /controller.php

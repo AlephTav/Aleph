@@ -994,7 +994,7 @@ final class Aleph implements \ArrayAccess
         if (class_exists('Aleph\Core\Delegate', false)) return self::delegate($callback, $class);
         if (is_callable($callback, true)) return call_user_func_array($callback, [$class]);
       }
-      if (empty($cfg['namespaces']['Aleph'])) $cfg['namespaces']['Aleph'] = __DIR__;
+      if (empty($cfg['namespaces']['Aleph'])) $cfg['namespaces'] = array_merge(['Aleph' => __DIR__], isset($cfg['namespaces']) ? (array)$cfg['namespaces'] : []);
       $namespaces = $cfg['namespaces'];
       $prefix = $class;
       while (false !== $pos = strrpos($prefix, '\\'))
@@ -1009,11 +1009,10 @@ final class Aleph implements \ArrayAccess
             if (file_exists($file))
             {
               require_once($file);
-              return true;
+              if (class_exists($class)) return true;
             }
-          }         
+          }
         }
-        $prefix = rtrim($prefix, '\\');   
       }
       return false;  
     }

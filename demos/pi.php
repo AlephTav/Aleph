@@ -10,7 +10,7 @@ class PI
 {
   public static function start()
   {
-    Utils\Process::$php = 'C:\xampp\php\php.exe';
+    Utils\Process::$php = strtolower(substr(PHP_OS, 0, 3)) == 'win' ? 'C:\xampp\php\php.exe' : 'php';
     // Start processes.
     $numproc = 10; $processes = $parts = [];
     for ($i = 0; $i < $numproc; $i++)
