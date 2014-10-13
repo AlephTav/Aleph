@@ -19,7 +19,7 @@ return [
     //'classmap' => 'classmap.php', 
     //'mask' => '/.+\\.php\\z/i', 
     //'timeout' => 300
-  ], 
+  ],
   'mvc' => [
     'locked' => false, 
     'unlockKey' => 'iwanttosee', 

@@ -65,8 +65,10 @@ cfg.addModule('orm',
     // Creates XML.
     $('#btnCreateXML').click(function()
     {
+      var args;
+      if ((args = self.getArgs('XML')) === false) return;
       $('#shadow').show();
-      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'xml', 'args': self.getArgs('XML')}}).done(function(html)
+      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'xml', 'args': args}}).done(function(html)
       {
         $('#shadow').hide();
         if (cfg.hasError(html)) return;
@@ -76,8 +78,10 @@ cfg.addModule('orm',
     // Creates models.
     $('#btnCreateORM').click(function()
     {
+      var args;
+      if ((args = self.getArgs('ORM')) === false) return;
       $('#shadow').show();
-      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'model', 'args': self.getArgs('ORM')}}).done(function(html)
+      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'model', 'args': args}}).done(function(html)
       {
         $('#shadow').hide();
         if (cfg.hasError(html)) return;
@@ -87,8 +91,10 @@ cfg.addModule('orm',
     // Creates AR.
     $('#btnCreateAR').click(function()
     {
+      var args;
+      if ((args = self.getArgs('AR')) === false) return;
       $('#shadow').show();
-      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'ar', 'args': self.getArgs('AR')}}).done(function(html)
+      $.ajax({'type': 'POST', 'data': {'module': 'orm', 'command': 'ar', 'args': args}}).done(function(html)
       {
         $('#shadow').hide();
         if (cfg.hasError(html)) return;
@@ -99,6 +105,12 @@ cfg.addModule('orm',
   
   'getArgs': function(mode)
   {
+    console.log($('#ormAliases').val());
+    if (!$('#ormAliases').val()) 
+    {
+      cfg.showMsg('Database alias is not selected.', true);
+      return false;
+    }
     var tmp, args = {'alias': $('#ormAliases').val(), 
                      'tables': this.getExcludedTables(),
                      'mode': $('#ormMode').find('input:checked[name="ormMode"]').val(),

@@ -157,7 +157,7 @@ HELP;
   
   private function getTables($alias)
   {
-    return DB::getConnection($alias)->getTableList();
+    return $alias ? DB::getConnection($alias)->getTableList() : [];
   }
   
   private function extractTables(array $args)
