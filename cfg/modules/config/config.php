@@ -7,8 +7,8 @@ class Config extends Module
   private $defaultConfiguration = [
     'debugging' => true,
     'logging' => true,
-    'templateDebug' => 'lib/tpl/debug.tpl',
-    'templateBug' => 'lib/tpl/bug.tpl',
+    'templateDebug' => 'lib/_templates/debug.tpl',
+    'templateBug' => 'lib/_templates/bug.tpl',
     'autoload' => [
       'search' => true,
       'unique' => true,
@@ -45,7 +45,7 @@ class Config extends Module
       'locked' => false,
       'unlockKey' => 'iwanttosee',
       'unlockKeyExpire' => 108000,
-      'templateLock' => 'lib/tpl/bug.tpl'
+      'templateLock' => 'lib/_templates/bug.tpl'
     ],
     'pom' => [
       'cacheEnabled' => false,
@@ -59,7 +59,7 @@ class Config extends Module
     ]
   ];
 
-  private $defaults = ['app/core/config.php' => 1, 'app/core/.local.php' => 1];
+  private $defaults = ['app/core/config.php' => 1];
   
   private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'autoload', 'cache', 'db', 'ar', 'mvc', 'pom'];
   

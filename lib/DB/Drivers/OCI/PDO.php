@@ -31,7 +31,7 @@ use Aleph\Core,
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
- * @package aleph.db
+ * @package aleph.db.drivers.oci
  */
 class PDO extends \PDO
 {
