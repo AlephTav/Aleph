@@ -1009,7 +1009,7 @@ final class Aleph implements \ArrayAccess
             if (file_exists($file))
             {
               require_once($file);
-              if (class_exists($class)) return true;
+              if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false)) return true;
             }
           }
         }
