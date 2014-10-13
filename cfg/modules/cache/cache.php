@@ -16,7 +16,7 @@ class Cache extends Module
         $a = Configurator::getAleph();
         $cache = $a->getCache();
         if (isset($args['group'])) $cache->cleanByGroup($args['group']);
-        else if (isset($args['section']))
+        else if (!empty($args['section']))
         {
           $group = $args['section'];
           if (isset($a[$group]))
