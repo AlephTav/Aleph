@@ -7,11 +7,9 @@ namespace Aleph\MVC;
  */
 class HelloWorld extends Page
 {
-  /**
-   * Page initialization.
-   */
-  public function init()
+  public function __construct()
   {
-    echo 'Hello World!';
+    // Sets page XHTML template.
+    parent::__construct(__DIR__  . '/HelloWorld.html');
   }
 }
