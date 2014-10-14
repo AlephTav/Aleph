@@ -1244,7 +1244,7 @@ class View implements \ArrayAccess
   protected function isExpired($init = false)
   {
     if ($init) return MVC\Page::$current->getCache()->isExpired($this->getCacheID(true));
-    return isset($_SESSION['__VS__'][$this->getCacheID(false)]);
+    return empty($_SESSION['__VS__'][$this->getCacheID(false)]);
   }
   
   /**
@@ -1267,7 +1267,7 @@ class View implements \ArrayAccess
     }
     else
     {
-      $vs = $_SESSION['__VS__'][$this->getCacheID(false)]; 
+      $vs = unserialize($_SESSION['__VS__'][$this->getCacheID(false)]);
     }
     $this->vs = $vs['vs'];
     $this->ts = $vs['ts'];
@@ -1298,7 +1298,7 @@ class View implements \ArrayAccess
     }
     else
     {
-      $_SESSION['__VS__'][$this->getCacheID(false)] = $vs;
+      $_SESSION['__VS__'][$this->getCacheID(false)] = serialize($vs);
     }
   }
   

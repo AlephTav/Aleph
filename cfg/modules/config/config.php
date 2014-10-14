@@ -59,7 +59,7 @@ class Config extends Module
     ]
   ];
 
-  private $defaults = ['app/core/config.php' => 1];
+  private $defaults = ['app/config.php' => 1];
   
   private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'autoload', 'cache', 'db', 'ar', 'mvc', 'pom'];
   
@@ -293,14 +293,12 @@ HELP;
     foreach ($a as $k => $v)
     {
       if (is_string($k)) $k = $this->formString($k);
-      if (!is_numeric($v))
-      {
-        if (is_array($v)) $v = $this->formArray($v, $indent, $tab);
-        else if (is_string($v)) $v = $this->formString($v);
-        else if (is_bool($v)) $v = $v ? 'true' : 'false';
-        else if ($v === null) $v = 'null';
-      }
-      $tmp[] = $isInteger ? $v : $k . ' => ' . (is_int($v) ? $v : str_replace(',', '.', $v));
+      if (is_array($v)) $v = $this->formArray($v, $indent, $tab);
+      else if (is_string($v)) $v = $this->formString($v);
+      else if (is_bool($v)) $v = $v ? 'true' : 'false';
+      else if (is_float($v)) $v = str_replace(',', '.', $v);
+      else if ($v === null) $v = 'null';
+      $tmp[] = $isInteger ? $v : $k . ' => ' . $v;
     }
     $space = PHP_EOL . str_repeat(' ', $indent);
     return '[' . $space . implode(', ' . $space, $tmp) . PHP_EOL . str_repeat(' ', $indent - $tab) . ']';

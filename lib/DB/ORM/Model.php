@@ -1143,8 +1143,8 @@ abstract class Model
   private function getRelationModel($relation)
   {
     $data = $this->relations[$relation];
-    $sql = $this->db->sql->start($this->data['sql']);
-    foreach ($this->data['properties'] as $property => $column) $where[$column] = $this->__get($property);
+    $sql = $this->db->sql->start($data['sql']);
+    foreach ($data['properties'] as $property => $column) $where[$column] = $this->__get($property);
     return (new $data['model'])->setValues($this->db->row($sql->where($where)->limit(1)->build($tmp), $tmp));
   }
 }

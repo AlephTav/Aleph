@@ -17,7 +17,7 @@ function test_mysqlbuilder()
   if ($sql->wrap('foo') !== '`foo`') return $error;
   if ($sql->wrap('`foo`') !== '`foo`') return $error;
   if ($sql->wrap('foo.foo') !== '`foo`.`foo`') return $error;
-  if ($sql->wrap('foo.`foo`') !== '`foo`.`foo`') return $error;
+  if ($sql->wrap('foo.`foo`') !== '`foo`.```foo```') return $error;
   if ($sql->wrap('`foo`.`foo`') !== '`foo`.`foo`') return $error;
   if ($sql->wrap('foo', true) != '`foo`') return $error;
   if ($sql->wrap('fo`o') != '`fo``o`') return $error;
