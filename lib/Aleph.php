@@ -320,7 +320,7 @@ final class Aleph implements \ArrayAccess
   }
   
   /**
-   * Returns the execution time (in seconds) of your PHP script. 
+   * Returns the execution time (in seconds) of your PHP script.
    *
    * @return float
    * @access public
@@ -759,6 +759,7 @@ final class Aleph implements \ArrayAccess
     $info['SERVER'] = isset($_SERVER) ? $_SERVER : [];
     $info['SESSION'] = isset($_SESSION) ? $_SESSION : [];
     unset($info['SESSION']['__DEBUG_INFORMATION__']);
+    unset($info['SESSION']['__VS__']);
     return $info;
   }
   
