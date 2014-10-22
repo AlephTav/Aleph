@@ -8,7 +8,7 @@
       </div>
     </div>
     <div id="ormTables" class="ym-grid ym-fbox-text">
-      <?php $tables = $data['tables']; require_once(__DIR__ . '/tables.html'); ?>
+      <?php $tables = $data['tables']; if (!is_array($tables)) echo '<b>Connection error:</b> ' . $tables; else require_once(__DIR__ . '/tables.html'); ?>
     </div>
     <div class="ym-fbox-button">
       <button id="btnCheckTables" class="ym-button" title="Click to select all tables">Check all tables</button>
