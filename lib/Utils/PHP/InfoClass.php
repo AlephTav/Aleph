@@ -113,7 +113,7 @@ class InfoClass implements \ArrayAccess
     if ($prop['isPrivate']) $code[] = 'private';
     if ($prop['isStatic']) $code[] = 'static';
     $code[] = '$' . $property;
-    if ($prop['isDefault']) $code[] = '= ' . Tools::php2str($prop['defaultValue'], true, 2 * $this->tab, $this->tab);
+    if ($prop['isDefault']) $code[] = '= ' . Tools::php2str($prop['defaultValue'], true, $this->tab, $this->tab);
     $space = str_repeat(' ', $this->tab);
     return ($prop['comment'] ? $space . $prop['comment'] . PHP_EOL : '') . $space . implode(' ', $code) . ';';
   }

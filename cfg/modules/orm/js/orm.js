@@ -105,7 +105,6 @@ cfg.addModule('orm',
   
   'getArgs': function(mode)
   {
-    console.log($('#ormAliases').val());
     if (!$('#ormAliases').val()) 
     {
       cfg.showMsg('Database alias is not selected.', true);

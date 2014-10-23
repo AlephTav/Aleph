@@ -254,7 +254,7 @@ class Generator
         else if ($this->mode == self::MODE_IGNORE_IF_EXISTS) continue;
         else
         {
-          foreach (['ai', 'tables', 'columns', 'properties', 'relations'] as $property)
+          foreach (['ai', 'tables', 'columns'] as $property)
           {
             $value = $data[$property];
             if (!isset($xinfo[$class][$property]) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
@@ -265,6 +265,41 @@ class Generator
             {
               $xinfo[$class][$property] += $value;
             }
+          }
+          if (empty($xinfo[$class]['properties']) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
+          {
+            $xinfo[$class]['properties'] = $data['properties'];
+          }
+          else
+          {
+            $new = $xinfo[$class]['properties'];
+            foreach ($data['properties'] as $k1 => $v1)
+            {
+              $flag = true;
+              foreach ($new as $v2)
+              {
+                if ($v2['column'] == $v1['column']) 
+                {
+                  $flag = false;
+                  break;
+                }
+              }
+              if ($flag && empty($new[$k1])) $new[$k1] = $v1;
+            }
+            $xinfo[$class]['properties'] = $new;
+          }
+          if (empty($xinfo[$class]['relations']) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
+          {
+            $xinfo[$class]['relations'] = $xinfo[$class]['relations'];
+          }
+          else
+          {
+            $new = $xinfo[$class]['relations'];
+            foreach ($data['relations'] as $k => $v)
+            { 
+              if (!in_array($v, $new)) $new[$k] = $v;
+            }
+            $xinfo[$class]['relations'] = $new;
           }
         }
       }
@@ -393,7 +428,7 @@ class Generator
         if (empty($orig['comment']) || $this->mode == self::MODE_REPLACE_IMPORTANT) $orig['comment'] = $sample['comment'];
         if (empty($orig['properties']['alias']) || $this->mode == self::MODE_REPLACE_IMPORTANT) $orig['properties']['alias'] = $sample['properties']['alias'];
         if (empty($orig['properties']['ai']) || $this->mode == self::MODE_REPLACE_IMPORTANT) $orig['properties']['ai'] = $sample['properties']['ai'];
-        foreach (['tables', 'columns', 'properties', 'relations'] as $property)
+        foreach (['tables', 'columns'] as $property)
         {
           if (empty($orig['properties'][$property]) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
           {
@@ -402,6 +437,41 @@ class Generator
           else
           {
             $orig['properties'][$property]['defaultValue'] += $sample['properties'][$property]['defaultValue'];
+          }
+        }
+        if (empty($orig['properties']['properties']) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
+        {
+          $orig['properties']['properties'] = $sample['properties']['properties'];
+        }
+        else
+        {
+          $new = $orig['properties']['properties']['defaultValue'];
+          $old = $sample['properties']['properties']['defaultValue'];
+          foreach ($old as $k1 => $v1)
+          {
+            $flag = true;
+            foreach ($new as $v2)
+            {
+              if ($v2['column'] == $v1['column']) 
+              {
+                $flag = false;
+                break;
+              }
+            }
+            if ($flag && empty($new[$k1])) $new[$k1] = $v1;
+          }
+        }
+        if (empty($orig['properties']['relations']) || $this->mode == self::MODE_REPLACE_IMPORTANT) 
+        {
+          $orig['properties']['relations'] = $sample['properties']['relations'];
+        }
+        else
+        {
+          $new = $orig['properties']['relations']['defaultValue'];
+          $old = $sample['properties']['relations']['defaultValue'];
+          foreach ($old as $k => $v)
+          { 
+            if (!in_array($v, $new)) $new[$k] = $v;
           }
         }
         $orig->save();

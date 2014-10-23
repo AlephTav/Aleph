@@ -73,13 +73,15 @@ class ORM extends Module
         if (empty($args['alias'])) self::error('The database alias is not defined.');
         else
         {
+          $xml = (isset($args['dir']) ? \CB::dir($args['dir']) : \CB::getRoot()) . '/' . $args['alias'] . '.xml';
+          if (!is_file($xml)) $xml = null;
           $gen = new Generator($args['alias'], isset($args['dir']) ? $args['dir'] : null, isset($args['mode']) ? $args['mode'] : Generator::MODE_REPLACE_IMPORTANT);
           $gen->setExcludedTables($this->extractTables($args));
           $gen->useInheritance = isset($args['useInheritance']) ? (bool)$args['useInheritance'] : false;
           $gen->useTransformation = isset($args['useTransformation']) ? (bool)$args['useTransformation'] : false;
           $gen->usePrettyClassName = isset($args['usePrettyClassName']) ? (bool)$args['usePrettyClassName'] : false;
           $gen->usePrettyPropertyName = isset($args['usePrettyPropertyName']) ? (bool)$args['usePrettyPropertyName'] : false;
-          $gen->orm(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM');
+          $gen->orm(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM', null, $xml);
           if (Configurator::isCLI()) echo PHP_EOL . 'Model\'s classes have been successfully generated.' . PHP_EOL;
         }
         break;
