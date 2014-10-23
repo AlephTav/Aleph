@@ -73,7 +73,7 @@ class ORM extends Module
         if (empty($args['alias'])) self::error('The database alias is not defined.');
         else
         {
-          $xml = (isset($args['dir']) ? \CB::dir($args['dir']) : \CB::getRoot()) . '/' . $args['alias'] . '.xml';
+          $xml = (isset($args['dir']) ? \Aleph::dir($args['dir']) : \Aleph::getRoot()) . '/' . $args['alias'] . '.xml';
           if (!is_file($xml)) $xml = null;
           $gen = new Generator($args['alias'], isset($args['dir']) ? $args['dir'] : null, isset($args['mode']) ? $args['mode'] : Generator::MODE_REPLACE_IMPORTANT);
           $gen->setExcludedTables($this->extractTables($args));
