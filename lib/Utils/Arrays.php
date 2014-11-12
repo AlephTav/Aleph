@@ -123,4 +123,96 @@ class Arrays
       else unset($array[$key]);
     }
   }
+  
+  /**
+   * Converts tree-like structure of the following form
+   *
+   * [
+   *   'node_1' => ['node' => 'node 1'],
+   *   'node_2' => ['parent' => 'node_1', 'node' => 'node 2'],
+   *   'node_3' => ['parent' => 'node_2', 'node' => 'node 3'],
+   *   ...
+   *   'node_N' => ['parent' => 'node_N-1', 'node' => 'node_N']
+   * ]
+   *
+   * into nested form
+   *
+   * [
+   *   ['node_1'] => 
+   *     [
+   *       ['node'] => 'node 1',
+   *       ['children'] =>
+   *         [
+   *           ['node_2'] =>
+   *             [
+   *               ['parent'] => 'node_1',
+   *               ['node'] => 'node 2',
+   *               ['children'] => 
+   *                 [
+   *                   ['node_3'] => 
+   *                     [     
+   *                       ['parent'] => 'node_2',
+   *                       ['node'] => 'node 3',
+   *                       ['children'] =>
+   *                         [
+   *                           ...
+   *                             ['node_N'] => 
+   *                               [
+   *                                 ['parent'] => 'node_3',
+   *                                 [node] => 'node_N'
+   *                               ]
+   *                           ...
+   *                         ]
+   *                     ]
+   *                 ]
+   *             ]
+   *         ]
+   *     ]
+   * ]
+   *
+   * @param array $nodes - the original flat tree-like structure.
+   * @param string $parent - the element key of a node which is parent identifier of the parent node.
+   * @param string $children - the element key of a node which will contain all node children.
+   * @return array
+   * @access public
+   * @static
+   */
+  public static function makeNested(array $nodes, $parent = 'parent', $children = 'children')
+  {
+    $tree = [];
+    foreach ($nodes as $ID => &$node)
+    {
+      if (isset($node[$parent])) $nodes[$node[$parent]][$children][$ID] = &$node;
+      else $tree[$ID] = &$node; 
+    }
+    return $tree;
+  }
+  
+  /**
+   * Converts the nested tree-like structure into the flat tree-like structure.
+   * The result of performing this method is opposite of the result of performing makeNested() method.
+   *
+   * @param array $nodes - the original nested tree-like structure.
+   * @param string $parent - the element key of a node which will be parent identifier of the parent node.
+   * @param string $children - the element key of a node which contains all node children.
+   */
+  public static function makeFlat(array $nodes, $parent = 'parent', $children = 'children')
+  {
+    $tree = [];
+    $reduce = function(array $nodes, $parentID = null) use(&$reduce, &$tree, $parent, $children)
+    {
+      foreach ($nodes as $ID => $node)
+      {
+        if ($parentID !== null) $node[$parent] = $parentID;
+        $tree[$ID] = $node;
+        if (isset($node[$children]))
+        {
+          $reduce($node[$children], $ID);
+          unset($tree[$ID][$children]);
+        }
+      }
+    };
+    $reduce($nodes);
+    return $tree;
+  }
 }
