@@ -2,8 +2,8 @@
 
 ## General information ##
 
-||
-|-|-|
+|||
+| --- | --- |
 | **Inheritance** | no |
 | **Child classes** | no |
 | **Interfaces** | ArrayAccess |
@@ -62,8 +62,8 @@ Returns unique identifier of the application, which is defined as md5 from the s
 public static void setOutput(string $output)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$output** | string | the response body. |
 
 Sets the body of the server response. All information that will be sent to the output buffer via standard IO operators will be ignored.
@@ -82,8 +82,8 @@ Returns the previously defined body of the server response.
 public static string exe(string $code, array $vars = null)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$code** | string | inline PHP code to perform. |
 | **$vars** | array | associative array of variables that will be extracted in PHP code. |
 
@@ -95,8 +95,8 @@ Performs a built-in HTML PHP code and returns the result.
 public static string dir(string $dir)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$dir** | string | path to a site directory or its alias. |
 
 Returns the full path to a site directory. The valid values of **$dir** are:
@@ -110,8 +110,8 @@ Returns the full path to a site directory. The valid values of **$dir** are:
 public static string url(string $url)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$url** | string | URL of a site directory or its alias. |
 
 Returns the URL of a site directory. The valid values of **$url** are:
@@ -125,8 +125,8 @@ Returns the URL of a site directory. The valid values of **$url** are:
 public static void log(mixed $data)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$data** | mixed | any data to log. |
 
 Writes arbitrary data to a log file. Besides of the data passed to the method, the additional information about the environment of the script (IP address, ID session, URL request, the current timestamp, the contents of the session, cookies, etc.) will be recorded to the log.
@@ -137,8 +137,8 @@ Writes arbitrary data to a log file. Besides of the data passed to the method, t
 public static void go(string $url, boolean $inNewWindow = false, boolean $immediately = true)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$url** | string | URL to redirect. |
 | **$inNewWindow** | boolean | determines whether or not a new browser window opens. |
 | **$immediately** | boolean | determines whether the redirect was immediately done and the script was stopped. |
@@ -151,8 +151,8 @@ Redirects to the specified address. If the second argument is TRUE, a new browse
 public static void reload(boolean $immediately = true)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$immediately** | boolean | determines whether a restart happens immediately and the script is terminated. |
 
 Reloads the page. If the parameter is FALSE, the script is not terminated as a result of the method call and reload occurs after the full script execution. Otherwise, the script is stopped and reload is immediately performed.
@@ -163,8 +163,8 @@ Reloads the page. If the parameter is FALSE, the script is not terminated as a r
 public static mixed delegate(mixed $callback, mixed $arg1, mixed $arg2, ...)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$callback** | mixed | delegate's string, delegate's object or any callable object. |
 | **$arg1**, **$arg2**, ... | mixed | callback arguments. |
 
@@ -180,8 +180,8 @@ These methods allow to measure the execution time of an arbitrary code section, 
 public static void pStart(string $key)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$key** | string | unique identifier of a profiling code block. |
 
 Remembers the current time value that corresponds to the beginning of a code block execution.
@@ -192,8 +192,8 @@ Remembers the current time value that corresponds to the beginning of a code blo
 public static float pStop(string $key)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$key** | string | unique identifier of a profiling code block. |
 
 Returns execution time (in seconds) of the code block by its identifier. If no code block is associated with the passed identifier the method returns FALSE.
@@ -248,8 +248,8 @@ Returns associative array of global objects.
 public static mixed get(string $key)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$key** | string | a key, which associated with some global object. |
 
 Returns the previously stored global object, or NULL if an object with such key does not exist.
@@ -260,8 +260,8 @@ Returns the previously stored global object, or NULL if an object with such key 
 public static void set(string $key, mixed $value)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$key** | string | a key, which associated with some global object. |
 | **$value** | mixed | value of a global object. |
 
@@ -273,8 +273,8 @@ Binds a value to the specified key and stores it in the storage of global object
 public static boolean has(string $key)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$key** | string | a key, which associated with some global object. |
 
 Returns TRUE, if the specified key exists for the global object, and FALSE otherwise.
@@ -285,8 +285,8 @@ Returns TRUE, if the specified key exists for the global object, and FALSE other
 public static void remove(string $key)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$key** | string | a key, which associated with some global object. |
 
 Removes global object from the storage by its key.
@@ -301,8 +301,8 @@ These methods allow you to catch all kinds of errors and exceptions as well as t
 public static void errorHandling(boolean $enable = true, integer $errorLevel = null)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$enable** | boolean | determines whether the error handling is enabled. |
 | **$errorLevel** | integer | sensitivity level to errors. |
 
@@ -322,8 +322,8 @@ Returns TRUE, if the error handling mode is enabled and FALSE otherwise.
 public static string error(string|object $class, string $token, mixed $var1, mixed $var2, ...)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$class** | string, object | class containing a token error. |
 | **$token** | string | error token, an error template which is defined in some class as a constant. |
 | **$var1**, **$var2**, ... | mixed | parameters (variables) of the error template. |
@@ -332,6 +332,7 @@ Generates the error message given by some error token (pattern). Parameters (var
 
 There are three main cases depending on the passed parameters:
 -   Error token is a regular string which is not a constant of some class. In this case the first parameter equals an empty string or FALSE. For example:
+  
     ```php
     // Displays 'Simple error template: 1, 2';
     echo CB::error(false, 'Simple error template: [{var}], [{var}]', 1, 2);
@@ -372,8 +373,8 @@ There are three main cases depending on the passed parameters:
 public static void exception(Exception $e)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$e** | Exception | object of exception. |
 
 Terminates the script and displays, in the case of debug mode is enabled, information of the exception which passed as a method parameter. If debug mode is turned off the method will print a notice about the error.
@@ -384,8 +385,8 @@ Terminates the script and displays, in the case of debug mode is enabled, inform
 public static array analyzeException(Exception $e)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$e** | Exception | object of exception. |
 
 Returns detailed information about the exception as an associative array.
@@ -397,8 +398,8 @@ Returns detailed information about the exception as an associative array.
 public static string ecode(string $code)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$code** | string | some PHP code. |
 
 Saves a PHP code string for analysis of errors that can occur when you run this code through eval operator. The method returns the same value it takes as an argument.
@@ -430,8 +431,8 @@ These methods are designed for loading configuration files for the application, 
 public self|array setConfig(string|array $data, string $section = null, boolean $replace = false)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$data** | string, array | path to the configuration file, or an associative array of configuration data. |
 | **$section** | string | the configuration section name. |
 | **$replace** | boolean | determines whether to replace existing data with new configuration. |
@@ -442,16 +443,22 @@ Configuration files must be INI or PHP files. The typical structure of the PHP c
 ```php
 <?php
 
-return ['var1' => 'val1',
-        'var2' => 'val2',
-        ...,
-        'section1' => ['var1' => 'val1'
-                       'var2' => 'val2',
-                       ...],
-        'section2' => ['var1' => 'val1'
-                       'var2' => 'val2',
-                       ...],
-        ...];
+return [
+  'var1' => 'val1',
+  'var2' => 'val2',
+  ...,
+  'section1' => [
+    'var1' => 'val1'
+    'var2' => 'val2',
+    ...
+  ],
+  'section2' => [
+    'var1' => 'val1'
+    'var2' => 'val2',
+    ...
+  ],
+  ...
+];
 ```
 
 The typical INI file structure:
@@ -488,8 +495,8 @@ $cb->setConfig('/path/to/config/file.ini', 'foo', true);
 public mixed getConfig(string $section = null)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$section** | string | the configuration section name. |
 
 If **$section** is NULL the method returns the all configuration data, otherwise the content of the given configuration section will be returned. In the case if none section with the defined name exists the method returns NULL.
@@ -510,12 +517,20 @@ var2 = "val2"
 
 The same file but on PHP:
 ```php
-<?php return ['debugging' => 1,
-              'logging'   => 1,
-              'cache'     => ['directory'     => 'cache',
-                              'gcProbability' => 33.333],
-              'foo'       => ['var1' => 'val1',
-                              'var2' => 'val2']];
+<?php 
+
+return [
+  'debugging' => 1,
+  'logging' => 1,
+  'cache' => [
+    'directory' => 'cache',
+    'gcProbability' => 33.333
+  ],
+  'foo' => [
+    'var1' => 'val1',
+    'var2' => 'val2'
+  ]
+];
 ```
 
 The below examples illustrate the usage of the method:
@@ -532,8 +547,8 @@ $foo = $cb->getConfig();       // $foo contains all configuration data.
 public void offsetSet(mixed $var, mixed $value)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$var** | mixed | name of a configuration variable. |
 | **$value** | mixed | value of a configuration variable. |
 
@@ -552,8 +567,8 @@ $a['foo'] = 'test';
 public mixed offsetGet(mixed $var)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$var** | mixed | name of a configuration variable. |
 
 Returns the value of the configuration variable by its name. If a variable with this name does not exists, the method returns NULL. The method is part of the interface **ArrayAccess**. Example:
@@ -571,8 +586,8 @@ echo $a['foo'];
 public boolean offsetExists(mixed $var)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$var** | mixed | name of a configuration variable. |
 
 Returns TRUE, if the configuration variable exists and is not NULL, and FALSE otherwise. The method is part of the interface **ArrayAccess**. Example:
@@ -590,8 +605,8 @@ var_dump(isset($a['foo']));
 public void offsetUnset(mixed $var)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$var** | mixed | name of a configuration variable. |
 
 Removes a configuration variable by its name. The method is part of the interface **ArrayAccess**. Example:
@@ -621,8 +636,8 @@ Searches classes according to the configuration settings and creates the class m
 public void setClassMap(array $classes, string $classmap = null)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$classes** | array | the array of paths to the files with classes. |
 | **$classmap** | string | the path to the class map file. |
 
@@ -642,8 +657,8 @@ Returns the class map array which contains class names as its keys and paths to 
 public boolean loadClass(string $class)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$class** | string | the name of the class to be loaded. |
 
 Searches a single class and includes it to the script. Returns FALSE if the given class does not exist and TRUE otherwise.
@@ -658,8 +673,8 @@ Allow to obtain objects of the most frequently used classes.
 public void setCache(Aleph\Cache\Cache $cache)
 ```
 
-|||
-|-|-|-|
+||||
+| --- | --- | --- |
 | **$cache** | Aleph\Cache\Cache | cache object. |
 
 Sets the default cache object. This cache object will be used by default for all cache operations in the framework.
