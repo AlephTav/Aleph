@@ -27,10 +27,14 @@ They can be used to get various information or perform frequent operations.
 ### **init()**
 
 ```php
-public static self init()
+public static self init(string $root)
 ```
 
-Framework initialization. Returns object of class **Aleph**.
+||||
+| --- | --- | --- |
+| **$root** | string | the document root directory. |
+
+Framework initialization. Returns object of class **Aleph**. If **$root** is not set the value of **$_SERVER['DOCUMENT_ROOT']** is used as document root. If **$_SERVER['DOCUMENT_ROOT']** is not set the directory of **aleph.php** file will be used. 
 
 ### **getInstance()**
 

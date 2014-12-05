@@ -118,7 +118,7 @@ class ORM extends Module
        \e[30;1mEXCLUDED_TABLES\e[0m - comma-separated list of tables that will be excluded from processing.
     
     3. \e[32mcfg orm xml [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] 
-                         [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]\e[0m
+                   [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]\e[0m
 
        Creates XML file in directory \e[30;1mBASE_DIRECTORY\e[0m that describes model of the given database.
        \e[30;1mDATABASE_ALIAS\e[0m - alias of the needed database.

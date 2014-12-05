@@ -18,7 +18,7 @@ class Test extends Module
     switch ($command)
     {
       case 'run':
-        $file = pathinfo(self::normalizePath(Configurator::CORE_PATH), PATHINFO_DIRNAME) . '/_tests/test.php';
+        $file = pathinfo(self::normalizePath(Configurator::CORE), PATHINFO_DIRNAME) . '/_tests/test.php';
         if (file_exists($file)) require_once($file); 
         break;
       default:

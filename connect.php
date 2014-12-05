@@ -1,13 +1,10 @@
 <?php
 
-// This line is necessary for correct work of the framework when you run the script from the console.
-$_SERVER['DOCUMENT_ROOT'] = __DIR__;
-
 // Includes the main class of the framework.
 require_once(__DIR__ . '/lib/Aleph.php');
 
 // Initializes the framework.
-$a = Aleph::init();
+$a = Aleph::init(__DIR__);
 
 // Loading of the main application config.
 $a->setConfig(__DIR__ . '/app/config.php');

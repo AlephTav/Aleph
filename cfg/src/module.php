@@ -16,7 +16,7 @@ abstract class Module
   {
     if (strlen($path) == 0) return false;
     if ($path[0] != '/') $path = '/' . $path;
-    return $_SERVER['DOCUMENT_ROOT'] . $path;
+    return Configurator::getRoot() . $path;
   }
 
   protected static function isPHPFile($file)

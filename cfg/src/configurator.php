@@ -6,12 +6,13 @@ require_once(__DIR__ . '/module.php');
 
 final class Configurator
 {
-  const CORE_PATH = '/lib/Aleph.php';
+  const CORE = '/lib/Aleph.php';
 
   private static $instance = null;
   private static $configs = [];
   private static $modules = [];
   private static $aleph = null;
+  private static $root = null;
   
   private function __construct(){}
   
@@ -30,6 +31,11 @@ final class Configurator
     return PHP_SAPI === 'cli';
   }
   
+  public static function getRoot()
+  {
+    return self::$root;
+  }
+  
   public static function getAleph()
   {
     return self::$aleph;
@@ -46,10 +52,10 @@ final class Configurator
     foreach ($configs as $file => $editable) self::$configs[$file] = $editable;
   }
 
-  public static function init()
+  public static function init($root)
   {
     set_time_limit(0);
-    $_SERVER['DOCUMENT_ROOT'] = realpath (__DIR__ . '/../..');
+    self::$root = realpath($root);
     $list = __DIR__ . '/../modules/list.txt';
     if (file_exists($list))
     {
@@ -73,7 +79,7 @@ final class Configurator
     if (self::isFirstRequest())
     {
       $errors = [];
-      if (!file_exists($_SERVER['DOCUMENT_ROOT'] . self::CORE_PATH)) $errors[] = 'File ' . self::CORE_PATH . ' is not found.';
+      if (!file_exists($root . self::CORE)) $errors[] = 'File ' . self::CORE . ' is not found.';
       if (count($errors)) self::show(['errors' => $errors]);
       if (!self::isCLI())
       {
@@ -161,8 +167,8 @@ HELP;
   
   private static function connect()
   {
-    require_once($_SERVER['DOCUMENT_ROOT'] . self::CORE_PATH);
-    self::$aleph = \Aleph::init();
+    require_once(self::$root . self::CORE);
+    self::$aleph = \Aleph::init(self::$root);
     \Aleph::errorHandling(false);
     foreach (self::$configs as $file => $editable) self::$aleph->setConfig($file);
   }

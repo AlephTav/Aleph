@@ -905,11 +905,12 @@ final class Aleph implements \ArrayAccess
    * Initializes the Aleph framework.
    * The method returns new instance of this class.
    *
+   * @param string $root - the document root directory. If it not set the $_SERVER['DOCUMENT_ROOT'] is used.
    * @return self
    * @access public
    * @static
    */
-  public static function init()
+  public static function init($root = null)
   {
     if (self::$instance === null)
     {
@@ -928,9 +929,9 @@ final class Aleph implements \ArrayAccess
       register_shutdown_function([__CLASS__, 'fatal']);
       if (date_default_timezone_set(@date_default_timezone_get()) === false) date_default_timezone_set('UTC');
       self::errorHandling(true, E_ALL);
-      if (!isset($_SERVER['DOCUMENT_ROOT'])) $_SERVER['DOCUMENT_ROOT'] = __DIR__;
-      self::$root = realpath($_SERVER['DOCUMENT_ROOT']);
+      self::$root = $root !== null ? realpath($root) : (isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : __DIR__);
       self::$siteUniqueID = md5(self::$root);
+      $_SERVER['DOCUMENT_ROOT'] = self::$root;
       ini_set('unserialize_callback_func', 'spl_autoload_call');
       if (session_id() == '') session_start();
       else session_regenerate_id(true);

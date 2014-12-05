@@ -6,7 +6,7 @@
       <div class="ym-fbox ym-fbox-select">
         <select id="config">
           <?php foreach ($data['configs'] as $n => $file){ ?>
-          <option value="<?php echo $n; ?>"><?php echo htmlspecialchars(substr($file, strlen($_SERVER['DOCUMENT_ROOT']) + 1)); ?></option>
+          <option value="<?php echo $n; ?>"><?php echo htmlspecialchars(substr($file, strlen(\Aleph::getRoot()) + 1)); ?></option>
           <?php } ?>
         </select>
       </div>

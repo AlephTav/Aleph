@@ -7,8 +7,7 @@ require_once(__DIR__ . '/../Aleph.php');
  */
 function test_aleph()
 {
-  $_SERVER['DOCUMENT_ROOT'] = realpath(__DIR__ . '/../..');
-  $a = \Aleph::init();
+  $a = \Aleph::init(__DIR__ . '/../..');
   if (($res = test_registry()) !== true) return $res;
   if (($res = test_config($a)) !== true) return $res;
   return true;
