@@ -1190,7 +1190,10 @@ final class Aleph implements \ArrayAccess
     else
     {
       $ini = false;
-      if (strtolower(pathinfo($data, PATHINFO_EXTENSION)) == 'php') $data = require($data);
+      if (strtolower(pathinfo($data, PATHINFO_EXTENSION)) == 'php') 
+      {
+        $data = require($data);
+      }
       else
       {
         $path = $data;
@@ -1204,28 +1207,48 @@ final class Aleph implements \ArrayAccess
       if (empty($this->config[$section])) $this->config[$section] = [];
       $config = &$this->config[$section];
     }
-    else $config = &$this->config;
+    else 
+    {
+      $config = &$this->config;
+    }
     if ($replace) $config = [];
-    $convert = function($v) use ($ini)
+    if ($ini)
     {
-      if (!$ini || is_array($v) || is_object($v)) return $v;
-      if (strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}'))
+      $convert = function($v)
       {
-        $tmp = json_decode($v, true);
-        $v = $tmp !== null ? $tmp : $v;
+        if (is_scalar($v) && strlen($v) > 1 && ($v[0] == '[' || $v[0] == '{') && ($v[strlen($v) - 1] == ']' || $v[strlen($v) - 1] == '}'))
+        {
+          $tmp = json_decode($v, true);
+          $v = $tmp !== null ? $tmp : $v;
+        }
+        return $v;
+      };
+      foreach ($data as $sect => $properties)
+      {
+        if (is_array($properties)) 
+        {
+          if (empty($config[$sect]) || !is_array($config[$sect])) $config[$sect] = [];
+          foreach ($properties as $k => $v) $config[$sect][$k] = $convert($v);
+        }
+        else 
+        {
+          $config[$sect] = $convert($properties);
+        }
       }
-      return $v;
-    };
-    foreach ($data as $sect => $properties)
+    }
+    else
     {
-      if (is_array($properties)) 
+      foreach ($data as $sect => $properties)
       {
-        if (empty($config[$sect]) || !is_array($config[$sect])) $config[$sect] = [];
-        foreach ($properties as $k => $v) $config[$sect][$k] = $convert($v);
-      }
-      else 
-      {
-        $config[$sect] = $convert($properties);
+        if (is_array($properties)) 
+        {
+          if (empty($config[$sect]) || !is_array($config[$sect])) $config[$sect] = [];
+          foreach ($properties as $k => $v) $config[$sect][$k] = $v;
+        }
+        else 
+        {
+          $config[$sect] = $properties;
+        }
       }
     }
     return $this->config;
