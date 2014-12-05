@@ -33,14 +33,14 @@ class Info extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to clean or regenerate classmap of the web application.
+\e[33mOutputs information about PHP's configuration.\e[0m
 
-Usage: cfg info get [--what WHAT]
+\e[36mUsage:\e[0m \e[32mcfg info get [--what WHAT]\e[0m
     
        Displays information about the current state of PHP.
-       The output may be customized by passing constant WHAT which corresponds to the appropriate parameter of function phpinfo().
+       The output may be customized by passing constant \e[30;1mWHAT\e[0m which corresponds to the appropriate parameter of function phpinfo().
 
 HELP;
   }

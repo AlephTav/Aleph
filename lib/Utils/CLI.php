@@ -32,6 +32,43 @@ namespace Aleph\Utils;
 class CLI
 {
   /**
+   * Available console colors and styles.
+   *
+   * @var array $colors
+   * @access private
+   * @static
+   */
+  private static $colors = [
+    'background' => [
+      'black' => 40, 
+      'red' => 41, 
+      'green' => 42, 
+      'yellow' => 43, 
+      'blue' => 44, 
+      'magenta' => 45, 
+      'cyan' => 46, 
+      'white' => 47
+    ],
+    'foreground' => [
+      'black' => 30, 
+      'red' => 31, 
+      'green' => 32, 
+      'yellow' => 33, 
+      'blue' => 34, 
+      'magenta' => 35, 
+      'cyan' => 36, 
+      'white' => 37
+    ],
+    'styles' => [
+      'bold' => 1,
+      'underscore' => 4,
+      'blink' => 5,
+      'reverse' => 7,
+      'conceal' => 8
+    ]
+  ];
+
+  /**
    * Returns values of command line options. Method returns FALSE if the script is not run from command line.
    *
    * @param array $options - names of the options. Each option can be an array of different names (aliases) of the same option.
@@ -59,5 +96,35 @@ class CLI
       }
     }
     return $res;
+  }
+  
+  /**
+   * Returns colored version of the given text for console output.
+   * If the given colors of foreground and background as well as styles don't exist it returns the same text.
+   *
+   * @param string $text - any text data.
+   * @param integer|string - the foreground color index or name.
+   * @param integer|string - the background color index or name.
+   * @param integer|string|array $styles - the text style index(es) or name(s).
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function highlight($text, $foreground = 'white', $background = 'black', $styles = null)
+  {
+    $tmp = [];
+    if (is_int($foreground)) $tmp[] = $foreground;
+    else if (isset(self::$colors['foreground'][$foreground])) $tmp[] = self::$colors['foreground'][$foreground];
+    if (is_int($background)) $tmp[] = $background;
+    else if (isset(self::$colors['background'][$background])) $tmp[] = self::$colors['background'][$background];
+    if (is_int($styles)) $tmp[] = $styles;
+    else if ($styles !== null)
+    {
+      foreach ((array)$styles as $style)
+      {
+        if (isset(self::$colors['styles'][$style])) $tmp[] = self::$colors['styles'][$style];
+      }
+    }
+    return $tmp ? "\e[" . implode(';', $tmp) . 'm' . $text . "\e[0m" : $text;
   }
 }

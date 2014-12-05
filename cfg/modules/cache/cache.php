@@ -44,17 +44,17 @@ class Cache extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to run garbage collector and reset the cache according to the configuration file(s).
+\e[33mAllows to run garbage collector and reset the cache according to the configuration file(s).\e[0m
 
-The use cases:
+\e[36mThe use cases:\e[0m
 
-    1. cfg cache gc
+    1. \e[32mcfg cache gc\e[0m
     
        Launches the garbage collector.
 
-    2. cfg cache clean [--group GROUP]
+    2. \e[32mcfg cache clean [--group GROUP]\e[0m
 
        Cleans the cache by the given group name.
        If no group name is defined, the all cache data will be removed.

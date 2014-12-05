@@ -102,19 +102,19 @@ final class Configurator
   
   private static function getCommandHelp()
   {
-    $help = <<<'HELP'
+    $help = <<<HELP
 
-Utility to configure a web application and perform the common developer tasks.
+\e[33;1mUtility to configure a web application and perform the common developer tasks.\e[0m
 
-General usage: cfg [MODULE] [COMMAND] [OPTIONS]...
-    MODULE    name of the configurator module.
-    COMMAND   some action of the module to be performed. The list of command is defined by the particular module.   
-    OPTIONS   some additional parameters that defined by the given command and module.
+\e[37;1mGeneral usage:\e[0m \e[32mcfg [MODULE] [COMMAND] [OPTIONS]...\e[0m
+    \e[30;1mMODULE\e[0m    name of the configurator module.
+    \e[30;1mCOMMAND\e[0m   some action of the module to be performed. The list of command is defined by the particular module.   
+    \e[30;1mOPTIONS\e[0m   some additional parameters that defined by the given command and module.
 
-The module list:
+\e[36;1mThe module list:\e[0m
 
 HELP;
-    foreach (self::$modules as $name => $module) $help .= PHP_EOL . 'Module: [' . $name . ']' . PHP_EOL . $module->getcommandHelp();
+    foreach (self::$modules as $name => $module) $help .= PHP_EOL . "\e[33m[$name]\e[0m" . PHP_EOL . $module->getcommandHelp();
     return $help;
   }
   

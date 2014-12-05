@@ -31,17 +31,17 @@ class Classmap extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to clean or regenerate classmap of the web application.
+\e[33mAllows to clean or regenerate classmap of the web application.\e[0m
 
-The use cases:
+\e[36mThe use cases:\e[0m
 
-    1. cfg classmap create
+    1. \e[32mcfg classmap create\e[0m
     
        Regenerates the classmap file according to the settings of the configuration file(s).
 
-    2. cfg classmap clean
+    2. \e[32mcfg classmap clean\e[0m
 
        Cleans the classmap.
 

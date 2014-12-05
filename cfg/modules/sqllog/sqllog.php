@@ -48,17 +48,17 @@ class SQLLog extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to search data in the SQL log file and clean it.
+\e[33mAllows to search data in the SQL log file and clean it.\e[0m
 
-The use cases:
+\e[36mThe use cases:\e[0m
 
-    1. cfg sqllog clean
+    1. \e[32mcfg sqllog clean\e[0m
     
        Cleans the SQL log file.
        
-    2. cfg sqllog search [--keyword KEYWORD] [--where all|url|dsn|sql|type|mode|duration] [--mode regular|regexp] [--caseSensitive 0|1] [--onlyWholeWord 0|1] [--from FROM] [--to TO]
+    2. \e[32mcfg sqllog search [--keyword KEYWORD] [--where all|url|dsn|sql|type|mode|duration] [--mode regular|regexp] [--caseSensitive 0|1] [--onlyWholeWord 0|1] [--from FROM] [--to TO]\e[0m
     
        Searches data in the SQL log.
 

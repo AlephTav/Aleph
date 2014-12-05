@@ -286,7 +286,7 @@ final class Aleph implements \ArrayAccess
    * If a such time mark doesn't exit then the method return false.
    *
    * @param string $key - time mark of some code part.
-   * @return boolean | float
+   * @return boolean|float
    * @static
    */
   public static function pStop($key)
@@ -373,7 +373,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Returns an error message by its token.
    *
-   * @param string | object $class - class with the needed error message constant.
+   * @param string|object $class - class with the needed error message constant.
    * @param string $token - name of the needed error message constant.
    * @params values of parameters of the error message.
    * @return string
@@ -803,7 +803,7 @@ final class Aleph implements \ArrayAccess
    * The method returns FALSE on failure, e.g. if the file or directory does not exist.
    * 
    * @param string $dir - directory alias.
-   * @return string | boolean
+   * @return string|boolean
    * @access public
    * @static
    */
@@ -1039,7 +1039,7 @@ final class Aleph implements \ArrayAccess
    *
    * @param string $class
    * @param array $options - an array of additional search parameters.
-   * @return integer | boolean
+   * @return integer|boolean
    * @access private
    */
   private function find($class = null, array $options = null)
@@ -1169,7 +1169,7 @@ final class Aleph implements \ArrayAccess
   /**
    * Loads the configuration data.
    *
-   * @param array | string $data - the configuration data or path to the configuration file (INI or PHP).
+   * @param array|string $data - the configuration data or path to the configuration file (INI or PHP).
    * @param string $section - the group (section) of the configuration data.
    * @param boolean $replace - determines whether the old configuration data is replaced by new one.
    * @return array - the newly formed config.

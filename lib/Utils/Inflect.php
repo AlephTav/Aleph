@@ -25,7 +25,7 @@ namespace Aleph\Utils;
 /**
  * Class for converting english words from the plural form to the singular form and vice versa.
  *
- * @author Aleph Tav <4lephtav@gmail.com>
+ * @author Sho Kuwamoto <sho@kuwamoto.org>
  * @version 1.0.0
  * @package aleph.utils
  */

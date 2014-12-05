@@ -197,23 +197,23 @@ class Config extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to change one or more configuration properties or restore the entire config file to the default settings.
+\e[33mAllows to change one or more configuration properties or restore the entire config file to the default settings.\e[0m
 
-The use cases:
+\e[36mThe use cases:\e[0m
 
-    1. cfg config show [--file FILE_NUMBER]
+    1. \e[32mcfg config show [--file FILE_NUMBER]\e[0m
     
        Outputs the configuration data of the given configuration file.
 
-    2. cfg config restore [--file FILE_NUMBER] 
+    2. \e[32mcfg config restore [--file FILE_NUMBER]\e[0m
     
-       Restores the configuraton file of number FILE_NUMBER. The list of the configuration files is located in models/config/config.ini file.
+       Restores the configuraton file of number \e[30;1mFILE_NUMBER\e[0m. The list of the configuration files is located in models/config/config.ini file.
 
-    3. cfg config update [--file FILE_NUMBER] [--property PROPERTY_NAME PROPERTY_VALUE ...]  
+    3. \e[32mcfg config update [--file FILE_NUMBER] [--property PROPERTY_NAME PROPERTY_VALUE ...]\e[0m
 
-       Changes value of the configuration property PROPERTY_NAME to new value PROPERTY_VALUE in the configuration file of number FILE_NUMBER.
+       Changes value of the configuration property \e[30;1mPROPERTY_NAME\e[0m to new value \e[30;1mPROPERTY_VALUE\e[0m in the configuration file of number \e[30;1mFILE_NUMBER.\e[0m
        You can change more than one property at once.
 
 HELP;

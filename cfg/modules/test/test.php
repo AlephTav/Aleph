@@ -34,11 +34,11 @@ class Test extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to run the framework's auto tests.
+\e[33mAllows to run the framework's auto tests.\e[0m
 
-Usage: cfg test run
+\e[36mUsage:\e[0m \e[32mcfg test run\e[0m
     
        Launches the auto tests.
 

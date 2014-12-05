@@ -100,37 +100,43 @@ class ORM extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to create AR and ORM classes. Also, you can review information about database aliases and database tables.
+\e[33mAllows to create AR and ORM classes. Also, you can review information about database aliases and database tables.\e[0m
 
-The use cases:
+\e[36mThe use cases:\e[0m
 
-    1. cfg orm show [--alias DATABASE_ALIAS]
+    1. \e[32mcfg orm show [--alias DATABASE_ALIAS]\e[0m
     
        Outputs the database alias list and table list of each database. If DATABASE_ALIAS is defined it outputs table list of the given database.
 
-    2. cfg orm ar [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES]
+    2. \e[32mcfg orm ar [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES]\e[0m
     
-       Creates Active Record classes in directory BASE_DIRECTORY for database that determined by its alias - DATABASE_ALIAS.
-       NAMESPACE - namespace of all Active Record classes.
-       CREATION_MODE - determines what need to do with already existing classes. The valid values are the same as in item 2.
-       EXCLUDED_TABLES - comma-separated list of tables that will be excluded from processing.
+       Creates Active Record classes in directory \e[30;1mBASE_DIRECTORY\e[0m for database that determined by its alias - \e[30;1mDATABASE_ALIAS\e[0m.
+       \e[30;1mNAMESPACE\e[0m - namespace of all Active Record classes.
+       \e[30;1mCREATION_MODE\e[0m - determines what need to do with already existing classes. The valid values are the same as in item 2.
+       \e[30;1mEXCLUDED_TABLES\e[0m - comma-separated list of tables that will be excluded from processing.
     
-    3. cfg orm xml [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]
+    3. \e[32mcfg orm xml [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] 
+                         [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]\e[0m
 
-       Creates XML file in directory BASE_DIRECTORY that describes model of the given database.
-       DATABASE_ALIAS - alias of the needed database.
-       NAMESPACE - namespace of all model classes.
-       CREATION_MODE - determines what need to do with already existing XML file. The valid values are: 1 - replace existing XML file, 2 - ignore if XML already exists, 3 - replace only important data and don't touch user changes, 4 - add only new data.
-       EXCLUDED_TABLES - comma-separated list of tables that will be excluded from processing.
+       Creates XML file in directory \e[30;1mBASE_DIRECTORY\e[0m that describes model of the given database.
+       \e[30;1mDATABASE_ALIAS\e[0m - alias of the needed database.
+       \e[30;1mNAMESPACE\e[0m - namespace of all model classes.
+       \e[30;1mCREATION_MODE\e[0m - determines what need to do with already existing XML file. The valid values are: 
+           1 - replace existing XML file,
+           2 - ignore if XML already exists,
+           3 - replace only important data and don't touch user changes,
+           4 - add only new data.
+       \e[30;1mEXCLUDED_TABLES\e[0m - comma-separated list of tables that will be excluded from processing.
     
-    4. cfg orm model [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]
+    4. \e[32mcfg orm model [--alias DATABASE_ALIAS] [--dir BASE_DIRECTORY] [--mode CREATION_MODE] [--ns NAMESPACE] [--tables EXCLUDED_TABLES] 
+                     [--useInheritance 1|0] [--useTransformation 1|0] [--usePrettyClassName 1|0] [--usePrettyPropertyName 1|0]\e[0m
     
-       Creates model classes in directory BASE_DIRECTORY for database that determined by its alias - DATABASE_ALIAS.
-       NAMESPACE - namespace of all model classes.
-       CREATION_MODE - determines what need to do with already existing classes. The valid values are the same as in item 2. 
-       EXCLUDED_TABLES - comma-separated list of tables that will be excluded from processing.
+       Creates model classes in directory \e[30;1mBASE_DIRECTORY\e[0m for database that determined by its alias - \e[30;1mDATABASE_ALIAS\e[0m.
+       \e[30;1mNAMESPACE\e[0m - namespace of all model classes.
+       \e[30;1mCREATION_MODE\e[0m - determines what need to do with already existing classes. The valid values are the same as in item 2. 
+       \e[30;1mEXCLUDED_TABLES\e[0m - comma-separated list of tables that will be excluded from processing.
 
 HELP;
   }

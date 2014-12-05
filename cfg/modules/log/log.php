@@ -52,25 +52,25 @@ class Log extends Module
   
   public function getCommandHelp()
   {
-    return <<<'HELP'
+    return <<<HELP
 
-Allows to review the logs and remove them.
+\e[33mAllows to review the logs and remove them.\e[0m
 
-The use cases:
+\e[36mThe use cases:\e[0m
 
-    1. cfg log show
+    1. \e[32mcfg log show\e[0m
     
        Outputs the log directories.
 
-    2. cfg log files [--dir DIR]
+    2. \e[32mcfg log files [--dir DIR]\e[0m
 
-       Outputs log files fron the given log directory.
+       Outputs log files from the given log directory.
     
-    3. cfg log details [--dir DIR] [--file FILE]
+    3. \e[32mcfg log details [--dir DIR] [--file FILE]\e[0m
 
        Outputs detailed information from the particular log file.
 
-    4. cfg log clean
+    4. \e[32mcfg log clean\e[0m
 
        Removes all log files.    
 
