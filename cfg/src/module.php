@@ -12,6 +12,11 @@ abstract class Module
   
   abstract public function getCommandHelp();
   
+  protected function showCommandHelp()
+  {
+    Configurator::write($this->getCommandHelp());
+  }
+
   protected static function normalizePath($path)
   {
     if (strlen($path) == 0) return false;
@@ -51,9 +56,14 @@ abstract class Module
     return ob_get_clean();
   }
   
+  protected static function write($text)
+  {
+    Configurator::write($text);
+  }
+  
   protected static function error($message)
   {
-    if (Configurator::isCLI()) echo PHP_EOL . 'ERROR: ' . $message . PHP_EOL;
+    if (Configurator::isCLI()) Configurator::write(PHP_EOL . "\e[31mERROR:\e[0m " . $message . PHP_EOL);
     else throw new \Exception($message);
   }
 }

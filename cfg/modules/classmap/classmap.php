@@ -10,16 +10,16 @@ class Classmap extends Module
     {
       case 'create':
         Configurator::getAleph()->createClassMap();
-        if (Configurator::isCLI()) echo PHP_EOL . 'The class map has been successfully created.' . PHP_EOL;
+        if (Configurator::isCLI()) self::write(PHP_EOL . 'The class map has been successfully created.' . PHP_EOL);
         else echo self::render(__DIR__ . '/html/details.html', ['classes' => Configurator::getAleph()->getClassMap()]);
         break;
       case 'clean':
         Configurator::getAleph()->setClassMap([]);
-        if (Configurator::isCLI()) echo PHP_EOL . 'The class map has been successfully cleaned.' . PHP_EOL;
+        if (Configurator::isCLI()) self::write(PHP_EOL . 'The class map has been successfully cleaned.' . PHP_EOL);
         else echo self::render(__DIR__ . '/html/details.html', ['classes' => []]);
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }

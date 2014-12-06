@@ -22,7 +22,7 @@ class Test extends Module
         if (file_exists($file)) require_once($file); 
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }

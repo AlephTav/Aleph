@@ -13,6 +13,7 @@ final class Configurator
   private static $modules = [];
   private static $aleph = null;
   private static $root = null;
+  private static $hasColorSupport = false;
   
   private function __construct(){}
   
@@ -28,7 +29,7 @@ final class Configurator
   
   public static function isCLI()
   {
-    return PHP_SAPI === 'cli';
+    return PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server';
   }
   
   public static function getRoot()
@@ -56,6 +57,7 @@ final class Configurator
   {
     set_time_limit(0);
     self::$root = realpath($root);
+    self::$hasColorSupport = self::hasColorSupport();
     $list = __DIR__ . '/../modules/list.txt';
     if (file_exists($list))
     {
@@ -93,6 +95,18 @@ final class Configurator
     return self::$instance;            
   }
   
+  public static function write($text)
+  {
+    if (self::isCLI())
+    {
+      if (!self::$hasColorSupport)
+      {
+        $text = preg_replace("/\e\[[\d;]+m/i", '', $text);
+      }
+      echo $text;
+    }
+  }
+  
   public function process()
   {
     if (!self::isAjaxRequest() && !self::isCLI()) return;
@@ -100,10 +114,20 @@ final class Configurator
     self::connect();
     if (empty(self::$modules[$module]))
     {
-      if (Configurator::isCLI()) echo self::getCommandHelp();
+      self::write(self::getCommandHelp());
       return;
     }
     self::$modules[$module]->process($command, $args);
+  }
+  
+  private static function hasColorSupport()
+  {
+    if (DIRECTORY_SEPARATOR == '\\') return getenv('ANSICON') !== false || getenv('ConEmuANSI') === 'ON';
+    if (!function_exists('posix_isatty')) return false;
+    $stream = fopen('php://output', 'w');
+    $res = posix_isatty($stream);
+    fclose($stream);
+    return $res;
   }
   
   private static function getCommandHelp()

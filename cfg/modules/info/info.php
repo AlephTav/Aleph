@@ -21,7 +21,7 @@ class Info extends Module
         phpinfo(isset($args['what']) ? $args['what'] : -1);
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }

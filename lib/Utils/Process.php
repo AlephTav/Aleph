@@ -22,7 +22,8 @@
 
 namespace Aleph\Utils;
 
-use Aleph\Core;
+use Aleph\Core,
+    Aleph\Utils\PHP;
 
 /**
  * Allows to launch independent PHP processes in background.
@@ -39,15 +40,16 @@ class Process
   const ERR_PROCESS_1 = 'Command should be a delegate or path to a PHP script.';
   const ERR_PROCESS_2 = 'Closure cannot be parallelized.';
   const ERR_PROCESS_3 = 'Process has been already started.';
+  const ERR_PROCESS_4 = 'Path to the PHP executable file is not set or cannot be found.';
   
   /**
-   * Path to the php binary.
+   * Path to the PHP executable file.
    *
    * @var string $php
    * @access public
    * @static
    */
-  public static $php = PHP_BINARY;
+  public static $php = null;
   
   /**
    * Expiration time of the process cache.
@@ -65,7 +67,7 @@ class Process
    * @access public
    * @static
    */
-  public static $cacheGroup = 'processes';
+  public static $cacheGroup = null;
   
   /**
    * Any data that where sent to the child process.
@@ -175,6 +177,11 @@ class Process
       }
       $this->cmd = $command;
     }
+    if (!static::$php)
+    {
+      static::$php = PHP\Tools::getPHPBinary();
+      if (static::$php === false) throw new Core\Exception($this, 'ERR_PROCESS_4');
+    }
   }
 
   /**
@@ -228,7 +235,7 @@ class Process
    * @return integer|boolean
    * @access public
    */
-  public function getProcessID()
+  public function ID()
   {
     return $this->isStarted() ? $this->pid : false;
   }

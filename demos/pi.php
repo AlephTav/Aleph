@@ -10,7 +10,6 @@ class PI
 {
   public static function start()
   {
-    Utils\Process::$php = strtolower(substr(PHP_OS, 0, 3)) == 'win' ? 'C:\xampp\php\php.exe' : 'php';
     // Start processes.
     $numproc = 10; $processes = $parts = [];
     for ($i = 0; $i < $numproc; $i++)
@@ -24,7 +23,7 @@ class PI
     {
       foreach ($processes as $n => $process)
       {
-        if (empty($results[$n]) && !$process->isRunning())
+        if (!$process->isRunning())
         {
           if ($process->isError())
           {

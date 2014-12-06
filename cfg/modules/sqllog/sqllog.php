@@ -24,19 +24,19 @@ class SQLLog extends Module
           $options = $args['options'];
         }
         $data = $this->searchSQL(isset($args['keyword']) ? $args['keyword'] : '', $options);
-        if (Configurator::isCLI()) print_r($data); 
+        if (Configurator::isCLI()) self::write(PHP_EOL . print_r($data, true)); 
         else echo self::render(__DIR__ . '/html/search.html', ['data' => $data]);
         break;
       case 'clean':
         if (isset(Configurator::getAleph()['db']['log']))
         {
           $file = \Aleph::dir(Configurator::getAleph()['db']['log']);
-          unlink($file);
+          if (is_file($file)) unlink($file);
         }
-        if (Configurator::isCLI()) echo PHP_EOL . 'The SQL log has been successfully removed.' . PHP_EOL;
+        self::write(PHP_EOL . 'The SQL log has been successfully removed.' . PHP_EOL);
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }

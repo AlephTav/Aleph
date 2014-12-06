@@ -67,6 +67,18 @@ class CLI
       'conceal' => 8
     ]
   ];
+  
+  /**
+   * Returns TRUE if the current interface type is interactive console and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   * @static
+   */
+  public static function available()
+  {
+    return PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server';
+  }
 
   /**
    * Returns values of command line options. Method returns FALSE if the script is not run from command line.
@@ -81,7 +93,7 @@ class CLI
     if (PHP_SAPI !== 'cli') return false;
     $argv = $_SERVER['argv'];
     $argc = $_SERVER['argc'];
-    $res = $opts = array();
+    $res = $opts = [];
     foreach ($options as $opt)
     {
       if (!is_array($opt)) $opts[$opt] = $opt;
@@ -95,6 +107,23 @@ class CLI
         foreach ((array)$opts[$argv[$i]] as $opt) $res[$opt] = $v;
       }
     }
+    return $res;
+  }
+
+  /**
+   * Returns TRUE if the console supports colorization and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   * @static
+   */
+  public static function hasColorSupport()
+  {
+    if (DIRECTORY_SEPARATOR == '\\') return getenv('ANSICON') !== false || getenv('ConEmuANSI') === 'ON';
+    if (!function_exists('posix_isatty')) return false;
+    $stream = fopen('php://output', 'w');
+    $res = posix_isatty($stream);
+    fclose($stream);
     return $res;
   }
   

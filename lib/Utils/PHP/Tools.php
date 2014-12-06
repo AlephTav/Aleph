@@ -32,6 +32,50 @@ namespace Aleph\Utils\PHP;
 class Tools
 {
   /**
+   * Returns path to the PHP executable file or FALSE if it cannot be found.
+   *
+   * @return string
+   * @access public
+   * @static
+   */
+  public static function getPHPBinary()
+  {
+    if (defined('HHVM_VERSION')) return (false !== ($hhvm = getenv('PHP_BINARY')) ? $hhvm : PHP_BINARY) . ' --php';
+    if (defined('PHP_BINARY') && PHP_BINARY && (PHP_SAPI === 'cli' || PHP_SAPI == 'cli-server') && is_file(PHP_BINARY)) return PHP_BINARY;
+    if ($php = getenv('PHP_PATH'))
+    {
+      if (!is_executable($php)) return false;
+      return $php;
+    }
+    if ($php = getenv('PHP_PEAR_PHP_BIN'))
+    {
+      if (is_executable($php)) return $php;
+    }
+    if (ini_get('open_basedir')) 
+    {
+      $dirs = [];
+      $paths = explode(PATH_SEPARATOR, ini_get('open_basedir'));
+      foreach ($paths as $path)
+      {
+        if (is_dir($path)) $dirs[] = $path;
+        else if (basename($path) == 'php' && is_executable($path)) return $path;
+      }
+    }
+    else
+    {
+      $dirs = [PHP_BINDIR];
+      if (defined('PHP_WINDOWS_VERSION_BUILD')) $dirs[] = 'C:\xampp\php\\';
+      $dirs = array_merge(explode(PATH_SEPARATOR, getenv('PATH') ?: getenv('Path')), $dirs);
+    }
+    $php = defined('PHP_WINDOWS_VERSION_BUILD') ? 'php.exe' : 'php';
+    foreach ($dirs as $dir)
+    {
+      if (is_file($file = $dir . DIRECTORY_SEPARATOR . $php) && (defined('PHP_WINDOWS_VERSION_BUILD') || is_executable($file))) return $file;
+    }
+    return false;
+  }
+
+  /**
    * Splits full class name into array containing two elements of the following structure: [class namespace, own class name].
    * 
    * @param string|object $class

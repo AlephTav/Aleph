@@ -99,14 +99,14 @@ class Config extends Module
         if ($file === false) self::error('The configuration file of number ' . $n . ' does not exist.');
         else
         {
-          if (Configurator::isCLI()) print_r(Configurator::getAleph()->setConfig($file, null, true));
+          if (Configurator::isCLI()) self::write(PHP_EOL . print_r(Configurator::getAleph()->setConfig($file, null, true), true));
           else echo $this->renderConfig($file);
         }
         break;
       case 'save':
         if (Configurator::isCLI())
         {
-          echo $this->getCommandHelp();
+          $this->showCommandHelp();
           break;
         }
         $cfg = $args['config'];
@@ -171,13 +171,13 @@ class Config extends Module
             }
           }
         }
-        if ($this->saveConfig($cfg, $args) && Configurator::isCLI()) echo PHP_EOL . 'The configuration file has been successfully updated.' . PHP_EOL;
+        if ($this->saveConfig($cfg, $args)) self::write(PHP_EOL . 'The configuration file has been successfully updated.' . PHP_EOL);
         break;
       case 'restore':
-        if ($this->saveConfig($this->defaultConfiguration, $args) && Configurator::isCLI()) echo PHP_EOL . 'The configuration file has been successfully restored.' . PHP_EOL;
+        if ($this->saveConfig($this->defaultConfiguration, $args)) self::write(PHP_EOL . 'The configuration file has been successfully restored.' . PHP_EOL);
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }

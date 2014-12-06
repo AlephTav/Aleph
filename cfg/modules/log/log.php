@@ -11,10 +11,10 @@ class Log extends Module
       case 'clean':
         self::removeFiles(\Aleph::dir('logs'), true, false);
         if (!Configurator::isCLI()) echo self::render(__DIR__ . '/html/list.html', ['logs' => []]);
-        else echo PHP_EOL . 'The log files have been successfully removed.' . PHP_EOL;
+        else self::write(PHP_EOL . 'The log files have been successfully removed.' . PHP_EOL);
         break;
       case 'show':
-        if (Configurator::isCLI()) print_r($this->getLogDirectories());
+        if (Configurator::isCLI()) self::write(PHP_EOL . print_r($this->getLogDirectories(), true));
         else echo self::render(__DIR__ . '/html/list.html', ['logs' => $this->getLogDirectories()]);
         break;
       case 'files':
@@ -29,18 +29,18 @@ class Log extends Module
         }
         sort($files);
         $files = array_reverse($files);
-        if (Configurator::isCLI()) print_r($files);
+        if (Configurator::isCLI()) self::write(PHP_EOL . print_r($files, true));
         else echo self::render(__DIR__ . '/html/sublist.html', ['files' => $files]);
         break;
       case 'details':
         if (empty($args['dir']) || empty($args['file'])) break;
         $file = \Aleph::dir('logs') . '/' . $args['dir'] . '/' . $args['file'];
         $res = unserialize(file_get_contents($file));
-        if (Configurator::isCLI()) print_r($res);
+        if (Configurator::isCLI()) self::write(PHP_EOL . print_r($res, true));
         else echo self::render(__DIR__ . '/html/details.html', ['log' => $res, 'file' => $args['dir'] . ' ' . $args['file']]);
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }

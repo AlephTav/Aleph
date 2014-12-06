@@ -10,7 +10,7 @@ class Cache extends Module
     {
       case 'gc':
         \Aleph\Cache\Cache::getInstance()->gc(100);
-        if (Configurator::isCLI()) echo PHP_EOL . 'The garbage collector has been successfully launched.' . PHP_EOL;
+        if (Configurator::isCLI()) self::write(PHP_EOL . 'The garbage collector has been successfully launched.' . PHP_EOL);
         break;
       case 'clean':
         $a = Configurator::getAleph();
@@ -29,10 +29,10 @@ class Cache extends Module
         {
           $cache->clean();
         }
-        if (Configurator::isCLI()) echo PHP_EOL . 'The cache has been successfully cleaned' . PHP_EOL;
+        if (Configurator::isCLI()) self::write(PHP_EOL . 'The cache has been successfully cleaned' . PHP_EOL);
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }

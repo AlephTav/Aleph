@@ -209,7 +209,7 @@ class DB
   {
     if (isset(self::$dbs[$dbalias])) return self::$dbs[$dbalias];
     $a = \Aleph::getInstance()[$dbalias];
-    if (empty($a['dsn'])) throw new Core\Exception($this, 'ERR_DB_3', $dbalias);
+    if (empty($a['dsn'])) throw new Core\Exception('Aleph\DB\DB::ERR_DB_3', $dbalias);
     return self::$dbs[$dbalias] = new DB($a['dsn'], isset($a['username']) ? $a['username'] : null, isset($a['password']) ? $a['password'] : null, isset($a['options']) ? $a['options'] : null);
   }
 

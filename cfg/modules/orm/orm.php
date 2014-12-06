@@ -12,9 +12,9 @@ class ORM extends Module
     switch ($command)
     {
       case 'refresh':
-        if (Configurator::isCLI())
+        if (Configurator::isCLI()) 
         {
-          echo $this->getCommandHelp();
+          $this->showCommandHelp();
           break;
         }
         echo $this->refresh($args['alias']);
@@ -22,25 +22,33 @@ class ORM extends Module
       case 'show':
         if (Configurator::isCLI())
         {
+          $output = '';
           if (isset($args['alias']))
           {
-            foreach ($this->getTables($args['alias']) as $n => $table)
+            $tables = $this->getTables($args['alias']);
+            if (!is_array($tables)) 
             {
-              echo PHP_EOL . ($n + 1) . '. ' . $table;
+              self::error($tables);
+              break;
             }
-            echo PHP_EOL;
+            foreach ($tables as $n => $table)
+            {
+              $output .= PHP_EOL . ($n + 1) . '. ' . $table;
+            }
+            $output .= PHP_EOL;
           }
           else
           {
             foreach ($this->getAliases() as $alias)
             {
-              echo PHP_EOL . 'Database: ' . $alias . PHP_EOL;
+              $output .= PHP_EOL . 'Database: ' . $alias . PHP_EOL;
               foreach ($this->getTables($alias) as $n => $table)
               {
-                echo PHP_EOL . ($n + 1) . '. ' . $table;
+                $output .= PHP_EOL . ($n + 1) . '. ' . $table;
               }
-              echo PHP_EOL;
+              $output .= PHP_EOL;
             }
+            self::write($output);
           }
           break;
         }
@@ -53,11 +61,15 @@ class ORM extends Module
           $gen = new Generator($args['alias'], isset($args['dir']) ? $args['dir'] : null, isset($args['mode']) ? $args['mode'] : Generator::MODE_REPLACE_IMPORTANT);
           $gen->setExcludedTables($this->extractTables($args));
           $gen->ar(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\AR');
-          if (Configurator::isCLI()) echo PHP_EOL . 'Active Record\'s classes have been successfully generated.' . PHP_EOL;
+          self::write(PHP_EOL . 'Active Record\'s classes have been successfully generated.' . PHP_EOL);
         }
         break;
       case 'xml':
-        if (empty($args['alias'])) self::error('The database alias is not defined.');
+        if (empty($args['alias'])) 
+        {
+          self::error('The database alias is not defined.');
+          break;
+        }
         else
         {
           $gen = new Generator($args['alias'], isset($args['dir']) ? $args['dir'] : null, isset($args['mode']) ? $args['mode'] : Generator::MODE_REPLACE_IMPORTANT);
@@ -67,7 +79,7 @@ class ORM extends Module
           $gen->usePrettyClassName = isset($args['usePrettyClassName']) ? (bool)$args['usePrettyClassName'] : false;
           $gen->usePrettyPropertyName = isset($args['usePrettyPropertyName']) ? (bool)$args['usePrettyPropertyName'] : false;
           $gen->xml(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM');
-          if (Configurator::isCLI()) echo PHP_EOL . 'XML file have been successfully generated.' . PHP_EOL;
+          self::write(PHP_EOL . 'XML file have been successfully generated.' . PHP_EOL);
         }
       case 'model':
         if (empty($args['alias'])) self::error('The database alias is not defined.');
@@ -82,11 +94,11 @@ class ORM extends Module
           $gen->usePrettyClassName = isset($args['usePrettyClassName']) ? (bool)$args['usePrettyClassName'] : false;
           $gen->usePrettyPropertyName = isset($args['usePrettyPropertyName']) ? (bool)$args['usePrettyPropertyName'] : false;
           $gen->orm(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM', null, $xml);
-          if (Configurator::isCLI()) echo PHP_EOL . 'Model\'s classes have been successfully generated.' . PHP_EOL;
+          self::write(PHP_EOL . 'Model\'s classes have been successfully generated.' . PHP_EOL);
         }
         break;
       default:
-        if (Configurator::isCLI()) echo $this->getCommandHelp();
+        $this->showCommandHelp();
         break;
     }
   }
