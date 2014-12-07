@@ -233,30 +233,6 @@ abstract class Cache implements \Countable
   }
   
   /**
-   * Removes keys of the expired data from the key vault.
-   *
-   * @access public
-   */
-  public function normalizeVault()
-  {
-    $vault = $this->getVault();
-    if (!is_array($vault)) return;
-    foreach ($vault as $group => $keys)
-    {
-      foreach ($keys as $key => $expire)
-      {
-        if ($this->isExpired($key, $expire)) 
-        {
-          $this->remove($key);
-          unset($vault[$group][$key]);
-        }
-      }
-      if (count($vault[$group]) == 0) unset($vault[$group]);
-    }
-    $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
-  }
-  
-  /**
    * Returns cached data by their group.
    *
    * @param string $group - group of cached data.
@@ -306,5 +282,42 @@ abstract class Cache implements \Countable
       $vault[$group][$key] = $expire;
       $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
     }
+  }
+  
+  /**
+   * Normalizes expiration time value.
+   *
+   * @param integer $expire - cache lifetime (in seconds). If it is not defined the vault lifetime is used.
+   * @return integer
+   * @access protected
+   */
+  protected function normalizeExpire($expire)
+  {
+    $expire = abs((int)$expire);
+    return $expire ?: $this->vaultLifeTime;
+  }
+  
+  /**
+   * Removes keys of the expired data from the key vault.
+   *
+   * @access protected
+   */
+  protected function normalizeVault()
+  {
+    $vault = $this->getVault();
+    if (!is_array($vault)) return;
+    foreach ($vault as $group => $keys)
+    {
+      foreach ($keys as $key => $expire)
+      {
+        if ($this->isExpired($key, $expire)) 
+        {
+          $this->remove($key);
+          unset($vault[$group][$key]);
+        }
+      }
+      if (count($vault[$group]) == 0) unset($vault[$group]);
+    }
+    $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
   }
 }

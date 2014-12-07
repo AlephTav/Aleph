@@ -58,7 +58,7 @@ class Process
    * @access public
    * @static
    */
-  public static $cacheExpire = 86400;
+  public static $cacheExpire = null;
   
   /**
    * Group name of the process cache.

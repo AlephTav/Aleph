@@ -50,6 +50,14 @@ class Memory extends Cache
    * @access public
    */
   public $compress = true;
+  
+  /**
+   * The vault lifetime. Defined as 1 year by default.
+   *
+   * @var integer $vaultLifeTime - given in seconds.
+   * @access protected
+   */
+  protected $vaultLifeTime = 2592000; // 1 month
 
   /**
    * The instance of \Memcache class.
@@ -81,7 +89,6 @@ class Memory extends Cache
   public function __construct(array $servers, $compress = true)
   {
     parent::__construct();
-    $this->vaultLifeTime = 2592000; // 1 month
     $this->mem = new \Memcache();
     if (count($servers))
     {
@@ -120,13 +127,13 @@ class Memory extends Cache
    *
    * @param string $key - a data key.
    * @param mixed $content - some data.
-   * @param integer $expire - cache lifetime (in seconds).
+   * @param integer $expire - cache lifetime (in seconds). If it is not defined the vault lifetime is used.
    * @param string $group - group of a data key.
    * @access public
    */  
-  public function set($key, $content, $expire, $group = null)
+  public function set($key, $content, $expire = null, $group = null)
   {
-    $expire = abs((int)$expire);
+    $expire = $this->normalizeExpire($expire);
     $k = md5($key);
     $content = serialize($content);
     if (strlen($content) < self::MAX_BLOCK_SIZE) $this->mem->set($k, $content, $this->compress, $expire);

@@ -51,13 +51,13 @@ class Session extends Cache
    *
    * @param string $key - a data key.
    * @param mixed $content - some data.
-   * @param integer $expire - cache lifetime (in seconds).
+   * @param integer $expire - cache lifetime (in seconds). If it is not defined the vault lifetime is used.
    * @param string $group - group of a data key.
    * @access public
    */  
-  public function set($key, $content, $expire, $group = null)
+  public function set($key, $content, $expire = null, $group = null)
   {
-    $expire = abs((int)$expire);
+    $expire = $this->normalizeExpire($expire);
     $_SESSION['__CACHE__'][$key] = [serialize($content), $expire + time()];
     $this->saveKeyToVault($key, $expire, $group);
   }
