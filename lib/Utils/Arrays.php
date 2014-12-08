@@ -32,6 +32,19 @@ namespace Aleph\Utils;
 class Arrays
 {
   /**
+   * Returns TRUE if the given array is numeric and FALSE otherwise.
+   *
+   * @param array $array
+   * @return boolean
+   * @access public
+   * @static
+   */
+  public static function isNumeric(array $array)
+  {
+    return array_keys($array) === range(0, count($array) - 1);
+  }
+
+  /**
    * Swaps the two elements of the array. The elements are determined by their index numbers.
    *
    * @param array $array - the array in which the two elements will be swapped.
@@ -75,7 +88,7 @@ class Arrays
    */
   public static function insert(array &$array, $value, $offset = 0)
   {
-    $array = array_slice($array, 0, $offset, true) + (array)$value + array_slice($array, $offset, null, true);
+    $array = array_merge(array_slice($array, 0, $offset, true), (array)$value, array_slice($array, $offset, null, true));
   }
   
   /**

@@ -57,7 +57,7 @@ class Page
    * @access public
    * @static
    */
-  public static $cacheGroup = 'pages';
+  public static $cacheGroup = null;
   
   /**
    * Default cache expire.
@@ -66,7 +66,7 @@ class Page
    * @access public
    * @static
    */
-  public static $cacheExpire = 0;
+  public static $cacheExpire = null;
   
   /**
    * Contains a page object, whose workflow is performed.
@@ -230,7 +230,7 @@ class Page
    */
   public function isExpired()
   {
-    return ($this->expire ?: static::$cacheExpire) ? $this->storage->isExpired($this->UID) : true;
+    return $this->expire || static::$cacheExpire ? $this->storage->isExpired($this->UID) : true;
   }
   
   /**
@@ -325,7 +325,19 @@ class Page
   public function render()
   {
     $html = $this->view->render();
-    if ($this->expire ?: static::$cacheExpire) $this->storage->set($this->UID, $html, $this->expire, static::$cacheGroup ?: 'pages');
+    if ($this->expire || static::$cacheExpire) 
+    {
+      if (static::$cacheGroup !== null) 
+      {
+        $group = static::$cacheGroup;
+      }
+      else
+      {
+        $group = \Aleph::getInstance()['pom'];
+        $group = isset($group['cacheGroup']) ? $group['cacheGroup'] : null;
+      }
+      $this->storage->set($this->UID, $html, $this->expire ?: static::$cacheExpire, $group);
+    }
     echo $html;
   }
   
