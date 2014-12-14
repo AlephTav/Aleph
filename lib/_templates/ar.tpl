@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014 Aleph Tav
+ * Copyright (c) 2013 - 2015 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -15,7 +15,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2014 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 

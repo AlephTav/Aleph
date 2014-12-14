@@ -1,12 +1,47 @@
 <?php
+/**
+ * Copyright (c) 2013 - 2015 Aleph Tav
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @link http://www.4leph.com
+ * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @license http://www.opensource.org/licenses/MIT
+ */
 
-namespace Aleph\Configurator;
+namespace Aleph\Configuration;
 
 use Aleph\DB\DB,
     Aleph\DB\ORM\Generator;
 
+/**
+ * Module for generating Active Record and ORM classes.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.configuration
+ */
 class ORM extends Module
 {
+  /**
+   * Performs the given command.
+   *
+   * @param string $command - the command name.
+   * @param array $args - the command arguments.
+   * @access public
+   * @abstract
+   */
   public function process($command, array $args = null)
   {
     switch ($command)
@@ -28,7 +63,7 @@ class ORM extends Module
             $tables = $this->getTables($args['alias']);
             if (!is_array($tables)) 
             {
-              self::error($tables);
+              $this->error($tables);
               break;
             }
             foreach ($tables as $n => $table)
@@ -48,26 +83,26 @@ class ORM extends Module
               }
               $output .= PHP_EOL;
             }
-            self::write($output);
+            $this->write($output);
           }
           break;
         }
         echo $this->renderTables($args['alias']);
         break;
       case 'ar':
-        if (empty($args['alias'])) self::error('The database alias is not defined.');
+        if (empty($args['alias'])) $this->error('The database alias is not defined.');
         else
         {
           $gen = new Generator($args['alias'], isset($args['dir']) ? $args['dir'] : null, isset($args['mode']) ? $args['mode'] : Generator::MODE_REPLACE_IMPORTANT);
           $gen->setExcludedTables($this->extractTables($args));
           $gen->ar(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\AR');
-          self::write(PHP_EOL . 'Active Record\'s classes have been successfully generated.' . PHP_EOL);
+          $this->write(PHP_EOL . 'Active Record\'s classes have been successfully generated.' . PHP_EOL);
         }
         break;
       case 'xml':
         if (empty($args['alias'])) 
         {
-          self::error('The database alias is not defined.');
+          $this->error('The database alias is not defined.');
           break;
         }
         else
@@ -79,10 +114,10 @@ class ORM extends Module
           $gen->usePrettyClassName = isset($args['usePrettyClassName']) ? (bool)$args['usePrettyClassName'] : false;
           $gen->usePrettyPropertyName = isset($args['usePrettyPropertyName']) ? (bool)$args['usePrettyPropertyName'] : false;
           $gen->xml(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM');
-          self::write(PHP_EOL . 'XML file have been successfully generated.' . PHP_EOL);
+          $this->write(PHP_EOL . 'XML file have been successfully generated.' . PHP_EOL);
         }
       case 'model':
-        if (empty($args['alias'])) self::error('The database alias is not defined.');
+        if (empty($args['alias'])) $this->error('The database alias is not defined.');
         else
         {
           $xml = (isset($args['dir']) ? \Aleph::dir($args['dir']) : \Aleph::getRoot()) . '/' . $args['alias'] . '.xml';
@@ -94,7 +129,7 @@ class ORM extends Module
           $gen->usePrettyClassName = isset($args['usePrettyClassName']) ? (bool)$args['usePrettyClassName'] : false;
           $gen->usePrettyPropertyName = isset($args['usePrettyPropertyName']) ? (bool)$args['usePrettyPropertyName'] : false;
           $gen->orm(isset($args['ns']) ? $args['ns'] : 'Aleph\DB\ORM', null, $xml);
-          self::write(PHP_EOL . 'Model\'s classes have been successfully generated.' . PHP_EOL);
+          $this->write(PHP_EOL . 'Model\'s classes have been successfully generated.' . PHP_EOL);
         }
         break;
       default:
@@ -103,6 +138,12 @@ class ORM extends Module
     }
   }
   
+  /**
+   * Returns HTML/CSS/JS data for the module GUI.
+   *
+   * @access public
+   * @return array
+   */
   public function getData()
   {
     $tmp['aliases'] = $this->getAliases();
@@ -110,6 +151,12 @@ class ORM extends Module
     return ['js' => 'orm/js/orm.js', 'html' => 'orm/html/orm.html', 'data' => $tmp];
   }
   
+  /**
+   * Returns command help of the module.
+   *
+   * @return string
+   * @access public
+   */
   public function getCommandHelp()
   {
     return <<<HELP
@@ -153,28 +200,55 @@ class ORM extends Module
 HELP;
   }
   
+  /**
+   * Refreshes the table list of the given database.
+   *
+   * @param string $alias - the alias of the database.
+   * @return string
+   * @access private
+   */
   private function refresh($alias)
   {
     $aliases = $this->getAliases();
     if (empty($aliases[$alias])) $alias = reset($aliases);
-    $tmp['aliases'] = self::render(__DIR__ . '/html/aliases.html', ['aliases' => $aliases, 'alias' => $alias]);
+    $tmp['aliases'] = $this->render(__DIR__ . '/html/aliases.html', ['aliases' => $aliases, 'alias' => $alias]);
     $tmp['tables'] = $this->renderTables($alias);
     return json_encode($tmp);
   }
   
+  /**
+   * Refreshes the module GUI.
+   *
+   * @param string $alias - the alias of the database.
+   * @return string - the rendered HTML.
+   * @access private
+   */
   private function renderTables($alias)
   {
-    return self::render(__DIR__ . '/html/tables.html', ['tables' => $alias ? $this->getTables($alias) : []]);
+    return $this->render(__DIR__ . '/html/tables.html', ['tables' => $alias ? $this->getTables($alias) : []]);
   }
   
+  /**
+   * Returns aliases of the available databases.
+   *
+   * @return array
+   * @access private
+   */
   private function getAliases()
   {
     $tmp = [];
-    $config = Configurator::getAleph()->getConfig();
+    $config = \Aleph::getInstance()->getConfig();
     foreach ($config as $alias => $info) if (isset($info['dsn'])) $tmp[$alias] = $alias;
     return $tmp;
   }
   
+  /**
+   * Returns tables for the given database.
+   *
+   * @param string $alias - the alias of the database.
+   * @return array
+   * @access private
+   */
   private function getTables($alias)
   {
     if (!$alias) return [];
@@ -190,6 +264,13 @@ HELP;
     return $db->getTableList();
   }
   
+  /**
+   * Extracts table names from string.
+   *
+   * @param array $args - the command parameters.
+   * @return array
+   * @access private
+   */
   private function extractTables(array $args)
   {
     if (empty($args['tables'])) return [];

@@ -195,6 +195,20 @@ cfg.addModule('config',
     // Selecting cache type.
     $('body').on('change', '#cacheType', function(){self.selectCacheType($(this).val());});
     this.selectCacheType($('#cacheType').val());
+    // Selecting autoload type.
+    $('body').on('change', '#alType', function()
+    {
+      if ($(this).val() == 'classmap')
+      {
+        $('.autoload-psr').hide();
+        $('.autoload-classmap').show();
+      }
+      else
+      {
+        $('.autoload-classmap').hide();
+        $('.autoload-psr').show();
+      }
+    });
     // Normalization of the JSON data.
     cfg.normalizeJSON('.json');
   },

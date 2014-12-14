@@ -1,9 +1,44 @@
 <?php
+/**
+ * Copyright (c) 2013 - 2015 Aleph Tav
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @link http://www.4leph.com
+ * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @license http://www.opensource.org/licenses/MIT
+ */
 
-namespace Aleph\Configurator;
+namespace Aleph\Configuration;
 
+/**
+ * Module for reviewing and management of SQL log. 
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.configuration
+ */
 class SQLLog extends Module
 {
+  /**
+   * Performs the given command.
+   *
+   * @param string $command - the command name.
+   * @param array $args - the command arguments.
+   * @access public
+   * @abstract
+   */
   public function process($command, array $args = null)
   {
     switch ($command)
@@ -24,16 +59,16 @@ class SQLLog extends Module
           $options = $args['options'];
         }
         $data = $this->searchSQL(isset($args['keyword']) ? $args['keyword'] : '', $options);
-        if (Configurator::isCLI()) self::write(PHP_EOL . print_r($data, true)); 
-        else echo self::render(__DIR__ . '/html/search.html', ['data' => $data]);
+        if (Configurator::isCLI()) $this->write(PHP_EOL . print_r($data, true)); 
+        else echo $this->render(__DIR__ . '/html/search.html', ['data' => $data]);
         break;
       case 'clean':
-        if (isset(Configurator::getAleph()['db']['log']))
+        if (isset(\Aleph::getInstance()['db']['log']))
         {
-          $file = \Aleph::dir(Configurator::getAleph()['db']['log']);
+          $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
           if (is_file($file)) unlink($file);
         }
-        self::write(PHP_EOL . 'The SQL log has been successfully removed.' . PHP_EOL);
+        $this->write(PHP_EOL . 'The SQL log has been successfully removed.' . PHP_EOL);
         break;
       default:
         $this->showCommandHelp();
@@ -41,11 +76,23 @@ class SQLLog extends Module
     }
   }
   
+  /**
+   * Returns HTML/CSS/JS data for the module GUI.
+   *
+   * @access public
+   * @return array
+   */
   public function getData()
   {
     return ['js' => 'sqllog/js/sqllog.js', 'html' => 'sqllog/html/sqllog.html'];
   }
-  
+
+  /**
+   * Returns command help of the module.
+   *
+   * @return string
+   * @access public
+   */
   public function getCommandHelp()
   {
     return <<<HELP
@@ -65,9 +112,17 @@ class SQLLog extends Module
 HELP;
   }
   
+  /**
+   * Searches data in the sql log.
+   *
+   * @param string $keyword - the search keyword.
+   * @param array $options - the search parameters.
+   * @return array
+   * @access private
+   */
   private function searchSQL($keyword, array $options)
   {
-    if (isset(Configurator::getAleph()['db']['log'])) $file = \Aleph::dir(Configurator::getAleph()['db']['log']);
+    if (isset(\Aleph::getInstance()['db']['log'])) $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
     if (empty($file) || !is_file($file)) return [];
     $tmp = [];
     $fh = fopen($file, 'r');

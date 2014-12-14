@@ -1,63 +1,123 @@
 <?php
+/**
+ * Copyright (c) 2013 - 2015 Aleph Tav
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @link http://www.4leph.com
+ * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @license http://www.opensource.org/licenses/MIT
+ */
 
-namespace Aleph\Configurator;
+namespace Aleph\Configuration;
 
 require_once(__DIR__ . '/module.php');
 
+/**
+ * The utility class that intended for automation of developers' routine operations such as: 
+ * configuring of your application, cache management, scaffolding, generating site classmap etc.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.configuration
+ */
 final class Configurator
 {
-  const CORE = '/lib/Aleph.php';
+  /**
+   * The root directory of the application.
+   *
+   * @var string $root
+   * @access private
+   */
+  private $root = null;
+  
+  /**
+   * The path to the main class (Aleph) of the framework.
+   *
+   * @var string $core
+   * @access private
+   */
+  private $core = null;
 
-  private static $instance = null;
-  private static $configs = [];
-  private static $modules = [];
-  private static $aleph = null;
-  private static $root = null;
-  private static $hasColorSupport = false;
+  /**
+   * List of the configuration files.
+   *
+   * @var array $configs
+   * @access private
+   */
+  private $configs = [];
   
-  private function __construct(){}
+  /**
+   * List of configurator's modules.
+   *
+   * @var array $modules
+   * @access private
+   */
+  private $modules = [];
   
+  /**
+   * Returns TRUE if the current request is Ajax one and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   * @static
+   */
   public static function isAjaxRequest()
   {
     return isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest';
   }
   
+  /**
+   * Returns TRUE if the current request is the first one (not Ajax) or if the application is launched as a console one.
+   * Otherwise the methods returns FALSE.
+   *
+   * @return boolean
+   * @access public
+   * @static
+   */
   public static function isFirstRequest()
   {
     return self::isCLI() || $_SERVER['REQUEST_METHOD'] == 'GET' && !self::isAjaxRequest();
   }
   
+  /**
+   * Returns TRUE if the application is launched as a console one and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   * @static
+   */
   public static function isCLI()
   {
     return PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server';
   }
   
-  public static function getRoot()
-  {
-    return self::$root;
-  }
-  
-  public static function getAleph()
-  {
-    return self::$aleph;
-  }
-  
-  public static function getConfigs()
-  {
-    return self::$configs;
-  }
-  
-  public static function setConfigs(array $configs, $merge = true)
-  {
-    if (!$merge) self::$configs = [];
-    foreach ($configs as $file => $editable) self::$configs[$file] = $editable;
-  }
-
-  public static function init($root)
+  /**
+   * Initializes the configurator.
+   *
+   * @param array $config - parameters of the configurator.
+   * @access public
+   */
+  public function __construct(array $config)
   {
     set_time_limit(0);
-    self::$root = realpath($root);
-    self::$hasColorSupport = self::hasColorSupport();
+    $this->root = realpath(isset($config['root']) ? $config['root'] : __DIR__);
+    $this->core = isset($config['core']) ? $config['core'] : '/lib/Aleph';
+    $config = isset($config['configs']) ? (array)$config['configs'] : [];
+    // Reads all configuration files of the application.
+    foreach ($config as $file => $editable) $this->configs[$this->normalizePath($file)] = $editable;
+    // Creates module objects.
     $list = __DIR__ . '/../modules/list.txt';
     if (file_exists($list))
     {
@@ -71,35 +131,99 @@ final class Configurator
           if (file_exists($php))
           {
             require_once($php);
-            $class = 'Aleph\Configurator\\' . $name;
-            if (class_exists($class)) self::$modules[$name] = new $class(); 
+            $class = 'Aleph\Configuration\\' . $name;
+            if (class_exists($class)) $this->modules[$name] = new $class($this); 
           }
         }
       }
     }
-    foreach (self::$modules as $name => $module) $module->init();
-    if (self::isFirstRequest())
-    {
-      $errors = [];
-      if (!file_exists($root . self::CORE)) $errors[] = 'File ' . self::CORE . ' is not found.';
-      if (count($errors)) self::show(['errors' => $errors]);
-      if (!self::isCLI())
-      {
-        self::connect();
-        $data = [];
-        foreach (self::$modules as $name => $module) $data[$name] = $module->getData();
-        self::show(['errors' => [], 'modules' => $data]);
-      }
-    }
-    if (!self::$instance) self::$instance = new self();
-    return self::$instance;            
   }
   
-  public static function write($text)
+  /**
+   * Returns the site root directory.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function getRoot()
+  {
+    return $this->root;
+  }
+  
+  /**
+   * Returns the path to the main framework class.
+   *
+   * @return string
+   * @access public
+   */
+  public function getCore()
+  {
+    return $this->core;
+  }
+  
+  /**
+   * Returns list of the configuration files.
+   *
+   * @return array
+   * @access public
+   * @static
+   */
+  public function getConfigs()
+  {
+    return $this->configs;
+  }
+  
+  /**
+   * Initializes and launches the configuration modules.
+   *
+   * @access public
+   */
+  public function process()
+  {
+    // Initializes all modules.
+    foreach ($this->modules as $name => $module) $module->init();
+    // Checks if we have an error with including of the core class.
+    if (self::isFirstRequest())
+    {
+      if (!file_exists($this->root . $this->core))
+      {
+        $this->show(['errors' => 'The core class of the framework is not found.']);
+      }
+      if (!self::isCLI())
+      {
+        $this->connect();
+        $data = [];
+        foreach ($this->modules as $name => $module) $data[$name] = $module->getData();
+        $this->show(['errors' => [], 'modules' => $data]);
+      }
+    }
+    // Launches the modules.
+    if (self::isCLI() || self::isAjaxRequest())
+    {
+      list($module, $command, $args) = $this->parseParameters();
+      $this->connect();
+      if (empty($this->modules[$module]))
+      {
+        $this->write($this->getCommandHelp());
+      }
+      else
+      {
+        $this->modules[$module]->process($command, $args);
+      }
+    }
+  }
+  
+  /**
+   * Sends text data to the console.
+   *
+   * @param string $text - any text data.
+   * @access public
+   */
+  public function write($text)
   {
     if (self::isCLI())
     {
-      if (!self::$hasColorSupport)
+      if (!$this->hasColorSupport())
       {
         $text = preg_replace("/\e\[[\d;]+m/i", '', $text);
       }
@@ -107,30 +231,55 @@ final class Configurator
     }
   }
   
-  public function process()
+  /**
+   * Normalizes the directory path.
+   *
+   * @return string
+   * @access public
+   */
+  public function normalizePath($path)
   {
-    if (!self::isAjaxRequest() && !self::isCLI()) return;
-    list($module, $command, $args) = self::parseParameters();
-    self::connect();
-    if (empty(self::$modules[$module]))
+    if (strlen($path) == 0) return false;
+    if ($path[0] != '/') $path = '/' . $path;
+    return $this->root . $path;
+  }
+  
+  /**
+   * Returns TRUE if SAPI is an interactive console with color support and FALSE otherwise.
+   *
+   * @return boolean
+   * @access private
+   */
+  private function hasColorSupport()
+  {
+    static $hasColorSupport;
+    if ($hasColorSupport === null)
     {
-      self::write(self::getCommandHelp());
-      return;
+      if (DIRECTORY_SEPARATOR == '\\') 
+      {
+        $hasColorSupport = getenv('ANSICON') !== false || getenv('ConEmuANSI') === 'ON';
+      }
+      else if (!function_exists('posix_isatty')) 
+      {
+        $hasColorSupport = false;
+      }
+      else
+      {
+        $stream = fopen('php://output', 'w');
+        $hasColorSupport = posix_isatty($stream);
+        fclose($stream);
+      }
     }
-    self::$modules[$module]->process($command, $args);
+    return $hasColorSupport;
   }
   
-  private static function hasColorSupport()
-  {
-    if (DIRECTORY_SEPARATOR == '\\') return getenv('ANSICON') !== false || getenv('ConEmuANSI') === 'ON';
-    if (!function_exists('posix_isatty')) return false;
-    $stream = fopen('php://output', 'w');
-    $res = posix_isatty($stream);
-    fclose($stream);
-    return $res;
-  }
-  
-  private static function getCommandHelp()
+  /**
+   * Returns the command line help of the configurator.
+   *
+   * @return string
+   * @access private   
+   */
+  private function getCommandHelp()
   {
     $help = <<<HELP
 
@@ -144,11 +293,17 @@ final class Configurator
 \e[36;1mThe module list:\e[0m
 
 HELP;
-    foreach (self::$modules as $name => $module) $help .= PHP_EOL . "\e[33m[$name]\e[0m" . PHP_EOL . $module->getcommandHelp();
+    foreach ($this->modules as $name => $module) $help .= PHP_EOL . "\e[33m[$name]\e[0m" . PHP_EOL . $module->getcommandHelp();
     return $help;
   }
   
-  private static function parseParameters()
+  /**
+   * Parses command line parameters passed to the script into array.
+   *
+   * @return array
+   * @access private
+   */
+  private function parseParameters()
   {
     if (self::isCLI())
     {
@@ -189,15 +344,25 @@ HELP;
     return [$module, $command, $args];
   }
   
-  private static function connect()
+  /**
+   * Initializes the framework.
+   *
+   * @access private
+   */
+  private function connect()
   {
-    require_once(self::$root . self::CORE);
-    self::$aleph = \Aleph::init(self::$root);
+    require_once($this->root . $this->core);
+    $a = \Aleph::init($this->root);
     \Aleph::errorHandling(false);
-    foreach (self::$configs as $file => $editable) self::$aleph->setConfig($file);
+    foreach ($this->configs as $file => $editable) $a->setConfig($file);
   }
   
-  private static function show(array $vars)
+  /**
+   * Renders the configurator's GUI.
+   *
+   * @access private
+   */
+  private function show(array $vars)
   {
     extract($vars);
     require(__DIR__ . '/../html/configurator.html');

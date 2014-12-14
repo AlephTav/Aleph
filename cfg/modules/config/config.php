@@ -1,20 +1,54 @@
 <?php
+/**
+ * Copyright (c) 2013 - 2015 Aleph Tav
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @link http://www.4leph.com
+ * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @license http://www.opensource.org/licenses/MIT
+ */
 
-namespace Aleph\Configurator;
+namespace Aleph\Configuration;
 
+/**
+ * The configurations module that allows to configure your application.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.configuration
+ */
 class Config extends Module
 {
+  /**
+   * The default configuration of the application.
+   *
+   * @var array $defaultConfiguration
+   * @access private
+   */
   private $defaultConfiguration = [
     'debugging' => true,
     'logging' => true,
     'templateDebug' => 'lib/_templates/debug.tpl',
     'templateBug' => 'lib/_templates/bug.tpl',
     'autoload' => [
-      'search' => true,
-      'unique' => true,
-      'classmap' => 'classmap.php',
-      'timeout' => 300,
-      'mask' => '/.+\.php\z/i'
+      'type' => 'PSR-4',
+      'namespaces' => [
+        'Aleph\MVC' => [
+          'app/pages'
+        ]
+      ]
     ],
     'cache' => [
       'type' => 'file',
@@ -58,21 +92,37 @@ class Config extends Module
       'ppCloseTag' => ']PP]!>',
     ]
   ];
-
-  private $defaults = ['app/config.php' => 1];
   
-  private $common = ['logging', 'debugging', 'dirs', 'templateDebug', 'templateBug', 'customDebugMethod', 'customLogMethod', 'autoload', 'cache', 'db', 'ar', 'mvc', 'pom'];
+  /**
+   * The basic configuration variables.
+   */
+  private $common = [
+    'logging',
+    'debugging',
+    'templateDebug',
+    'templateBug',
+    'customDebugMethod',
+    'customLogMethod',
+    'dirs',
+    'autoload',
+    'cache',
+    'db',
+    'ar',
+    'mvc',
+    'pom'
+  ];
   
+  /**
+   * Initializes the module.
+   *
+   * @access public
+   */
   public function init()
   {
-    if (!file_exists(__DIR__ . '/config.ini')) $cfgs = $defaults;
-    else $cfgs = parse_ini_file(__DIR__ . '/config.ini', true);
-    $configs = []; $nums = [];
-    foreach ($cfgs as $file => $editable) $configs[self::normalizePath($file)] = $editable;
     if (Configurator::isFirstRequest())
     {
-      $n = 0;
-      foreach ($configs as $file => $editable)
+      $n = 0; $nums = [];
+      foreach ($this->cfg->getConfigs() as $file => $editable)
       {
         if (!file_exists($file))
         {
@@ -84,11 +134,18 @@ class Config extends Module
         }
         $n++;
       }
+      if ($nums) foreach ($nums as $n) $this->saveConfig($this->defaultConfiguration, ['file' => $n], false);
     }
-    Configurator::setConfigs($configs);
-    if ($nums) foreach ($nums as $n) $this->saveConfig($this->defaultConfiguration, ['file' => $n], false);
   }
   
+  /**
+   * Performs the given command.
+   *
+   * @param string $command - the command name.
+   * @param array $args - the command arguments.
+   * @access public
+   * @abstract
+   */
   public function process($command, array $args = null)
   {
     switch ($command)
@@ -96,10 +153,10 @@ class Config extends Module
       case 'show':
         $n = isset($args['file']) ? (int)$args['file'] : 0;
         $file = $this->getConfigFile($n);
-        if ($file === false) self::error('The configuration file of number ' . $n . ' does not exist.');
+        if ($file === false) $this->error('The configuration file of number ' . $n . ' does not exist.');
         else
         {
-          if (Configurator::isCLI()) self::write(PHP_EOL . print_r(Configurator::getAleph()->setConfig($file, null, true), true));
+          if (Configurator::isCLI()) $this->write(PHP_EOL . print_r(\Aleph::getInstance()->setConfig($file, null, true), true));
           else echo $this->renderConfig($file);
         }
         break;
@@ -160,7 +217,7 @@ class Config extends Module
         $cfg = [];
         if (false !== $file = $this->getConfigFile(isset($args['file']) ? (int)$args['file'] : 0))
         {
-          $cfg = Configurator::getAleph()->setConfig($file, null, true);
+          $cfg = \Aleph::getInstance()->setConfig($file, null, true);
           if (isset($args['property']) && is_array($args['property']))
           {
             for ($i = 0, $len = count($args['property']); $i < $len; $i += 2)
@@ -171,10 +228,10 @@ class Config extends Module
             }
           }
         }
-        if ($this->saveConfig($cfg, $args)) self::write(PHP_EOL . 'The configuration file has been successfully updated.' . PHP_EOL);
+        if ($this->saveConfig($cfg, $args)) $this->write(PHP_EOL . 'The configuration file has been successfully updated.' . PHP_EOL);
         break;
       case 'restore':
-        if ($this->saveConfig($this->defaultConfiguration, $args)) self::write(PHP_EOL . 'The configuration file has been successfully restored.' . PHP_EOL);
+        if ($this->saveConfig($this->defaultConfiguration, $args)) $this->write(PHP_EOL . 'The configuration file has been successfully restored.' . PHP_EOL);
         break;
       default:
         $this->showCommandHelp();
@@ -182,19 +239,31 @@ class Config extends Module
     }
   }
   
+  /**
+   * Returns HTML/CSS/JS data for the module GUI.
+   *
+   * @access public
+   * @return array
+   */
   public function getData()
   {
-    $a = Configurator::getAleph();
+    $a = \Aleph::getInstance();
     $current = $a->getConfig();
-    $cfg = $a->setConfig(key(Configurator::getConfigs()), null, true);
+    $cfg = $a->setConfig(key($this->cfg->getConfigs()), null, true);
     $a->setConfig($current, null, true);
-    $data = ['configs' => array_keys(Configurator::getConfigs()),
-             'editable' => (bool)current(Configurator::getConfigs()),
+    $data = ['configs' => array_keys($this->cfg->getConfigs()),
+             'editable' => (bool)current($this->cfg->getConfigs()),
              'common' => $this->common,
              'cfg' => $cfg];
     return ['js' => 'config/js/config.js', 'html' => 'config/html/config.html', 'data' => $data];
   }
   
+  /**
+   * Returns command help of the module.
+   *
+   * @return string
+   * @access public   
+   */
   public function getCommandHelp()
   {
     return <<<HELP
@@ -219,13 +288,22 @@ class Config extends Module
 HELP;
   }
   
+  /**
+   * Saves the configuration data in file.
+   *
+   * @param array $cfg - the configuration data.
+   * @param array $args - the command parameters.
+   * @param boolean $render - determines whether the GUI should be updated or not.
+   * @return boolean - returns TRUE on success and FALSE on failure.
+   * @access private
+   */
   private function saveConfig(array $cfg, array $args, $render = true)
   {
     $n = isset($args['file']) ? (int)$args['file'] : 0;
     $file = $this->getConfigFile($n);
-    if ($file && (!$render || Configurator::getConfigs()[$file]))
+    if ($file && (!$render || $this->cfg->getConfigs()[$file]))
     {
-      if (self::isPHPFile($file))
+      if (strtolower(pathinfo($file, PATHINFO_EXTENSION)) == 'php')
       {
         $res = '';
         $tokens = token_get_all(file_get_contents($file));
@@ -246,10 +324,17 @@ HELP;
       if ($render && !Configurator::isCLI()) echo $this->renderConfig($file);
       return true;
     }
-    self::error('The configuration file of number ' . $n . ' does not exist or cannot be modified.');
+    $this->error('The configuration file of number ' . $n . ' does not exist or cannot be modified.');
     return false;
   }
   
+  /**
+   * Generates configuration file in INI format.
+   *
+   * @param array $a - the configuration data.
+   * @return string - the content of the configuration file.
+   * @access private
+   */
   private function formINIFile(array $a)
   {
     $tmp1 = $tmp2 = [];
@@ -285,6 +370,15 @@ HELP;
     return implode(PHP_EOL, array_merge($tmp1, $tmp2));
   }
   
+  /**
+   * Returns the PHP string representation of the given array.
+   *
+   * @param array $a - the given array.
+   * @param integer $indent
+   * @param integer $tab
+   * @return string
+   * @access private
+   */
   private function formArray(array $a, $indent = 0, $tab = 2)
   {
     $tmp = [];
@@ -304,6 +398,13 @@ HELP;
     return '[' . $space . implode(', ' . $space, $tmp) . PHP_EOL . str_repeat(' ', $indent - $tab) . ']';
   }
   
+  /**
+   * Returns PHP string representation of the variable.
+   *
+   * @var string $value - some string value.
+   * @return string
+   * @access private
+   */
   private function formString($value)
   {
     $flag = false;
@@ -319,17 +420,31 @@ HELP;
     return "'" . str_replace("'", "\\'", $value) . "'";
   }
   
+  /**
+   * Returns the configuration file by its number.
+   *
+   * @param integer $n - the number of the configuration file.
+   * @return boolean
+   * @access private
+   */
   private function getConfigFile($n)
   {
-    $files = array_keys(Configurator::getConfigs());
+    $files = array_keys($this->cfg->getConfigs());
     return isset($files[$n]) ? $files[$n] : false;
   }
   
+  /**
+   * Renders the module GUI.
+   *
+   * @param integer $file - the configuration file.
+   * @return string - the rendered HTML.
+   * @access private
+   */
   private function renderConfig($file)
   {
-    $data = ['cfg' => Configurator::getAleph()->setConfig($file, null, true), 
-             'editable' => Configurator::getConfigs()[$file],
+    $data = ['cfg' => \Aleph::getInstance()->setConfig($file, null, true), 
+             'editable' => $this->cfg->getConfigs()[$file],
              'common' => $this->common];
-    return self::render(__DIR__ . '/html/settings.html', $data);
+    return $this->render(__DIR__ . '/html/settings.html', $data);
   }
 }

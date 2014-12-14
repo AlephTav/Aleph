@@ -45,47 +45,47 @@
       <?php } ?>
     </select>
   </div>
-  <div class="ym-fbox-check">
+  <div class="ym-fbox-check autoload-classmap" style="<?php echo (@$cfg['autoload']['type'] == 'classmap' ? 'display:block;' : ''); ?>">
     <span class="ym-label">Class search enabled</span>
     <input type="radio" id="alSearchYes" value="1" name="alSearch" <?php echo (empty($cfg['autoload']['search']) ? '' : 'checked="checked"'); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
 				<label for="alSearchYes">Yes</label>
 				<input type="radio" id="alSearchNo" value="0" name="alSearch" <?php echo (empty($cfg['autoload']['search']) ? 'checked="checked"' : ''); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
 				<label for="alSearchNo">No</label>
   </div>
-  <div class="ym-fbox-check">
+  <div class="ym-fbox-check autoload-classmap" style="<?php echo (@$cfg['autoload']['type'] == 'classmap' ? 'display:block;' : ''); ?>">
     <span class="ym-label">Only unique class names are allowed</span>
     <input type="radio" id="alUniqueYes" value="1" name="alUnique" <?php echo (empty($cfg['autoload']['unique']) ? '' : 'checked="checked"'); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
 				<label for="alUniqueYes">Yes</label>
 				<input type="radio" id="alUniqueNo" value="0" name="alUnique" <?php echo (empty($cfg['autoload']['unique']) ? 'checked="checked"' : ''); ?> <?php echo ($editable ? '' : 'disabled="disabled"'); ?> />
 				<label for="alUniqueNo">No</label>
   </div>
-  <div class="ym-fbox-text">
+  <div class="ym-fbox-text autoload-classmap" style="<?php echo (@$cfg['autoload']['type'] == 'classmap' ? 'display:block;' : ''); ?>">
     <label class="ym-label" for="alClassMap">Path to the class map file</label>
 				<input type="text" id="alClassMap" name="alClassMap" value="<?php echo @$cfg['autoload']['classmap']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
   </div>
-  <div class="ym-fbox-text">
+  <div class="ym-fbox-text autoload-classmap" style="<?php echo (@$cfg['autoload']['type'] == 'classmap' ? 'display:block;' : ''); ?>">
     <label class="ym-label" for="alTimeout">Timeout (in seconds)</label>
 				<input type="text" id="alTimeout" name="alTimeout" value="<?php echo @$cfg['autoload']['timeout']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
   </div>
-  <div class="ym-fbox-text"> 
+  <div class="ym-fbox-text autoload-classmap" style="<?php echo (@$cfg['autoload']['type'] == 'classmap' ? 'display:block;' : ''); ?>"> 
     <label class="ym-label" for="alMask">File mask</label>
 				<input type="text" id="alMask" name="alMask" value="<?php echo @$cfg['autoload']['mask']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
   </div>
-  <div class="ym-fbox-text">
-    <label class="ym-label" for="alCallback">Callback</label>
-				<input type="text" id="alCallback" name="alCallback" value="<?php echo @$cfg['autoload']['callback']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
+  <div class="ym-fbox-text autoload-classmap" style="<?php echo (@$cfg['autoload']['type'] == 'classmap' ? 'display:block;' : ''); ?>">
+    <label class="ym-label" for="alDirectories">Directories (json format)</label>
+    <textarea id="alDirectories" name="alDirectories" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['autoload']['directories']) ? json_encode($cfg['autoload']['directories']) : ''); ?></textarea>
   </div>
-  <div class="ym-fbox-text">
+  <div class="ym-fbox-text autoload-classmap" style="<?php echo (@$cfg['autoload']['type'] == 'classmap' ? 'display:block;' : ''); ?>">
+    <label class="ym-label" for="alExclusions">Exclusions (json format)</label>
+    <textarea id="alExclusions" name="alExclusions" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['autoload']['exclusions']) ? json_encode($cfg['autoload']['exclusions']) : ''); ?></textarea>
+  </div>
+  <div class="ym-fbox-text autoload-psr" style="<?php echo (@$cfg['autoload']['type'] != 'classmap' ? 'display:block;' : ''); ?>">
     <label class="ym-label" for="alNamespaces">Namespaces (json format)</label>
     <textarea id="alNamespaces" name="alNamespaces" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['autoload']['namespaces']) ? json_encode($cfg['autoload']['namespaces']) : ''); ?></textarea>
   </div>
   <div class="ym-fbox-text">
-    <label class="ym-label" for="alDirectories">Directories (json format)</label>
-    <textarea id="alDirectories" name="alDirectories" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['autoload']['directories']) ? json_encode($cfg['autoload']['directories']) : ''); ?></textarea>
-  </div>
-  <div class="ym-fbox-text">
-    <label class="ym-label" for="alExclusions">Exclusions (json format)</label>
-    <textarea id="alExclusions" name="alExclusions" rows="7" <?php echo ($editable ? '' : 'readonly="readonly"'); ?>><?php echo (isset($cfg['autoload']['exclusions']) ? json_encode($cfg['autoload']['exclusions']) : ''); ?></textarea>
+    <label class="ym-label" for="alCallback">Callback</label>
+				<input type="text" id="alCallback" name="alCallback" value="<?php echo @$cfg['autoload']['callback']; ?>" <?php echo ($editable ? '' : 'readonly="readonly"'); ?> />
   </div>
   <h6 class="subtitle">Cache Settings</h6>
   <div class="ym-fbox-select">
