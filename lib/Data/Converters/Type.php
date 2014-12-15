@@ -37,7 +37,7 @@ class Type extends Converter
    * Error message templates.
    */
   const ERR_CONVERTER_TYPE_1 = 'Data type "{var}]" is invalid or not supported.';
-  const ERR_CONVERTER_TYPE_2 = 'Variable of data type "[{var}]" could not be converted to "[{var}]".';
+  const ERR_CONVERTER_TYPE_2 = 'Variable of data type "%s" could not be converted to "%s".';
 
   /**
    * The data type into which the given variable should be converted.

@@ -35,7 +35,7 @@ class Router
 {
   // Error message templates.
   const ERR_ROUTER_1 = 'No action is defined. You should first call one of the following methods: secure(), redirect() or bind()';
-  const ERR_ROUTER_2 = 'Delegate "[{var}]" is not callable.';
+  const ERR_ROUTER_2 = 'Delegate "%s" is not callable.';
   
   /**
    * This property is used as the cache of parsed URL templates.

@@ -37,9 +37,9 @@ class Text extends Converter
    * Error message templates.
    */
   const ERR_CONVERTER_TEXT_1 = 'The converting data can be a compound type only for "any" input format. In the other cases it can be only scalar type.';
-  const ERR_CONVERTER_TEXT_2 = 'Invalid input string format "[{var}]".';
-  const ERR_CONVERTER_TEXT_3 = 'Invalid output data format "[{var}]".';
-  const ERR_CONVERTER_TEXT_4 = 'Invalid output data format "[{var}]" for the compound type.';
+  const ERR_CONVERTER_TEXT_2 = 'Invalid input string format "%s".';
+  const ERR_CONVERTER_TEXT_3 = 'Invalid output data format "%s".';
+  const ERR_CONVERTER_TEXT_4 = 'Invalid output data format "%s" for the compound type.';
 
   /**
    * The input string format.

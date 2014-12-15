@@ -27,20 +27,20 @@ public void __construct(string|object $class, string $token, mixed $var1, mixed 
 
 The class constructor. Generates an error message on her token. Under the token error means some string constant whose value is the error pattern. The constant can be defined inside some class or can be separately defined outside any class.
 
-Template error message can contain embedded variables are set as [{var}]. In the formation of the final error message, these variables will be replaced with the appropriate values​​. Substitution takes place from left to right.
+Template error message can contain embedded variables in format of PHP function **sprintf()**. In the formation of the final error message, these variables will be replaced with the appropriate values​​. Substitution takes place from left to right.
 
 Depending on the value of the constructor parameters, there are three main cases of the formation of the error message:
 - Error token is a simple string that is not a constant of any class. In this case the first parameter of the constructor is empty string or FALSE. For example:
 
     ```php
     // It'll display 'Simple error: 1, 2';
-    throw new Aleph\Core\Exception(false, 'Simple error: [{var}], [{var}]', 1, 2);
+    throw new Aleph\Core\Exception(false, 'Simple error: %s, %s', 1, 2);
     ```
 -   Error token is a constant of some class. Exception is thrown within this class. Example:
     ```php
     class A
     {
-      const ERR_1 = '[{var}] error template[{var}]';
+      const ERR_1 = '%s error template%s';
 
       public function test()
       {
@@ -55,7 +55,7 @@ Depending on the value of the constructor parameters, there are three main cases
     ```php
     class A
     {
-      const ERR_1 = '[{var}] error template[{var}]';
+      const ERR_1 = '%s error template%s';
     }
 
     // Throws error 'Test error template! (Token: A::ERR_1)'

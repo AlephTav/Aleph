@@ -8,7 +8,7 @@ require_once(__DIR__ . '/../Core/Exception.php');
 class TestExceptionClass
 {
   const ERR_1 = 'Error';
-  const ERR_2 = 'Error: [{var}], [{var}]';
+  const ERR_2 = 'Error: %s, %s';
   
   public function throwError1()
   {
@@ -29,11 +29,11 @@ function test_exception()
   // Checks simple error message.
   try
   {
-    throw new Core\Exception(false, 'Some error: [{var}], [{var}], [{var}]', 'a', 'b', 'c');
+    throw new Core\Exception(false, 'Some error: %s, %s, %s', 'a', 'b', 'c');
   }
   catch (Core\Exception $e)
   {
-    if ($e->getMessage() !== 'Some error: a, b, c' || $e->getClass() !== '' || $e->getToken() !== 'Some error: [{var}], [{var}], [{var}]') return 'Simple error template is not correctly processed.';
+    if ($e->getMessage() !== 'Some error: a, b, c' || $e->getClass() !== '' || $e->getToken() !== 'Some error: %s, %s, %s') return 'Simple error template is not correctly processed.';
   }
   // Checks token error message throwing from class.
   $class = new \TestExceptionClass();

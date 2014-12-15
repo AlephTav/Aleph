@@ -37,7 +37,7 @@ abstract class Cache implements \Countable
   /**
    * Error message templates.
    */
-  const ERR_CACHE_1 = 'Cache of type "[{var}]" is not available.';
+  const ERR_CACHE_1 = 'Cache of type "%s" is not available.';
 
   /**
    * The vault key of all cached data.  

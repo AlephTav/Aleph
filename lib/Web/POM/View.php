@@ -53,10 +53,10 @@ use Aleph\Core,
 class View implements \ArrayAccess
 {
   // Error message templates.
-  const ERR_VIEW_1 = "XHTML parse error! [{var}].[{var}]\nLine: [{var}], column: [{var}].";
-  const ERR_VIEW_2 = "Property ID of element [{var}] is empty[{var}]\nLine: [{var}], column: [{var}].";
-  const ERR_VIEW_3 = "Attribute \"path\" of element \"template\"[{var}] is not defined or such path does not exist.\nLine: [{var}], column: [{var}].";
-  const ERR_VIEW_4 = "Path to the master template is not defined or incorrect.\nFile: [{var}]";
+  const ERR_VIEW_1 = "XHTML parse error! %s.%s\nLine: %s, column: %s.";
+  const ERR_VIEW_2 = "Property ID of element %s is empty%s\nLine: %s, column: %s.";
+  const ERR_VIEW_3 = "Attribute \"path\" of element \"template\"%s is not defined or such path does not exist.\nLine: %s, column: %s.";
+  const ERR_VIEW_4 = "Path to the master template is not defined or incorrect.\nFile: %s";
   const ERR_VIEW_5 = 'Page template should have only one element body containing all other web controls.';
   
   // Mark of PHP code string in HTML attributes.

@@ -38,9 +38,9 @@ class Collection extends Converter
    * Error message templates.
    */
   const ERR_CONVERTER_COLLECTION_1 = 'The given value is not an array.';
-  const ERR_CONVERTER_COLLECTION_2 = 'Invalid conversion mode "[{var}]".';
-  const ERR_CONVERTER_COLLECTION_3 = 'Transformation from "[{var}]" to "[{var}]" is impossible.';
-  const ERR_CONVERTER_COLLECTION_4 = 'Keys "[{var}]" are incorrect.';
+  const ERR_CONVERTER_COLLECTION_2 = 'Invalid conversion mode "%s".';
+  const ERR_CONVERTER_COLLECTION_3 = 'Transformation from "%s" to "%s" is impossible.';
+  const ERR_CONVERTER_COLLECTION_4 = 'Keys "%s" are incorrect.';
 
   /**
    * The mode of the array structure converting. The valid values are "transform", "reduce" and "exclude".

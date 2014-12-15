@@ -177,7 +177,7 @@ class Delegate implements IDelegate
 {
   // Error message template.
   const ERR_DELEGATE_1 = 'Callback is not callable.';
-  const ERR_DELEGATE_2 = 'Control with UID = "[{var}]" is not found.';
+  const ERR_DELEGATE_2 = 'Control with UID = "%s" is not found.';
 
   /**
    * A string in the Aleph callback format.

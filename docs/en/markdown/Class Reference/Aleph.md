@@ -332,20 +332,20 @@ public static string error(string|object $class, string $token, mixed $var1, mix
 | **$token** | string | error token, an error template which is defined in some class as a constant. |
 | **$var1**, **$var2**, ... | mixed | parameters (variables) of the error template. |
 
-Generates the error message given by some error token (pattern). Parameters (variables) within the error templates are specified using a special notation: [{var}]. Replacement of template variables to their actual values ​​occurs from left to right.
+Generates the error message given by some error token (pattern). Parameters (variables) within the error templates are specified in format PHP function **sprintf()**. Replacement of template variables to their actual values ​​occurs from left to right.
 
 There are three main cases depending on the passed parameters:
 -   Error token is a regular string which is not a constant of some class. In this case the first parameter equals an empty string or FALSE. For example:
   
     ```php
     // Displays 'Simple error template: 1, 2';
-    echo CB::error(false, 'Simple error template: [{var}], [{var}]', 1, 2);
+    echo CB::error(false, 'Simple error template: %s, %s', 1, 2);
     ```
 -   Error token is a constant of some class. The first argument is the class object. For example:
     ```php
     class A
     {
-      const ERR_1 = '[{var}] error template[{var}]';
+      const ERR_1 = '%s error template%s';
     }
 
     $a = new A;
@@ -358,7 +358,7 @@ There are three main cases depending on the passed parameters:
     ```php
     class A
     {
-      const ERR_1 = '[{var}] error template[{var}]';
+      const ERR_1 = '%s error template%s';
     }
 
     $a = new A;

@@ -36,8 +36,8 @@ class Compare extends Validator
   /**
    * Error message templates.
    */
-  const ERR_VALIDATOR_COMPARE_1 = 'The mode "[{var}]" is invalid. You can only use the following mode values: "and", "or", "xor".';
-  const ERR_VALIDATOR_COMPARE_2 = 'The operator "[{var}]" is invalid. You can only use the following operators: "==", "===", "!=", "!==", ">", "<", ">=", "<=".';
+  const ERR_VALIDATOR_COMPARE_1 = 'The mode "%s" is invalid. You can only use the following mode values: "and", "or", "xor".';
+  const ERR_VALIDATOR_COMPARE_2 = 'The operator "%s" is invalid. You can only use the following operators: "==", "===", "!=", "!==", ">", "<", ">=", "<=".';
 
   /**
    * The value or values to be compared with.

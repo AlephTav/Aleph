@@ -36,7 +36,7 @@ abstract class Converter
   /**
    * Error message templates.
    */
-  const ERR_CONVERTER_1 = 'Invalid converter type "[{var}]". The only following types are valid: "type", "text", "collection".';
+  const ERR_CONVERTER_1 = 'Invalid converter type "%s". The only following types are valid: "type", "text", "collection".';
 
   /**
    * Creates and returns a converter object of the required type.

@@ -37,7 +37,7 @@ class API
   /**
    * Error message templates.
    */
-  const ERR_API_1 = 'Callback parameter is not set for resource "[{var}]".';
+  const ERR_API_1 = 'Callback parameter is not set for resource "%s".';
 
   /**
    * The map of the API methods.

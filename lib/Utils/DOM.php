@@ -36,8 +36,8 @@ class DOMDocumentEx extends \DOMDocument
   /**
    * Error message templates.
    */
-  const ERR_DOM_1 = 'DOM Element with ID = "[{var}]" is not found.';
-  const ERR_DOM_2 = 'Injecting mode "[{var}]" is invalid.';
+  const ERR_DOM_1 = 'DOM Element with ID = "%s" is not found.';
+  const ERR_DOM_2 = 'Injecting mode "%s" is invalid.';
 
   /**
    * Injecting modes.

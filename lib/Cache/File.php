@@ -36,7 +36,7 @@ class File extends Cache
   /**
    * Error message templates.
    */
-  const ERR_CACHE_FILE_1 = 'Cache directory "[{var}]" is not writable.';
+  const ERR_CACHE_FILE_1 = 'Cache directory "%s" is not writable.';
   
   /**
    * Permissions for newly created directories.

@@ -44,7 +44,7 @@ use Aleph\Core,
 class Panel extends Control implements \IteratorAggregate, \Countable
 {
   // Error message templates.
-  const ERR_PANEL_1 = 'Web control [{var}] does not exist in panel [{var}] (full ID: [{var}]).';
+  const ERR_PANEL_1 = 'Web control %s does not exist in panel %s (full ID: %s).';
   
   /**
    * The panel template object.

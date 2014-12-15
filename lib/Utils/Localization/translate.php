@@ -6,11 +6,11 @@ namespace Aleph\Utils
 
   class Translate
   {
-    const ERR_TLT_1 = 'Rule [ [{var}] ] contains unavailable constructions. A rule may contains only following constructions: "||", "&&", ",", "(", ")", "-", "+", "preg_match", digit characters and template variables.';
-    const ERR_TLT_2 = 'Rule [ [{var}] ] contains unspecified template variable "[{var}]".';
+    const ERR_TLT_1 = 'Rule [ %s ] contains unavailable constructions. A rule may contains only following constructions: "||", "&&", ",", "(", ")", "-", "+", "preg_match", digit characters and template variables.';
+    const ERR_TLT_2 = 'Rule [ %s ] contains unspecified template variable "%s".';
     const ERR_TLT_3 = 'Rule cannot be empty.';
-    const ERR_TLT_4 = 'Locale "[{var}]" is not found among phrases\' templates.';
-    const ERR_TLT_5 = 'Phrase with ID "[{var}]" is not found among translates\' templates.';
+    const ERR_TLT_4 = 'Locale "%s" is not found among phrases\' templates.';
+    const ERR_TLT_5 = 'Phrase with ID "%s" is not found among translates\' templates.';
   
     private static $instance = null;
     private $a = null;

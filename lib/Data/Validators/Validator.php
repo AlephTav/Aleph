@@ -36,7 +36,7 @@ abstract class Validator
   /**
    * Error message templates.
    */
-  const ERR_VALIDATOR_1 = 'Invalid validator type "[{var}]". The only following types are valid: "type", "required", "compare", "regexp", "string", "number", "collection", "xml" and "custom".';
+  const ERR_VALIDATOR_1 = 'Invalid validator type "%s". The only following types are valid: "type", "required", "compare", "regexp", "string", "number", "collection", "xml" and "custom".';
   const ERR_VALIDATOR_2 = 'The third parameter of "verify" method is invalid. You can only use the following mode values: "and", "or", "xor".';
   const ERR_VALIDATOR_3 = 'The second parameter should only contain objects of Aleph\Validators\Validator type.';
   

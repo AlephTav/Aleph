@@ -51,7 +51,7 @@ use Aleph\Core,
 abstract class Validator extends Control
 {
   // Error message templates.
-  const ERR_VAL_1 = 'Control with ID = "[{var}]" is not found.';
+  const ERR_VAL_1 = 'Control with ID = "%s" is not found.';
   
   /**
    * Associative array of control validation statuses (valid/invalid => TRUE/FALSE).

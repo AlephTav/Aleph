@@ -46,7 +46,7 @@ class Paginator extends Control
   /**
    * Error message templates.
    */
-  const ERR_PAGINATOR_1 = 'Incorrect type value "[{var}]". Property "type" can take only one of the following values: "short" and "long".';
+  const ERR_PAGINATOR_1 = 'Incorrect type value "%s". Property "type" can take only one of the following values: "short" and "long".';
 
   /**
    * The paginator's types.

@@ -45,7 +45,7 @@ class DB
    */
   const ERR_DB_1 = 'DSN is empty. You should set DSN to be able to connect to database.';
   const ERR_DB_2 = 'DSN is wrong.';
-  const ERR_DB_3 = 'Alias "[{var}]" is not connected with any connection settings in the configuration file.';
+  const ERR_DB_3 = 'Alias "%s" is not connected with any connection settings in the configuration file.';
 
   /**
    * These constants affect the format of the output data of method "execute".

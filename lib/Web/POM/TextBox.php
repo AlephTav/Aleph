@@ -44,7 +44,7 @@ class TextBox extends Control
   /**
    * Error message templates.
    */
-  const ERR_TEXTBOX_1 = 'Incorrect type value "[{var}]". Property "type" can take only one of the following values: "text", "password" and "memo".';
+  const ERR_TEXTBOX_1 = 'Incorrect type value "%s". Property "type" can take only one of the following values: "text", "password" and "memo".';
   
   /**
    * The control types.

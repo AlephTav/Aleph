@@ -40,15 +40,15 @@ class JSON extends Validator
   const ERR_VALIDATOR_JSON_1 = 'The validating entity is not valid JSON.';
   const ERR_VALIDATOR_JSON_2 = 'Property $schema has invalid JSON schema.';
   const ERR_VALIDATOR_JSON_3 = 'Property $json has invalid JSON string.';
-  const ERR_VALIDATOR_JSON_4 = 'Property: "[{var}]". Type "[{var}]" is invalid.';
-  const ERR_VALIDATOR_JSON_5 = 'Property: "[{var}]". Use of "exclusiveMinimum" requires presence of "minimum".';
-  const ERR_VALIDATOR_JSON_6 = 'Property: "[{var}]". Use of "exclusiveMaximum" requires presence of "maximum".';
-  const ERR_VALIDATOR_JSON_7 = 'Property: "[{var}]". Invalid "multipleOf" value, should be a number that greater than 0.';
-  const ERR_VALIDATOR_JSON_8 = 'Property: "[{var}]". Invalid item values.';
-  const ERR_VALIDATOR_JSON_9 = 'Property: "[{var}]". Dependency value should either be an object or an array.';
-  const ERR_VALIDATOR_JSON_10 = 'Property: "[{var}]". Elements of "[{var}]" value should be a valid JSON Schema.';
-  const ERR_VALIDATOR_JSON_11 = 'Property: "[{var}]". Value of keyword "not" should be a valid JSON Schema.';
-  const ERR_VALIDATOR_JSON_12 = '$ref "[{var}]" should be a valid a JSON Reference.';
+  const ERR_VALIDATOR_JSON_4 = 'Property: "%s". Type "%s" is invalid.';
+  const ERR_VALIDATOR_JSON_5 = 'Property: "%s". Use of "exclusiveMinimum" requires presence of "minimum".';
+  const ERR_VALIDATOR_JSON_6 = 'Property: "%s". Use of "exclusiveMaximum" requires presence of "maximum".';
+  const ERR_VALIDATOR_JSON_7 = 'Property: "%s". Invalid "multipleOf" value, should be a number that greater than 0.';
+  const ERR_VALIDATOR_JSON_8 = 'Property: "%s". Invalid item values.';
+  const ERR_VALIDATOR_JSON_9 = 'Property: "%s". Dependency value should either be an object or an array.';
+  const ERR_VALIDATOR_JSON_10 = 'Property: "%s". Elements of "%s" value should be a valid JSON Schema.';
+  const ERR_VALIDATOR_JSON_11 = 'Property: "%s". Value of keyword "not" should be a valid JSON Schema.';
+  const ERR_VALIDATOR_JSON_12 = '$ref "%s" should be a valid a JSON Reference.';
   
   /**
    * JSON string or path to the JSON file to be compared with.

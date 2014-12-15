@@ -35,7 +35,7 @@ class Response
    * Error message templates throwing by Response class.
    */
   const ERR_RESPONSE_1 = 'Invalid HTTP version. Must be only 1.0 or 1.1';
-  const ERR_RESPONSE_2 = 'Cannot set response status. Status code "[{var}]" is not a valid HTTP response code.';
+  const ERR_RESPONSE_2 = 'Cannot set response status. Status code "%s" is not a valid HTTP response code.';
   
   /**
    * The instance of this class.

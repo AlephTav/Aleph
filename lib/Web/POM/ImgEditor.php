@@ -50,8 +50,8 @@ class ImgEditor extends Popup
   /**
    * Error message templates.
    */
-  const ERR_IMGEDITOR_1 = 'Control with ID "[{var}]" is not found.';
-  const ERR_IMGEDITOR_2 = 'Control with ID "[{var}]" is not an upload control.';
+  const ERR_IMGEDITOR_1 = 'Control with ID "%s" is not found.';
+  const ERR_IMGEDITOR_2 = 'Control with ID "%s" is not an upload control.';
 
   /**
    * The control type.

@@ -39,14 +39,14 @@ abstract class Model
   /**
    * Error message templates.
    */
-  const ERR_MODEL_1 = 'Property "[{var}]" does not exist in model "[{var}]".';
-  const ERR_MODEL_2 = 'The model instance "[{var}]" was marked as deleted, and now, you can use it only as a read-only object.';
-  const ERR_MODEL_3 = 'Property "[{var}]" of model "[{var}]" cannot be NULL.';
-  const ERR_MODEL_4 = 'Property "[{var}]" of model "[{var}]" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
-  const ERR_MODEL_5 = 'Enumeration property "[{var}]" of the model "[{var}]" has invalid value.';
-  const ERR_MODEL_6 = 'Maximum length of property "[{var}]" of model "[{var}]" cannot be more than [{var}].';
-  const ERR_MODEL_7 = 'Primary key of model "[{var}]" is not filled yet. You can\'t [{var}] the row.';
-  const ERR_MODEL_8 = 'Call to undefined method [{var}]';
+  const ERR_MODEL_1 = 'Property "%s" does not exist in model "%s".';
+  const ERR_MODEL_2 = 'The model instance "%s" was marked as deleted, and now, you can use it only as a read-only object.';
+  const ERR_MODEL_3 = 'Property "%s" of model "%s" cannot be NULL.';
+  const ERR_MODEL_4 = 'Property "%s" of model "%s" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
+  const ERR_MODEL_5 = 'Enumeration property "%s" of the model "%s" has invalid value.';
+  const ERR_MODEL_6 = 'Maximum length of property "%s" of model "%s" cannot be more than %s.';
+  const ERR_MODEL_7 = 'Primary key of model "%s" is not filled yet. You can\'t %s the row.';
+  const ERR_MODEL_8 = 'Call to undefined method %s';
   
   /**
    * Callback that will be called before saving (inserting or updating) data in the database.

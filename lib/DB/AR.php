@@ -39,14 +39,14 @@ class AR
   const ERR_AR_1 = 'The first argument (table name) of the class constructor is missed.';
   const ERR_AR_2 = 'The second argument of the class constructor is wrong. It should be an instance of Aleph\DB\DB.';
   const ERR_AR_3 = 'None of Aleph\DB\DB instance was passed to the constructor of Aleph\DB\AR class. You should set a global variable with name "db" or pass database alias to the constructor.';
-  const ERR_AR_4 = 'Column "[{var}]" doesn\'t exist in table "[{var}]".';
-  const ERR_AR_5 = 'Column "[{var}]" of table "[{var}]" cannot be NULL.';
-  const ERR_AR_6 = 'Column "[{var}]" of table "[{var}]" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
-  const ERR_AR_7 = 'Maximum length of column "[{var}]" in table "[{var}]" cannot be more than [{var}].';
-  const ERR_AR_8 = 'Enumeration column "[{var}]" of table "[{var}]" has invalid value.';
-  const ERR_AR_9 = 'Primary key of a row of table "[{var}]" is not filled yet. You can\'t [{var}] the row.';
-  const ERR_AR_10 = 'The row in table "[{var}]" was deleted, and now, you can use this Aleph\DB\AR object only as a read-only object.';
-  const ERR_AR_11 = 'Relation "[{var}]" doesn\'t exist in table "[{var}]".';
+  const ERR_AR_4 = 'Column "%s" doesn\'t exist in table "%s".';
+  const ERR_AR_5 = 'Column "%s" of table "%s" cannot be NULL.';
+  const ERR_AR_6 = 'Column "%s" of table "%s" cannot be an array or object (except for Aleph\DB\SQLExpression instance). It can only be a scalar value.';
+  const ERR_AR_7 = 'Maximum length of column "%s" in table "%s" cannot be more than %s.';
+  const ERR_AR_8 = 'Enumeration column "%s" of table "%s" has invalid value.';
+  const ERR_AR_9 = 'Primary key of a row of table "%s" is not filled yet. You can\'t %s the row.';
+  const ERR_AR_10 = 'The row in table "%s" was deleted, and now, you can use this Aleph\DB\AR object only as a read-only object.';
+  const ERR_AR_11 = 'Relation "%s" doesn\'t exist in table "%s".';
   
   /**
    * The default database connection object for all active record classes.

@@ -36,9 +36,9 @@ class Redis extends Cache
   /**
    * Error message templates.
    */
-  const ERR_CACHE_REDIS_1 = 'Unable to connect to the Redis server. ERROR: [{var}] - [{var}].';
+  const ERR_CACHE_REDIS_1 = 'Unable to connect to the Redis server. ERROR: %s - %s.';
   const ERR_CACHE_REDIS_2 = 'Failed reading data from Redis connection socket.';
-  const ERR_CACHE_REDIS_3 = 'Redis error: [{var}].';
+  const ERR_CACHE_REDIS_3 = 'Redis error: %s.';
   
   /**
    * Redis socket connection.

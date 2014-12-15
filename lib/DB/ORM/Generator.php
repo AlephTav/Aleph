@@ -39,13 +39,13 @@ class Generator
   /**
    * Error message templates.
    */
-  const ERR_GENERATOR_1 = 'Unable to create directory "[{var}]".';
-  const ERR_GENERATOR_2 = 'Directory "[{var}]" is not writable.';
+  const ERR_GENERATOR_1 = 'Unable to create directory "%s".';
+  const ERR_GENERATOR_2 = 'Directory "%s" is not writable.';
   const ERR_GENERATOR_3 = 'Database of XML file does not match the given database.';
-  const ERR_GENERATOR_4 = 'Table "[{var}]" does not exist in database "[{var}]". Model: [{var}].';
-  const ERR_GENERATOR_5 = 'Column "[{var}]" does not exist in table "[{var}]". Model: [{var}].';
-  const ERR_GENERATOR_6 = 'Model [{var}] has namespace that does not match the given namespace of models.';
-  const ERR_GENERATOR_7 = 'Number of columns for FROM table should equal to the number of columns for TO table. Relation: [{var}]. Model: [{var}].';
+  const ERR_GENERATOR_4 = 'Table "%s" does not exist in database "%s". Model: %s.';
+  const ERR_GENERATOR_5 = 'Column "%s" does not exist in table "%s". Model: %s.';
+  const ERR_GENERATOR_6 = 'Model %s has namespace that does not match the given namespace of models.';
+  const ERR_GENERATOR_7 = 'Number of columns for FROM table should equal to the number of columns for TO table. Relation: %s. Model: %s.';
   const ERR_GENERATOR_8 = 'Invalid creation mode.';
 
   /**

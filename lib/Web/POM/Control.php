@@ -55,13 +55,13 @@ abstract class Control
   /**
    * Error message templates.
    */
-  const ERR_CTRL_1 = 'ID of [{var}] should match /^[0-9a-zA-Z_]+$/ pattern, "[{var}]" was given.';
-  const ERR_CTRL_2 = 'Web control [{var}] (full ID: [{var}]) does not have property [{var}].';
-  const ERR_CTRL_3 = 'You cannot change or delete readonly attribute ID of [{var}] (full ID: [{var}]).';
-  const ERR_CTRL_4 = 'Web control with such logical ID exists already within the panel [{var}] (full ID: [{var}]).';
-  const ERR_CTRL_5 = 'You cannot inject control [{var}] (full ID: [{var}]) AFTER or BEFORE panel [{var}] (full ID: [{var}]) within this panel. Use a parent of the panel for injecting.';
-  const ERR_CTRL_6 = 'You cannot inject control [{var}] (full ID: [{var}]) at TOP or BOTTOM of another control [{var}] (full ID: [{var}]). Try to use this control as a parent.';
-  const ERR_CTRL_7 = 'Injecting mode [{var}] is invalid. The valid values are "top", "bottom", "after" and "before".';
+  const ERR_CTRL_1 = 'ID of %s should match /^[0-9a-zA-Z_]+$/ pattern, "%s" was given.';
+  const ERR_CTRL_2 = 'Web control %s (full ID: %s) does not have property %s.';
+  const ERR_CTRL_3 = 'You cannot change or delete readonly attribute ID of %s (full ID: %s).';
+  const ERR_CTRL_4 = 'Web control with such logical ID exists already within the panel %s (full ID: %s).';
+  const ERR_CTRL_5 = 'You cannot inject control %s (full ID: %s) AFTER or BEFORE panel %s (full ID: %s) within this panel. Use a parent of the panel for injecting.';
+  const ERR_CTRL_6 = 'You cannot inject control %s (full ID: %s) at TOP or BOTTOM of another control %s (full ID: %s). Try to use this control as a parent.';
+  const ERR_CTRL_7 = 'Injecting mode %s is invalid. The valid values are "top", "bottom", "after" and "before".';
   
   /**
    * Determines whether the control properties or attributes were changed 

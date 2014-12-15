@@ -37,9 +37,9 @@ use Aleph\Core,
 class Page
 {
   // Error message templates.
-  const ERR_PAGE_1 = 'Method [{var}] is not allowed to be invoked.';
+  const ERR_PAGE_1 = 'Method %s is not allowed to be invoked.';
   const ERR_PAGE_2 = 'Incorrect request to the page.';
-  const ERR_PAGE_3 = 'Property [{var}] is undefined.';
+  const ERR_PAGE_3 = 'Property %s is undefined.';
 
   /**
    * Default cache of page classes.

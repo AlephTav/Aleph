@@ -44,12 +44,12 @@ final class Aleph implements \ArrayAccess
   /**
    * Error message templates throwing by Aleph class.
    */
-  const ERR_GENERAL_1 = 'Class "[{var}]" is not found.';
-  const ERR_GENERAL_2 = 'Method "[{var}]" of class "[{var}]" doesn\'t exist.';
-  const ERR_GENERAL_3 = 'Property "[{var}]" of class "[{var}]" doesn\'t exist.';
-  const ERR_GENERAL_4 = 'Class "[{var}]" found in file "[{var}]" is duplicated in file "[{var}]".';
-  const ERR_GENERAL_5 = 'Path to the class map file is not set. You should define the configuration variable autoload::classmap.';
-  const ERR_CONFIG_1 = 'File "[{var}]" is not correct ini file.';
+  const ERR_GENERAL_1 = 'Class "%s" is not found.';
+  const ERR_GENERAL_2 = 'Method "%s" of class "%s" doesn\'t exist.';
+  const ERR_GENERAL_3 = 'Property "%s" of class "%s" doesn\'t exist.';
+  const ERR_GENERAL_4 = 'Class "%s" found in file "%s" is duplicated in file "%s".';
+  const ERR_GENERAL_5 = 'Path to the class map file is not set. You should define the configuration variable "classmap" in section "autoload".';
+  const ERR_CONFIG_1 = 'File "%s" is not correct INI file.';
 
   /**
    * The instance of this class.
@@ -401,10 +401,7 @@ final class Aleph implements \ArrayAccess
       $err = constant($class . '::' . $token);
       $token = $class . '::' . $token;
     }
-    foreach ($params as $value)
-    { 
-      $err = preg_replace('/\[{var}\]/', $value, $err, 1);
-    }
+    $err = vsprintf($err, $params);
     return $class ? $err . ' (Token: ' . $token . ')' : $err;
   }
   
