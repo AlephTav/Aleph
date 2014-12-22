@@ -290,7 +290,7 @@ class ImgEditor extends Popup
     $info = $data['info'];
     $ops = ['callback' => stripslashes($this->callback('apply')), 'UID' => $uniqueID];
     foreach ($data as $k => $v) if (isset($this->options[$k])) $ops[$k] = $v;
-    $ops = Utils\PHP\Tools::php2js($ops, true, View::JS_MARK);
+    $ops = Utils\PHP\Tools::php2js($ops, false, View::JS_MARK);
     $size = getimagesize($info['path']);
     $this->view->action('$pom.get(\'' . $this->attributes['id'] . '\').load(\'' . $info['url'] . '?' . rand(999, 999999) . '\', ' . (int)$size[0] . ', ' . (int)$size[1] . ', ' . $ops . ')', 100);
     return $this;

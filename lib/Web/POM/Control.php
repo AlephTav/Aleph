@@ -392,7 +392,7 @@ abstract class Control
    */
   public function method($callback, array $params = null, $isStatic = false)
   {
-    $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], false, View::JS_MARK));
+    $params = implode(', ', Utils\PHP\Tools::php2js($params !== null ? $params : [], true, View::JS_MARK));
     return '$ajax.doit(\'' . $this->callback($callback, $isStatic) . '\'' . (strlen($params) ? ', ' . $params : '') . ')';
   }
   
@@ -430,7 +430,7 @@ abstract class Control
     if (substr($callback, 0, strlen(View::JS_MARK)) == View::JS_MARK) $callback = substr($callback, strlen(View::JS_MARK));
     else 
     {
-      $params = implode(', ', Utils\PHP\Tools::php2js(isset($options['params']) ? $options['params'] : [], false, View::JS_MARK));
+      $params = implode(', ', Utils\PHP\Tools::php2js(isset($options['params']) ? $options['params'] : [], true, View::JS_MARK));
       $callback = 'function(event){$ajax.doit(\'' . addcslashes($callback, '\\') . '\'' . (strlen($params) ? ', ' . $params : '') . ')}';
     }
     $this->events[$id] = ['type' => strtolower($type), 'callback' => $callback, 'options' => $options];
@@ -755,7 +755,7 @@ abstract class Control
           $container = self::CONTAINER_PREFIX;
           $attr = substr($attr, $cntlen);
         }
-        $tmp['attrs'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
+        $tmp['attrs'][$container . (isset($this->dataAttributes[$attr]) ? 'data-' . $attr : $attr)] = is_array($value) ? Utils\PHP\Tools::php2js($value, false, View::JS_MARK) : (string)$value;
       }
     }
     foreach ($vs['attributes'] as $attr => $value)
@@ -957,7 +957,7 @@ abstract class Control
       foreach ($this->attributes as $attr => $value) 
       {
         if (substr($attr, 0, $cntlen) == self::CONTAINER_PREFIX) continue;
-        $value = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
+        $value = is_array($value) ? Utils\PHP\Tools::php2js($value, false, View::JS_MARK) : (string)$value;
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
     }
@@ -968,7 +968,7 @@ abstract class Control
       {
         if (substr($attr, 0, $cntlen) != self::CONTAINER_PREFIX) continue;
         $attr = substr($attr, $cntlen);
-        $value = is_array($value) ? Utils\PHP\Tools::php2js($value, true, View::JS_MARK) : (string)$value;
+        $value = is_array($value) ? Utils\PHP\Tools::php2js($value, false, View::JS_MARK) : (string)$value;
         if (strlen($value)) $tmp[] = (isset($this->dataAttributes[$attr]) ? 'data-' : '') . $attr . '="' . htmlspecialchars($value) . '"';
       }
     }

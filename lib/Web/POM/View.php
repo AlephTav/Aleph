@@ -701,7 +701,7 @@ class View implements \ArrayAccess
       case 'focus':
       case 'remove':
       case 'script':
-        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
+        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], false, self::JS_MARK) . ', ' . (isset($args[2]) ? (int)$args[2] : 0) . ')';
         break;
       case 'reload':
         $act = '$ajax.action(\'reload\', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
@@ -711,19 +711,19 @@ class View implements \ArrayAccess
       case 'toggleclass':
       case 'insert':
       case 'replace':
-        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], true, self::JS_MARK) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
+        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], false, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js($args[2], false, self::JS_MARK) . ', ' . (isset($args[3]) ? (int)$args[3] : 0) . ')';
         break;
       case 'display':
       case 'message':
       case 'inject':
-        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[2]) ? $args[2] : null, true, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[3]) ? $args[3] : null, true, self::JS_MARK) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
+        $act = '$ajax.action(\'' . $act . '\', ' .  Utils\PHP\Tools::php2js($args[1], false, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[2]) ? $args[2] : null, false, self::JS_MARK) . ', ' .  Utils\PHP\Tools::php2js(isset($args[3]) ? $args[3] : null, false, self::JS_MARK) . ', ' . (isset($args[4]) ? (int)$args[4] : 0) . ')';
         break;
       case 'download':
         $_SESSION['__DOWNLOAD__'] = ['file' => $args[1], 'filename' => isset($args[2]) ? $args[2] : null, 'contentType' => isset($args[3]) ? $args[3] : null, 'deleteAfterDownload' => isset($args[4]) ? $args[4] : false];
         $act = '$ajax.action(\'reload\')';
         break;
       default:
-        $act = '$ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], true, self::JS_MARK) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
+        $act = '$ajax.action(\'script\', ' . Utils\PHP\Tools::php2js($args[0], false, self::JS_MARK) . ', ' . (isset($args[1]) ? (int)$args[1] : 0) . ')';
         break;
     }
     if (Net\Request::getInstance()->isAjax) $this->actions[] = $act;
@@ -1399,7 +1399,7 @@ class View implements \ArrayAccess
     }
     if ($flag)
     {
-      array_unshift($events, '$pom._refreshPOMTree(' . Utils\PHP\Tools::php2js($tmp, true, self::JS_MARK) . ')');
+      array_unshift($events, '$pom._refreshPOMTree(' . Utils\PHP\Tools::php2js($tmp, false, self::JS_MARK) . ')');
       array_unshift($this->actions, implode(';', $events));
     }
   }  

@@ -237,32 +237,29 @@ class Tools
    * If the given value is an array and the second argument is FALSE the array will be treated as an array of values.
    *
    * @param mixed $value - a PHP value to be converted.
-   * @param boolean $isArray - determines whether the given value is an array of values or not.
+   * @param boolean $isCollectionOfValues - determines whether the given value is a collection of values to convert.
    * @param string $jsMark - determines a prefix mark of the JavaScript code.
    * @return string|array - returns an array of converted values or a string.
    */
-  public static function php2js($value, $isArray = true, $jsMark = null)
+  public static function php2js($value, $isCollectionOfValues = false, $jsMark = null)
   {
     static $rep = ["\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\'", '\\' => '\\\\'];
     if (is_object($value)) $value = get_object_vars($value);
     if (is_array($value)) 
     {
-      if ($isArray)
+      if ($isCollectionOfValues)
       {
-        $tmp = [];
-        if (array_keys($value) === range(0, count($value) - 1))
-        {
-          foreach ($value as $k => $v) $tmp[] = self::php2js($v, true, $jsMark);
-          return '[' . implode(', ', $tmp) . ']';
-        }
-        foreach ($value as $k => $v) $tmp[] = "'" . strtr($k, $rep) . "': " . self::php2js($v, true, $jsMark);
-        return '{' . implode(', ', $tmp) . '}';
-      }
-      else
-      {
-        foreach ($value as &$v) $v = self::php2js($v, true, $jsMark);
+        foreach ($value as &$v) $v = static::php2js($v, false, $jsMark);
         return $value;
       }
+      $tmp = [];
+      if (array_keys($value) === range(0, count($value) - 1))
+      {
+        foreach ($value as $k => $v) $tmp[] = static::php2js($v, false, $jsMark);
+        return '[' . implode(', ', $tmp) . ']';
+      }
+      foreach ($value as $k => $v) $tmp[] = "'" . strtr($k, $rep) . "': " . static::php2js($v, false, $jsMark);
+      return '{' . implode(', ', $tmp) . '}';
     }
     if (is_null($value)) return 'undefined';
     if (is_bool($value)) return $value ? 'true' : 'false';
@@ -298,14 +295,14 @@ class Tools
         {
           foreach ($value as $v)
           {
-            $tmp[] = self::php2str($v, true, $indent, $tab);
+            $tmp[] = static::php2str($v, true, $indent, $tab);
           }
         }
         else
         {
           foreach ($value as $k => $v)
           {
-            $tmp[] = self::php2str($k) . ' => ' . self::php2str($v, true, $indent, $tab);
+            $tmp[] = static::php2str($k) . ' => ' . static::php2str($v, true, $indent, $tab);
           }
         }
         $space = PHP_EOL . str_repeat(' ', $indent);
@@ -315,14 +312,14 @@ class Tools
       {
         foreach ($value as $v)
         {
-          $tmp[] = self::php2str($v);
+          $tmp[] = static::php2str($v);
         }
       }
       else
       {
         foreach ($value as $k => $v)
         {
-          $tmp[] = self::php2str($k) . ' => ' . self::php2str($v);
+          $tmp[] = static::php2str($k) . ' => ' . static::php2str($v);
         }
       }
       return '[' . implode(', ', $tmp) . ']';
