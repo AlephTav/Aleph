@@ -423,7 +423,7 @@ public static void fatal()
 Detects fatal errors or parsing errors. The method is automatically called when the script is over.
 
 
-## Public non-static methods ##
+## Public nonstatic methods ##
 
 ### Configuration methods
 

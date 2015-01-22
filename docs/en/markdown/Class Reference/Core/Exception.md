@@ -11,7 +11,7 @@
 
 Class **Aleph\Core\Exception** is used to generate typed exceptions within the framework and provides methods to easily identify the type of error that occurred on its token.
 
-## Public non-static methods ##
+## Public nonstatic methods ##
 
 ### **__construct()**
 
@@ -89,7 +89,7 @@ public array getInfo()
 
 Analyse an exception and returns detailed information about it. Analysis is performed using method **Aleph::analyzeException()**.
 
-## Protected non-static properties ##
+## Protected nonstatic properties ##
 
 ### **class**
 

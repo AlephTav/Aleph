@@ -185,7 +185,7 @@ abstract class Cache implements \Countable
   }
   
   /**
-   * Returns the number of keys in the cache.
+   * Returns the number of keys in the cache vault.
    *
    * @return integer
    * @access public

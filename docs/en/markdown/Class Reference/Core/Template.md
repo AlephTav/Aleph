@@ -56,7 +56,7 @@ public static void setGlobals(array $globals, boolean $merge = false)
 
 Allows to set global template variables.
 
-## Public non-static properties ##
+## Public nonstatic properties ##
 
 ### **cacheID**
 
@@ -82,7 +82,7 @@ public string $cacheGroup
 
 Name of the cache group of templates.
 
-## Public non-static methods ##
+## Public nonstatic methods ##
 
 ### **__construct()**
 
@@ -303,7 +303,7 @@ protected static array $globals = []
 Stores array of global template variables.
 
 
-## Protected non-static properties ##
+## Protected nonstatic properties ##
 
 ### **cache**
 
@@ -329,7 +329,7 @@ protected string $template
 
 Template string or path to a template file.
 
-## Protected non-static methods ##
+## Protected nonstatic methods ##
 
 ### **getCacheID()**
 

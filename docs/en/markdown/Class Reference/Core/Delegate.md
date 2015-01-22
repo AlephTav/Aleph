@@ -17,19 +17,19 @@ There are seven basic types of lines delegate:
 
 1. **function** - function call.
 2. **class::method** - call of a class static method.
-3. **class->method** - call of a class non-static method. The class has constructor without mandatory parameters.
+3. **class->method** - call of a class nonstatic method. The class has constructor without mandatory parameters.
 4. **class[]** - call of a class constructor that has no mandatory parameters.
 5. **class[n]** - call of a class constructor that has **n** mandatory parameters.
-6. **class[n]->method** - call of a class non-static method. Class constructor has **n** mandatory parameters.
-7. **class@cid->method** - call of non-static method of some web-control.
+6. **class[n]->method** - call of a class nonstatic method. Class constructor has **n** mandatory parameters.
+7. **class@cid->method** - call of nonstatic method of some web-control.
 
 Here. **function** - name of some function, **class** - name of some class, **method** - class method name, **n** - number of mandatory parameters of a class constructor, **cid** - unique or logical identifier of some web-control.
 
 Besides of these basic types of delegates, there are two context-dependent cases of delegates:
 - **::method** - if the page class is defined (variable `Aleph\MVC\Page::$current`), then a delegate is similar to calling the appropriate static method of paging class. If the page class is not defined, the appropriate method of class **Aleph** will be called.
-- **->method** - like the first case, only applied to non-static methods.
+- **->method** - like the first case, only applied to nonstatic methods.
 
-## Public non-static methods ##
+## Public nonstatic methods ##
 
 ### **__construct()**
 
@@ -187,7 +187,7 @@ public object getClassObject(array $args = null)
 
 Returns object of the delegated class. If delegate type is "function" the method returns NULL. For delegate type "control" the method returns object of a web-control (or FALSE, if control with such ID does not exist).
 
-## Protected non-static properties ##
+## Protected nonstatic properties ##
 
 ### **callback**
 

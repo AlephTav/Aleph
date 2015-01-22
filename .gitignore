@@ -1,5 +1,6 @@
-/classmap.php
-/tmp/cache/*
-/tmp/logs/*
-/tmp/null/*
-/tmp/sql.log
+/tmp
+classmap.php
+composer.phar
+composer.lock
+.DS_Store
+Thumbs.db
