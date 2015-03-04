@@ -44,6 +44,14 @@ class Response
    * @access private
    */           
   private static $instance = null;
+  
+  /**
+   * Determines whether the response was sent.
+   *
+   * @var boolean $isSent
+   * @access private
+   */
+  private $isSent = false;
 
   /**
    * HTTP status codes.
@@ -599,5 +607,17 @@ class Response
       foreach ($headers as $name => $value) header($name . ': ' . $value);
     }
     \Aleph::setOutput($this->body);
+    $this->isSent = true;
+  }
+  
+  /**
+   * Returns TRUE if the response was sent and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isSent()
+  {
+    return $this->isSent;
   }
 }

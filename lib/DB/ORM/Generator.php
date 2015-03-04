@@ -319,7 +319,7 @@ class Generator
     $namespace = trim($namespace, '\\');
     $dir = $this->extractDirectory($namespace, $directory);
     $info = $this->getDBInfo();
-    $tpl = new Core\Template(\Aleph::dir('framework') . '/_templates/ar.tpl');
+    $tpl = new Core\Template(\Aleph::dir('aleph') . '/_templates/ar.tpl');
     $tpl->namespace = $namespace;
     $tpl->alias = $this->alias;
     foreach ($info as $table => $data)
@@ -388,7 +388,7 @@ class Generator
     $namespace = trim($namespace, '\\');
     $dir = $this->extractDirectory($namespace, $directory);
     $info = $xml ? $this->getInfoFromXML($xml, $namespace) : $this->getInfoFromDB($namespace);
-    $tpl = new Core\Template(\Aleph::dir('framework') . '/_templates/model.tpl');
+    $tpl = new Core\Template(\Aleph::dir('aleph') . '/_templates/model.tpl');
     $tpl->namespace = $namespace;
     $tpl->alias = PHP\Tools::php2str($this->alias);
     foreach ($info as $model => $data)
@@ -609,7 +609,7 @@ class Generator
     $info = $this->getDBInfo();
     $dom = new \DOMDocument('1.0', 'utf-8');
     $dom->load($xml);
-    $dom->schemaValidate(\Aleph::dir('framework') . '/_templates/db.xsd');
+    $dom->schemaValidate(\Aleph::dir('aleph') . '/_templates/db.xsd');
     $dom = simplexml_import_dom($dom);
     if ((string)$dom['Alias'] != $this->alias) throw new Core\Exception($this, 'ERR_GENERATOR_3');
     $namespace = trim((string)$dom['Namespace'], '\\');

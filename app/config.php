@@ -47,8 +47,9 @@ return [
     'cacheGroup' => 'ar'
   ], 
   'dirs' => [
-    'application' => 'app', 
-    'framework' => 'lib', 
+    'aleph' => 'lib',
+    'app' => 'app', 
+    'tpl' => 'app/templates',
     'logs' => 'tmp/logs', 
     'cache' => 'tmp/cache', 
     'temp' => 'tmp/null'

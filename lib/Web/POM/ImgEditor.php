@@ -96,7 +96,7 @@ class ImgEditor extends Popup
    */
   public function __construct($id, $template = null, $expire = 0)
   {
-    parent::__construct($id, $template ?: \Aleph::dir('framework') . '/web/js/imgeditor/imgeditor.html', $expire);
+    parent::__construct($id, $template ?: \Aleph::dir('aleph') . '/web/js/imgeditor/imgeditor.html', $expire);
     $this->attributes['class'] = 'imgeditor';
   }
   

@@ -103,9 +103,18 @@ class API
   protected static $namespace = '\\';
   
   /**
+   * Prefix for URLs.
+   *
+   * @var string $urlPrefix
+   * @access protected
+   * @static
+   */
+  protected static $urlPrefix = '';
+  
+  /**
    * Determines whether the response body is converted according to the defined content type.
    *
-   * @var boolean $convertErrors
+   * @var boolean $convertOutput
    * @access protected
    * @static
    */
@@ -127,6 +136,8 @@ class API
    * @param Exception $e - the exception that occurred.
    * @param array $info - the exception information.
    * @return mixed
+   * @access public
+   * @static
    */
   public static function error(\Exception $e, array $info)
   {
@@ -166,9 +177,10 @@ class API
     $router = new Router();
     foreach (static::$map as $resource => $info)
     {
+      if ($resource && $resource[0] == '@') $resource = static::$urlPrefix . substr($resource, 1);
       foreach ($info as $methods => $data)
       {
-        if (isset($data['bind']))
+        if (empty($data['redirect']))
         {
           $router->bind($resource, $process, $methods)
                  ->ssl(empty($data['ssl']) ? false : $data['ssl'])
@@ -190,8 +202,11 @@ class API
     }
     $output = $router->route();
     if (!$output['success']) static::notFound();
-    static::$response->body = static::convert($output['result']);
-    static::$response->send();
+    if (!static::$response->isSent())
+    {
+      static::$response->body = static::convert($output['result']);
+      static::$response->send();
+    }
   }
   
   /**
@@ -204,7 +219,7 @@ class API
    */
   protected static function notFound($content = null)
   {
-    static::$response->stop(404, static::convert($content));
+    static::$response->stop(404, $content !== null ? static::convert($content) : null);
   }
   
   /**

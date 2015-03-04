@@ -144,7 +144,7 @@ public void gc(float $probability = 100)
 | --- | --- | --- |
 | **$probability** | float | вероятность вызова метода в процентах. |
 
-Сборщик мусора. Удаляет все просроченные данные из кэша, а также нормализует хранилище ключей для групп.
+Сборщик мусора. Нормализует хранилище ключей для групп.
 
 ### **count()**
 
@@ -260,7 +260,7 @@ protected void saveKeyToVault(string $key, integer $expire, string $group)
 
 > Если **$group** равен NULL, то **$key** не будет добавлен в хранилище ключей.
 
-### normalizeExpire()
+### **normalizeExpire()**
 
 ```php
 protected integer normalizeExpire(integer $expire)
@@ -272,7 +272,7 @@ protected integer normalizeExpire(integer $expire)
 
 Нормализует значение времени жизни кэша.
 
-### normalizeVault()
+### **normalizeVault()**
 
 ```php
 protected void normalizeVault()

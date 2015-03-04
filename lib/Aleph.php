@@ -907,7 +907,7 @@ final class Aleph implements \ArrayAccess
    * @access public
    * @static
    */
-  public static function init($root = null)
+  public static function init($root = null, $timezone = null)
   {
     if (self::$instance === null)
     {
@@ -924,7 +924,8 @@ final class Aleph implements \ArrayAccess
         return strlen(\Aleph::getOutput()) ? \Aleph::getOutput() : $output;
       });
       register_shutdown_function([__CLASS__, 'fatal']);
-      if (date_default_timezone_set(@date_default_timezone_get()) === false) date_default_timezone_set('UTC');
+      if ($timezone) date_default_timezone_set($timezone);
+      else if (date_default_timezone_set(@date_default_timezone_get()) === false) date_default_timezone_set('UTC');
       self::errorHandling(true, E_ALL);
       self::$root = $root !== null ? realpath($root) : (isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : __DIR__);
       self::$siteUniqueID = md5(self::$root);

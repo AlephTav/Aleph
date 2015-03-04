@@ -144,7 +144,7 @@ public void gc(float $probability = 100)
 | --- | --- | --- |
 | **$probability** | float | probability of method call in percent. |
 
-Garabage collector. Removes all expired cache data and normalizes the vault of group keys.
+Garabage collector. Normalizes the vault of group keys.
 
 ### **count()**
 
@@ -260,7 +260,7 @@ Stores the identifier of the cache in the vault of identifiers. This method shou
 
 > If **$group** is equal NULL, **$key** won't be stored in the vault.
 
-### normalizeExpire()
+### **normalizeExpire()**
 
 ```php
 protected integer normalizeExpire(integer $expire)
@@ -272,7 +272,7 @@ protected integer normalizeExpire(integer $expire)
 
 Normalizes the cache expiration time.
 
-### normalizeVault()
+### **normalizeVault()**
 
 ```php
 protected void normalizeVault()

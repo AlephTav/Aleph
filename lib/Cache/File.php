@@ -39,7 +39,7 @@ class File extends Cache
   const ERR_CACHE_FILE_1 = 'Cache directory "%s" is not writable.';
   
   /**
-   * Permissions for newly created directories.
+   * Permissions for newly created cache directory.
    *
    * @var integer $directoryMode
    * @access public
@@ -47,7 +47,7 @@ class File extends Cache
   public $directoryMode = 0777;
   
   /**
-   * Permissions for newly created files.
+   * Permissions for newly created cache files.
    *
    * @var integer $fileMode
    * @access public
