@@ -166,11 +166,7 @@ class AR
     if (isset($args[1]))
     {
       $db = $args[1];
-      if (is_scalar($db)) 
-      {
-        $cfg = \Aleph::getInstance()[$db];
-        if ($cfg) $db = new DB($cfg['dsn'], isset($cfg['username']) ? $cfg['username'] : null, isset($cfg['password']) ? $cfg['password'] : null, isset($cfg['options']) ? $cfg['options'] : null);
-      }
+      if (is_scalar($db)) $db = DB::getConnection($db);
       if (!($db instanceof DB)) throw new Core\Exception('Aleph\DB\AR::ERR_AR_2');
     }
     else

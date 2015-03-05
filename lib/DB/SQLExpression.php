@@ -1,3 +1,4 @@
+<?php
 /**
  * Copyright (c) 2013 - 2015 Aleph Tav
  *
@@ -18,28 +19,44 @@
  * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
-
-namespace <?php echo $namespace; ?>;
+ 
+namespace Aleph\DB;
 
 /**
- * Active Record class for interaction with <?php echo $table; ?> table.
+ * This class is wrapper of any SQL expressions. An instance of this class won't be processed during SQL building.
  *
-<?php echo $properties; ?>
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.db
  */
-class <?php echo $class; ?> extends <?php echo ($namespace == 'Aleph\DB' ? 'AR' : '\Aleph\DB\AR') . PHP_EOL; ?>
+class SQLExpression
 {
   /**
-   * Constructor. Initializes the Active Record object.
+   * SQL expression.
    *
-   * @param mixed $where - the WHERE clause condition.
-   * @param mixed $order - the ORDER BY clause condition.
-   * @param integer|boolean $cacheExpire - lifetime (in seconds) of the table metadata cache.
-   * @param string $cacheGroup - group name of the table metadata cache.
+   * @var string $sql
+   * @access protected   
+   */
+  protected $sql = null;
+
+  /** Constructor.
+   *
+   * @param string $sql - SQL expression.
    * @access public
    */
-  public function __construct($where = null, $order = null, $cacheExpire = null, $cacheGroup = null)
+  public function __construct($sql)
   {
-    parent::__construct('<?php echo $table; ?>', '<?php echo $alias; ?>', $cacheExpire, $cacheGroup);
-    $this->assign($where, $order);
+    $this->sql = $sql;
+  }
+  
+  /**
+   * Converts an object of this class to string.
+   *
+   * @return string
+   * @access public
+   */
+  public function __toString()
+  {
+    return $this->sql;
   }
 }
