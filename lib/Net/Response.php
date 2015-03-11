@@ -164,6 +164,14 @@ class Response
   public $body = null;
   
   /**
+   * Response cookies.
+   *
+   * @var array $cookies
+   * @access protected
+   */
+  protected $cookies = [];
+  
+  /**
    * Returns an instance of this class.
    * 
    * @return Aleph\Net\Response
@@ -478,6 +486,60 @@ class Response
   }
   
   /**
+   * Sets a cookie.
+   *
+   * @param string $name - the name of the cookie.
+   * @param array|string - the value of the cookie. It can be an array of all cookie parameters: value, expire, path and so on.
+   * @param integer $expire - the time (Unix timestamp) the cookie expires.
+   * @param string $path - the path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
+   * @param string $domain - the domain that the cookie is available to.
+   * @param boolean $secure - indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
+   * @param boolean $httponly - when TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
+   * @access public
+   */
+  public function setCookie($name, $value = null, $expire = 0, $path = null, $domain = null, $secure = false, $httponly = false)
+  {
+    if (is_array($value))
+    {
+      $this->cookies[$name] = array_replace((array)$this->getCookie($name), $value);
+    }
+    else
+    {
+      $this->cookies[$name] = [
+        'value' => $value,
+        'expire' => $expire,
+        'path' => $path,
+        'domain' => $domain,
+        'secure' => $secure,
+        'httponly' => $httponly
+      ];
+    }
+  }
+  
+  /**
+   * Returns cookie information.
+   *
+   * @param string $name - the cookie name.
+   * @return array
+   * @access public
+   */
+  public function getCookie($name)
+  {
+    return isset($this->cookies[$name]) ? $this->cookies[$name] : null;
+  }
+  
+  /**
+   * Remove a cookie.
+   *
+   * @param string $name - the cookie name.
+   * @access public
+   */
+  public function removeCookie($name)
+  {
+    $this->setCookie($name, null, time() - 86400);
+  }
+  
+  /**
    * Initializes all properties of the class with values from PHP's super globals.
    *
    * @access public
@@ -485,6 +547,7 @@ class Response
   public function reset()
   {
     $this->headers = Headers::getResponseHeaders();
+    $this->cookies = [];
     $this->status = 200;
     $this->version = '1.1';
     $this->body = null;
@@ -605,6 +668,10 @@ class Response
       $headers = $this->headers->getHeaders();
       header('HTTP/' . $this->version . ' ' . $this->status . ' ' . self::$codes[$this->status]);
       foreach ($headers as $name => $value) header($name . ': ' . $value);
+      foreach ($this->cookies as $name => $params) 
+      {
+        setcookie($name, $params['value'], $params['expire'], $params['path'], $params['domain'], $params['secure'], $params['httponly']);
+      }
     }
     \Aleph::setOutput($this->body);
     $this->isSent = true;

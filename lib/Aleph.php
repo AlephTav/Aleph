@@ -567,6 +567,34 @@ final class Aleph implements \ArrayAccess
    */
   public static function analyzeException(\Exception $e)
   {
+    $makeSerializable = function($obj) use(&$makeSerializable)
+    {
+      if (is_array($obj))
+      {
+        foreach ($obj as &$v) $v = $makeSerializable($v);
+        return $obj;
+      }
+      if (is_object($obj))
+      {
+        try
+        {
+          serialize($obj);
+        }
+        catch (\Exception $e)
+        {
+          $tmp = new StdClass;
+          $tmp->object = get_class($obj);
+          $tmp->properties = get_object_vars($obj);
+          foreach ($tmp->properties as &$v) $v = $makeSerializable($v);
+          $obj = $tmp;
+        }
+      }
+      else if (is_resource($obj))
+      {
+        $obj = 'Resource: ' . get_resource_type($obj);
+      }
+      return $obj;
+    };
     $reduceObject = function($obj) use(&$reduceObject)
     {
       if ($obj === null) return 'null';
@@ -695,7 +723,11 @@ final class Aleph implements \ArrayAccess
       if (isset($item['args']))
       {
         $tmp = [];
-        foreach ($item['args'] as $arg) $tmp[] = $reduceObject($arg);
+        foreach ($item['args'] as &$arg) 
+        {
+          $tmp[] = $reduceObject($arg);
+          $arg = $makeSerializable($arg);
+        }
         $item['command'] .= implode(', ', $tmp);
       }
       $item['command'] .= ' )';
