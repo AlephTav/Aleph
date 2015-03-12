@@ -162,16 +162,24 @@ class API
     static::$response = Response::getInstance();
     static::$response->setContentType(static::$contentType, static::$outputCharset);
     $namespace = static::$namespace;
-    $process = function(array $resource, array $params = null) use ($namespace)
+    $process = function(array $resource, array $params = null) use($namespace)
     {
       if (empty($resource['callback'])) throw new Core\Exception('Aleph\Net\API', 'ERR_API_1', $resource);
       $callback = $resource['callback'];
       if ($callback[0] != '\\') $callback = $namespace . $callback;
       $callback = new Core\Delegate($callback);
+      if ($callback->isStatic()) return $callback->call($params);
       $api = $callback->getClassObject();
-      $api->before($resource, $params);
-      $result = call_user_func_array([$api, $callback->getMethod()], $params);
-      $api->after($resource, $params, $result);
+      if ($api instanceof API)
+      {
+        $api->before($resource, $params);
+        $result = call_user_func_array([$api, $callback->getMethod()], $params);
+        $api->after($resource, $params, $result);
+      }
+      else
+      {
+        $result = call_user_func_array([$api, $callback->getMethod()], $params);
+      }
       return $result;
     };
     $router = new Router();

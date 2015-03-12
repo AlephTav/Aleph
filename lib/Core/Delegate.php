@@ -147,6 +147,14 @@ interface IDelegate
   public function getType();
   
   /**
+   * Returns TRUE if the given callback is a static class method and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isStatic();
+  
+  /**
    * Returns parameters of a delegate class method, function or closure. 
    * Method returns FALSE if class method doesn't exist.
    * Parameters are returned as an array of \ReflectionParameter class instance.
@@ -209,7 +217,7 @@ class Delegate implements IDelegate
    * @var boolean $static
    * @access protected
    */
-  protected $static = null;
+  protected $static = false;
   
   /**
    * Shows number of callback arguments that should be transmited into callback constructor.
@@ -274,7 +282,6 @@ class Delegate implements IDelegate
       $this->class = $callback;
       $this->method = '__construct';
       $this->numargs = $class->hasMethod($this->method) ? $class->getConstructor()->getNumberOfParameters() : 0;
-      $this->static = false;
       $this->callback = get_class($callback) . '[' . ($this->numargs ?: '') . ']';
     }
     else if (is_array($callback))
@@ -487,6 +494,17 @@ class Delegate implements IDelegate
   public function getType()
   {
     return $this->type;
+  }
+  
+  /**
+   * Returns TRUE if the given callback is a static class method and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isStatic()
+  {
+    return $this->static;
   }
   
   /**
