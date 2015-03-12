@@ -169,7 +169,7 @@ class API
       if ($callback[0] != '\\') $callback = $namespace . $callback;
       $callback = new Core\Delegate($callback);
       if ($callback->isStatic()) return $callback->call($params);
-      $api = $callback->getClassObject();
+      $api = $callback->getClassObject($params);
       if ($api instanceof API)
       {
         $api->before($resource, $params);
