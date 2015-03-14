@@ -43,7 +43,7 @@ function test_delegate_parse()
   {
     if ($e->getToken() != 'ERR_DELEGATE_1') return false;
   }
-  if ((new Delegate('foo'))->getInfo() !== ['class' => null, 'method' => 'foo', 'static' => null, 'numargs' => null, 'cid' => null, 'type' => 'function']) return false;
+  if ((new Delegate('foo'))->getInfo() !== ['class' => null, 'method' => 'foo', 'static' => false, 'numargs' => null, 'cid' => null, 'type' => 'function']) return false;
   if ((new Delegate('test::foo'))->getInfo() !== ['class' => 'test', 'method' => 'foo', 'static' => true, 'numargs' => 0, 'cid' => null, 'type' => 'class']) return false;
   if ((new Delegate('test->foo'))->getInfo() !== ['class' => 'test', 'method' => 'foo', 'static' => false, 'numargs' => 0, 'cid' => null, 'type' => 'class']) return false;
   if ((new Delegate('test[123]->foo'))->getInfo() !== ['class' => 'test', 'method' => 'foo', 'static' => false, 'numargs' => 123, 'cid' => null, 'type' => 'class']) return false;

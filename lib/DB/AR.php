@@ -207,6 +207,17 @@ class AR
   }
   
   /**
+   * Returns the connection object.
+   *
+   * @return Aleph\DB\DB
+   * @access public
+   */
+  public function getConnection()
+  {
+    return $this->db;
+  }
+  
+  /**
    * Returns the table name.
    *
    * @return string

@@ -3,6 +3,7 @@
 use Aleph\DB,
     Aleph\DB\Drivers\MySQL;
 
+require_once(__DIR__ . '/../DB/SQLExpression.php');
 require_once(__DIR__ . '/../DB/SQLBuilder.php');
 require_once(__DIR__ . '/../DB/Drivers/MySQL/SQLBuilder.php');
 
