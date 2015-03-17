@@ -143,6 +143,7 @@ abstract class Validator
    */
   protected function isEmpty($entity)
   {
+    if (is_resource($entity)) return true;
     if (is_array($entity)) return count($entity) == 0;
     if (is_object($entity)) return count(get_object_vars($entity)) == 0;
     return strlen($entity) == 0;

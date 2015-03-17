@@ -33,7 +33,7 @@ class Type extends Validator
 {
   /**
    * The PHP data type that the validating value should be.
-   * Valid values include "null", "string", "boolean" (or "bool"), "integer" (or "int"), "float" (or "double" or "real"), "array", "object", "resource".
+   * Valid values include "null", "string", "boolean" (or "bool"), "integer" (or "int"), "float" (or "double" or "real"), "array", "object", "resource" or "scalar".
    *
    * @var string $type
    * @access public
@@ -51,11 +51,18 @@ class Type extends Validator
   public function validate($entity)
   {
     $type = strtolower($this->type);
-    if ($type == 'float' || $type == 'real') $type == 'double';
-    else if ($type == 'bool') $type = 'boolean';
-    else if ($type == 'int') $type = 'integer';
-    else if ($type == 'null') $type = 'NULL';
-    if (gettype($entity) == $type) return $this->reason = true;
+    if ($type == 'scalar')
+    {
+      if (is_scalar($entity)) return $this->reason = true;
+    }
+    else
+    {
+      if ($type == 'float' || $type == 'real') $type == 'double';
+      else if ($type == 'bool') $type = 'boolean';
+      else if ($type == 'int') $type = 'integer';
+      else if ($type == 'null') $type = 'NULL';
+      if (gettype($entity) == $type) return $this->reason = true;
+    }
     $this->reason = ['code' => 0, 'reason' => 'type mismatch'];
     return false;
   }
