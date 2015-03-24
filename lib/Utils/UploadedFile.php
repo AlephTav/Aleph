@@ -1094,7 +1094,8 @@ class UploadedFile
     $file = realpath($file);
     return ['path' => $file,
             'url' => strpos($file, \Aleph::getRoot()) === 0 ? '/' . str_replace('\\', '/', ltrim(substr($file, strlen(\Aleph::getRoot())), '\\/')) : false,
-            'name' => $name, 
+            'name' => $name,
+            'filename' => pathinfo($name, PATHINFO_FILENAME),
             'extension' => $ext, 
             'originalName' => $this->data['name'], 
             'size' => filesize($file), 
