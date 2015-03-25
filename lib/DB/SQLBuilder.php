@@ -90,17 +90,6 @@ abstract class SQLBuilder
   protected $delimiter = '"';
   
   /**
-   * Constuctor.
-   *
-   * @param Aleph\DB\DB $db - the database connection object.
-   * @access public
-   */
-  public function __construct(DB $db = null)
-  {
-    $this->db = $db;
-  }
-
-  /**
    * Returns an instance of the builder class corresponding to the given database type.
    *
    * @param string $engine - the type of DBMS.
@@ -124,6 +113,28 @@ abstract class SQLBuilder
         return new OCI\SQLBuilder($db);
     }
     throw new Core\Exception('Aleph\DB\SQLBuilder::ERR_SQL_1', $engine);
+  }
+  
+  /**
+   * Constuctor.
+   *
+   * @param Aleph\DB\DB $db - the database connection object.
+   * @access public
+   */
+  public function __construct(DB $db = null)
+  {
+    $this->db = $db;
+  }
+  
+  /**
+   * Returns new instance of the current object.
+   *
+   * @return self
+   * @access public
+   */
+  public function copy()
+  {
+    return new static($this->db);
   }
   
   /**
@@ -724,12 +735,15 @@ abstract class SQLBuilder
   protected function buildWhere(array $info, &$data)
   {
     $sql = $this->whereExpression(array_shift($info)['conditions'], $data);
-    if (count($info)) 
-    {
-      $sql = '(' . $sql . ')';
-      foreach ($info as $where) $sql .= ' ' . $where['conjunction'] . ' (' . $this->whereExpression($where['conditions'], $data) . ')'; 
+    if (strlen($sql))
+    {    
+      if (count($info)) 
+      {
+        $sql = '(' . $sql . ')';
+        foreach ($info as $where) $sql .= ' ' . $where['conjunction'] . ' (' . $this->whereExpression($where['conditions'], $data) . ')'; 
+      }
+      return ' WHERE ' . $sql;
     }
-    return ' WHERE ' . $sql;
   }
   
   /**
