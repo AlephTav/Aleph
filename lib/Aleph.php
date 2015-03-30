@@ -477,12 +477,7 @@ final class Aleph implements \ArrayAccess
     $delegateExists = class_exists('Aleph\Core\Delegate', false);
     if (!$delegateExists && self::$instance instanceof self && (!empty($config['logging']) && !empty($config['customLogMethod']) || $debug && !empty($config['customDebugMethod'])))
     {
-      if (isset($config['autoload']['callback'])) self::$instance->al('Aleph\Core\Delegate', true);
-      else
-      {
-        $classes = self::$instance->getClassMap();
-        if (isset($classes['aleph\core\delegate']) && file_exists($classes['aleph\core\delegate'])) require_once($classes['aleph\core\delegate']);
-      }
+      self::$instance->al('Aleph\Core\Delegate', true);
       $delegateExists = class_exists('Aleph\Core\Delegate', false);
     }
     try
@@ -502,7 +497,10 @@ final class Aleph implements \ArrayAccess
     catch (\Exception $e){}
     if ($debug && !empty($config['customDebugMethod']) && $delegateExists)
     {
-      if (!self::delegate($config['customDebugMethod'], $e, $info)) return;
+      if (!self::delegate($config['customDebugMethod'], $e, $info)) 
+      {
+        return;
+      }
     }
     if (PHP_SAPI == 'cli' || empty($_SERVER['REMOTE_ADDR']))
     {
@@ -841,10 +839,22 @@ final class Aleph implements \ArrayAccess
     if (self::$instance !== null)
     {
       $a = self::$instance;
-      $dir = isset($a['dirs'][$dir]) ? $a['dirs'][$dir] : $dir;
-      if (strpos($dir, self::$root) !== 0) $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
+      if (isset($a['dirs'][$dir]))
+      {
+        $dir = $a['dirs'][$dir];
+      }
+      if (DIRECTORY_SEPARATOR == '\\' && !preg_match('/^([a-zA-Z]:\\\\?|\\\\).*/', $dir) || strlen($dir) && $dir[0] != '/')
+      {
+        if (strpos($dir, self::$root) !== 0) 
+        {
+          $dir = self::$root . DIRECTORY_SEPARATOR . $dir;
+        }
+      }
     }
-    if (file_exists($dir)) return realpath($dir);
+    if (file_exists($dir)) 
+    {
+      return realpath($dir);
+    }
     $unipath = strlen($dir) == 0 || $dir[0] != '/';
     if (strpos($dir, ':') === false && $unipath) $dir = getcwd() . DIRECTORY_SEPARATOR . $dir;
     $dir = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $dir);
@@ -1000,7 +1010,7 @@ final class Aleph implements \ArrayAccess
   private function __clone(){}
   
   /**
-   * Autoloads classes, interfaces and traits.
+   * Automatically loads classes, interfaces and traits.
    *
    * @param string $class
    * @param boolean $auto
@@ -1009,13 +1019,19 @@ final class Aleph implements \ArrayAccess
    */
   private function al($class, $auto = true)
   {
-    if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false)) return true;
-    $classes = $this->getClassMap();
     $cs = strtolower(ltrim($class, '\\'));
-    if (isset($classes[$cs]) && is_file($classes[$cs]))
+    $classes = $this->getClassMap();
+    if (isset($classes[$cs]))
     {
-      require_once($classes[$cs]);
-      if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) return true;
+      $file = self::dir($classes[$cs]);
+      if (is_file($file))
+      {
+        require_once($file);
+        if (class_exists($cs, false) || interface_exists($cs, false) || trait_exists($cs, false)) 
+        {
+          return true;
+        }
+      }
     }
     $cfg = isset($this->config['autoload']) && is_array($this->config['autoload']) ? $this->config['autoload'] : [];
     if (isset($cfg['type']) && strtolower($cfg['type']) == 'psr-4')
@@ -1023,10 +1039,19 @@ final class Aleph implements \ArrayAccess
       if ($auto && isset($cfg['callback']))
       {
         $callback = $cfg['callback'];
-        if (class_exists('Aleph\Core\Delegate', false)) return self::delegate($callback, $class);
-        if (is_callable($callback, true)) return call_user_func_array($callback, [$class]);
+        if (class_exists('Aleph\Core\Delegate', false)) 
+        {
+          return self::delegate($callback, $class);
+        }
+        if (is_callable($callback, true))
+        {
+          return call_user_func_array($callback, [$class]);
+        }
       }
-      if (empty($cfg['namespaces']['Aleph'])) $cfg['namespaces'] = array_merge(['Aleph' => __DIR__], isset($cfg['namespaces']) ? (array)$cfg['namespaces'] : []);
+      if (empty($cfg['namespaces']['Aleph'])) 
+      {
+        $cfg['namespaces'] = array_merge(['Aleph' => __DIR__], isset($cfg['namespaces']) ? (array)$cfg['namespaces'] : []);
+      }
       $namespaces = $cfg['namespaces'];
       $prefix = $class;
       while (false !== $pos = strrpos($prefix, '\\'))
@@ -1037,32 +1062,50 @@ final class Aleph implements \ArrayAccess
           $cs = substr($class, $pos + 1);
           foreach ((array)$namespaces[$prefix] as $dir)
           {
-            $file = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $cs) . '.php';
+            $file = self::dir($dir) . DIRECTORY_SEPARATOR . str_replace('\\', DIRECTORY_SEPARATOR, $cs) . '.php';
             if (file_exists($file))
             {
               require_once($file);
-              if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false)) return true;
+              if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false))
+              {
+                return true;
+              }
             }
           }
         }
       }
-      return false;  
+      return false;
     }
     if ($auto && isset($cfg['callback']))
     {
       $callback = $cfg['callback'];
-      if (class_exists('Aleph\Core\Delegate', false)) return self::delegate($callback, $class);
-      if (is_callable($callback, true)) return call_user_func_array($callback, [$class]);
+      if (class_exists('Aleph\Core\Delegate', false)) 
+      {
+        return self::delegate($callback, $class);
+      }
+      if (is_callable($callback, true))
+      {
+        return call_user_func_array($callback, [$class]);
+      }
       throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
     }
     if (empty($cfg['search']))
     {
-      if (!$auto) return false;
+      if ($auto)
+      {
+        throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
+      }
+      return false;
+    }
+    if ($this->find($cs)) 
+    {
+      return true;
+    }
+    if ($auto)
+    {
       throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
     }
-    if ($this->find($cs)) return true;
-    if (!$auto) return false;
-    throw new \Exception(self::error($this, 'ERR_GENERAL_1', $class));
+    return false;
   }
   
   /**
@@ -1160,7 +1203,7 @@ final class Aleph implements \ArrayAccess
                   throw new \Exception(self::error($this, 'ERR_GENERAL_4', ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file)));
                   exit;
                 }
-                $this->classes[$cs] = $file;
+                $this->classes[$cs] = strpos($file, self::$root) === 0 ? ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;
                 break;
             }
           }
@@ -1176,7 +1219,8 @@ final class Aleph implements \ArrayAccess
       {
         if (isset($this->classes[$class]))
         {
-          require_once($this->classes[$class]);
+          $file = self::dir($this->classes[$class]);
+          require_once($file);
           return (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false));
         }
         return false;
@@ -1379,15 +1423,25 @@ final class Aleph implements \ArrayAccess
    */
   public function setClassMap(array $classes, $classmap = null)
   {
-    $classmap = $classmap ?: (empty($this->config['autoload']['classmap']) ? null : self::dir($this->config['autoload']['classmap']));
-    if (!$classmap) throw new Core\Exception($this, 'ERR_GENERAL_5');
+    $classmap = $classmap ?: (empty($this->config['autoload']['classmap']) ? null : self::dir($this->config['autoload']['classmap']));;
+    if (!$classmap) 
+    {
+      throw new Core\Exception($this, 'ERR_GENERAL_5');
+    }
     $code = [];
     foreach ($classes as $class => $path) 
     {
-      if (strlen($class) == 0 || !file_exists($path)) continue;
+      if (strlen($class) == 0 || !file_exists(self::dir($path))) continue;
       $code[] = "'" . strtolower($class) . "' => '" . str_replace("'", "\'", $path) . "'";
     }
-    file_put_contents($classmap, '<?php return [' . implode(',' . PHP_EOL . '              ', $code) . '];');
+    if (count($code) == 0)
+    {
+      file_put_contents($classmap, '<?php return [];');
+    }
+    else
+    {
+      file_put_contents($classmap, '<?php return [' . PHP_EOL . '  ' . implode(',' . PHP_EOL . '  ', $code) . PHP_EOL . '];');
+    }
     $this->classmap = $this->config['autoload']['classmap'] = $classmap;
     $this->classes = $classes;
   }
@@ -1402,7 +1456,11 @@ final class Aleph implements \ArrayAccess
    */
   public function loadClass($class)
   {
-    return $this->al($class, false);
+    if (!class_exists($class, false) && !interface_exists($class, false) && !trait_exists($class, false)) 
+    {
+      return $this->al($class, false);
+    }
+    return true;
   }
   
   /**
