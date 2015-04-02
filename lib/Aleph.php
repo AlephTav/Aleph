@@ -966,23 +966,36 @@ final class Aleph implements \ArrayAccess
         return strlen(\Aleph::getOutput()) ? \Aleph::getOutput() : $output;
       });
       register_shutdown_function([__CLASS__, 'fatal']);
-      if ($timezone) date_default_timezone_set($timezone);
-      else if (date_default_timezone_set(@date_default_timezone_get()) === false) date_default_timezone_set('UTC');
+      if ($timezone) 
+      {
+        date_default_timezone_set($timezone);
+      }
+      else if (date_default_timezone_set(@date_default_timezone_get()) === false) 
+      {
+        date_default_timezone_set('UTC');
+      }
       self::errorHandling(true, E_ALL);
       self::$root = $root !== null ? realpath($root) : (isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : __DIR__);
       self::$siteUniqueID = md5(self::$root);
       $_SERVER['DOCUMENT_ROOT'] = self::$root;
       ini_set('unserialize_callback_func', 'spl_autoload_call');
-      if (session_id() == '') session_start();
-      else session_regenerate_id(true);
+      if (!session_id())
+      {
+        session_start();
+      }
+      session_regenerate_id(true);
       if (isset($_GET['__DEBUG_INFORMATION__']) && isset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]))
       {
         self::$output = $_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']];
+        unset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]);
         exit;
       }
       if (get_magic_quotes_gpc()) 
       {
-        $func = function ($value) use (&$func) {return is_array($value) ? array_map($func, $value) : stripslashes($value);};
+        $func = function($value) use(&$func)
+        {
+          return is_array($value) ? array_map($func, $value) : stripslashes($value);
+        };
         $_GET = array_map($func, $_GET);
         $_POST = array_map($func, $_POST);
         $_COOKIE = array_map($func, $_COOKIE);

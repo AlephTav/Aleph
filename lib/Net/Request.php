@@ -172,6 +172,21 @@ class Request
   }
   
   /**
+   * Returns TRUE if the current request was sent from the same host and FALSE otherwise.
+   *
+   * @return boolean
+   * @access public
+   */
+  public function isOwnHost()
+  {
+    if (!empty($_SERVER['HTTP_REFERER']))
+    {
+      return $_SERVER['HTTP_HOST'] === (new URL($_SERVER['HTTP_REFERER']))->source['host'];
+    }
+    return false;
+  }
+  
+  /**
    * Returns value of the protected properties "body".
    *
    * @param string $param - should be "body".
