@@ -983,7 +983,10 @@ final class Aleph implements \ArrayAccess
       {
         session_start();
       }
-      session_regenerate_id(true);
+      else
+      {
+        session_regenerate_id(true);
+      }
       if (isset($_GET['__DEBUG_INFORMATION__']) && isset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]))
       {
         self::$output = $_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']];
