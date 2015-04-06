@@ -313,21 +313,38 @@ class Router
             {
               foreach ($data['params'] as $k => $param)
               {
-                if (empty($matches[$param])) continue;
-                $data['action'] = str_replace('#' . $param . '#', $matches[$param], $data['action'], $count);
-                if ($count > 0) unset($data['params'][$k]);
+                if (!empty($matches[$param]))
+                {
+                  $data['action'] = str_replace('#' . $param . '#', $matches[$param], $data['action'], $count);
+                  if ($count > 0)
+                  {
+                    unset($data['params'][$k]);
+                  }
+                }
               }
             }
             $act = new Core\Delegate($data['action']);
           }
           if (!$act->isCallable())
           {
-            if (!empty($data['ignoreWrongDelegate'])) continue;
+            if (!empty($data['ignoreWrongDelegate']))
+            {
+              continue;
+            }
             throw new Core\Exception($this, 'ERR_ROUTER_2', (string)$act);
           }
-          foreach ($data['params'] as &$param) $param = isset($matches[$param]) ? $matches[$param] : null;
-          if (!empty($data['extra'])) $data['args'][$data['extra']] = $data['params'];
-          else $data['args'] = array_merge($data['args'], $data['params']);
+          foreach ($data['params'] as &$param)
+          {
+            $param = isset($matches[$param]) ? $matches[$param] : null;
+          }
+          if (!empty($data['extra']))
+          {
+            $data['args'][$data['extra']] = $data['params'];
+          }
+          else 
+          {
+            $data['args'] = array_merge($data['args'], $data['params']);
+          }
           $params = $data['args'];
           if (!empty($data['coordinateParameterNames']))
           {
@@ -335,7 +352,10 @@ class Router
             foreach ($act->getParameters() as $param) 
             {
               $name = $param->getName();
-             if (array_key_exists($name, $data['args'])) $params[] = $data['args'][$name];
+              if (array_key_exists($name, $data['args']))
+              {
+                $params[] = $data['args'][$name];
+              }
             } 
           }
           $res['result'] = $act->call($params);

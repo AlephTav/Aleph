@@ -983,10 +983,6 @@ final class Aleph implements \ArrayAccess
       {
         session_start();
       }
-      else
-      {
-        session_regenerate_id(true);
-      }
       if (isset($_GET['__DEBUG_INFORMATION__']) && isset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]))
       {
         self::$output = $_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']];
@@ -1142,7 +1138,10 @@ final class Aleph implements \ArrayAccess
     else
     {
       $classmap = empty($this->config['autoload']['classmap']) ? null : self::dir($this->config['autoload']['classmap']);
-      if (!$classmap) throw new \Exception(self::error($this, 'ERR_GENERAL_5'));
+      if (!$classmap)
+      {
+        throw new \Exception(self::error($this, 'ERR_GENERAL_5'));
+      }
       if (file_exists($this->classmap) && (require($this->classmap)) === false)
       {
         $seconds = 0; $timeout = isset($this->config['autoload']['timeout']) ? (int)$this->config['autoload']['timeout'] : 300;
@@ -1173,21 +1172,33 @@ final class Aleph implements \ArrayAccess
       $paths = count($tmp) ? $tmp : [self::$root => true];
       $first = true;
     }
-    foreach ($paths as $path => $isRecursion)
+    foreach ($paths as $path => $searchRecursively)
     {
       foreach (scandir($path) as $item)
       {
-        if ($item == '.' || $item == '..' || $item == '.svn' || $item == '.hg' || $item == '.git') continue; 
+        if ($item == '.' || $item == '..' || $item == '.svn' || $item == '.hg' || $item == '.git')
+        {
+          continue; 
+        }
         $file = str_replace(DIRECTORY_SEPARATOR == '\\' ? '/' : '\\', DIRECTORY_SEPARATOR, $path . '/' . $item);
-        if (in_array($file, $exclusions)) continue;
+        if (in_array($file, $exclusions))
+        {
+          continue;
+        }
         if (is_file($file))
         {
-          if (isset($this->config['autoload']['mask']) && !preg_match($this->config['autoload']['mask'], $item)) continue;
+          if (isset($this->config['autoload']['mask']) && !preg_match($this->config['autoload']['mask'], $item))
+          {
+            continue;
+          }
           $tokens = token_get_all(file_get_contents($file));
           for ($i = 0, $max = count($tokens), $namespace = ''; $i < $max; $i++)
           {
             $token = $tokens[$i];
-            if (is_string($token)) continue;
+            if (is_string($token))
+            {
+              continue;
+            }
             switch ($token[0])            
             {
               case T_NAMESPACE:
@@ -1224,7 +1235,7 @@ final class Aleph implements \ArrayAccess
             }
           }
         }
-        else if ($isRecursion && is_dir($file)) $this->find($class, ['path' => $file, 'exclusions' => $exclusions]);
+        else if ($searchRecursively && is_dir($file)) $this->find($class, ['path' => $file, 'exclusions' => $exclusions]);
       }
     }
     $flag = false;

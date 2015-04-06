@@ -164,9 +164,23 @@ class API
     $namespace = static::$namespace;
     $process = function(array $resource, array $params = null) use($namespace)
     {
-      if (empty($resource['callback'])) throw new Core\Exception('Aleph\Net\API', 'ERR_API_1', $resource);
+      if (empty($resource['callback']))
+      {
+        throw new Core\Exception('Aleph\Net\API', 'ERR_API_1', $resource);
+      }
       $callback = $resource['callback'];
-      if ($callback[0] != '\\') $callback = $namespace . $callback;
+      foreach ($params as $param => $value)
+      {
+        $callback = str_replace('#' . $param . '#', $value, $callback, $count);
+        if ($count > 0)
+        {
+          unset($params[$param]);
+        }
+      }
+      if ($callback[0] != '\\')
+      {
+        $callback = $namespace . $callback;
+      }
       $callback = new Core\Delegate($callback);
       if ($callback->isStatic()) return $callback->call($params);
       $api = $callback->getClassObject($params);

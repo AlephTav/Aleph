@@ -90,7 +90,10 @@ class CLI
    */
   public static function getArguments(array $options)
   {
-    if (PHP_SAPI !== 'cli') return false;
+    if (PHP_SAPI !== 'cli') 
+    {
+      return false;
+    }
     $argv = $_SERVER['argv'];
     $argc = $_SERVER['argc'];
     $res = $opts = [];
