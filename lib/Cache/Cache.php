@@ -71,16 +71,30 @@ abstract class Cache implements \Countable
       $params = isset($a['cache']) ? $a['cache'] : [];
       $type = isset($params['type']) ? $params['type'] : '';
     }
-    switch (strtolower($type))
+    $type = strtolower($type);
+    switch ($type)
     {
       case 'memory':
-        if (!Memory::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'Memory');
-        return new Memory(isset($params['servers']) ? (array)$params['servers'] : [], isset($params['compress']) ? (bool)$params['compress'] : true);
+      case 'memcache':
+      case 'memcached':
+        if (!Memory::isAvailable($type))
+        {
+          throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'Memory');
+        }
+        return new Memory($type,
+                          isset($params['servers']) ? (array)$params['servers'] : [], 
+                          isset($params['compress']) ? (bool)$params['compress'] : true);
       case 'apc':
-        if (!APC::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'APC');
+        if (!APC::isAvailable())
+        {
+          throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'APC');
+        }
         return new APC();
       case 'phpredis':
-        if (!PHPRedis::isAvailable()) throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'PHPRedis');
+        if (!PHPRedis::isAvailable())
+        {
+          throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'PHPRedis');
+        }
         return new PHPRedis(isset($params['host']) ? $params['host'] : '127.0.0.1',
                             isset($params['port']) ? $params['port'] : 6379,
                             isset($params['timeout']) ? $params['timeout'] : 0,
@@ -97,7 +111,10 @@ abstract class Cache implements \Countable
       case 'file':
       default:
         $cache = new File();
-        if (isset($params['directory'])) $cache->setDirectory($params['directory']);
+        if (isset($params['directory']))
+        {
+          $cache->setDirectory($params['directory']);
+        }
         return $cache;
     }
   }

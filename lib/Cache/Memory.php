@@ -74,33 +74,54 @@ class Memory extends Cache
    * @access public
    * @static
    */
-  public static function isAvailable()
+  public static function isAvailable($type = null)
   {
-    return extension_loaded('memcache');
+    if ($type == 'memcache' || $type == 'memcached')
+    {
+      return extension_loaded($type);
+    }
+    return extension_loaded('memcache') || extension_loaded('memcached');;
   }
 
   /**
    * Constructor.
    *
+   * @param string $type - the 
    * @param array $servers - hosts for a memcache connection.
    * @param boolean $compress - if value of this parameter is TRUE any data will be compressed before placing in a cache, otherwise data will not be compressed.
    * @access public
    */
-  public function __construct(array $servers, $compress = true)
+  public function __construct($type, array $servers, $compress = true)
   {
     parent::__construct();
-    $this->mem = new \Memcache();
+    if ($type != 'memcache' && $type != 'memcached')
+    {
+      $type = extension_loaded('memcache') ? 'memcache' : 'memcached';
+    }
+    $this->mem = new $type();
     if (count($servers))
     {
-      foreach ($servers as $server)
+      if ($type == 'memcache')
       {
-        $this->mem->addServer(isset($server['host']) ? $server['host'] : '127.0.0.1',
-                              isset($server['port']) ? $server['port'] : 11211,
-                              isset($server['persistent']) ? $server['persistent'] : true,
-                              isset($server['weight']) ? $server['weight'] : 1,
-                              isset($server['timeout']) ? $server['timeout'] : 1,
-                              isset($server['retryInterval']) ? $server['retryInterval'] : 15,
-                              isset($server['status']) ? $server['status'] : true);
+        foreach ($servers as $server)
+        {
+          $this->mem->addServer(isset($server['host']) ? $server['host'] : '127.0.0.1',
+                                isset($server['port']) ? $server['port'] : 11211,
+                                isset($server['persistent']) ? $server['persistent'] : true,
+                                isset($server['weight']) ? $server['weight'] : 1,
+                                isset($server['timeout']) ? $server['timeout'] : 1,
+                                isset($server['retryInterval']) ? $server['retryInterval'] : 15,
+                                isset($server['status']) ? $server['status'] : true);
+        }
+      }
+      else
+      {
+        foreach ($servers as $server)
+        {
+          $this->mem->addServer(isset($server['host']) ? $server['host'] : '127.0.0.1',
+                                isset($server['port']) ? $server['port'] : 11211,
+                                isset($server['weight']) ? $server['weight'] : 0);
+        }
       }
     }
     else
@@ -112,12 +133,12 @@ class Memory extends Cache
   }
 
   /**
-   * Gets the memcache object.
+   * Gets the native caching object.
    *
-   * @return \Memcache
+   * @return Memcache|Memcached
    * @access public
    */
-  public function getMemcache()
+  public function getNativeObject()
   {
     return $this->mem;
   }
