@@ -76,7 +76,7 @@ class PHPRedis extends Cache
    * @return \Redis
    * @access public
    */
-  public function getRedis()
+  public function getNativeObject()
   {
     return $this->redis;
   }
