@@ -196,7 +196,7 @@ class Arrays
     foreach ($nodes as $ID => &$node)
     {
       if (isset($node[$parent])) $nodes[$node[$parent]][$children][$ID] = &$node;
-      else $tree[$ID] = &$node; 
+      else $tree[$ID] = &$node;
     }
     return $tree;
   }
