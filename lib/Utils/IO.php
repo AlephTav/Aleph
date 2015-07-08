@@ -32,29 +32,138 @@ namespace Aleph\Utils;
 class IO
 {
   /**
-   * Recursively removes the given directory.
+   * Removes the given directory with all subdirectories and files.
    *
    * @param string $dir - the given directory.
+   * @return boolean - TRUE on success and FALSE on failure.
    * @access public
    * @static
    */
-  public static function rrmdir($dir)
+  public static function removeDirectory($dir)
   {
-    if (file_exists($dir))
+    if (!file_exists($dir) || !is_dir($dir))
     {
-      $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS), \RecursiveIteratorIterator::CHILD_FIRST);
-      foreach ($iterator as $item)
+      return false;
+    }
+    $iterator = new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS);
+    $iterator = new \RecursiveIteratorIterator($iterator, \RecursiveIteratorIterator::CHILD_FIRST);
+    foreach ($iterator as $item)
+    {
+      if ($item->isDir()) 
       {
-        if ($item->isDir()) 
+        rmdir($item->getPathname());
+      }
+      else
+      {
+        unlink($item->getPathname());
+      }
+    }
+    rmdir($dir);
+    return true;
+  }
+  
+  /**
+   * Removes files in the given directory.
+   *
+   * @param string $dir - the given directory.
+   * @param string $mask - the PCRE compatible regular expression to match with files to be deleted. If $mask started with "i" that only files which don't match the $mask will be deleted.
+   * @param boolean $removeRecursively - determines whether files should also be deleted from subdirectories or not.
+   * @param array $acceptedMimeTypes - if specified, determines mime types of files that shouldn't be deleted.
+   * @return boolean - TRUE on success and FALSE on failure.
+   * @access public
+   * @static
+   */
+  public static function removeFiles($dir, $mask = '/.*/', $removeRecursively = false, array $acceptedMimeTypes = null)
+  {
+    if (!file_exists($dir)  || !is_dir($dir))
+    {
+      return false;
+    }
+    if ($removeRecursively)
+    {
+      $iterator = new \RecursiveDirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS);
+      $iterator = new \RecursiveIteratorIterator($iterator, \RecursiveIteratorIterator::CHILD_FIRST);
+    }
+    else
+    {
+      $iterator = new \DirectoryIterator($dir, \FilesystemIterator::SKIP_DOTS);
+    }
+    $mask = strlen($mask) ? $mask : '/.*/';
+    if ($mask[0] == 'i')
+    {
+      $res = 0;
+      $mask = substr($mask, 1);
+    }
+    else
+    {
+      $res = 1;
+    }
+    foreach ($iterator as $item)
+    {
+      if (!$item->isDir())
+      {
+        if (preg_match($mask, $item->getFilename()) == $res)
         {
-          rmdir($item->getPathname());
-        }
-        else
-        {
-          unlink($item->getPathname());
+          if (!$acceptedMimeTypes || !in_array(mime_content_type($item->getPathname()), $acceptedMimeTypes))
+          {
+            unlink($item->getPathname());
+          }
         }
       }
-      rmdir($dir);
     }
+    return true;
+  }
+  
+  /**
+   * Creates ZIP archive of the given directory or file.
+   *
+   * @param string $src - the directory ot file to be zipped.
+   * @param string $dest - the desired path to the ZIP archive.
+   * @param boolean $includeMainDirectory - determines whether all files will be added under the main directory rather than directly in the $dest folder.
+   * @return boolean - TRUE on success and FALSE on failure.
+   * @access public
+   * @static
+   */
+  public static function zip($src, $dest, $includeMainDirectory = false)
+  {
+    if (!extension_loaded('zip') || !file_exists($src))
+    {
+      return false;
+    }
+    $zip = new \ZipArchive();
+    if (!$zip->open($dest, is_file($dest) ? \ZipArchive::OVERWRITE : \ZipArchive::CREATE))
+    {
+      return false;
+    }
+    if (is_dir($src))
+    {
+      if ($includeMainDirectory)
+      {
+         $src = pathinfo($src);
+         $main = $src['basename'];
+         $src = $src['dirname'];
+         $zip->addEmptyDir($main);
+      }
+      $src = realpath($src);
+      $len = strlen($src);
+      $iterator = new \RecursiveDirectoryIterator($src, \FilesystemIterator::SKIP_DOTS);
+      $iterator = new \RecursiveIteratorIterator($iterator, \RecursiveIteratorIterator::SELF_FIRST);
+      foreach ($iterator as $item)
+      {
+        if (is_dir($item))
+        {
+          $zip->addEmptyDir(substr($item->getRealPath(), $len));
+        }
+        else if (is_file($item))
+        {
+          $zip->addFromString(substr($item->getRealPath(), $len), file_get_contents($item->getPathname()));
+        }
+      }
+    }
+    else if (is_file($src))
+    {
+      $zip->addFromString(basename($src), file_get_contents($src));
+    }
+    return $zip->close();
   }
 }

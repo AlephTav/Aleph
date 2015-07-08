@@ -244,21 +244,37 @@ class Tools
   public static function php2js($value, $isCollectionOfValues = false, $jsMark = null)
   {
     static $rep = ["\r" => '\r', "\n" => '\n', "\t" => '\t', "'" => "\'", '\\' => '\\\\'];
-    if (is_object($value)) $value = get_object_vars($value);
+    if (is_object($value))
+    {
+      $value = get_object_vars($value);
+    }
     if (is_array($value)) 
     {
       if ($isCollectionOfValues)
       {
-        foreach ($value as &$v) $v = static::php2js($v, false, $jsMark);
+        foreach ($value as &$v)
+        {
+          $v = static::php2js($v, false, $jsMark);
+        }
         return $value;
+      }
+      else if (count($value) === 0)
+      {
+        return '[]';
       }
       $tmp = [];
       if (array_keys($value) === range(0, count($value) - 1))
       {
-        foreach ($value as $k => $v) $tmp[] = static::php2js($v, false, $jsMark);
+        foreach ($value as $k => $v)
+        {
+          $tmp[] = static::php2js($v, false, $jsMark);
+        }
         return '[' . implode(', ', $tmp) . ']';
       }
-      foreach ($value as $k => $v) $tmp[] = "'" . strtr($k, $rep) . "': " . static::php2js($v, false, $jsMark);
+      foreach ($value as $k => $v)
+      {
+        $tmp[] = "'" . strtr($k, $rep) . "': " . static::php2js($v, false, $jsMark);
+      }
       return '{' . implode(', ', $tmp) . '}';
     }
     if (is_null($value)) return 'undefined';

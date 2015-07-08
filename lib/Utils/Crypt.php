@@ -50,6 +50,14 @@ class Crypt
         return $sequence;
       }
     }
+    if (function_exists('mcrypt_create_iv'))
+    {
+      $sequence = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
+      if ($sequence !== false)
+      {
+        return $sequence;
+      }
+    }
     $sha = uniqid(mt_rand(), true);
     if (file_exists('/dev/urandom'))
     {

@@ -28,7 +28,7 @@ use Aleph\Core,
  * With this class you can log error messages, profile your code, catch any errors, load classes, configure your application and store any global objects. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
+ * @version 1.1.1
  * @package aleph.core
  * @final
  */
@@ -116,20 +116,20 @@ final class Aleph
     /**
      * Custom error handler.
      *
-     * @var Aleph\Core\Delegate $errorHandler
+     * @var callable $errorHandler
      * @access private
      * @static
      */
     private static $errorHandler = null;
     
     /**
-     * Custom log handler.
+     * Custom log function.
      *
-     * @var Aleph\Core\Delegate $logHandler
+     * @var callable $logger
      * @access private
      * @static
      */
-    private static $logHandler = null;
+    private static $logger = null;
   
     /**
      * Instance of the class Aleph\Cache\Cache (or its child).
@@ -227,7 +227,6 @@ final class Aleph
             return;
         }
         self::$time['script_execution_time'] = microtime(true);
-        ini_set('display_errors', 1);
         ini_set('html_errors', 0);
         if (!defined('NO_GZHANDLER') && extension_loaded('zlib') && !ini_get('zlib.output_compression'))
         {
@@ -235,24 +234,27 @@ final class Aleph
             ini_set('zlib.output_compression', 4096);
         }
         $fatal = null;
-        ob_start(function($output) use(&$fatal)
+        $errors = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
+        self::reserveMemory(262144); // 256KB
+        ob_start(function($output) use(&$fatal, $errors)
         {
             if (Aleph::isErrorHandlingEnabled()) 
             {
                 $error = error_get_last();
-                if ($error && $error['type'] == E_ERROR && $error !== $fatal)
+                if ($error && in_array($error['type'], $errors) && $error !== $fatal)
                 {
                     Aleph::exception(new \ErrorException($error['message'], 999, 1, $error['file'], $error['line']));
                 }
             }
             return strlen(Aleph::getOutput()) ? Aleph::getOutput() : $output;
         });
-        register_shutdown_function(function() use(&$fatal)
+        register_shutdown_function(function() use(&$fatal, $errors)
         {
-            if (Aleph::isErrorHandlingEnabled()) 
+            Aleph::reserveMemory(false);
+            if (Aleph::isErrorHandlingEnabled())
             {
                 $fatal = error_get_last();
-                if ($fatal && $fatal['type'] == E_ERROR)
+                if ($fatal && in_array($fatal['type'], $errors))
                 {
                     Aleph::exception(new \ErrorException($fatal['message'], 999, 1, $fatal['file'], $fatal['line']));
                 }
@@ -289,6 +291,27 @@ final class Aleph
         set_time_limit(0);
         self::$isInitialized = true;
     }
+    
+    /**
+     * Reserves a block of memory to prevent out-of-memory errors.
+     * If $size is set to FALSE or 0 the reserved block will be freed.
+     *
+     * @param integer|boolean $size - the size of the reserved memory.
+     * @access public
+     * @static
+     */
+    public static function reserveMemory($size)
+    {
+        static $reservedMemory;
+        if ($size == 0)
+        {
+            $reservedMemory = null;
+        }
+        else
+        {
+            $reservedMemory = str_repeat(chr(0), $size);
+        }
+    }
   
     /** 
      * Returns array of configuration variables.
@@ -320,7 +343,14 @@ final class Aleph
         {
             foreach ($data as $name => $value)
             {
-                self::set($name, $value, true);
+                if (is_array($value) && isset(self::$config[$name]) && is_array(self::$config[$name]))
+                {
+                    self::$config[$name] = array_merge(self::$config[$name], $value);
+                }
+                else
+                {
+                    self::$config[$name] = $value;
+                }
             }
         }
         else
@@ -340,7 +370,16 @@ final class Aleph
      */
     public static function get($name, $default = null)
     {
-        return array_key_exists($name, self::$config) ? self::$config[$name] : $default;
+        $cfg = self::$config;
+        foreach (explode('.', $name) as $key)
+        {
+            if (!is_array($cfg) || !array_key_exists($key, $cfg))
+            {
+                return $default;
+            }
+            $cfg = $cfg[$key];
+        }
+        return $cfg;
     }
   
     /**
@@ -348,19 +387,24 @@ final class Aleph
      *
      * @param string $name - the name of a configuration variable.
      * @param mixed $value - the value of a configuration variable.
-     * @param boolean $merge - determines whether the old config value should be merged with new one.
+     * @param boolean $merge - determines whether the old configuration value should be merged with new one.
      * @access public
      * @static
      */
     public static function set($name, $value, $merge = false)
     {
-        if ($merge && isset(self::$config[$name]) && is_array(self::$config[$name]) && is_array($value))
+        $cfg = &self::$config;
+        foreach (explode('.', $name) as $key)
         {
-            self::$config[$name] = array_merge(self::$config[$name], $value);
+            $cfg = &$cfg[$key];
+        }
+        if ($merge && is_array($cfg) && is_array($value))
+        {
+            $cfg = array_merge($cfg, $value);
         }
         else
         {
-            self::$config[$name] = $value;
+            $cfg = $value;
         }
     }
   
@@ -374,7 +418,16 @@ final class Aleph
      */
     public static function has($name)
     {
-        return array_key_exists($name, self::$config);
+        $cfg = self::$config;
+        foreach (explode('.', $name) as $key)
+        {
+            if (!is_array($cfg) || !array_key_exists($key, $cfg))
+            {
+                return false;
+            }
+            $cfg = $cfg[$key];
+        }
+        return true;
     }
   
     /**
@@ -386,7 +439,18 @@ final class Aleph
      */
     public static function remove($name)
     {
-        unset(self::$config[$name]);
+        $cfg = &self::$config;
+        $keys = explode('.', $name);
+        $last = array_pop($keys);
+        foreach ($keys as $key)
+        {
+            if (!is_array($cfg))
+            {
+                return;
+            }
+            $cfg = &$cfg[$key];
+        }
+        unset($cfg[$last]);
     }
   
     /**
@@ -530,7 +594,12 @@ final class Aleph
     public static function delegate(/* $callback, $arg1, $arg2, ... */)
     {
         $params = func_get_args();
-        return (new Core\Delegate(array_shift($params)))->call($params);
+        $callback = array_shift($params);
+        if (is_callable($callback))
+        {
+            return call_user_func_array($callback, $params);
+        }
+        return (new Core\Delegate($callback))->call($params);
     }
     
     /**
@@ -582,6 +651,7 @@ final class Aleph
         {
             if (!self::$errorHandling)
             {
+                ini_set('display_errors', 0);
                 set_exception_handler([__CLASS__, 'exception']);
                 set_error_handler(function($errno, $errstr, $errfile, $errline)
                 {
@@ -593,6 +663,7 @@ final class Aleph
         }
         else if (self::$errorHandling)
         {
+            ini_set('display_errors', !empty(self::$config['debugging']));
             restore_error_handler();
             restore_exception_handler();
             self::$errorHandling = false;
@@ -645,7 +716,7 @@ final class Aleph
     public static function exception(\Exception $e)
     {
         static $inErrorHandler = false;
-        static $inLogHandler = false;
+        static $inLogger = false;
         self::disableErrorHandling();
         self::enableErrorHandling();
         $info = self::analyzeException($e);
@@ -653,18 +724,18 @@ final class Aleph
         {
             try
             {
-                if (!$inLogHandler)
+                if (!$inLogger)
                 {
-                    $inLogHandler = true;
-                    if (self::$logHandler)
+                    $inLogger = true;
+                    if (self::$logger)
                     {
-                        self::delegate(self::$logHandler, $info);
+                        self::delegate(self::$logger, $info);
                     }
                     else
                     {
                         self::log($info);
                     }
-                    $inLogHandler = false;
+                    $inLogger = false;
                 }
             }
             catch (\Exception $e)
@@ -692,7 +763,7 @@ final class Aleph
                 $info = self::analyzeException($e);
             }
         }
-        $debug = self::get('debugging', false);
+        $debug = empty(self::$config['debugging']) ? false : true;
         if (PHP_SAPI == 'cli' || empty($_SERVER['REMOTE_ADDR']))
         {
             if ($debug)
@@ -1081,6 +1152,7 @@ final class Aleph
             extract($vars);
         }
         ob_start();
+        ob_implicit_flush(false);
         eval(self::ecode(${'(_._)'}));
         $res = ob_get_clean();
         if (strpos($res, 'eval()\'d') !== false)
@@ -1191,25 +1263,25 @@ final class Aleph
     /**
      * Returns custom log handler or NULL if not specified.
      *
-     * @return mixed
+     * @return callable
      * @access public
      * @static
      */
-    public static function getLogHandler()
+    public static function getLogger()
     {
-        return self::$logHandler;
+        return self::$logger;
     }
     
     /**
      * Sets custom log handler.
      *
-     * @param mixed $callback - a delegate that will be automatically invoked when an error is logging.
+     * @param callable $callback - a delegate that will be automatically invoked when an error is logging.
      * @access public
      * @static
      */
-    public static function setLogHandler($callback)
+    public static function setLogger($callback)
     {
-        self::$logHandler = $callback;
+        self::$logger = $callback;
     }
   
     /**
@@ -1222,7 +1294,7 @@ final class Aleph
     public static function log($data)
     {
         $path = self::dir('@logs') . '/' . date('Y F');
-        if (is_dir($path) || mkdir($path, 0775, true))
+        if (is_dir($path) || mkdir($path, 0711, true))
         {
             file_put_contents($path . '/' . date('d H.i.s#') . microtime(true) . '.log', serialize($data));
         }

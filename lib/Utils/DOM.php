@@ -31,7 +31,7 @@ use Aleph\Core;
  * @version 1.0.0
  * @package aleph.utils
  */
-class DOMDocumentEx extends \DOMDocument
+class DOM extends \DOMDocument
 {
   /**
    * Error message templates.
