@@ -140,7 +140,7 @@ class Arr
             {
                 if ($keys && is_array($array[$key])) 
                 {
-                    static::remove($array[$key], $keys, true);
+                    self::remove($array[$key], $keys, true);
                     if (!$array[$key]) unset($array[$key]);
                 }
                 else
@@ -239,7 +239,7 @@ class Arr
         {
             if (is_array($v) && isset($a1[$k]) && is_array($a1[$k]))
             {
-                $a1[$k] = static::merge($a1[$k], $v);
+                $a1[$k] = self::merge($a1[$k], $v);
             }
             else
             {
