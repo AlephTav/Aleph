@@ -26,7 +26,7 @@ namespace Aleph\Utils;
  * This class contains some helpful methods that can be used in cryptography purposes.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
+ * @version 1.1.2
  * @package aleph.utils
  */
 class Crypt
@@ -42,6 +42,10 @@ class Crypt
     public static function getRandomSequence($length = 32)
     {
         $length = abs((int)$length);
+        if ($length == 0)
+        {
+            return '';
+        }
         if (PHP_MAJOR_VERSION >= 7)
         {
             return random_bytes($length);
@@ -57,63 +61,108 @@ class Crypt
         if (function_exists('mcrypt_create_iv'))
         {
             $sequence = mcrypt_create_iv($length, MCRYPT_DEV_URANDOM);
-            if ($sequence !== false)
+            if ($sequence !== false && strlen($sequence) === $length)
             {
                 return $sequence;
             }
         }
-        $sha = uniqid(mt_rand(), true);
-        if (file_exists('/dev/urandom'))
+        if (is_readable('/dev/arandom'))
+        {
+            $fp = fopen('/dev/arandom', 'rb');
+        }
+        else if (is_readable('/dev/urandom'))
         {
             $fp = fopen('/dev/urandom', 'rb');
-            if ($fp)
+        }
+        if (!empty($fp))
+        {
+            $streamset = stream_set_read_buffer($fp, 0);
+            $sequence = fread($fp, $length);
+            fclose($fp);
+            if (strlen($sequence) === $length)
             {
-                if (function_exists('stream_set_read_buffer'))
-                {
-                    stream_set_read_buffer($fp, 0);
-                }
-                $sha = fread($fp, $length);
-                fclose($fp);
+                return $sequence;
             }
         }
-        $sequence = '';
-        for ($i = 0; $i < $length; $i++)
-        {
-            $sha = hash('sha256', $sha . $i . uniqid(mt_rand(), true));
-            $char = mt_rand(0, 62);
-            $sequence .= chr(hexdec($sha[$char] . $sha[$char + 1]));
-        }
-        return $sequence;
+        throw new \RuntimeException('Unable to get random sequence.');
     }
 
     /**
      * Generates a random alpha-numeric string.
      *
      * @param integer $length - the string length.
+     * @param string $alphabet - the alphabet of the generated string. 
      * @return string
      * @access public
      * @static
      */
-    public static function getRandomString($length = 32)
+    public static function getRandomString($length = 32, $alphabet = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ')
     {
-        $length = abs((int)$length);
-        $sequence = static::getRandomSequence($length << 1);
-        return substr(str_replace(['=', '+', '/'], '', base64_encode($sequence)), 0, $length);
+        $i = abs((int)$length);
+        $max = strlen($alphabet);
+        if ($max == 0 || $i == 0)
+        {
+            return '';
+        }
+        $max--;
+        $str = '';
+        while ($i--)
+        {
+            $str .= $alphabet[static::getRandomInt(0, $max)];
+        }
+        return $str;
     }
   
     /**
      * Generates a random strong password.
      *
      * @param integer $length - the password length.
+     * @param array $alphabet - the array whose keys are the alphabets of the password characters, and the values are probabilities of the alphabet choice.
      * @return string
      * @access public
      * @static
      */
-    public static function getRandomPassword($length = 12)
+    public static function getRandomPassword($length = 12, array $alphabet = null)
     {
-        $length = abs((int)$length);
-        $chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ~`!@#$%^&*()_-+=[]{}\\|/?.,<>:;"\'';
-        return substr(str_shuffle(str_repeat($chars, $length)), 0, $length);
+        $i = abs((int)$length);
+        if ($i == 0)
+        {
+            return '';
+        }
+        if (!$alphabet)
+        {
+            $alphabet = [
+                '0123456789'                         => 1/4,
+                'abcdefghijklmnopqrstuvwxyz'         => 1/3,
+                'ABCDEFGHIJKLMNOPQRSTUVWXYZ'         => 1/3,
+                '~`!@#$%^&*()_-+=[]{}\\|/?.,<>:;"\'' => 1 - 2/3 - 1/4
+            ];
+        }
+        $t = 0; $tmp = [];
+        foreach ($alphabet as $set => $p)
+        {
+            $len = strlen($set);
+            if ($len == 0)
+            {
+                throw new \InvalidArgumentException('Alphabet must not be an empty string.');
+            }
+            $t += $p;
+            $tmp[] = [$t, $len - 1, $set];
+        }
+        $pass = '';
+        while ($i--)
+        {
+            $p = static::getRandomFloat();
+            foreach ($tmp as $v)
+            {
+                if ($p < $v[0])
+                {
+                    $pass .= $v[2][static::getRandomInt(0, $v[1])];
+                    break;
+                }
+            }
+        }
+        return $pass;
     }
     
     /**
@@ -133,12 +182,23 @@ class Crypt
         }
         $max = (int)$max;
         $min = (int)$min;
-        if ($max == $min)
+        if ($max === $min)
         {
             return $max;
         }
+        $range = $max - $min + 1;
+        if (!is_int($range))
+        {
+            throw new \InvalidArgumentException('Integer overflow.');
+        }
+        if ($min > $max)
+        {
+            $tmp = $max;
+            $max = $min;
+            $min = $tmp;
+        }
         $int = abs(current(unpack((PHP_INT_SIZE == 8 ? 'Q' : 'L') . '*', static::getRandomSequence(PHP_INT_SIZE))));
-        return floor($int / PHP_INT_MAX * ($max - $min + 1)) + $min;
+        return (int)floor($int / PHP_INT_MAX * $range) + $min;
     }
     
     /**
@@ -152,7 +212,7 @@ class Crypt
     {
         if (PHP_MAJOR_VERSION >= 7)
         {
-            return (random_int(PHP_INT_MIN, PHP_INT_MAX) - PHP_INT_MIN) / (PHP_INT_MAX - PHP_INT_MIN);
+            return random_int(0, PHP_INT_MAX) / PHP_INT_MAX;
         }
         return abs(current(unpack((PHP_INT_SIZE == 8 ? 'Q' : 'L') . '*', static::getRandomSequence(PHP_INT_SIZE)))) / PHP_INT_MAX;
     }

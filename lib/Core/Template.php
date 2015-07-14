@@ -329,6 +329,7 @@ class Template implements \ArrayAccess
         extract(Template::getGlobals());
         extract(${'(_._)'}->getVars());
         ob_start();
+        ob_implicit_flush(false);
         require(${'(_._)'}->getTemplate());
         return ob_get_clean();
       }

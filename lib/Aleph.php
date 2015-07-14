@@ -1430,7 +1430,7 @@ final class Aleph
         $file = $classmap ? self::dir($classmap) : (empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']));;
         if (!$file) 
         {
-            throw new Core\Exception(self::ERR_GENERAL_5);
+            throw new Core\Exception('Aleph::ERR_GENERAL_5');
         }
         $code = [];
         foreach ($classes as $class => $path) 
@@ -1515,7 +1515,7 @@ final class Aleph
         {
             if ($throwException)
             {
-                throw new \Exception(vsprintf(self::ERR_GENERAL_1, [$class]));
+                throw new \RuntimeException(vsprintf(self::ERR_GENERAL_1, [$class]));
             }
             return false;
         }
@@ -1526,7 +1526,7 @@ final class Aleph
         }
         if ($throwException)
         {
-            throw new \Exception(vsprintf(self::ERR_GENERAL_1, [$class]));
+            throw new \RuntimeException(vsprintf(self::ERR_GENERAL_1, [$class]));
         }
         return false;
     }
@@ -1552,7 +1552,7 @@ final class Aleph
             $classmap = empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']);
             if (!$classmap)
             {
-                throw new \Exception(self::ERR_GENERAL_5);
+                throw new \RuntimeException(self::ERR_GENERAL_5);
             }
             if (file_exists($classmap) && (require($classmap)) === false)
             {
@@ -1654,7 +1654,7 @@ final class Aleph
                                         return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                                     };
                                     file_put_contents($this->classmap, '<?php return [];');
-                                    throw new \Exception(vsprintf(self::ERR_GENERAL_4, [ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file)]));
+                                    throw new \RuntimeException(vsprintf(self::ERR_GENERAL_4, [ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file)]));
                                     exit;
                                 }
                                 self::$classes[$cs] = strpos($file, self::$root) === 0 ? ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;

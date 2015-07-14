@@ -26,83 +26,103 @@ namespace Aleph\Core;
  * Exception allows to generate exceptions with parameterized error messages which possible to get by their tokens.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.1.0
  * @package aleph.core
  */
 class Exception extends \Exception
 {
-  /**
-   * Name of a error message constant.
-   * 
-   * @var string $token
-   * @access protected
-   */
-  protected $token = null;
+    /**
+     * Name of a error message constant.
+     * 
+     * @var string $token
+     * @access protected
+     */
+    protected $token = null;
   
-  /**
-   * Class name in which there is a constant of exception message.
-   *
-   * @var string $class
-   * @access protected
-   */
-  protected $class = null;
+    /**
+     * Class name in which there is a constant of exception message.
+     *
+     * @var string $class
+     * @access protected
+     */
+    protected $class = null;
 
-  /**
-   * Constructor. Constructor takes as arguments a class name with the error constant,
-   * the error token (constant name) and values of parameters ​​of the error message.
-   *
-   * @param string $class
-   * @param string $token
-   * @params parameters of the error message.
-   * @access public
-   */
-  public function __construct(/* $class, $token, $var1, $var2, ... */)
-  {
-    $class = func_get_arg(0);
-    if (is_object($class))
+    /**
+     * Constructor.
+     *
+     * @param mixed $const - the name of a constant that contains error message template.
+     * @param mixed $vars - the error template variable or variables.
+     * @param integer $code - the exception code.
+     * @param Exception $previous - the previous exception used for the exception chaining. 
+     * @access public
+     */
+    public function __construct($const, $vars = [], $code = 0, \Exception $previous = null)
     {
-      $this->class = get_class($class);
-      $this->token = func_get_arg(1);
+        if (is_array($const))
+        {
+            if (count($const))
+            {
+                $class = array_shift($const);
+                $this->class = is_object($class) ? get_class($class) : $class;
+                $token = array_shift($const);
+                $this->token = $token;
+            }
+        }
+        else
+        {
+            $const = explode('::', $const);
+            if (isset($const[1]))
+            {
+                $this->class = ltrim($const[0], '\\');
+                $this->token = $const[1];
+            }
+            else
+            {
+                $this->token = $const[0];
+            }
+        }
+        if ($this->class)
+        {
+            $error = $this->token ? constant($this->class . '::' . $this->token) : '';			
+            $error = vsprintf($error, (array)$vars);
+        }
+        else
+        {
+            $error = vsprintf($this->token, (array)$vars);
+        }
+        parent::__construct($error, $code, $previous);
     }
-    else
+  
+    /**
+     * Returns class name in which there is a error message constant.
+     *
+     * @return string
+     * @access public
+     */
+    public function getClass()
     {
-      $class = explode('::', $class);
-      $this->class = ltrim($class[0], '\\');
-      $this->token = isset($class[1]) ? $class[1] : func_get_arg(1);
+        return $this->class;
     }
-    parent::__construct(call_user_func_array(['Aleph', 'error'], func_get_args()));
-  }
   
-  /**
-   * Returns class name in which there is a error message constant.
-   *
-   * @return string
-   * @access public
-   */
-  public function getClass()
-  {
-    return $this->class;
-  }
+    /**
+     * Returns token of the error message.
+     *
+     * @return string
+     * @access public
+     */
+    public function getToken()
+    {
+        return $this->token;
+    }
   
-  /**
-   * Returns token of the error message.
-   *
-   * @return string
-   * @access public
-   */
-  public function getToken()
-  {
-    return $this->token;
-  }
-  
-  /**
-   * Returns full information about the current exception.
-   *
-   * @return array
-   * @access public
-   */
-  public function getInfo()
-  {
-    return \Aleph::analyzeException($this);
-  }
+    /**
+     * Returns full information about the current exception.
+     *
+     * @return array
+     * @access public
+     */
+    public function getInfo()
+    {
+        return \Aleph::analyzeException($this);
+    }
 }
