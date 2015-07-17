@@ -81,14 +81,15 @@ class Exception extends \Exception
                 $this->token = $const[0];
             }
         }
+        $vars = is_array($vars) ? $vars : [$vars];
         if ($this->class)
         {
             $error = $this->token ? constant($this->class . '::' . $this->token) : '';			
-            $error = vsprintf($error, (array)$vars);
+            $error = vsprintf($error, $vars);
         }
         else
         {
-            $error = vsprintf($this->token, (array)$vars);
+            $error = vsprintf($this->token, $vars);
         }
         parent::__construct($error, $code, $previous);
     }

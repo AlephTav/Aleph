@@ -44,7 +44,7 @@ class File extends Cache
    * @var integer $directoryMode
    * @access public
    */
-  public $directoryMode = 0777;
+  public $directoryMode = 0711;
   
   /**
    * Permissions for newly created cache files.
@@ -52,7 +52,7 @@ class File extends Cache
    * @var integer $fileMode
    * @access public
    */
-  public $fileMode = 0666;
+  public $fileMode = 0644;
 
   /**
    * The directory in which cache files will be stored.
@@ -103,11 +103,14 @@ class File extends Cache
     $expire = $this->normalizeExpire($expire);
     $file = $this->dir . md5($key);
     file_put_contents($file, serialize($content), LOCK_EX);
-    $enabled = \Aleph::isErrorHandlingEnabled();
-    $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+    $enable = \Aleph::isErrorHandlingEnabled();
+    $level = \Aleph::getErrorLevel();
+    \Aleph::setErrorLevel(E_ALL & ~E_WARNING);
+    \Aleph::disableErrorHandling();
     chmod($file, $this->fileMode);
     touch($file, $expire + time());
-    \Aleph::errorHandling($enabled, $level);
+    \Aleph::setErrorLevel($level);
+    \Aleph::enableErrorHandling($enable);
     $this->saveKeyToVault($key, $expire, $group);
   }
 
@@ -124,10 +127,13 @@ class File extends Cache
     $file = $this->dir . md5($key);
     if (file_exists($file)) 
     {
-      $enabled = \Aleph::isErrorHandlingEnabled();
-      $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+      $enable = \Aleph::isErrorHandlingEnabled();
+      $level = \Aleph::getErrorLevel();
+      \Aleph::setErrorLevel(E_ALL & ~E_WARNING);
+      \Aleph::disableErrorHandling();
       while ('' === $content = file_get_contents($file)) usleep(100);
-      \Aleph::errorHandling($enabled, $level);
+      \Aleph::setErrorLevel($level);
+      \Aleph::enableErrorHandling($enable);
       return $content === false ? null : unserialize($content);
     }
   }
@@ -144,10 +150,13 @@ class File extends Cache
     if (!$this->dir) $this->setDirectory();
     $file = $this->dir . md5($key);
     if (!file_exists($file)) return true;
-    $enabled = \Aleph::isErrorHandlingEnabled();
-    $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+    $enable = \Aleph::isErrorHandlingEnabled();
+    $level = \Aleph::getErrorLevel();
+    \Aleph::setErrorLevel(E_ALL & ~E_WARNING);
+    \Aleph::disableErrorHandling();
     $flag = filemtime($file) <= time();
-    \Aleph::errorHandling($enabled, $level);
+    \Aleph::setErrorLevel($level);
+    \Aleph::enableErrorHandling($enable);
     return $flag;
   }
 
@@ -163,10 +172,13 @@ class File extends Cache
     $file = $this->dir . md5($key);
     if (file_exists($file))
     {
-      $enabled = \Aleph::isErrorHandlingEnabled();
-      $level = \Aleph::errorHandling(false, E_ALL & ~E_WARNING);
+      $enable = \Aleph::isErrorHandlingEnabled();
+      $level = \Aleph::getErrorLevel();
+      \Aleph::setErrorLevel(E_ALL & ~E_WARNING);
+      \Aleph::disableErrorHandling();
       unlink($file);
-      \Aleph::errorHandling($enabled, $level);
+      \Aleph::setErrorLevel($level);
+      \Aleph::enableErrorHandling($enable);
     }
   }
   
@@ -181,19 +193,16 @@ class File extends Cache
     if (strtolower(substr(PHP_OS, 0, 3)) == 'win') exec('del /Q /F ' . escapeshellarg($this->dir));
     else exec('find ' . escapeshellarg($this->dir) . ' -maxdepth 1 -type f -delete');
   }
-   
+  
   /**
-   * Garbage collector that should be used for removing of expired cache data.
+   * Removes keys of the expired data from the key vault.
    *
-   * @param float $probability - probability of garbage collector performing.
-   * @access public
+   * @access protected
    */
-  public function gc($probability = 100)
+  protected function normalizeVault()
   {
-    if (!$this->dir) $this->setDirectory();
-    if ((float)$probability * 1000 < rand(0, 99999)) return;
     if (strtolower(substr(PHP_OS, 0, 3)) == 'win') exec('forfiles /P ' . escapeshellarg(rtrim($this->dir, '/\\')) . ' /D -0 /C "cmd /c IF @ftime LEQ %TIME:~0,-3% del @file"');
     else exec('find ' . escapeshellarg($this->dir) . ' -type f -mmin +0 -delete');
-    $this->normalizeVault();
+    parent::normalizeVault();
   }
 }

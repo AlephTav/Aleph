@@ -190,6 +190,12 @@ final class Aleph
                 '@aleph/_templates'
             ]
         ],
+        // View settings.
+        'view' => [
+            'directories' => [
+                '@app/views'
+            ]
+        ],
         // Database log and cache settings
         'db' => [
             'logging' => false,
@@ -373,7 +379,7 @@ final class Aleph
         $cfg = self::$config;
         foreach (explode('.', $name) as $key)
         {
-            if (!is_array($cfg) || !array_key_exists($key, $cfg))
+            if (!is_array($cfg) || !isset($cfg[$key]) && !array_key_exists($key, $cfg))
             {
                 return $default;
             }
@@ -421,7 +427,7 @@ final class Aleph
         $cfg = self::$config;
         foreach (explode('.', $name) as $key)
         {
-            if (!is_array($cfg) || !array_key_exists($key, $cfg))
+            if (!is_array($cfg) || !isset($cfg[$key]) && !array_key_exists($key, $cfg))
             {
                 return false;
             }
@@ -1691,11 +1697,4 @@ final class Aleph
      * @access private
      */
     private function __construct(){}
-  
-    /**
-     * Private __clone() method prevents this object cloning.
-     *
-     * @access private
-     */
-    private function __clone(){}
 }

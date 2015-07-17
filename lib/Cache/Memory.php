@@ -86,7 +86,7 @@ class Memory extends Cache
   /**
    * Constructor.
    *
-   * @param string $type - the 
+   * @param string $type - determines type of cache extensions. The valid values: memcache, memcached.
    * @param array $servers - hosts for a memcache connection.
    * @param boolean $compress - if value of this parameter is TRUE any data will be compressed before placing in a cache, otherwise data will not be compressed.
    * @access public

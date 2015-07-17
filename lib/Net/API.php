@@ -157,7 +157,7 @@ class API
    */
   final public static function process()
   {
-    \Aleph::getInstance()->setConfig(['customDebugMethod' => get_called_class() . '::error']);
+    \Aleph::getInstance()['customDebugMethod'] = get_called_class() . '::error';
     static::$request = Request::getInstance();
     static::$response = Response::getInstance();
     static::$response->setContentType(static::$contentType, static::$outputCharset);
@@ -182,7 +182,10 @@ class API
         $callback = $namespace . $callback;
       }
       $callback = new Core\Delegate($callback);
-      if ($callback->isStatic()) return $callback->call($params);
+      if ($callback->isStatic()) 
+      {
+        return $callback->call($params);
+      }
       $api = $callback->getClassObject($params);
       if ($api instanceof API)
       {
@@ -199,7 +202,10 @@ class API
     $router = new Router();
     foreach (static::$map as $resource => $info)
     {
-      if ($resource && $resource[0] == '@') $resource = static::$urlPrefix . substr($resource, 1);
+      if ($resource && $resource[0] == '@') 
+      {
+        $resource = static::$urlPrefix . substr($resource, 1);
+      }
       foreach ($info as $methods => $data)
       {
         if (empty($data['redirect']))
@@ -207,7 +213,6 @@ class API
           $router->bind($resource, $process, $methods)
                  ->ssl(empty($data['ssl']) ? false : $data['ssl'])
                  ->component(empty($data['component']) ? URL::PATH : $data['component'])
-                 ->ignoreWrongDelegate(empty($data['ignoreWrongDelegate']) ? false : $data['ignoreWrongDelegate'])
                  ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames'])
                  ->validation(empty($data['validation']) ? [] : $data['validation'])
                  ->args(['resource' => $data])
@@ -222,11 +227,21 @@ class API
         }
       }
     }
-    $output = $router->route();
-    if (!$output['success']) static::notFound();
+    $output = $router->route($status);
+    switch ($status)
+    {
+      case 403:
+        static::forbidden();
+      case 404:
+        static::notFound();
+      case 405:
+        static::notAllowed();
+      case 501:
+        static::notImplemented();
+    }
     if (!static::$response->isSent())
     {
-      static::$response->body = static::convert($output['result']);
+      static::$response->body = static::convert($output);
       static::$response->send();
     }
   }
@@ -242,6 +257,19 @@ class API
   protected static function notFound($content = null)
   {
     static::$response->stop(404, $content !== null ? static::convert($content) : null);
+  }
+  
+  /**
+   * This method is automatically called when a request was made of a resource using a request method not supported by that resource.
+   * The method stops the script execution and sets the response status code to 405.
+   *
+   * @param mixed $content - the response body.
+   * @access protected
+   * @static
+   */
+  protected static function notAllowed($content = null)
+  {
+    static::$response->stop(405, $content !== null ? static::convert($content) : null);
   }
   
   /**

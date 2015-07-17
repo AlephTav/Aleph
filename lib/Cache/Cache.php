@@ -34,187 +34,200 @@ use Aleph\Core;
  */
 abstract class Cache implements \Countable
 {
-  /**
-   * Error message templates.
-   */
-  const ERR_CACHE_1 = 'Cache of type "%s" is not available.';
+    /**
+     * Error message templates.
+     */
+    const ERR_CACHE_1 = 'Cache of type "%s" is not available.';
 
-  /**
-   * The vault key of all cached data.  
-   *
-   * @var string $vaultKey
-   * @access private
-   */
-  private $vaultKey = null;
+    /**
+     * The vault key of all cached data.  
+     *
+     * @var string $vaultKey
+     * @access private
+     */
+    private $vaultKey = null;
   
-  /**
-   * The vault lifetime. Defined as 1 year by default.
-   *
-   * @var integer $vaultLifeTime - given in seconds.
-   * @access protected
-   */
-  protected $vaultLifeTime = 31536000; // 1 year
+    /**
+     * The vault lifetime. Defined as 1 year by default.
+     *
+     * @var integer $vaultLifeTime - given in seconds.
+     * @access protected
+     */
+    protected $vaultLifeTime = 31536000; // 1 year
   
-  /**
-   * Returns an instance of caching class according to configuration settings. 
-   *
-   * @param string $type - cache type.
-   * @param array $params - configuration parameters for cache.
-   * @access public
-   * @static
-   */
-  public static function getInstance($type = null, array $params = null)
-  {
-    if ($type === null)
+    /**
+     * Returns an instance of caching class according to configuration settings. 
+     *
+     * @param string $type - cache type.
+     * @param array $params - configuration parameters for cache.
+     * @access public
+     * @static
+     */
+    public static function getInstance($type = null, array $params = null)
     {
-      $a = \Aleph::getInstance();
-      $params = isset($a['cache']) ? $a['cache'] : [];
-      $type = isset($params['type']) ? $params['type'] : '';
+        if ($type === null)
+        {
+            $params = \Aleph::get('cache');
+            $type = isset($params['type']) ? $params['type'] : '';
+        }
+        $type = strtolower($type);
+        switch ($type)
+        {
+            case 'memory':
+            case 'memcache':
+            case 'memcached':
+                if (!Memory::isAvailable($type))
+                {
+                    throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'Memory');
+                }
+                return new Memory($type,
+                                  isset($params['servers']) ? (array)$params['servers'] : [], 
+                                  isset($params['compress']) ? (bool)$params['compress'] : true);
+            case 'apc':
+                if (!APC::isAvailable())
+                {
+                    throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'APC');
+                }
+                return new APC();
+            case 'phpredis':
+                if (!PHPRedis::isAvailable())
+                {
+                    throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'PHPRedis');
+                }
+                return new PHPRedis(isset($params['host']) ? $params['host'] : '127.0.0.1',
+                                    isset($params['port']) ? $params['port'] : 6379,
+                                    isset($params['timeout']) ? $params['timeout'] : 0,
+                                    isset($params['password']) ? $params['password'] : null,
+                                    isset($params['database']) ? $params['database'] : 0);
+            case 'redis':
+                return new Redis(isset($params['host']) ? $params['host'] : '127.0.0.1',
+                                 isset($params['port']) ? $params['port'] : 6379,
+                                 isset($params['timeout']) ? $params['timeout'] : null,
+                                 isset($params['password']) ? $params['password'] : null,
+                                 isset($params['database']) ? $params['database'] : 0);
+            case 'session':
+                return new Session();
+            case 'file':
+            default:
+                $cache = new File();
+                if (isset($params['directory']))
+                {
+                    $cache->setDirectory($params['directory']);
+                }
+                return $cache;
+        }
     }
-    $type = strtolower($type);
-    switch ($type)
+  
+    /**
+     * Constructor of the class.
+     *
+     * @access public
+     */
+    public function __construct()
     {
-      case 'memory':
-      case 'memcache':
-      case 'memcached':
-        if (!Memory::isAvailable($type))
-        {
-          throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'Memory');
-        }
-        return new Memory($type,
-                          isset($params['servers']) ? (array)$params['servers'] : [], 
-                          isset($params['compress']) ? (bool)$params['compress'] : true);
-      case 'apc':
-        if (!APC::isAvailable())
-        {
-          throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'APC');
-        }
-        return new APC();
-      case 'phpredis':
-        if (!PHPRedis::isAvailable())
-        {
-          throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'PHPRedis');
-        }
-        return new PHPRedis(isset($params['host']) ? $params['host'] : '127.0.0.1',
-                            isset($params['port']) ? $params['port'] : 6379,
-                            isset($params['timeout']) ? $params['timeout'] : 0,
-                            isset($params['password']) ? $params['password'] : null,
-                            isset($params['database']) ? $params['database'] : 0);
-      case 'redis':
-        return new Redis(isset($params['host']) ? $params['host'] : '127.0.0.1',
-                         isset($params['port']) ? $params['port'] : 6379,
-                         isset($params['timeout']) ? $params['timeout'] : null,
-                         isset($params['password']) ? $params['password'] : null,
-                         isset($params['database']) ? $params['database'] : 0);
-      case 'session':
-        return new Session();
-      case 'file':
-      default:
-        $cache = new File();
-        if (isset($params['directory']))
-        {
-          $cache->setDirectory($params['directory']);
-        }
-        return $cache;
+        $this->vaultKey = 'vault_' . \Aleph::getSiteUniqueID();
     }
-  }
   
-  /**
-   * Constructor of the class.
-   *
-   * @access public
-   */
-  public function __construct()
-  {
-    $this->vaultKey = 'vault_' . \Aleph::getSiteUniqueID();
-  }
-  
-  /**
-   * Checks whether the current type of cache is available or not.
-   *
-   * @return boolean
-   * @access public
-   * @static
-   */
-  public static function isAvailable()
-  {
-    return true;
-  }
+    /**
+     * Checks whether the current type of cache is available or not.
+     *
+     * @return boolean
+     * @access public
+     * @static
+     */
+    public static function isAvailable()
+    {
+        return true;
+    }
  
-  /**
-   * Conserves some data identified by a key into cache.
-   *
-   * @param string $key - a data key.
-   * @param mixed $content - some data.
-   * @param integer $expire - cache lifetime (in seconds).
-   * @param string $group - group of a data key.
-   * @access public
-   * @abstract
-   */
-  abstract public function set($key, $content, $expire, $group = '');
+    /**
+     * Conserves some data identified by a key into cache.
+     *
+     * @param string $key - a data key.
+     * @param mixed $content - some data.
+     * @param integer $expire - cache lifetime (in seconds).
+     * @param string $group - group of a data key.
+     * @access public
+     * @abstract
+     */
+    abstract public function set($key, $content, $expire, $group = '');
 
-  /**
-   * Returns some data previously conserved in cache.
-   *
-   * @param string $key - a data key.
-   * @return mixed
-   * @access public
-   * @abstract
-   */
-  abstract public function get($key);
+    /**
+     * Returns some data previously conserved in cache.
+     *
+     * @param string $key - a data key.
+     * @return mixed
+     * @access public
+     * @abstract
+     */
+    abstract public function get($key);
 
-  /**
-   * Removes some data identified by a key from cache.
-   *
-   * @param string $key - a data key.
-   * @access public
-   * @abstract
-   */
-  abstract public function remove($key);
+    /**
+     * Removes some data identified by a key from cache.
+     *
+     * @param string $key - a data key.
+     * @access public
+     * @abstract
+     */
+    abstract public function remove($key);
 
-  /**
-   * Checks whether the cache lifetime is expired or not.
-   *
-   * @param string $key - a data key.
-   * @return boolean
-   * @access public
-   * @abstract
-   */
-  abstract public function isExpired($key);
+    /**
+     * Checks whether the cache lifetime is expired or not.
+     *
+     * @param string $key - a data key.
+     * @return boolean
+     * @access public
+     * @abstract
+     */
+    abstract public function isExpired($key);
 
-  /**
-   * Removes all previously conserved data from cache.
-   *
-   * @access public
-   * @abstract
-   */
-  abstract public function clean();
+    /**
+     * Removes all previously conserved data from cache.
+     *
+     * @access public
+     * @abstract
+     */
+    abstract public function clean();
   
-  /**
-   * Garbage collector that should be used for removing of expired cache data.
-   *
-   * @param float $probability - probability of garbage collector performing.
-   * @access public
-   */
-  public function gc($probability = 100)
-  {
-    if ((float)$probability * 1000 >= rand(0, 99999)) $this->normalizeVault();
-  }
+    /**
+     * Garbage collector that should be used for removing of expired cache data.
+     *
+     * @param float $probability - probability of garbage collector performing.
+     * @access public
+     */
+    public function gc($probability = null)
+    {
+        if ($probability === null)
+        {
+            $cfg = \Aleph::get('cache');
+            $probability = isset($cfg['gcProbability']) ? $cfg['gcProbability'] : 100;
+        }
+        if ((float)$probability * 1000 >= rand(0, 99999))
+        {
+            $this->normalizeVault();
+        }
+    }
   
-  /**
-   * Returns the number of keys in the cache vault.
-   *
-   * @return integer
-   * @access public
-   */
-  public function count()
-  {
-    $vault = $this->getVault();
-    if (!is_array($vault)) return 0;
-    $count = 0;
-    foreach ($vault as $keys) $count += count($keys);
-    return $count;
-  }
+    /**
+     * Returns the number of keys in the cache vault.
+     *
+     * @return integer
+     * @access public
+     */
+    public function count()
+    {
+        $vault = $this->getVault();
+        if (!is_array($vault))
+        {
+            return 0;
+        }
+        $count = 0;
+        foreach ($vault as $keys)
+        {
+            $count += count($keys);
+        }
+        return $count;
+    }
   
   /**
    * Returns the vault of data keys conserved in cache before.

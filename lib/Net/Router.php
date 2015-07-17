@@ -35,7 +35,6 @@ class Router
 {
   // Error message templates.
   const ERR_ROUTER_1 = 'No action is defined. You should first call one of the following methods: secure(), redirect() or bind()';
-  const ERR_ROUTER_2 = 'Delegate "%s" is not callable.';
   
   /**
    * This property is used as the cache of parsed URL templates.
@@ -108,18 +107,6 @@ class Router
   public function coordinateParameterNames($flag = true)
   {
     return $this->option('coordinateParameterNames', (bool)$flag);
-  }
-  
-  /**
-   * Determines whether or not the wrong callback is ignored.
-   *
-   * @param boolean $flag
-   * @return self
-   * @access public
-   */
-  public function ignoreWrongDelegate($flag = true)
-  {
-    return $this->option('ignoreWrongDelegate', (bool)$flag);
   }
   
   /**
@@ -269,33 +256,61 @@ class Router
   /**
    * Performs all actions matching all URL templates.
    *
+   * @param mixed $status - a variable which the result HTTP status will be written in.
    * @param string | array $methods - HTTP request methods.
    * @param string | Aleph\Net\URL $url - the URL string to route.
    * @return array with two elements: result - a result of the acted action, success - indication that the action was worked out.
    * @access public
    */
-  public function route($methods = null, $url = null)
+  public function route(&$status, $methods = null, $url = null)
   {
     $this->lact = null;
     $request = Request::getInstance();
-    if ($methods === null) $methods = [$request->method];
-    else $methods = $this->normalizeMethods($methods);
-    if ($url === null) $url = $request->url;
-    else if (!($url instanceof URL)) $url = new URL($url);
-    $res = ['success' => false, 'result' => null];
+    if ($methods === null) 
+    {
+      $methods = [$request->method];
+    }
+    else
+    {    
+      $methods = $this->normalizeMethods($methods);
+    }
+    if ($url === null) 
+    {
+      $url = $request->url;
+    }
+    else if (!($url instanceof URL))
+    {
+      $url = new URL($url);
+    }
     $urls = [];
     foreach (['secure', 'redirect', 'bind'] as $type)
     {
-      if (empty($this->acts[$type])) continue;
+      if (empty($this->acts[$type])) 
+      {
+        continue;
+      }
       foreach ($this->acts[$type] as $method => $actions)
       {
-        if (!in_array($method, $methods)) continue;
+        if (!in_array($method, $methods)) 
+        {
+          continue;
+        }
         foreach ($actions as $regex => $data)
         {
           $this->prepareAction($type, $regex, $data);
-          if (empty($urls[$data['component']])) $urls[$data['component']] = $url->build($data['component']);
-          if (!preg_match($regex, $urls[$data['component']], $matches)) continue;
-          if (!empty($data['ssl']) && !$url->isSecured()) return $res;
+          if (empty($urls[$data['component']]))
+          {
+            $urls[$data['component']] = $url->build($data['component']);
+          }
+          if (!preg_match($regex, $urls[$data['component']], $matches))
+          {
+            continue;
+          }
+          if (!empty($data['ssl']) && !$url->isSecured())
+          {
+            $status = 403;
+            return;
+          }
           $flag = true;
           foreach ($data['validation'] as $param => $rgx)
           {
@@ -305,8 +320,14 @@ class Router
               break;
             }
           }
-          if (!$flag) continue;
-          if ($data['action'] instanceof Core\Delegate) $act = $data['action'];
+          if (!$flag)
+          {
+            continue;
+          }
+          if ($data['action'] instanceof Core\Delegate)
+          {
+            $act = $data['action'];
+          }
           else 
           {
             if (!($data['action'] instanceof \Closure))
@@ -324,14 +345,6 @@ class Router
               }
             }
             $act = new Core\Delegate($data['action']);
-          }
-          if (!$act->isCallable())
-          {
-            if (!empty($data['ignoreWrongDelegate']))
-            {
-              continue;
-            }
-            throw new Core\Exception($this, 'ERR_ROUTER_2', (string)$act);
           }
           foreach ($data['params'] as &$param)
           {
@@ -358,13 +371,13 @@ class Router
               }
             } 
           }
-          $res['result'] = $act->call($params);
-          $res['success'] = true;
-          return $res;
+          $status = 200;
+          return $act->call($params);
         }
       }
     }
-    return $res;
+    $status = 404;
+    return;
   }
   
   /**
@@ -421,7 +434,7 @@ class Router
   private function normalizeMethods($methods)
   {
     if ($methods == '*') return ['GET', 'PUT', 'POST', 'DELETE'];
-    if ($methods == '@') return ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'OPTIONS', 'TRACE', 'CONNECT'];
+    if ($methods == '@') return ['GET', 'PUT', 'POST', 'DELETE', 'HEAD', 'PATCH', 'OPTIONS', 'TRACE', 'CONNECT'];
     $methods = is_array($methods) ? $methods : explode('|', $methods);
     foreach ($methods as &$method) $method = strtoupper(trim($method));
     return $methods;

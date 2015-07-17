@@ -643,7 +643,10 @@ class Response
     $this->headers->set('Content-Length', filesize($path));
     $this->send();
     readfile($path);
-    if ($deleteAfterDownload) unlink($path);
+    if ($deleteAfterDownload)
+    {
+      unlink($path);
+    }
     exit;
   }
   

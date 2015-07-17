@@ -26,136 +26,162 @@ namespace Aleph\Core;
  * The class provides a simple way of subscribing to events and notifying those subscribers whenever an event occurs.
  * 
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.1
  * @package aleph.core
  */
 class Event
 {
-  /**
-   * Array of events.
-   *
-   * @var array $events;
-   * @access private
-   * @static
-   */   
-  private static $events = [];
+    /**
+     * Array of events.
+     *
+     * @var array $events
+     * @access private
+     * @static
+     */   
+    private static $events = [];
 
-  /**
-   * Subscribes to an event.
-   *
-   * @param string $event - event name.
-   * @param mixed $listener - a delegate to invoke when the event is triggered.
-   * @param integer $priority - priority of an event.
-   * @param boolean $once - determines whether a listener should be called once.
-   * @access public
-   * @static
-   */
-  public static function listen($event, $listener, $priority = null, $once = false)
-  {
-    $listener = ['listener' => $listener, 'priority' => (int)$priority, 'once' => (bool)$once];
-    if (empty(self::$events[$event])) self::$events[$event] = [];
-    self::$events[$event][] = $listener;
-  }
+    /**
+     * Subscribes to an event.
+     *
+     * @param string $event - the event name.
+     * @param mixed $listener - the delegate to invoke when the event is triggered.
+     * @param integer $priority - yhe priority of the event.
+     * @param boolean $once - determines whether a listener should be called once.
+     * @access public
+     * @static
+     */
+    public static function listen($event, $listener, $priority = null, $once = false)
+    {
+        self::$events[$event][] = [
+            'listener' => $listener,
+            'priority' => (int)$priority,
+            'once' => (bool)$once
+        ];
+    }
   
-  /**
-   * Adds a listener which is guaranteed to only be called once.
-   *
-   * @param string $event - event name.
-   * @param mixed $listener - a delegate to invoke when the event is triggered.
-   * @param integer $priority - priority of an event.
-   * @access public
-   */
-  public static function once($event, $listener, $priority = null)
-  {
-    self::listen($event, $listener, $priority, true);
-  }
+    /**
+     * Adds a listener which is guaranteed to only be called once.
+     *
+     * @param string $event - the event name.
+     * @param mixed $listener - the delegate to invoke when the event is triggered.
+     * @param integer $priority - the priority of the event.
+     * @access public
+     */
+    public static function once($event, $listener, $priority = null)
+    {
+        static::listen($event, $listener, $priority, true);
+    }
   
-  /**
-   * Returns number of listeners of an event or total number of listeners.
-   *
-   * @param string $event - event name.
-   * @return integer
-   * @access public
-   * @static
-   */
-  public static function listeners($event = null)
-  {
-    $count = 0;
-    if ($event === null)
+    /**
+     * Returns number of listeners of an event or total number of listeners.
+     *
+     * @param string $event - the event name.
+     * @return integer
+     * @access public
+     * @static
+     */
+    public static function listeners($event = null)
     {
-      foreach (self::$events as $event => $listeners) $count += count($listeners);
-    }
-    else if (isset(self::$events[$event]))
-    {
-      $count = count(self::$events[$event]);
-    }
-    return $count;
-  }
-  
-  /**
-   * Removes a specific listener for a specific event, all listeners of a specific event or all listeners of all events.
-   *
-   * @param string $event - event name.
-   * @param mixed $listener - a delegate which was previously added to an event.
-   * @access public
-   * @static
-   */
-  public static function remove($event = null, $listener = null)
-  {
-    if ($listener === null)
-    {
-      if ($event === null) self::$events = [];
-      else unset(self::$events[$event]);
-      return;
-    }
-    $events = [];
-    if ($event !== null)
-    {
-      if (isset(self::$events[$event])) $events[$event] = self::$events[$event];
-    }
-    else
-    {
-      $events = self::$events;
-    }
-    $linfo = (new Delegate($listener))->getInfo();
-    foreach ($events as $event => $listeners)
-    {
-      foreach ($listeners as $n => $info)
-      {
-        if ($info['listener'] instanceof \Closure || $listener instanceof \Closure)
+        $count = 0;
+        if ($event === null)
         {
-          if ($info['listener'] === $listener) unset(self::$events[$event][$n]);
+            foreach (self::$events as $event => $listeners)
+            {
+                $count += count($listeners);
+            }
         }
-        else if ((new Delegate($info['listener']))->getInfo() === $linfo)
+        else if (isset(self::$events[$event]))
         {
-          unset(self::$events[$event][$n]);
+            $count = count(self::$events[$event]);
         }
-      }
+        return $count;
     }
-  }
   
-  /**
-   * Triggers an event. Method returns FALSE if a specific event doesn't exist, and TRUE otherwise.
-   *
-   * @param string $event - event name.
-   * @param array $args - arguments to pass to all listeners of an event.
-   * @access public
-   * @static
-   */
-  public static function fire($event, array $args = [])
-  {
-    if (empty(self::$events[$event])) return false;
-    $listeners = self::$events[$event];
-    uasort($listeners, function(array $a, array $b)
+    /**
+     * Removes a specific listener for a specific event, all listeners of a specific event or all listeners of all events.
+     *
+     * @param string $event - the event name.
+     * @param mixed $listener - the delegate which was previously added to an event.
+     * @access public
+     * @static
+     */
+    public static function remove($event = null, $listener = null)
     {
-      return $a['priority'] <= $b['priority'] ? 1 : -1;
-    });
-    foreach ($listeners as $n => $listener)
-    {
-      $res = (new Delegate($listener['listener']))->call(array_merge([$event], $args));
-      if ($listener['once']) unset(self::$events[$event][$n]);
-      if ($res === false) return true;
+        if ($listener === null)
+        {
+            if ($event === null)
+            {
+                self::$events = [];
+            }
+            else
+            {
+                unset(self::$events[$event]);
+            }
+            return;
+        }
+        $events = [];
+        if ($event !== null)
+        {
+            if (isset(self::$events[$event]))
+            {
+                $events[$event] = self::$events[$event];
+            }
+        }
+        else
+        {
+            $events = self::$events;
+        }
+        $linfo = (new Delegate($listener))->getInfo();
+        foreach ($events as $event => $listeners)
+        {
+            foreach ($listeners as $n => $info)
+            {
+                if ($info['listener'] instanceof \Closure || $listener instanceof \Closure)
+                {
+                    if ($info['listener'] === $listener)
+                    {
+                        unset(self::$events[$event][$n]);
+                    }
+                }
+                else if ((new Delegate($info['listener']))->getInfo() === $linfo)
+                {
+                    unset(self::$events[$event][$n]);
+                }
+            }
+        }
     }
-    return true;
-  }
+  
+    /**
+     * Triggers an event. Method returns FALSE if a specific event doesn't exist, and TRUE otherwise.
+     *
+     * @param string $event - the event name.
+     * @param array $args - arguments to pass to all listeners of an event.
+     * @access public
+     * @static
+     */
+    public static function fire($event, array $args = [])
+    {
+        if (empty(self::$events[$event]))
+        {
+            return false;
+        }
+        $listeners = self::$events[$event];
+        uasort($listeners, function(array $a, array $b)
+        {
+            return $a['priority'] <= $b['priority'] ? 1 : -1;
+        });
+        foreach ($listeners as $n => $listener)
+        {
+            $res = (new Delegate($listener['listener']))->call(array_merge([$event], $args));
+            if ($listener['once'])
+            {                
+                unset(self::$events[$event][$n]);
+            }
+            if ($res === false)
+            {
+                return true;
+            }
+        }
+        return true;
+    }
 }
