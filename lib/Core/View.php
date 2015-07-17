@@ -56,19 +56,19 @@ class View
     protected $stack = [];
     
     /**
-	 * View data.
-	 *
-	 * @var array $vars
+     * View data.
+     *
+     * @var array $vars
      * @access protected
-	 */
+     */
     protected $vars = [];
     
     /**
-	 * The number of rendering views.
-	 *
-	 * @var integer $level
+     * The number of rendering views.
+     *
+     * @var integer $level
      * @access protected
-	 */
+     */
     protected $level = 0;
     
     /**
@@ -302,15 +302,15 @@ class View
             throw new Core\Exception([$this, 'ERR_VIEW_2']);
         }
         $block = array_pop($this->stack);
-		if ($overwrite)
-		{
-			$this->blocks[$block] = ob_get_clean();
-		}
-		else
-		{
-			$this->extendBlock($block, ob_get_clean());
-		}
-		return $block;
+        if ($overwrite)
+        {
+            $this->blocks[$block] = ob_get_clean();
+        }
+        else
+        {
+            $this->extendBlock($block, ob_get_clean());
+        }
+        return $block;
     }
     
     /**
@@ -330,28 +330,28 @@ class View
     }
     
     /**
-	 * Ends block and appends its content.
-	 *
-	 * @return string - the block name.
+     * Ends block and appends its content.
+     *
+     * @return string - the block name.
      * @access protected
-	 */
-	protected function appendBlock()
-	{
+     */
+    protected function appendBlock()
+    {
         if (!$this->stack)
         {
             throw new Core\Exception([$this, 'ERR_VIEW_2']);
         }
-		$block = array_pop($this->stack);
-		if (isset($this->blocks[$block]))
-		{
-			$this->blocks[$block] .= ob_get_clean();
-		}
-		else
-		{
-			$this->blocks[$block] = ob_get_clean();
-		}
-		return $block;
-	}
+        $block = array_pop($this->stack);
+        if (isset($this->blocks[$block]))
+        {
+            $this->blocks[$block] .= ob_get_clean();
+        }
+        else
+        {
+            $this->blocks[$block] = ob_get_clean();
+        }
+        return $block;
+    }
     
     /**
      * Outputs the block content.
