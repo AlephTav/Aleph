@@ -26,7 +26,7 @@ namespace Aleph\Utils;
  * Contains the set of static methods for facilitating the work with arrays.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
+ * @version 1.1.1
  * @package aleph.utils
  */
 class Arr
@@ -166,48 +166,89 @@ class Arr
     }
 
     /**
-     * Swaps the two elements of the array. The elements are determined by their index numbers.
+     * Swaps two elements of the array.
      *
      * @param array $array - the array in which the two elements will be swapped.
-     * @param integer $n1 - the index number of the first element.
-     * @param integer $n2 - the index number of the second element.
+     * @param integer $n1 - the first element's key or index.
+     * @param integer $n2 - the second element's key or index.
+     * @param boolean $index - determines whether $key1 and $key2 treated as element indexes. 
+     * @param boolean $swapKeys - determines whether keys of the elements should also be swapped.
      * @access public
      * @static
      */
-    public static function swap(array &$array, $n1, $n2)
+    public static function swap(array &$array, $key1, $key2, $index = false, $swapKeys = false)
     {
-        $keys = array_keys($array);
-        static::aswap($array, $keys[$n1], $keys[$n2]);
-    }
-  
-    /**
-     * Swaps the two elements of the array. The elements are determined by their keys.
-     *
-     * @param array $array - the array in which the two elements will be swapped.
-     * @param mixed $key1 - the key of the first element.
-     * @param mixed $key2 - the key of the second element.
-     * @access public
-     * @static
-     */
-    public static function aswap(array &$array, $key1, $key2)
-    {
-        $tmp = [];
-        foreach ($array as $key => $value)
+        if ($swapKeys)
         {
-            if ($key == $key1)
+            $tmp = []; 
+            if ($index)
             {
-                $tmp[$key2] = $array[$key2];
-            }
-            else if ($key == $key2)
-            {
-                $tmp[$key1] = $array[$key1];
+                $n1 = (int)$key1;
+                $n2 = (int)$key2;
+                if ($n2 === $n1)
+                {
+                    return $array;
+                }
+                $key1 = key(array_slice($array, $n1, 1, true));
+                $key2 = key(array_slice($array, $n2, 1, true));
             }
             else
             {
-                $tmp[$key] = $value;
+                $key1 == is_numeric($key1) ? (int)$key1 : (string)$key1;
+                $key2 == is_numeric($key2) ? (int)$key2 : (string)$key2;
             }
+            foreach ($array as $key => $value)
+            {
+                if ($key === $key1)
+                {
+                    $tmp[$key2] = $array[$key2];
+                }
+                else if ($key === $key2)
+                {
+                    $tmp[$key1] = $array[$key1];
+                }
+                else
+                {
+                    $tmp[$key] = $value;
+                }
+            }
+            $array = $tmp;
         }
-        $array = $tmp;
+        else
+        {
+            if ($index)
+            {
+                $n1 = (int)$key1;
+                $n2 = (int)$key2;
+                if ($n2 === $n1)
+                {
+                    return $array;
+                }
+                if ($n1 > $n2)
+                {
+                    $tmp = $n1;
+                    $n1 = $n2;
+                    $n2 = $tmp;
+                }
+                $n = 0;
+                foreach ($array as $key => $value)
+                {
+                    if ($n === $n1)
+                    {
+                        $key1 = $key;
+                    }
+                    else if ($n === $n2)
+                    {
+                        $key2 = $key;
+                        break;
+                    }
+                    $n++;
+                }
+            }
+            $tmp = $array[$key1];
+            $array[$key1] = $array[$key2];
+            $array[$key2] = $tmp;
+        }
     }
   
     /**
@@ -221,7 +262,7 @@ class Arr
      */
     public static function insert(array &$array, $value, $offset = 0)
     {
-        $array = array_merge(array_slice($array, 0, $offset, true), (array)$value, array_slice($array, $offset, null, true));
+        $array = array_merge(array_slice($array, 0, $offset, true), is_array($value) ? $value : [$value], array_slice($array, $offset, null, true));
     }
   
     /**
