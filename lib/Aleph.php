@@ -1647,6 +1647,10 @@ final class Aleph
                                 for (++$i; $i < $max; $i++)
                                 {
                                     $t = $tokens[$i];
+                                    if (!is_array($t))
+                                    {
+                                        continue 2;
+                                    }
                                     if ($t[0] == T_STRING)
                                     {
                                         break;
