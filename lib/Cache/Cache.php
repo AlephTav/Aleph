@@ -28,7 +28,7 @@ use Aleph\Core;
  * Base abstract class for building of classes that intended for caching different data.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.2.0
  * @package aleph.cache
  * @abstract
  */
@@ -38,6 +38,11 @@ abstract class Cache implements \Countable
      * Error message templates.
      */
     const ERR_CACHE_1 = 'Cache of type "%s" is not available.';
+    
+    /**
+     * Prefix of all meta data's keys.
+     */
+    const META_PREFIX = 'meta_';
 
     /**
      * The vault key of all cached data.  
@@ -46,6 +51,14 @@ abstract class Cache implements \Countable
      * @access private
      */
     private $vaultKey = null;
+    
+    /**
+     * Prefix that will prepend every cache key.
+     *
+     * @var string $keyPrefix
+     * @access private
+     */
+    private $keyPrefix = null;
   
     /**
      * The vault lifetime. Defined as 1 year by default.
@@ -106,7 +119,11 @@ abstract class Cache implements \Countable
                                  isset($params['password']) ? $params['password'] : null,
                                  isset($params['database']) ? $params['database'] : 0);
             case 'session':
-                return new Session();
+                $cache = new Session();
+                if (isset($params['namespace']))
+                {
+                    $cache->setNamespace($params['namespace']);
+                }
             case 'file':
             default:
                 $cache = new File();
@@ -120,12 +137,14 @@ abstract class Cache implements \Countable
   
     /**
      * Constructor of the class.
+     * Initializes the key prefix and vault key.
      *
      * @access public
      */
     public function __construct()
     {
         $this->vaultKey = 'vault_' . \Aleph::getSiteUniqueID();
+        $this->keyPrefix = \Aleph::get('cache.keyPrefix', \Aleph::getSiteUniqueID());
     }
   
     /**
@@ -139,42 +158,116 @@ abstract class Cache implements \Countable
     {
         return true;
     }
- 
+    
     /**
-     * Conserves some data identified by a key into cache.
+     * Stores some data identified by a key in the cache, only if it's not already stored.
      *
-     * @param string $key - a data key.
-     * @param mixed $content - some data.
-     * @param integer $expire - cache lifetime (in seconds).
-     * @param string $group - group of a data key.
+     * @param mixed $key - the data key.
+     * @param mixed $content - the cached data.
+     * @param integer $expire - the cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string $group - the group of data.
+     * @return boolean - returns TRUE if something has effectively been added into the cache, FALSE otherwise.
      * @access public
-     * @abstract
      */
-    abstract public function set($key, $content, $expire, $group = '');
-
+    public function add($key, $content, $expire = 0, $group = null)
+    {
+        if ($this->isExpired($key))
+        {
+            $this->set($key, $content, $expire, $group);
+            return true;
+        }
+        return false;
+    }
+    
     /**
-     * Returns some data previously conserved in cache.
+     * Call of this method is equivalent to the following code:
+     * if ($cache->isExpired($key))
+     * {
+     *     $data = $callback($key);
+     *     $cache->set($key, $data, $expire, $group);
+     * }
+     * else
+     * {
+     *     $data = $cache->get($key);
+     * }
      *
-     * @param string $key - a data key.
+     * @param mixed $key - the data key.
+     * @param mixed $callback - the delegate that will be automatically invoked when the cache is expired. It should return data that will be cached.
+     * @param integer $expire - the cache lifetime(in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string $group - the group of cached data.
+     * @return mixed - the cached data.
+     * @access public
+     */
+    public function rw($key, $callback, $expire = 0, $group = null)
+    {
+        $data = $this->get($key, $isExpired);
+        if ($isExpired)
+        {
+            $data = \Aleph::delegate($callback, $key);
+            $this->set($key, $data, $expire, $group);
+        }
+        return $data;
+    }
+    
+    /**
+     * Returns some data previously stored in the cache.
+     *
+     * @param mixed $key - the data key.
+     * @param boolean $isExpired - will be set to TRUE if the given cache is expired and FALSE otherwise.
      * @return mixed
      * @access public
      * @abstract
      */
-    abstract public function get($key);
+    abstract public function get($key, &$isExpired = null);
+ 
+    /**
+     * Stores some data identified by a key in the cache.
+     *
+     * @param mixed $key - the data key.
+     * @param mixed $content - the cached data.
+     * @param integer $expire - the cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string $group - the group of data.
+     * @access public
+     * @abstract
+     */
+    abstract public function set($key, $content, $expire = 0, $group = null);
+    
+    /**
+     * Updates the previously stored data with new data.
+     *
+     * @param mixed $key - the key of the data being updated.
+     * @param mixed $content - the new data.
+     * @return boolean - returns TRUE on success and FALSE on failure (if cache does not exist or expired).
+     * @access public
+     * @abstract
+     */
+    abstract public function update($key, $content);
+    
+    /**
+     * Sets a new expiration on an cached data.
+     * Returns TRUE on success or FALSE on failure. 
+     *
+     * @param mixed $key - the data key.
+     * @param integer $expire - the new expiration time.
+     * @return boolean
+     * @access public
+     * @abstract
+     */
+    abstract public function touch($key, $expire = 0);
 
     /**
-     * Removes some data identified by a key from cache.
+     * Removes some data identified by a key from the cache.
      *
-     * @param string $key - a data key.
+     * @param mixed $key - the data key.
      * @access public
      * @abstract
      */
     abstract public function remove($key);
 
     /**
-     * Checks whether the cache lifetime is expired or not.
+     * Checks whether the cache is expired or not.
      *
-     * @param string $key - a data key.
+     * @param string $key - the data key.
      * @return boolean
      * @access public
      * @abstract
@@ -182,7 +275,7 @@ abstract class Cache implements \Countable
     abstract public function isExpired($key);
 
     /**
-     * Removes all previously conserved data from cache.
+     * Removes all previously stored data from the cache.
      *
      * @access public
      * @abstract
@@ -199,8 +292,7 @@ abstract class Cache implements \Countable
     {
         if ($probability === null)
         {
-            $cfg = \Aleph::get('cache');
-            $probability = isset($cfg['gcProbability']) ? $cfg['gcProbability'] : 100;
+            $probability = \Aleph::get('cache.gcProbability', 100);
         }
         if ((float)$probability * 1000 >= rand(0, 99999))
         {
@@ -229,125 +321,177 @@ abstract class Cache implements \Countable
         return $count;
     }
   
-  /**
-   * Returns the vault of data keys conserved in cache before.
-   *
-   * @return array - returns a key array or NULL if empty.
-   * @access public
-   */
-  public function getVault()
-  {
-    return $this->get($this->vaultKey);
-  }
-  
-  /**
-   * Returns the vault lifetime.
-   *
-   * @return integer
-   * @access public
-   */
-  public function getVaultLifeTime()
-  {
-    return $this->vaultLifeTime;
-  }
-  
-  /**
-   * Sets the vault lifetime.
-   *
-   * @param integer $vaultLifeTime - new vault lifetime in seconds.
-   * @access public
-   */
-  public function setVaultLifeTime($vaultLifeTime)
-  {
-    $this->vaultLifeTime = abs((int)$vaultLifeTime);
-  }
-  
-  /**
-   * Returns cached data by their group.
-   *
-   * @param string $group - group of cached data.
-   * @return array
-   * @access public   
-   */
-  public function getByGroup($group)
-  {
-    $vault = $this->getVault();
-    if (empty($vault[$group]) || !is_array($vault[$group])) return [];
-    $tmp = [];
-    foreach ($vault[$group] as $key => $expire)
+    /**
+     * Returns the vault of data keys conserved in cache before.
+     *
+     * @return array - returns a key array or NULL if empty.
+     * @access public
+     */
+    public function getVault()
     {
-      $tmp[$key] = $this->get($key);
+        return $this->get($this->vaultKey);
     }
-    return $tmp;
-  }
-  
-  /**
-   * Cleans cached data by their group.
-   *
-   * @param string $group - group of cached data.
-   * @access public
-   */
-  public function cleanByGroup($group)
-  {
-    $vault = $this->getVault();
-    if (empty($vault[$group]) || !is_array($vault[$group])) return;
-    foreach ($vault[$group] as $key => $expire) $this->remove($key);
-    unset($vault[$group]);
-    $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
-  }
-  
-  /**
-   * Saves the key of caching data in the key vault.
-   *
-   * @param string $key - a key to save.
-   * @param integer $expire - cache lifetime of data defined by the key.
-   * @param string $group - group of a key.
-   * @access protected
-   */
-  protected function saveKeyToVault($key, $expire, $group)
-  {
-    if ($group !== null)
+    
+    /**
+     * Returns key prefix.
+     *
+     * @return string
+     * @access public
+     */
+    public function getKeyPrefix()
     {
-      $vault = $this->getVault();
-      $vault[$group][$key] = $expire;
-      $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
+        return $this->keyPrefix;
     }
-  }
-  
-  /**
-   * Normalizes expiration time value.
-   *
-   * @param integer $expire - cache lifetime (in seconds). If it is not defined the vault lifetime is used.
-   * @return integer
-   * @access protected
-   */
-  protected function normalizeExpire($expire)
-  {
-    $expire = abs((int)$expire);
-    return $expire ?: $this->vaultLifeTime;
-  }
-  
-  /**
-   * Removes keys of the expired data from the key vault.
-   *
-   * @access protected
-   */
-  protected function normalizeVault()
-  {
-    $vault = $this->getVault();
-    if (!is_array($vault)) return;
-    foreach ($vault as $group => $keys)
+    
+    /**
+     * Sets new key prefix.
+     *
+     * @param string $prefix
+     * @access public
+     */
+    public function setKeyPrefix($prefix)
     {
-      foreach ($keys as $key => $expire)
-      {
-        if ($this->isExpired($key, $expire)) 
+        $this->keyPrefix = $prefix;
+    }
+  
+    /**
+     * Returns the vault lifetime.
+     *
+     * @return integer
+     * @access public
+     */
+    public function getVaultLifeTime()
+    {
+        return $this->vaultLifeTime;
+    }
+  
+    /**
+     * Sets the vault lifetime.
+     *
+     * @param integer $vaultLifeTime - new vault lifetime in seconds.
+     * @access public
+     */
+    public function setVaultLifeTime($vaultLifeTime)
+    {
+        $this->vaultLifeTime = abs((int)$vaultLifeTime);
+    }
+  
+    /**
+     * Returns cached data by their group.
+     *
+     * @param string $group - the group of cached data.
+     * @return array
+     * @access public   
+     */
+    public function getByGroup($group)
+    {
+        $vault = $this->getVault();
+        if (empty($vault[$group]) || !is_array($vault[$group]))
         {
-          $this->remove($key);
-          unset($vault[$group][$key]);
+            return [];
         }
-      }
-      if (count($vault[$group]) == 0) unset($vault[$group]);
+        $tmp = [];
+        foreach ($vault[$group] as $key => $expire)
+        {
+            $data = $this->get($key, $isExpired);
+            if (!$isExpired)
+            {
+                $tmp[$key] = $data;
+            }
+        }
+        return $tmp;
     }
-    $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
-  }
+  
+    /**
+     * Cleans cached data by their group.
+     *
+     * @param string $group - group of cached data.
+     * @access public
+     */
+    public function cleanByGroup($group)
+    {
+        $vault = $this->getVault();
+        if (empty($vault[$group]) || !is_array($vault[$group]))
+        {
+            return;
+        }
+        foreach ($vault[$group] as $key => $expire)
+        {
+            $this->remove($key);
+        }
+        unset($vault[$group]);
+        $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
+    }
+  
+    /**
+     * Saves the key of caching data in the key vault.
+     *
+     * @param mixed $key - a key to save.
+     * @param integer $expire - cache lifetime of data defined by the key.
+     * @param string $group - group of a key.
+     * @access protected
+     */
+    protected function saveKeyToVault($key, $expire, $group)
+    {
+        if ($group !== null)
+        {
+            $vault = $this->getVault();
+            $vault[$group][$key] = $expire;
+            $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
+        }
+    }
+  
+    /**
+     * Normalizes expiration time value.
+     *
+     * @param integer $expire - cache lifetime (in seconds). If it is not defined the vault lifetime is used.
+     * @return integer
+     * @access protected
+     */
+    protected function normalizeExpire($expire)
+    {
+        $expire = abs((int)$expire);
+        return $expire ?: $this->vaultLifeTime;
+    }
+    
+    /**
+     * Normalizes the data key.
+     *
+     * @param mixed $key - the key to be normalized.
+     * @return string
+     */
+    protected function normalizeKey($key)
+    {
+        return md5($this->keyPrefix . $key);
+    }
+  
+    /**
+     * Removes keys of the expired data from the key vault.
+     *
+     * @access protected
+     */
+    protected function normalizeVault()
+    {
+        $vault = $this->getVault();
+        if (!is_array($vault))
+        {
+            return;
+        }
+        foreach ($vault as $group => $keys)
+        {
+            foreach ($keys as $key => $expire)
+            {
+                if ($this->isExpired($key, $expire)) 
+                {
+                    $this->remove($key);
+                    unset($vault[$group][$key]);
+                }
+            }
+            if (count($vault[$group]) == 0)
+            {
+                unset($vault[$group]);
+            }
+        }
+        $this->set($this->vaultKey, $vault, $this->vaultLifeTime, null);
+    }
 }
