@@ -661,7 +661,10 @@ final class Aleph
                 set_exception_handler([__CLASS__, 'exception']);
                 set_error_handler(function($errno, $errstr, $errfile, $errline)
                 {
-                    Aleph::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
+                    if (error_reporting() & $errno)
+                    {
+                        Aleph::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
+                    }
                 },
                 self::getErrorLevel());
                 self::$errorHandling = true;

@@ -131,6 +131,14 @@ abstract class Cache implements \Countable
                 {
                     $cache->setDirectory($params['directory']);
                 }
+                if (isset($params['directoryMode']))
+                {
+                    $cache->setDirectoryMode($params['directoryMode']);
+                }
+                if (isset($params['fileMode']))
+                {
+                    $cache->setFileMode($params['fileMode']);
+                }
                 return $cache;
         }
     }
@@ -158,6 +166,17 @@ abstract class Cache implements \Countable
     {
         return true;
     }
+    
+    /**
+     * Returns meta information (expiration time and group) of the cached data.
+     * It returns FALSE if the data does not exist.
+     *
+     * @param mixed $key - the data key.
+     * @return array
+     * @access public
+     * @abstract
+     */
+    abstract public function getMeta($key);
     
     /**
      * Stores some data identified by a key in the cache, only if it's not already stored.

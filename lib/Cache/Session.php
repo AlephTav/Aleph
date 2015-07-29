@@ -77,6 +77,20 @@ class Session extends Cache
     }
     
     /**
+     * Returns meta information (expiration time and group) of the cached data.
+     * It returns FALSE if the data does not exist.
+     *
+     * @param mixed $key - the data key.
+     * @return array
+     * @access public
+     */
+    public function getMeta($key)
+    {
+        $mkey = self::META_PREFIX . $this->normalizeKey($key);
+        return isset($_SESSION[$this->ns][$mkey]) ? $_SESSION[$this->ns][$mkey] : false;
+    }
+    
+    /**
      * Returns some data previously stored in the cache.
      *
      * @param mixed $key - the data key.
@@ -211,28 +225,23 @@ class Session extends Cache
     }
    
     /**
-     * Garbage collector that should be used for removing of expired cache data.
+     * Removes keys of the expired data from the key vault.
      *
-     * @param float $probability - probability of garbage collector performing.
-     * @access public
+     * @access protected
      */
-    public function gc($probability = 100)
+    protected function normalizeVault()
     {
-        if ((float)$probability * 1000 < rand(0, 99999))
+        if (isset($_SESSION[$this->ns]) && is_array($_SESSION[$this->ns]))
         {
-            return;
-        }
-        if (empty($_SESSION[$this->ns]) || !is_array($_SESSION[$this->ns]))
-        {
-            return;
-        }
-        foreach ($_SESSION[$this->ns] as $key => $item)
-        {
-            if (!is_array($item) || $item[1] < time())
+            foreach ($_SESSION[$this->ns] as $key => $item)
             {
-                $this->remove($key);
+                if (strpos($key, self::META_PREFIX) === false && (!is_array($item) || $item[1] < time()))
+                {
+                    unset($_SESSION[$this->ns][$key]);
+                    unset($_SESSION[$this->ns][self::META_PREFIX . $key]);
+                }
             }
         }
-        $this->normalizeVault();
+        parent::normalizeVault();
     }
 }

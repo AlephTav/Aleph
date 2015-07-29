@@ -158,6 +158,42 @@ class Memory extends Cache
     }
     
     /**
+     * Returns meta information (expiration time and group) of the cached data.
+     * It returns FALSE if the data does not exist.
+     *
+     * @param mixed $key - the data key.
+     * @return array
+     * @access public
+     */
+    public function getMeta($key)
+    {
+        return $this->getValue(self::META_PREFIX . $this->normalizeKey($key));
+    }
+    
+    /**
+     * Stores some data identified by a key in the cache, only if it's not already stored.
+     *
+     * @param mixed $key - the data key.
+     * @param mixed $content - the cached data.
+     * @param integer $expire - the cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string $group - the group of data.
+     * @return boolean - returns TRUE if something has effectively been added into the cache, FALSE otherwise.
+     * @access public
+     */
+    public function add($key, $content, $expire = 0, $group = null)
+    {
+        $k = $this->normalizeKey($key);
+        $expire = $this->normalizeExpire($expire);
+        if ($this->setValue($k, serialize($content), $expire, 'add'))
+        {
+            $this->setValue(self::META_PREFIX . $k, [$expire, $group], $expire);
+            $this->saveKeyToVault($key, $expire, $group);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
      * Returns some data previously stored in the cache.
      *
      * @param mixed $key - the data key.
@@ -168,8 +204,7 @@ class Memory extends Cache
      */
     public function get($key, &$isExpired = null)
     {
-        $key = $this->normalizeKey($key);
-        $res = $this->getValue($key);
+        $res = $this->getValue($this->normalizeKey($key));
         if ($res === false)
         {
             $isExpired = true;
@@ -188,7 +223,7 @@ class Memory extends Cache
      * @param string $group - the group of data.
      * @access public
      */
-    public function set($key, $content, $expire = null, $group = null)
+    public function set($key, $content, $expire = 0, $group = null)
     {
         $k = $this->normalizeKey($key);
         $expire = $this->normalizeExpire($expire);
@@ -208,14 +243,8 @@ class Memory extends Cache
     public function update($key, $content)
     {
         $key = $this->normalizeKey($key);
-        $mkey = self::META_PREFIX . $key;
-        $meta = $this->getValue($mkey);
-        if ($meta === false)
-        {
-            return false;
-        }
-        $this->setValue($key, serialize($content), $meta[0]);
-        return true;
+        $meta = $this->getValue(self::META_PREFIX . $key);
+        return $meta ? $this->setValue($key, serialize($content), $meta[0]) : false;
     }
     
     /**
@@ -238,10 +267,14 @@ class Memory extends Cache
         }
         $meta = $this->getValue($mkey);
         $expire = $this->normalizeExpire($expire);
-        $meta[0] = $expire;
-        $this->setValue($key, $content, $expire);
-        $this->setValue($mkey, $meta, $expire);
-        return true;
+        if (isset($meta[0]))
+        {
+            $meta[0] = $expire;
+            $this->setValue($key, $content, $expire);
+            $this->setValue($mkey, $meta, $expire);
+            return true;
+        }
+        return false;
     }
     
     /**
@@ -291,7 +324,8 @@ class Memory extends Cache
      * Retrieves data from the cache. Returns FALSE on failure.
      *
      * @param string $key - the normalized data key.
-     * @return string
+     * @return string|boolean
+     * @access protected
      */
     protected function getValue($key)
     {
@@ -321,39 +355,38 @@ class Memory extends Cache
      * @param string $key - the normalized data key.
      * @param string $content - the serialized data.
      * @param integer $expire - the normalized cache expiration time.
+     * @param string $method - the native method that used for storing. Valid values: "set" or "add".
+     * @return boolean - TRUE on success and FALSE on failure.
      * @access protected
      */
-    protected function setValue($key, $content, $expire)
+    protected function setValue($key, $content, $expire, $method = 'set')
     {
         if (strlen($content) <= self::MAX_BLOCK_SIZE)
         {
             if ($this->mem instanceof \Memcache)
             {
-                $this->mem->set($key, $content, $this->compress, $expire);
+                return $this->mem->{$method}($key, $content, $this->compress, $expire);
             }
-            else
-            {
-                $this->mem->set($key, $content, $expire);
-            }
+            return $this->mem->{$method}($key, $content, $expire);
         }
-        else
+        if ($this->mem instanceof \Memcache)
         {
-            if ($this->mem instanceof \Memcache)
+            foreach (str_split($content, self::MAX_BLOCK_SIZE) as $n => $part)
             {
-                foreach (str_split($content, self::MAX_BLOCK_SIZE) as $n => $part)
+                if ($this->mem->{$method}($key . $n, $part, $this->compress, $expire) === false)
                 {
-                    $this->mem->set($key . $n, $part, $this->compress, $expire);
+                    return false;
                 }
-                $this->mem->set($key, [$key => $n], $this->compress, $expire);
             }
-            else
+            return $this->mem->{$method}($key, [$key => $n], $this->compress, $expire);
+        }
+        foreach (str_split($content, self::MAX_BLOCK_SIZE) as $n => $part)
+        {
+            if ($this->mem->{$method}($key . $n, $part, $expire) === false)
             {
-                foreach (str_split($content, self::MAX_BLOCK_SIZE) as $n => $part)
-                {
-                    $this->mem->set($key . $n, $part, $expire);
-                }
-                $this->mem->set($key, [$key => $n], $expire);
+                return false;
             }
         }
+        return $this->mem->{$method}($key, [$key => $n], $expire);
     }
 }

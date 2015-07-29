@@ -28,155 +28,241 @@ use Aleph\Core;
  * The class is intended for caching of different data using the direct connection to the Redis server.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.2.0
  * @package aleph.cache
  */
 class Redis extends Cache
 {
-  /**
-   * Error message templates.
-   */
-  const ERR_CACHE_REDIS_1 = 'Unable to connect to the Redis server. ERROR: %s - %s.';
-  const ERR_CACHE_REDIS_2 = 'Failed reading data from Redis connection socket.';
-  const ERR_CACHE_REDIS_3 = 'Redis error: %s.';
+    /**
+     * Error message templates.
+     */
+    const ERR_CACHE_REDIS_1 = 'Unable to connect to the Redis server. ERROR: %s - %s.';
+    const ERR_CACHE_REDIS_2 = 'Failed reading data from Redis connection socket.';
+    const ERR_CACHE_REDIS_3 = 'Redis error: %s.';
   
-  /**
-   * Redis socket connection.
-   *
-   * @var resource $rp
-   * @access private
-   */
-  private $rp;
+    /**
+     * Redis socket connection.
+     *
+     * @var resource $rp
+     * @access private
+     */
+    private $rp;
   
-  /**
-   * Constructor.
-   *
-   * @param string $host - host or path to a unix domain socket for a redis connection.
-   * @param integer $port - port for a connection, optional.
-   * @param integer $timeout - the connection timeout, in seconds.
-   * @param string $password - password for server authentication, optional.
-   * @param integer $database - number of the redis database to use.
-   * @access public
-   */
-  public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $password = null, $database = 0)
-  {
-    parent::__construct();
-    $this->rp = stream_socket_client($host . ':' . $port, $errno, $errstr, $timeout !== null ? $timeout :  ini_get('default_socket_timeout'));
-    if (!$this->rp) throw new Core\Exception($this, 'ERR_CACHE_REDIS_1', $errno, $errstr);
-    if ($password !== null) $this->execute('AUTH', [$password]);
-    $this->execute('SELECT', [$database]);
-  }
-  
-  /**
-   * Executes the given redis command.
-   *
-   * @param string $command - the command name.
-   * @param array $params - the list of parameters for the command.
-   * @return mixed
-   * @access public
-   */
-  public function execute($command, array $params = [])
-  {
-    array_unshift($params, $command);
-    $command = '*' . count($params) . "\r\n";
-    foreach ($params as $param) $command .= '$' . strlen($param) . "\r\n" . $param . "\r\n";
-    fwrite ($this->rp, $command);
-    $parse = function() use (&$parse)
+    /**
+     * Constructor.
+     *
+     * @param string $host - host or path to a unix domain socket for a redis connection.
+     * @param integer $port - port for a connection, optional.
+     * @param integer $timeout - the connection timeout, in seconds.
+     * @param string $password - password for server authentication, optional.
+     * @param integer $database - number of the redis database to use.
+     * @access public
+     */
+    public function __construct($host = '127.0.0.1', $port = 6379, $timeout = null, $password = null, $database = 0)
     {
-      if (($line = fgets($this->rp)) === false) throw new Core\Exception($this, 'ERR_CACHE_REDIS_2');
-      $type = $line[0];
-      $line = substr($line, 1, -2);
-      switch ($type)
-      {
-        case '+':
-          return true;
-        case '-':
-          throw new Core\Exception($this, 'ERR_CACHE_REDIS_3', $line);
-        case ':':
-          return $line;
-        case '$':
-          if ($line == '-1') return null;
-          $length = $line + 2;
-          $data = '';
-          while ($length)
-          {
-            if (($block = fread($this->rp, $length)) === false) throw new Core\Exception($this, 'ERR_CACHE_REDIS_2');
-            $data .= $block;
-            $length -= function_exists('mb_strlen') ? mb_strlen($block, '8bit') : strlen($block);
-          }
-          return substr($data, 0, -2);
-        case '*':
-          $count = (int)$line;
-          $data = [];
-          for ($i = 0; $i < $count; $i++) $data[] = $parse();
-          return $data;
-        default:
-          throw new Core\Exception($this, 'ERR_CACHE_REDIS_2');
-      }
-    };
-    return $parse();
-  }
+        parent::__construct();
+        $this->rp = stream_socket_client($host . ':' . $port, $errno, $errstr, $timeout !== null ? $timeout : ini_get('default_socket_timeout'));
+        if (!$this->rp)
+        {
+            throw new Core\Exception([$this, 'ERR_CACHE_REDIS_1'], [$errno, $errstr]);
+        }
+        if ($password !== null)
+        {
+            $this->execute('AUTH', [$password]);
+        }
+        $this->execute('SELECT', [$database]);
+    }
   
-  /**
-   * Conserves some data identified by a key into cache.
-   *
-   * @param string $key - a data key.
-   * @param mixed $content - some data.
-   * @param integer $expire - cache lifetime (in seconds). If it is not defined the vault lifetime is used.
-   * @param string $group - group of a data key.
-   * @access public
-   */
-  public function set($key, $content, $expire = null, $group = null)
-  {
-    $expire = $this->normalizeExpire($expire);
-    if ($expire == 0) $this->execute('SET', [$key, serialize($content)]);
-    else $this->execute('SETEX', [$key, $expire, serialize($content)]);
-    $this->saveKeyToVault($key, $expire, $group);
-  }
+    /**
+     * Executes the given redis command.
+     *
+     * @param string $command - the command name.
+     * @param array $params - the list of parameters for the command.
+     * @return mixed
+     * @access public
+     */
+    public function execute($command, array $params = [])
+    {
+        array_unshift($params, $command);
+        $command = '*' . count($params) . "\r\n";
+        foreach ($params as $param)
+        {
+            $command .= '$' . strlen($param) . "\r\n" . $param . "\r\n";
+        }
+        fwrite ($this->rp, $command);
+        $parse = function() use (&$parse)
+        {
+            if (false === $line = fgets($this->rp))
+            {
+                throw new Core\Exception([$this, 'ERR_CACHE_REDIS_2']);
+            }
+            $type = $line[0];
+            $line = substr($line, 1, -2);
+            switch ($type)
+            {
+                case '+':
+                    return true;
+                case '-':
+                    throw new Core\Exception([$this, 'ERR_CACHE_REDIS_3'], $line);
+                case ':':
+                    return $line;
+                case '$':
+                    if ($line == '-1')
+                    {
+                        return null;
+                    }
+                    $length = $line + 2;
+                    $data = '';
+                    while ($length)
+                    {
+                        if (false === $block = fread($this->rp, $length))
+                        {
+                            throw new Core\Exception([$this, 'ERR_CACHE_REDIS_2']);
+                        }
+                        $data .= $block;
+                        $length -= function_exists('mb_strlen') ? mb_strlen($block, '8bit') : strlen($block);
+                    }
+                    return substr($data, 0, -2);
+                case '*':
+                    $count = (int)$line;
+                    $data = [];
+                    for ($i = 0; $i < $count; $i++)
+                    {
+                        $data[] = $parse();
+                    }
+                    return $data;
+                default:
+                    throw new Core\Exception([$this, 'ERR_CACHE_REDIS_2']);
+            }
+        };
+        return $parse();
+    }
+    
+    /**
+     * Returns meta information (expiration time and group) of the cached data.
+     * It returns FALSE if the data does not exist.
+     *
+     * @param mixed $key - the data key.
+     * @return array
+     * @access public
+     */
+    public function getMeta($key)
+    {
+        $res = $this->execute('GET', [self::META_PREFIX . $this->normalizeKey($key)]);
+        return $res === null ? null : unserialize($res);
+    }
+    
+    /**
+     * Returns some data previously stored in the cache.
+     *
+     * @param mixed $key - the data key.
+     * @param boolean $isExpired - will be set to TRUE if the given cache is expired and FALSE otherwise.
+     * @return mixed
+     * @access public
+     * @abstract
+     */
+    public function get($key, &$isExpired = null)
+    {
+        $res = $this->execute('GET', [$this->normalizeKey($key)]);
+        if ($res === null)
+        {
+            $isExpired = true;
+            return;
+        }
+        $isExpired = false;
+        return unserialize($res);
+    }
+  
+    /**
+     * Stores some data identified by a key in the cache.
+     *
+     * @param mixed $key - the data key.
+     * @param mixed $content - the cached data.
+     * @param integer $expire - the cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string $group - the group of data.
+     * @access public
+     */
+    public function set($key, $content, $expire = 0, $group = null)
+    {
+        $k = $this->normalizeKey($key);
+        $expire = $this->normalizeExpire($expire);
+        $this->execute('SETEX', [$k, $expire, serialize($content)]);
+        $this->execute('SETEX', [self::META_PREFIX . $k, $expire, serialize([$expire, $group])]);
+        $this->saveKeyToVault($key, $expire, $group);
+    }
+    
+    /**
+     * Updates the previously stored data with new data.
+     *
+     * @param mixed $key - the key of the data being updated.
+     * @param mixed $content - the new data.
+     * @return boolean - returns TRUE on success and FALSE on failure (if cache does not exist or expired).
+     * @access public
+     */
+    public function update($key, $content)
+    {
+        $key = $this->normalizeKey($key);
+        $meta = $this->execute('GET', [self::META_PREFIX . $key]);
+        return $meta ? $this->execute('SETEX', [$key, $meta[0], serialize($content)]) : false;
+    }
+    
+    /**
+     * Sets a new expiration on an cached data.
+     * Returns TRUE on success or FALSE on failure. 
+     *
+     * @param mixed $key - the data key.
+     * @param integer $expire - the new expiration time.
+     * @return boolean
+     * @access public
+     */
+    public function touch($key, $expire = 0)
+    {
+        $key = $this->normalizeKey($key);
+        $mkey = self::META_PREFIX . $key;
+        $meta = $this->execute('GET', [$mkey]);
+        if (isset($meta[0]) && $this->execute('EXISTS', [$key]))
+        {
+            $expire = $this->normalizeExpire($expire);
+            $meta[0] = $expire;
+            $this->execute('EXPIRE', [$key, $expire]);
+            $this->execute('SETEX', [$mkey, $meta, $expire]);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Removes some data identified by a key from the cache.
+     *
+     * @param mixed $key - the data key.
+     * @access public
+     */
+    public function remove($key)
+    {
+        $key = $this->normalizeKey($key);
+        $this->execute('DEL', [$key]);
+        $this->execute('DEL', [self::META_PREFIX . $key]);
+    }
 
-  /**
-   * Returns some data previously conserved in cache.
-   *
-   * @param string $key - a data key.
-   * @return boolean
-   * @access public
-   */
-  public function get($key)
-  {
-    $res = $this->execute('GET', [$key]);
-    return $res === null ? null : unserialize($res);
-  }
+    /**
+     * Checks whether cache lifetime is expired or not.
+     *
+     * @param string $key - the data key.
+     * @return boolean
+     * @access public
+     */
+    public function isExpired($key)
+    {
+        return !$this->execute('EXISTS', [$this->normalizeKey($key)]);
+    }
 
-  /**
-   * Checks whether cache lifetime is expired or not.
-   *
-   * @param string $key - a data key.
-   * @return boolean
-   * @access public
-   */
-  public function isExpired($key)
-  {
-    return !$this->execute('EXISTS', [$key]);
-  }
-
-  /**
-   * Removes some data identified by a key from cache.
-   *
-   * @param string $key - a data key.
-   * @access public
-   */
-  public function remove($key)
-  {
-    $this->execute('DEL', [$key]);
-  }
-
-  /**
-   * Removes all previously conserved data from cache.
-   *
-   * @access public
-   */
-  public function clean()
-  {
-    $this->execute('FLUSHDB');
-  }
+    /**
+     * Removes all previously stored data from the cache.
+     *
+     * @access public
+     */
+    public function clean()
+    {
+        $this->execute('FLUSHDB');
+    }
 }
