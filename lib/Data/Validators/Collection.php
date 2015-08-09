@@ -77,7 +77,7 @@ class Collection extends Validator
   public function validate($entity)
   {
     if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
-    if (!is_array($entity)) throw new Core\Exception($this, 'ERR_VALIDATOR_ARRAY_1');
+    if (!is_array($entity)) throw new Core\Exception([$this, 'ERR_VALIDATOR_ARRAY_1']);
     if ($this->type !== null)
     {
       switch (strtolower($this->type))
@@ -111,12 +111,12 @@ class Collection extends Validator
           }
           break;
         default:
-          throw new Core\Exception($this, 'ERR_VALIDATOR_ARRAY_3', $this->type);
+          throw new Core\Exception([$this, 'ERR_VALIDATOR_ARRAY_3'], $this->type);
       }
     }
     if ($this->array !== null)
     {
-      if (!is_array($this->array)) throw new Core\Exception($this, 'ERR_VALIDATOR_ARRAY_2');
+      if (!is_array($this->array)) throw new Core\Exception([$this, 'ERR_VALIDATOR_ARRAY_2']);
       if ($this->strict)
       {
         if ($this->array === $entity) return $this->reason = true;

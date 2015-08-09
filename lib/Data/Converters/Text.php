@@ -87,7 +87,7 @@ class Text extends Converter
     $input = strtolower($this->input);
     $output = strtolower($this->output);
     if (is_scalar($entity)) $entity = $this->convertEncoding($entity);
-    else if ($input != 'any') throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_1');
+    else if ($input != 'any') throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_1']);
     switch ($input)
     {
       case 'any':
@@ -108,9 +108,9 @@ class Text extends Converter
             case 'plain':
             case 'base64-encoded':
             case 'uu-encoded':
-              throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_4', $output);
+              throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_4'], $output);
             default:
-              throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_3', $output);
+              throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_3'], $output);
           }
           break;
         }
@@ -145,7 +145,7 @@ class Text extends Converter
             $entity = convert_uudecode($entity);
             break;
           default:
-            throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_3', $output);
+            throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_3'], $output);
         }
         break;
       case 'serialized':
@@ -171,7 +171,7 @@ class Text extends Converter
             $entity = convert_uuencode(unserialize($entity));
             break;
           default:
-            throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_3', $output);
+            throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_3'], $output);
         }
         break;
       case 'json-encoded':
@@ -197,7 +197,7 @@ class Text extends Converter
             $entity = convert_uuencode(json_decode($entity, true));
             break;
           default:
-            throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_3', $output);
+            throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_3'], $output);
         }
         break;
       case 'base64-encoded':
@@ -223,7 +223,7 @@ class Text extends Converter
             $entity = convert_uuencode(base64_decode($entity));
             break;
           default:
-            throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_3', $output);
+            throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_3'], $output);
         }
         break;
       case 'uu-encoded':
@@ -249,11 +249,11 @@ class Text extends Converter
             $entity = base64_encode(convert_uudecode($entity));
             break;
           default:
-            throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_3', $output);
+            throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_3'], $output);
         }
         break;
       default:
-        throw new Core\Exception($this, 'ERR_CONVERTER_TEXT_2', $input);
+        throw new Core\Exception([$this, 'ERR_CONVERTER_TEXT_2'], $input);
     }
     return $entity;
   }

@@ -384,7 +384,7 @@ class OCI8Statement
     else if ($style == \PDO::FETCH_KEY_PAIR)
     {
       $tmp = [];
-      if (count($rows) && count($rows[0]) != 2) throw new Core\Exception($this, 'ERR_OCI8STATEMENT_2');
+      if (count($rows) && count($rows[0]) != 2) throw new Core\Exception([$this, 'ERR_OCI8STATEMENT_2']);
       foreach ($rows as $row) $tmp[$row[0]] = $row[1];
       $rows = $tmp;
     }
@@ -400,7 +400,7 @@ class OCI8Statement
         if (count($rows))
         {
           $row = $rows[0]; $argn = count($row);
-          if ($argn < 2) throw new Core\Exception($this, 'ERR_OCI8STATEMENT_1');
+          if ($argn < 2) throw new Core\Exception([$this, 'ERR_OCI8STATEMENT_1']);
           $argn = $arg == $argn - 1 ? 0 : $arg + 1;
           foreach ($rows as $row) $tmp[$row[$arg]][] = $row[$argn];
         }

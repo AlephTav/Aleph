@@ -324,7 +324,6 @@ class Delegate implements IDelegate
             }
             else
             {
-                print_r($matches);exit;
                 $this->type = 'class';
                 $this->class = $matches[1] ?: (MVC\Page::$current instanceof MVC\Page ? get_class(MVC\Page::$current) : false);
                 if ($this->class === false)
@@ -509,7 +508,7 @@ class Delegate implements IDelegate
         {
             return false;
         }
-        if (!\Aleph::getInstance()->loadClass($this->class))
+        if (!\Aleph::loadClass($this->class))
         {
             return false;
         }

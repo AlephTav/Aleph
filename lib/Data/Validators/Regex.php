@@ -60,7 +60,7 @@ class Regex extends Validator
   public function validate($entity)
   {
     if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
-    if (!$this->pattern) throw new Core\Exception($this, 'ERR_VALIDATOR_REGEXP_1');
+    if (!$this->pattern) throw new Core\Exception([$this, 'ERR_VALIDATOR_REGEXP_1']);
     $this->reason = ['code' => 0, 'reason' => 'doesn\'t match'];
     if ($this->inversion)
     {

@@ -211,7 +211,7 @@ class DB
     {
       return self::$dbs[$dbalias];
     }
-    $a = \Aleph::getInstance()[$dbalias];
+    $a = \Aleph::get($dbalias);
     if (empty($a['dsn']))
     {
       throw new Core\Exception('Aleph\DB\DB::ERR_DB_3', $dbalias);
@@ -234,7 +234,7 @@ class DB
     $this->username = $username;
     $this->password = $password;
     $this->options = $options;
-    $config = \Aleph::getInstance()['db'];
+    $config = \Aleph::get('db');
     if (isset($config['logging'])) $this->logging = (bool)$config['logging'];
     if (isset($config['cacheExpire'])) $this->cacheExpire = (int)$config['cacheExpire'];
     if (isset($config['cacheGroup'])) $this->cacheGroup = $config['cacheGroup'];
@@ -285,7 +285,7 @@ class DB
       $this->connect($this->dsn, $this->username, $this->password, $this->options);
       return $this->sql;
     }
-    throw new Core\Exception('Aleph::ERR_GENERAL_3', $param, get_class($this));
+    throw new Core\Exception(['Aleph', 'ERR_GENERAL_3'], [$param, get_class($this)]);
   }
   
   /**
@@ -296,7 +296,7 @@ class DB
    */
   public function getCache()
   {
-    if ($this->cache === null) $this->cache = \Aleph::getInstance()->getCache();
+    if ($this->cache === null) $this->cache = \Aleph::getCache();
     return $this->cache;
   }
   
@@ -326,7 +326,7 @@ class DB
     if ($username === null) $username = $this->username;
     if ($password === null) $password = $this->password;
     if ($options === null) $options = $this->options;
-    if (!$dsn) throw new Core\Exception($this, 'ERR_DB_1');
+    if (!$dsn) throw new Core\Exception([$this, 'ERR_DB_1']);
     $this->disconnect();
     // Extracting the database driver.
     do
@@ -344,7 +344,7 @@ class DB
       }
     }
     while ($this->idsn['driver'] == 'uri');
-    if (empty($dsn[1])) throw new Core\Exception($this, 'ERR_DB_2');
+    if (empty($dsn[1])) throw new Core\Exception([$this, 'ERR_DB_2']);
     // Extracting the driver specific information.
     if ($this->idsn['driver'] == 'sqlite')
     {
@@ -870,14 +870,14 @@ class DB
     }
     $st = $this->__get('pdo')->prepare($sql);
     $this->prepare($st, $sql, $data);
-    if ($this->logging && isset(\Aleph::getInstance()['db']['log']))
+    if ($this->logging && ($log = \Aleph::get('db.log')))
     {
       $id = microtime(true);
-      \Aleph::pStart($id);
+      \Aleph::start($id);
       $res = $st->execute();
-      $duration = \Aleph::pStop($id);
+      $duration = \Aleph::stop($id);
       $this->affectedRows = $st->rowCount();
-      $file = \Aleph::dir(\Aleph::getInstance()['db']['log']);
+      $file = \Aleph::dir($log);
       $dir = pathinfo($file, PATHINFO_DIRNAME);
       if (!is_dir($dir)) mkdir($dir, 0775, true);
       $fp = fopen($file, 'a');

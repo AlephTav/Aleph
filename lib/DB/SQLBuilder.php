@@ -154,7 +154,7 @@ abstract class SQLBuilder
     foreach ($parts as &$part) 
     {
       if ($part == '*') continue;
-      if (strlen($part) == 0) throw new Core\Exception($this, 'ERR_SQL_2');
+      if (strlen($part) == 0) throw new Core\Exception([$this, 'ERR_SQL_2']);
       $part = $d . str_replace($d, $dd, $part) . $d;
     }
     return implode('.', $parts);
@@ -177,7 +177,7 @@ abstract class SQLBuilder
     foreach ($matches[1] as &$part) 
     {
       $part = str_replace($dd, $d, $part);
-      if (strlen($part) == 0) throw new Core\Exception($this, 'ERR_SQL_2');
+      if (strlen($part) == 0) throw new Core\Exception([$this, 'ERR_SQL_2']);
     }
     return implode('.', $matches[1]);
   }
@@ -602,7 +602,7 @@ abstract class SQLBuilder
   {
     if ($limit === null && $offset === null) return $this;
     $tmp = array_pop($this->sql);
-    if (isset($tmp['limit'])) throw new Core\Exception($this, 'ERR_SQL_3', 'limit');
+    if (isset($tmp['limit'])) throw new Core\Exception([$this, 'ERR_SQL_3'], 'limit');
     $tmp['limit'] = ['limit' => $limit, 'offset' => $offset];
     $this->sql[] = $tmp;
     return $this;
@@ -983,7 +983,7 @@ abstract class SQLBuilder
             break;
           default:
             if (count($operand) == 1 && !is_numeric($key)) $tmp[] = $this->wrap($key) . ' = ' . $this->addParam($operand, $data);
-            else throw new Core\Exception($this, 'ERR_SQL_5', $operator);
+            else throw new Core\Exception([$this, 'ERR_SQL_5'], $operator);
         }
       }
       return implode(' ' . $cnj . ' ', $tmp);

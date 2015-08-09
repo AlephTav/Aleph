@@ -373,7 +373,7 @@ class Picture
     $this->info['height'] = $info[1];
     $this->info['type'] = $info[2];
     $this->info['mime'] = $info['mime'];
-    $this->info['bits'] = $info['bits'];
+    $this->info['bits'] = isset($info['bits']) ? $info['bits'] : null;
     $this->info['size'] = filesize($image);
     $this->info['channels'] = isset($info['channels']) ? $info['channels'] : 0;
   }

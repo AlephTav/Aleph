@@ -348,7 +348,7 @@ abstract class Model
     {
       foreach ($values as $property => $value) 
       {
-        if (empty($this->properties[$property])) throw new Core\Exception($this, 'ERR_MODEL_1', $property, get_class($this));
+        if (empty($this->properties[$property])) throw new Core\Exception([$this, 'ERR_MODEL_1'], [$property, get_class($this)]);
         $tmp[$this->properties[$property]['column']] = $value;
       }
     }
@@ -708,7 +708,7 @@ abstract class Model
   {
     if (empty($this->properties[$property])) 
     {
-      if (empty($this->relations[$property])) throw new Core\Exception($this, 'ERR_MODEL_1', $property, get_class($this));
+      if (empty($this->relations[$property])) throw new Core\Exception([$this, 'ERR_MODEL_1'], [$property, get_class($this)]);
       if (empty($this->rels[$property]))
       {
         if ($this->relations[$property]['type'] == 'one')
@@ -742,8 +742,8 @@ abstract class Model
     static $lock = false;
     if (!$lock)
     {
-      if ($this->deleted) throw new Core\Exception($this, 'ERR_MODEL_2', get_class($this));
-      if (empty($this->properties[$property])) throw new Core\Exception($this, 'ERR_MODEL_1', $property, get_class($this));
+      if ($this->deleted) throw new Core\Exception([$this, 'ERR_MODEL_2'], get_class($this));
+      if (empty($this->properties[$property])) throw new Core\Exception([$this, 'ERR_MODEL_1'], [$property, get_class($this)]);
     }
     if ($value instanceof SQLExpression)
     {
@@ -758,16 +758,16 @@ abstract class Model
         $ops['property'] = $property;
         $value = \Aleph::delegate($prop['setter'], $value, $ops);
       }
-      if ($value === null && !$this->isNullable($property)) throw new Core\Exception($this, 'ERR_MODEL_3', $property, get_class($this)); 
-      if (is_array($value) || is_object($value)) throw new Core\Exception($this, 'ERR_MODEL_4', $property, get_class($this));
+      if ($value === null && !$this->isNullable($property)) throw new Core\Exception([$this, 'ERR_MODEL_3'], $property, get_class($this)); 
+      if (is_array($value) || is_object($value)) throw new Core\Exception([$this, 'ERR_MODEL_4'], $property, get_class($this));
       if ($value !== null) settype($value, $this->getPropertyPHPType($property));
       if ($value === $this->values[$property]) return;
       $type = $this->getPropertyType($property);
-      if ($type == 'enum' && !in_array($value, $this->getPropertyEnumeration($property))) throw new Core\Exception($this, 'ERR_MODEL_5', $property, get_class($this));
+      if ($type == 'enum' && !in_array($value, $this->getPropertyEnumeration($property))) throw new Core\Exception([$this, 'ERR_MODEL_5'], $property, get_class($this));
       if (($this->isText($property) && !$this->isDateTime($property) || $type == 'bit') && ($max = $this->getPropertyMaxLength($property)) > 0)
       {
         $length = $type == 'bit' ? strlen(decbin($value)) : strlen($value);
-        if ($length > $max) throw new Core\Exception($this, 'ERR_MODEL_6', $property, get_class($this), $max);
+        if ($length > $max) throw new Core\Exception([$this, 'ERR_MODEL_6'], $property, get_class($this), $max);
       }
     }
     $this->values[$property] = $value;
@@ -800,7 +800,7 @@ abstract class Model
    */
   public function __call($method, array $args)
   {
-    if (empty($this->relations[$method])) throw new Core\Exception($this, 'ERR_MODEL_8', get_class($this) . '::' . $method . '()');
+    if (empty($this->relations[$method])) throw new Core\Exception([$this, 'ERR_MODEL_8'], get_class($this) . '::' . $method . '()');
     $rel = $this->__get($method);
     return $rel(isset($args[0]) ? $args[0] : null, isset($args[1]) ? $args[1] : null, isset($args[2]) ? $args[2] : false);
   }
@@ -832,8 +832,8 @@ abstract class Model
    */
   public function insert(array $options = null)
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_MODEL_2', get_class($this));
-    if (!$this->isPrimaryKeyFilled(true)) throw new Core\Exception($this, 'ERR_MODEL_7', get_class($this), 'insert');
+    if ($this->deleted) throw new Core\Exception([$this, 'ERR_MODEL_2'], get_class($this));
+    if (!$this->isPrimaryKeyFilled(true)) throw new Core\Exception([$this, 'ERR_MODEL_7'], get_class($this), 'insert');
     if (static::$onBeforeInsert) \Aleph::delegate(static::$onBeforeInsert, $this);
     $res = $this->doAction('insert', $options);
     $this->changed = false;
@@ -851,9 +851,9 @@ abstract class Model
    */
   public function update()
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_MODEL_2', get_class($this));
+    if ($this->deleted) throw new Core\Exception([$this, 'ERR_MODEL_2'], get_class($this));
     if (!$this->changed) return 0;
-    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_MODEL_7', get_class($this), 'update');
+    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception([$this, 'ERR_MODEL_7'], get_class($this), 'update');
     if (static::$onBeforeUpdate) \Aleph::delegate(static::$onBeforeUpdate, $this);
     $res = $this->doAction('update');
     $this->changed = false;
@@ -870,8 +870,8 @@ abstract class Model
    */
   public function delete()
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_MODEL_2', get_class($this));
-    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_MODEL_7', get_class($this), 'delete');
+    if ($this->deleted) throw new Core\Exception([$this, 'ERR_MODEL_2'], get_class($this));
+    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception([$this, 'ERR_MODEL_7'], get_class($this), 'delete');
     if (static::$onBeforeDelete) \Aleph::delegate(static::$onBeforeDelete, $this);
     $res = $this->doAction('delete');
     $this->deleted = true;

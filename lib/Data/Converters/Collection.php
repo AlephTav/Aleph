@@ -95,7 +95,7 @@ class Collection extends Converter
    */
   public function convert($entity)
   {
-    if (!is_array($entity)) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_1');
+    if (!is_array($entity)) throw new Core\Exception([$this, 'ERR_CONVERTER_COLLECTION_1']);
     switch (strtolower($this->mode))
     {
       case 'transform':
@@ -105,7 +105,7 @@ class Collection extends Converter
       case 'exclude':
         return $this->exclude($entity);
     }
-    throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_2', $this->mode);
+    throw new Core\Exception([$this, 'ERR_CONVERTER_COLLECTION_2', $this->mode]);
   }
   
   /**
@@ -128,7 +128,7 @@ class Collection extends Converter
         {
           if (is_array($key))
           {
-            if (count($info[1]) == 0) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_3', $from, $to);
+            if (count($info[1]) == 0) throw new Core\Exception([$this, 'ERR_CONVERTER_COLLECTION_3'], [$from, $to]);
             $key = array_shift($info[1]);
           }
           if (!array_key_exists($key, $a)) $a[$key] = [];
@@ -160,7 +160,7 @@ class Collection extends Converter
         {
           if (is_array($key))
           {
-            if (count($info[1]) == 0) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_3', $from, $to);
+            if (count($info[1]) == 0) throw new Core\Exception([$this, 'ERR_CONVERTER_COLLECTION_3'], [$from, $to]);
             $key = array_shift($info[1]);
           }
           if (!array_key_exists($key, $a)) $a[$key] = [];
@@ -209,7 +209,7 @@ class Collection extends Converter
     {
       if (is_array($key))
       {
-        if (!is_array($array)) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_4', $from);
+        if (!is_array($array)) throw new Core\Exception([$this, 'ERR_CONVERTER_COLLECTION_4'], $from);
         $keys = array_slice($keys, $n + 1); $n = 0;
         foreach ($array as $k => $v)
         {
@@ -231,7 +231,7 @@ class Collection extends Converter
       }
       else
       {
-        if (!is_array($array) || !array_key_exists($key, $array)) throw new Core\Exception($this, 'ERR_CONVERTER_COLLECTION_4', $from);
+        if (!is_array($array) || !array_key_exists($key, $array)) throw new Core\Exception([$this, 'ERR_CONVERTER_COLLECTION_4'], $from);
         $array = $array[$key];
         if ($allKeys) $tmp[] = $key;
       }

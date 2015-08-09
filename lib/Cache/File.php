@@ -173,7 +173,7 @@ class File extends Cache
     public function getMeta($key)
     {
         $meta = $this->getValue(self::META_PREFIX . $this->normalizeKey($key));
-        return $meta !== false ? unserialized($meta) : false;
+        return $meta !== false ? unserialize($meta) : false;
     }
     
     /**
@@ -191,7 +191,7 @@ class File extends Cache
         $file = $this->dir . $key;
         $isExpired = @filemtime($file) <= time();
         $content = $this->getValue($key);
-        return $isExpired ? null : ($content !== false ? unserialized($content) : null);
+        return $isExpired ? null : ($content !== false ? unserialize($content) : null);
     }
 
     /**

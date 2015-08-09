@@ -12,12 +12,12 @@ class TestExceptionClass
   
   public function throwError1()
   {
-    throw new Core\Exception($this, 'ERR_1');
+    throw new Core\Exception([$this, 'ERR_1']);
   }
   
   public function throwError2()
   {
-    throw new Core\Exception($this, 'ERR_2', 'a', 'b');
+    throw new Core\Exception([$this, 'ERR_2'], ['a', 'b']);
   }
 }
 

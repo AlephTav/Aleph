@@ -114,7 +114,7 @@ class Compare extends Validator
         $func = function($value) use($entity) {return $value >= $entity;};
         break;
       default:
-        throw new Core\Exception($this, 'ERR_VALIDATOR_COMPARE_2', $this->operator);
+        throw new Core\Exception([$this, 'ERR_VALIDATOR_COMPARE_2'], $this->operator);
     }
     $this->reason = ['code' => 0, 'reason' => 'doesn\'t meet condition'];
     switch (strtolower($this->mode))
@@ -148,7 +148,7 @@ class Compare extends Validator
         if (!$flag) return false;
         break;
       default:
-        throw new Core\Exception($this, 'ERR_VALIDATOR_COMPARE_1', $this->mode);
+        throw new Core\Exception([$this, 'ERR_VALIDATOR_COMPARE_1'], $this->mode);
     }
     return $this->reason = true;
   }

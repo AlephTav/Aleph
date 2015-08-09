@@ -141,8 +141,7 @@ class API
    */
   public static function error(\Exception $e, array $info)
   {
-    $a = \Aleph::getInstance();
-    if (!$a['debugging']) static::$response->stop(500, '');
+    if (!\Aleph::get('debugging')) static::$response->stop(500, '');
     if (!static::$convertErrors) return true;
     static::$response->setContentType(static::$contentType, static::$outputCharset);
     static::$response->stop(500, static::convert($info));
@@ -157,7 +156,7 @@ class API
    */
   final public static function process()
   {
-    \Aleph::getInstance()['customDebugMethod'] = get_called_class() . '::error';
+    \Aleph::setErrorHandler(get_called_class() . '::error');
     static::$request = Request::getInstance();
     static::$response = Response::getInstance();
     static::$response->setContentType(static::$contentType, static::$outputCharset);
@@ -166,7 +165,7 @@ class API
     {
       if (empty($resource['callback']))
       {
-        throw new Core\Exception('Aleph\Net\API', 'ERR_API_1', $resource);
+        throw new Core\Exception(['Aleph\Net\API', 'ERR_API_1'], $resource);
       }
       $callback = $resource['callback'];
       foreach ($params as $param => $value)

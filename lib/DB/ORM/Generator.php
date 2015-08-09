@@ -200,7 +200,7 @@ class Generator
   public function setMode($mode)
   {
     $mode = (int)$mode;
-    if ($mode < 1 || $mode > 4) throw new Core\Exception($this, 'ERR_GENERATOR_8');
+    if ($mode < 1 || $mode > 4) throw new Core\Exception([$this, 'ERR_GENERATOR_8']);
     $this->mode = $mode;
   }
   
@@ -319,7 +319,7 @@ class Generator
     $namespace = trim($namespace, '\\');
     $dir = $this->extractDirectory($namespace, $directory);
     $info = $this->getDBInfo();
-    $tpl = new Core\Template(\Aleph::dir('aleph') . '/_templates/ar.tpl');
+    $tpl = new Core\Template(\Aleph::dir('@aleph') . '/_templates/ar.tpl');
     $tpl->namespace = $namespace;
     $tpl->alias = $this->alias;
     foreach ($info as $table => $data)
@@ -388,7 +388,7 @@ class Generator
     $namespace = trim($namespace, '\\');
     $dir = $this->extractDirectory($namespace, $directory);
     $info = $xml ? $this->getInfoFromXML($xml, $namespace) : $this->getInfoFromDB($namespace);
-    $tpl = new Core\Template(\Aleph::dir('aleph') . '/_templates/model.tpl');
+    $tpl = new Core\Template(\Aleph::dir('@aleph') . '/_templates/model.tpl');
     $tpl->namespace = $namespace;
     $tpl->alias = PHP\Tools::php2str($this->alias);
     foreach ($info as $model => $data)
@@ -609,9 +609,9 @@ class Generator
     $info = $this->getDBInfo();
     $dom = new \DOMDocument('1.0', 'utf-8');
     $dom->load($xml);
-    $dom->schemaValidate(\Aleph::dir('aleph') . '/_templates/db.xsd');
+    $dom->schemaValidate(\Aleph::dir('@aleph') . '/_templates/db.xsd');
     $dom = simplexml_import_dom($dom);
-    if ((string)$dom['Alias'] != $this->alias) throw new Core\Exception($this, 'ERR_GENERATOR_3');
+    if ((string)$dom['Alias'] != $this->alias) throw new Core\Exception([$this, 'ERR_GENERATOR_3']);
     $namespace = trim((string)$dom['Namespace'], '\\');
     $dbal = [];
     foreach ($dom->Model as $model)
@@ -624,7 +624,7 @@ class Generator
         $tables[] = $table;
         $wtb = $this->db->wrap($table, true);
         $pk = $cols = [];
-        if (empty($info[$table])) throw new Core\Exception($this, 'ERR_GENERATOR_4', $table, $this->alias, $class);
+        if (empty($info[$table])) throw new Core\Exception([$this, 'ERR_GENERATOR_4'], [$table, $this->alias, $class]);
         foreach ($info[$table]['pk'] as $column) $pk[] = $wtb . '.' . $this->db->wrap($column);
         foreach ($info[$table]['columns'] as $column => $cinfo)
         {
@@ -647,8 +647,8 @@ class Generator
         $property = (string)$prop['Name'];
         $table = (string)$prop['Table'];
         $column = (string)$prop['Column'];
-        if (empty($info[$table])) throw new Core\Exception($this, 'ERR_GENERATOR_4', $table, $this->alias, $class);
-        if (empty($info[$table]['columns'][$column])) throw new Core\Exception($this, 'ERR_GENERATOR_5', $column, $table, $class);
+        if (empty($info[$table])) throw new Core\Exception([$this, 'ERR_GENERATOR_4'], [$table, $this->alias, $class]);
+        if (empty($info[$table]['columns'][$column])) throw new Core\Exception([$this, 'ERR_GENERATOR_5'], [$column, $table, $class]);
         $col = $this->db->wrap($table, true) . '.' . $this->db->wrap($column);
         $columns[$col]['alias'] = $property;
         if ($this->useTransformation && isset($prop->Transformation) && (string)$prop->Transformation['Type'] == 'datetime')
@@ -680,27 +680,27 @@ class Generator
         {
           $relation = (string)$rel['Name'];
           $rmodel = (string)$rel['Model'];
-          if (PHP\Tools::getNamespace($rmodel) != $namespace) throw new Core\Exception($this, 'ERR_GENERATOR_6', $rmodel);
+          if (PHP\Tools::getNamespace($rmodel) != $namespace) throw new Core\Exception([$this, 'ERR_GENERATOR_6'], $rmodel);
           $rclass = $this->normalizeClass(PHP\Tools::getClassName($rmodel));
           $type = (string)$rel['Type'];
           $len = count($rel->Join) - 1;
           $table = (string)$rel->Join[0]->From['Table'];
-          if (empty($info[$table])) throw new Core\Exception($this, 'ERR_GENERATOR_4', $table, $this->alias, $class);
+          if (empty($info[$table])) throw new Core\Exception([$this, 'ERR_GENERATOR_4'], [$table, $this->alias, $class]);
           $sql = $dbal[$rclass]['RSQL'];
           $sql = $this->db->sql->start(substr($sql, 0, strpos($sql, ' FROM ') + 6) . $this->db->wrap($table, true));
           for ($n = 0; $n <= $len; $n++)
           {
             $join = $rel->Join[$n];
             $fromTable = (string)$join->From['Table'];
-            if (empty($info[$fromTable])) throw new Core\Exception($this, 'ERR_GENERATOR_4', $fromTable, $this->alias, $class);
+            if (empty($info[$fromTable])) throw new Core\Exception([$this, 'ERR_GENERATOR_4'], [$fromTable, $this->alias, $class]);
             $toTable = (string)$join->To['Table'];
-            if (empty($info[$toTable])) throw new Core\Exception($this, 'ERR_GENERATOR_4', $toTable, $this->alias, $class);
-            if (count($join->From->Column) != count($join->To->Column)) throw new Core\Exception($this, 'ERR_GENERATOR_7', $relation, $class);
+            if (empty($info[$toTable])) throw new Core\Exception([$this, 'ERR_GENERATOR_4'], [$toTable, $this->alias, $class]);
+            if (count($join->From->Column) != count($join->To->Column)) throw new Core\Exception([$this, 'ERR_GENERATOR_7'], [$relation, $class]);
             $columns = $properties = []; $k = 0;
             foreach ($join->To->Column as $column)
             {
               $fromColumn = (string)$join->From->Column[$k]['Name'];
-              if (empty($info[$fromTable]['columns'][$fromColumn])) throw new Core\Exception($this, 'ERR_GENERATOR_5', $fromColumn, $fromTable, $class);
+              if (empty($info[$fromTable]['columns'][$fromColumn])) throw new Core\Exception([$this, 'ERR_GENERATOR_5'], [$fromColumn, $fromTable, $class]);
               $toColumn = (string)$column['Name'];
               if (empty($info[$toTable]['columns'][$toColumn])) throw new Core\Exception($this, 'ERR_GENERATOR_5', $toColumn, $toTable, $class);
               if ($n == $len)

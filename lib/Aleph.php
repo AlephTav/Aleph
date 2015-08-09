@@ -174,7 +174,7 @@ final class Aleph
         'cache' => [
             'type' => 'file',
             'directory' => '@cache',
-            'gcProbability' => 33.33
+            'gcProbability' => 5
         ],
         // Class autoload settings.
         'autoload' => [

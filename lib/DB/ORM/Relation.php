@@ -173,7 +173,7 @@ class Relation implements \Iterator
     }
     else
     {
-      if (!($bind instanceof DB\DB)) throw new Core\Exception($this, 'ERR_RELATION_1');
+      if (!($bind instanceof DB\DB)) throw new Core\Exception([$this, 'ERR_RELATION_1']);
       $this->db = $bind;
     }
     $this->sql = $sql;

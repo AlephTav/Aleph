@@ -109,7 +109,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       case self::ESCAPE_RIGHT_LIKE:
         return "'" . addcslashes($value, "\\'_%\n\r\t\x00\x08\x1a") . "%'";
     }
-    throw new Core\Exception($this, 'ERR_SQL_4', $format);
+    throw new Core\Exception([$this, 'ERR_SQL_4'], $format);
   }
   
   /**
@@ -239,7 +239,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function renameColumn($table, $oldName, $newName)
   {
-    throw new Core\Exception($this, 'ERR_MYSQL_1');
+    throw new Core\Exception([$this, 'ERR_MYSQL_1']);
   }
   
   /**

@@ -79,7 +79,7 @@ abstract class DBCore
    */
   public static function getInstance($dsn, $username = null, $password = null, array $options = null)
   {
-    if ($dsn == '') throw new Core\Exception(__CLASS__, 'ERR_DB_1');
+    if ($dsn == '') throw new Core\Exception([__CLASS__, 'ERR_DB_1']);
     $tmp = array();
     do
     {
@@ -96,7 +96,7 @@ abstract class DBCore
       }
     }
     while ($tmp['driver'] == 'uri');
-    if (empty($dsn[1])) throw new Core\Exception(__CLASS__, 'ERR_DB_2');
+    if (empty($dsn[1])) throw new Core\Exception([__CLASS__, 'ERR_DB_2']);
     $dsn = explode(';', $dsn[1]);
     foreach ($dsn as $v)
     {
@@ -110,7 +110,7 @@ abstract class DBCore
     {
       case 'mysql': return new MySQLCore($tmp);
     }
-    throw new Core\Exception(__CLASS__, 'ERR_DB_3');
+    throw new Core\Exception([__CLASS__, 'ERR_DB_3']);
   }
   
   /**

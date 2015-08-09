@@ -80,13 +80,13 @@ class Type extends Converter
       case 'object':
         break;
       default:
-        throw new Core\Exception($this, 'ERR_CONVERTER_TYPE_1', $type);
+        throw new Core\Exception([$this, 'ERR_CONVERTER_TYPE_1'], $type);
     }
     if ($entity !== null && !is_scalar($entity))
     {
       if ($type == 'string' && is_array($entity) || is_object($entity) && ($type == 'string' && !method_exists($entity, '__toString') || $type == 'integer' || $type == 'float'))
       {
-        throw new Core\Exception($this, 'ERR_CONVERTER_TYPE_2', strtolower(gettype($entity)), $type);
+        throw new Core\Exception([$this, 'ERR_CONVERTER_TYPE_2'], strtolower(gettype($entity)), $type);
       }
     }
     settype($entity, $type);

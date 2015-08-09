@@ -162,23 +162,23 @@ class AR
   public function __construct(/* $table, DB|string $db = null, $cacheExpire = null, $cacheGroup = null */)
   {
     $args = func_get_args();
-    if (empty($args[0])) throw new Core\Exception('Aleph\DB\AR::ERR_AR_1');
+    if (empty($args[0])) throw new Core\Exception([$this, 'ERR_AR_1']);
     if (isset($args[1]))
     {
       $db = $args[1];
       if (is_scalar($db)) $db = DB::getConnection($db);
-      if (!($db instanceof DB)) throw new Core\Exception('Aleph\DB\AR::ERR_AR_2');
+      if (!($db instanceof DB)) throw new Core\Exception([$this, 'ERR_AR_2']);
     }
     else
     {
       $db = static::$connection ?: \Aleph::get('db');
-      if (!($db instanceof DB)) throw new Core\Exception($this, 'ERR_AR_3');
+      if (!($db instanceof DB)) throw new Core\Exception([$this, 'ERR_AR_3']);
     }
     if (!$db->isConnected()) $db->connect();
     $table = $args[0]; $dbname = $db->getDBName();
     if (!isset(static::$info[$dbname][$table]))
     {
-      $config = \Aleph::getInstance()['ar'];
+      $config = \Aleph::get('ar');
       if (!empty($args[2])) $cacheExpire = (int)$args[2];
       else if (static::$cacheExpire !== null) $cacheExpire = (int)static::$cacheExpire;
       else if (isset($config['cacheExpire'])) $cacheExpire = (int)$config['cacheExpire'];
@@ -543,7 +543,7 @@ class AR
    */
   public function __get($column)
   {
-    if (!$this->__isset($column)) throw new Core\Exception($this, 'ERR_AR_4', $column, $this->table);
+    if (!$this->__isset($column)) throw new Core\Exception([$this, 'ERR_AR_4'], [$column, $this->table]);
     return $this->columns[$column];
   }
   
@@ -556,19 +556,19 @@ class AR
    */
   public function __set($column, $value)
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
-    if (!$this->__isset($column)) throw new Core\Exception($this, 'ERR_AR_4', $column, $this->table);
-    if ($value === null && !$this->isNullable($column)) throw new Core\Exception($this, 'ERR_AR_5', $column, $this->table);
-    if (is_array($value) || is_object($value) && !($value instanceof SQLExpression)) throw new Core\Exception($this, 'ERR_AR_6', $column, $this->table);
+    if ($this->deleted) throw new Core\Exception([$this, 'ERR_AR_10'], $this->table);
+    if (!$this->__isset($column)) throw new Core\Exception([$this, 'ERR_AR_4'], [$column, $this->table]);
+    if ($value === null && !$this->isNullable($column)) throw new Core\Exception([$this, 'ERR_AR_5'], [$column, $this->table]);
+    if (is_array($value) || is_object($value) && !($value instanceof SQLExpression)) throw new Core\Exception([$this, 'ERR_AR_6'], [$column, $this->table]);
     if ($value === $this->columns[$column]) return;
     if (!($value instanceof SQLExpression))
     {
       $type = $this->getColumnType($column);
-      if ($type == 'enum' && !in_array($value, $this->getColumnEnumeration($column))) throw new Core\Exception($this, 'ERR_AR_8', $column, $this->table);
+      if ($type == 'enum' && !in_array($value, $this->getColumnEnumeration($column))) throw new Core\Exception([$this, 'ERR_AR_8'], [$column, $this->table]);
       if (($this->isText($column) && !$this->isDateTime($column) || $type == 'bit') && ($max = $this->getColumnMaxLength($column)) > 0)
       {
         $length = $type == 'bit' ? strlen(decbin($value)) : strlen($value);
-        if ($length > $max) throw new Core\Exception($this, 'ERR_AR_7', $column, $this->table, $max);
+        if ($length > $max) throw new Core\Exception([$this, 'ERR_AR_7'], [$column, $this->table, $max]);
       }
     }
     $this->columns[$column] = $value;
@@ -669,8 +669,8 @@ class AR
    */
   public function insert(array $options = null)
   {
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
-    if (!$this->isPrimaryKeyFilled(true)) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'insert');
+    if ($this->deleted) throw new Core\Exception([$this, 'ERR_AR_10'], $this->table);
+    if (!$this->isPrimaryKeyFilled(true)) throw new Core\Exception([$this, 'ERR_AR_9'], [$this->table, 'insert']);
     $tmp = [];
     foreach ($this->columns as $column => $value) 
     {
@@ -696,9 +696,9 @@ class AR
   public function update($where = null)
   {
     if ($where !== null) return $this->db->update($this->table, $this->columns, $where);
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
+    if ($this->deleted) throw new Core\Exception([$this, 'ERR_AR_10'], $this->table);
     if (!$this->changed) return 0;
-    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'update');
+    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception([$this, 'ERR_AR_9'], [$this->table, 'update']);
     $res = $this->db->update($this->table, $this->columns, $this->getWhereData());
     $this->changed = false;
     return $res;
@@ -715,8 +715,8 @@ class AR
   public function delete($where = null)
   {
     if ($where !== null) return $this->db->delete($this->table, $where);
-    if ($this->deleted) throw new Core\Exception($this, 'ERR_AR_10', $this->table);
-    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception($this, 'ERR_AR_9', $this->table, 'delete');
+    if ($this->deleted) throw new Core\Exception([$this, 'ERR_AR_10'], $this->table);
+    if (!$this->isPrimaryKeyFilled()) throw new Core\Exception([$this, 'ERR_AR_9'], [$this->table, 'delete']);
     $res = $this->db->delete($this->table, $this->getWhereData());
     $this->deleted = true;
     return $res;
@@ -771,7 +771,7 @@ class AR
     else
     {
       $info = array_values($info);
-      if (empty($info[$relation])) throw new Core\Exception($this, 'ERR_AR_11', $relation, $this->table);
+      if (empty($info[$relation])) throw new Core\Exception([$this, 'ERR_AR_11'], [$relation, $this->table]);
       $info = $info[$relation];
     }
     $sql = $this->db->sql;

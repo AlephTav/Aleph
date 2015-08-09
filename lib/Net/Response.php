@@ -663,9 +663,9 @@ class Response
     if ($this->headers->has('Transfer-Encoding')) $this->headers->remove('Content-Length');
     if ($request->method == 'HEAD' || $this->status >= 100 && $this->status < 200 || $this->status == 204 || $this->status == 304) $this->body = null;
     if (empty($this->version)) $this->version = empty($request->server['SERVER_PROTOCOL']) || $request->server['SERVER_PROTOCOL'] != 'HTTP/1.0' ? '1.1' : '1.0';
-    if ($this->version != '1.0' && $this->version != '1.1') throw new Core\Exception($this, 'ERR_RESPONSE_1');
+    if ($this->version != '1.0' && $this->version != '1.1') throw new Core\Exception([$this, 'ERR_RESPONSE_1']);
     if (empty($this->status)) $this->status = 200;
-    if (!isset(self::$codes[$this->status])) throw new Core\Exception($this, 'ERR_RESPONSE_2', $this->status);
+    if (!isset(self::$codes[$this->status])) throw new Core\Exception([$this, 'ERR_RESPONSE_2'], $this->status);
     if (!headers_sent())
     {
       $headers = $this->headers->getHeaders();

@@ -50,7 +50,7 @@ abstract class Converter
   final public static function getInstance($type, array $params = [])
   {
     $class = 'Aleph\Data\Converters\\' . $type;
-    if (!\Aleph::getInstance()->loadClass($class)) throw new Core\Exception('Aleph\Data\Converters\Converter::ERR_CONVERTER_1', $type);
+    if (!\Aleph::loadClass($class)) throw new Core\Exception('Aleph\Data\Converters\Converter::ERR_CONVERTER_1', $type);
     $converter = new $class;
     foreach ($params as $k => $v) $converter->{$k} = $v;
     return $converter;

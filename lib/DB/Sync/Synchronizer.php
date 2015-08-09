@@ -209,8 +209,8 @@ class Synchronizer
    */
   public function sync($merge = false)
   {
-    if ($this->out === null) throw new Core\Exception($this, 'ERR_SYNC_1');
-    if ($this->in === null) throw new Core\Exception($this, 'ERR_SYNC_2');
+    if ($this->out === null) throw new Core\Exception([$this, 'ERR_SYNC_1']);
+    if ($this->in === null) throw new Core\Exception([$this, 'ERR_SYNC_2']);
     if ($this->params['username'] === null) $writer = new VaultWriter($this->params['vaultordsn']);
     else $writer = DBCore::getInstance($this->params['vaultordsn'], $this->params['username'], $this->params['password'], $this->params['options'])->getWriter();
     return $writer->write($this->compare($this->out, $this->in, $merge));
@@ -228,7 +228,7 @@ class Synchronizer
   protected function compare(array $d1, array $d2, $merge)
   {
     if (count($d2) == 0) return array('insert' => array(), 'update' => $d1, 'delete' => array());
-    if ($d1['meta']['driver'] != $d2['meta']['driver']) throw new Core\Exception($this, 'ERR_SYNC_3');
+    if ($d1['meta']['driver'] != $d2['meta']['driver']) throw new Core\Exception([$this, 'ERR_SYNC_3']);
     $update = array();
     $insert = array('tables' => array(), 'columns' => array(), 'indexes' => array(), 'constraints' => array(), 'triggers' => array());
     $delete = array('triggers' => array(), 'constraints' => array(), 'indexes' => array(), 'columns' => array(), 'tables' => array());

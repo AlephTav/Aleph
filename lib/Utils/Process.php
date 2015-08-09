@@ -130,15 +130,14 @@ class Process
   public static function operate()
   {
     if (!isset($_SERVER['argv'][1]) || $_SERVER['argv'][1] != md5($_SERVER['SCRIPT_FILENAME'])) return false;
-    $a = \Aleph::getInstance();
-    $cache = $a->getCache();
+    $cache = \Aleph::getCache();
     $uid = $_SERVER['argv'][2];
-    $a['customDebugMethod'] = function(\Exception $e, array $info) use($cache, $uid)
+    \Aleph::setErrorHandler(function(\Exception $e, array $info) use($cache, $uid)
     {
       $cache->set($uid . 'out', $info, static::$cacheExpire, static::$cacheGroup);
       $cache->remove($uid . 'in');
       exit;
-    };
+    });
     register_shutdown_function(function() use($cache, $uid)
     {
       $cache->remove($uid . 'in');
@@ -158,7 +157,7 @@ class Process
    */
   public function __construct($command)
   {
-    $this->cache = \Aleph::getInstance()->getCache();
+    $this->cache = \Aleph::getCache();
     if ($command === null && isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] == md5($_SERVER['SCRIPT_FILENAME']))
     {
       $this->child = true;
@@ -169,18 +168,18 @@ class Process
     {
       if ($command instanceof Core\Delegate)
       {
-        if ($command->getType() == 'closure') throw new Core\Exception($this, 'ERR_PROCESS_2');
+        if ($command->getType() == 'closure') throw new Core\Exception([$this, 'ERR_PROCESS_2']);
       }
       else if (!is_string($command) || strlen($command) == 0)
       {
-        throw new Core\Exception($this, 'ERR_PROCESS_1');
+        throw new Core\Exception([$this, 'ERR_PROCESS_1']);
       }
       $this->cmd = $command;
     }
     if (!static::$php)
     {
       static::$php = PHP\Tools::getPHPBinary();
-      if (static::$php === false) throw new Core\Exception($this, 'ERR_PROCESS_4');
+      if (static::$php === false) throw new Core\Exception([$this, 'ERR_PROCESS_4']);
     }
   }
 
@@ -250,7 +249,7 @@ class Process
    */
   public function start($data = null)
   {
-    if ($this->isStarted()) throw new Core\Exception($this, 'ERR_PROCESS_3');
+    if ($this->isStarted()) throw new Core\Exception([$this, 'ERR_PROCESS_3']);
     if ($this->cmd instanceof Core\Delegate || !file_exists($this->cmd)) 
     {
       $data = ['data' => $data, 'delegate' => (string)$this->cmd];

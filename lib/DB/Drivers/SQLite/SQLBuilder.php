@@ -103,7 +103,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       case self::ESCAPE_RIGHT_LIKE:
         return "'" . addcslashes(str_replace("'", "''", $value), '_%') . "%'";
     }
-    throw new Core\Exception($this, 'ERR_SQL_4', $format);
+    throw new Core\Exception([$this, 'ERR_SQL_4'], $format);
   }
   
   /**
@@ -227,7 +227,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function renameColumn($table, $oldName, $newName)
   {
-    throw new Core\Exception($this, 'ERR_SQLITE_1');
+    throw new Core\Exception([$this, 'ERR_SQLITE_1']);
   }
   
   /**
@@ -273,7 +273,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function addForeignKey($name, $table, array $columns, $refTable, array $refColumns, $delete = null, $update = null)
   {
-    throw new Core\Exception($this, 'ERR_SQLITE_2');
+    throw new Core\Exception([$this, 'ERR_SQLITE_2']);
   }
   
   /**
@@ -286,7 +286,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function dropForeignKey($name, $table)
   {
-    throw new Core\Exception($this, 'ERR_SQLITE_3');
+    throw new Core\Exception([$this, 'ERR_SQLITE_3']);
   }
   
   /**

@@ -490,7 +490,7 @@ class Router
    */
   private function option($option, $value)
   {
-    if ($this->lact === null) throw new Core\Exception($this, 'ERR_ROUTER_1');
+    if ($this->lact === null) throw new Core\Exception([$this, 'ERR_ROUTER_1']);
     if (is_array($value))
     {
       foreach ($this->lact[2] as $method) $this->acts[$this->lact[0]][$method][$this->lact[1]][$option] = array_merge($this->acts[$this->lact[0]][$method][$this->lact[1]][$option], $value);

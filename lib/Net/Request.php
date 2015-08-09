@@ -158,7 +158,7 @@ class Request
    */
   public function reset()
   {
-    $this->url = new URL();
+    $this->url = URL::current();
     $this->body = null;
     $this->headers = Headers::getRequestHeaders();
     $this->data = $_REQUEST;
@@ -200,7 +200,7 @@ class Request
       if ($this->body === null) $this->body = file_get_contents('php://input');
       return $this->body;
     }
-    throw new Core\Exception('Aleph::ERR_GENERAL_3', $param, get_class($this));
+    throw new Core\Exception('Aleph::ERR_GENERAL_3', [$param, get_class($this)]);
   }
   
   /**
@@ -213,7 +213,7 @@ class Request
   public function __set($param, $value)
   {
     if ($param == 'body') $this->body = (string)$value;
-    else throw new Core\Exception('Aleph::ERR_GENERAL_3', $param, get_class($this));
+    else throw new Core\Exception('Aleph::ERR_GENERAL_3', [$param, get_class($this)]);
   }
   
   /**
@@ -226,7 +226,7 @@ class Request
   public function __isset($param)
   {
     if ($param == 'body') return strlen($this->__get('body')) > 0;
-    throw new Core\Exception('Aleph::ERR_GENERAL_3', $param, get_class($this));
+    throw new Core\Exception('Aleph::ERR_GENERAL_3', [$param, get_class($this)]);
   }
   
   /**
@@ -238,7 +238,7 @@ class Request
   public function __unset($param)
   {
     if ($param == 'body') $this->body = '';
-    else throw new Core\Exception('Aleph::ERR_GENERAL_3', $param, get_class($this));
+    else throw new Core\Exception('Aleph::ERR_GENERAL_3', [$param, get_class($this)]);
   }
   
   /**

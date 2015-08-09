@@ -75,7 +75,7 @@ abstract class Validator
   final public static function getInstance($type, array $params = [])
   {
     $class = 'Aleph\Data\Validators\\' . $type;
-    if (!\Aleph::getInstance()->loadClass($class)) throw new Core\Exception('Aleph\Data\Validators\Validator::ERR_VALIDATOR_1', $type);
+    if (!\Aleph::loadClass($class)) throw new Core\Exception('Aleph\Data\Validators\Validator::ERR_VALIDATOR_1', $type);
     $validator = new $class;
     foreach ($params as $k => $v) $validator->{$k} = $v;
     return $validator;

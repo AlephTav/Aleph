@@ -86,18 +86,18 @@ class JSON extends Validator
     if ($this->empty && $this->isEmpty($entity)) return $this->reason = true;
     $original = $entity;
     $entity = json_decode($entity);
-    if ($entity === null && strtolower($original) != 'null') throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_1');
+    if ($entity === null && strtolower($original) != 'null') throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_1']);
     if ($this->schema !== null)
     {
       $schema = json_decode(is_file($this->schema) ? file_get_contents($this->schema) : $this->schema);
-      if ($schema === null) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_2');
+      if ($schema === null) throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_2']);
       if (!$this->checkSchema($entity, $schema)) return false;
     }
     if ($this->json === null) return $this->reason = true;
     $entity = json_decode($entity, true);
     $original = is_file($this->json) ? file_get_contents($this->json) : $this->json;
     $json = json_decode($original, true);
-    if ($json === null && $original !== null) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_3');
+    if ($json === null && $original !== null) throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_3']);
     if ($entity === $json) return $this->reason = true;
     $this->reason = ['code' => 1, 'reason' => 'JSON are not equal'];
     return false;
@@ -223,7 +223,7 @@ class JSON extends Validator
       }
       else
       {
-        throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_4', $path, $type);
+        throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_4'], [$path, $type]);
       }
     }
     if (!$flag) 
@@ -341,7 +341,7 @@ class JSON extends Validator
     }
     else if (isset($schema->exclusiveMinimum))
     {
-      throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_5', $path);
+      throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_5'], $path);
     }
     return true;
   }
@@ -376,7 +376,7 @@ class JSON extends Validator
     }
     else if (isset($schema->exclusiveMaximum))
     {
-      throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_6', $path);
+      throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_6'], $path);
     }
     return true;
   }
@@ -397,7 +397,7 @@ class JSON extends Validator
     {
       if (!is_numeric($schema->multipleOf) || $schema->multipleOf == 0)
       {
-        throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_7', $path);
+        throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_7'], $path);
       }
       if (fmod($entity, $schema->multipleOf) != 0)
       {
@@ -521,7 +521,7 @@ class JSON extends Validator
       }
       return true;
     }
-    throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_8', $path);
+    throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_8'], $path);
   }
   
   /**
@@ -679,7 +679,7 @@ class JSON extends Validator
         }
         else
         {
-          throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_9', $path);
+          throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_9'], $path);
         }
       }
     }
@@ -733,7 +733,7 @@ class JSON extends Validator
     {
       foreach ((array)$schema->allOf as $newSchema)
       {
-        if (!is_object($newSchema)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'allOf');
+        if (!is_object($newSchema)) throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_10'], $path, 'allOf');
         if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) return false;
       }
     }
@@ -756,7 +756,7 @@ class JSON extends Validator
     {
       foreach ((array)$schema->anyOf as $newSchema)
       {
-        if (!is_object($newSchema)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'anyOf');
+        if (!is_object($newSchema)) throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_10'], $path, 'anyOf');
         if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) continue;
       }
     }
@@ -780,7 +780,7 @@ class JSON extends Validator
       $flag = false;
       foreach ((array)$schema->oneOf as $newSchema)
       {
-        if (!is_object($newSchema)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'oneOf');
+        if (!is_object($newSchema)) throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_10'], $path, 'oneOf');
         if (!$this->checkType($entity, $this->resolveRef($newSchema), $path)) continue;   
         if ($flag)
         {
@@ -812,7 +812,7 @@ class JSON extends Validator
   {
     if (isset($schema->not))
     {
-      if (!is_object($schema->not)) throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_10', $path, 'not');
+      if (!is_object($schema->not)) throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_10'], $path, 'not');
       if ($this->checkType($entity, $this->resolveRef($schema->not), $path)) 
       {
         $this->reason['details'][] = 'Property "' . $path . '" should not validate successfully against the schema defined by keyword "not".';
@@ -907,7 +907,7 @@ class JSON extends Validator
     {
       $original = trim(file_get_contents($ref));
       $new = json_decode($original);
-      if ($new === null && strtolower($original) != 'null') throw new Core\Exception($this, 'ERR_VALIDATOR_JSON_12', $ref);
+      if ($new === null && strtolower($original) != 'null') throw new Core\Exception([$this, 'ERR_VALIDATOR_JSON_12'], $ref);
     }
     else
     {

@@ -193,7 +193,7 @@ class DOM extends \DOMDocument
   public function insert($id, $html)
   {
     $node = $id instanceof \DOMNode ? $id : $this->getElementById($id);
-    if ($node === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    if ($node === null) throw new Core\Exception([$this, 'ERR_DOM_1'], $id);
     return $this->setInnerHTML($html, $node);
   }
 
@@ -209,7 +209,7 @@ class DOM extends \DOMDocument
   public function replace($id, $html)
   {
     $node = $id instanceof \DOMNode ? $id : $this->getElementById($id);
-    if ($node === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    if ($node === null) throw new Core\Exception([$this, 'ERR_DOM_1'], $id);
     $node->parentNode->replaceChild($new = $this->HTMLToNode($html), $node);
     return $new;
   }
@@ -228,7 +228,7 @@ class DOM extends \DOMDocument
   public function inject($id, $html, $mode = self::DOM_INJECT_TOP)
   {
     $old = $id instanceof \DOMNode ? $id : $this->getElementById($id);
-    if ($old === null) throw new Core\Exception($this, 'ERR_DOM_1', $id);
+    if ($old === null) throw new Core\Exception([$this, 'ERR_DOM_1'], $id);
     $node = $this->HTMLToNode($html);
     switch ($mode)
     {

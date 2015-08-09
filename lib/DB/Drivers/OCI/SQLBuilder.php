@@ -104,7 +104,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
       case self::ESCAPE_RIGHT_LIKE:
         return "'" . addcslashes(str_replace("'", "''", $value), '\_%') . "%' ESCAPE '\'";
     }
-    throw new Core\Exception($this, 'ERR_SQL_4', $format);
+    throw new Core\Exception([$this, 'ERR_SQL_4'], $format);
   }
   
   /**
@@ -263,7 +263,7 @@ class SQLBuilder extends \Aleph\DB\SQLBuilder
    */
   public function changeColumn($table, $oldName, $newName, $type)
   {
-    if ($oldName != $newName) throw new Core\Exception($this, 'ERR_OCI_1'); 
+    if ($oldName != $newName) throw new Core\Exception([$this, 'ERR_OCI_1']); 
     return 'ALTER TABLE ' . $this->wrap($table, true) . ' MODIFY ' . $this->wrap($newName) . ' ' . $type;
   }
   
