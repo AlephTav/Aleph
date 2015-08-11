@@ -26,11 +26,16 @@ namespace Aleph\Utils;
  * Contains the set of static methods for facilitating the work with arrays.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.1
+ * @version 1.1.2
  * @package aleph.utils
  */
 class Arr
 {
+    /**
+     * Default key delimiter in composite array keys.
+     */
+    const DEFAULT_KEY_DELIMITER = '.';
+    
     /**
      * Returns TRUE if the given array is numeric and FALSE otherwise.
      *
@@ -50,13 +55,14 @@ class Arr
      * @param array $array - the multidimensional array.
      * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
      * @param mixed $default - the default value of an element if it don't exist.
+     * @param string $delimiter - the key delimiter in composite keys.
      * @return mixed
      * @access public
      * @static
      */
-    public static function get(array $array, $keys, $default = null)
+    public static function get(array $array, $keys, $default = null, $delimiter = static::DEFAULT_KEY_DELIMITER)
     {
-        $keys = is_array($keys) ? $keys : explode('.', $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
         $arr = $array;
         foreach ($keys as $key)
         {
@@ -76,13 +82,14 @@ class Arr
      * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
      * @param mixed $value - the new value of an array element.
      * @param boolean $merge - determines whether the old element value should be merged with new one.
+     * @param string $delimiter - the key delimiter in composite keys.
      * @access public
      * @static
      */
-    public static function set(array &$array, $keys, $value, $merge = false)
+    public static function set(array &$array, $keys, $value, $merge = false, $delimiter = static::DEFAULT_KEY_DELIMITER)
     {
         $arr = &$array;
-        $keys = is_array($keys) ? $keys : explode('.', $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
         foreach ($keys as $key)
         {
             $arr = &$arr[$key];
@@ -102,14 +109,15 @@ class Arr
      *
      * @param array $array - the multidimensional array.
      * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
+     * @param string $delimiter - the key delimiter in composite keys.
      * @return boolean
      * @access public
      * @static
      */
-    public static function has(array $array, $keys)
+    public static function has(array $array, $keys, $delimiter = static::DEFAULT_KEY_DELIMITER)
     {
         $arr = $array;
-        $keys = is_array($keys) ? $keys : explode('.', $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
         foreach ($keys as $key)
         {
             if (!is_array($arr) || !array_key_exists($key, $arr))
@@ -127,12 +135,13 @@ class Arr
      * @param array $array - the array from which an element will be removed.
      * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
      * @param boolean $removeEmptyParent - determines whether the parent element should be removed if it no longer contains elements after removing the given one.
+     * @param string $delimiter - the key delimiter in composite keys.
      * @access public
      * @static
      */
-    public static function remove(array &$array, $keys, $removeEmptyParent = false)
+    public static function remove(array &$array, $keys, $removeEmptyParent = false, $delimiter = static::DEFAULT_KEY_DELIMITER)
     {
-        $keys = is_array($keys) ? $keys : explode('.', $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
         if ($removeEmptyParent)
         {
             $key = array_shift($keys);
@@ -141,7 +150,10 @@ class Arr
                 if ($keys && is_array($array[$key])) 
                 {
                     self::remove($array[$key], $keys, true);
-                    if (!$array[$key]) unset($array[$key]);
+                    if (!$array[$key])
+                    {
+                        unset($array[$key]);
+                    }
                 }
                 else
                 {

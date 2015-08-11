@@ -28,7 +28,7 @@ use Aleph\Core;
  * URL Class is designed to modify existing URL strings and to construct new ones.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.1
+ * @version 1.0.2
  * @package aleph.net
  */
 class URL
@@ -113,14 +113,14 @@ class URL
     }
   
     /**
-     * Returns the current URL of a page, if http request was made and FALSE otherwise.
+     * Returns the current URL of a page, if HTTP request was made and FALSE otherwise.
      *
      * @param boolean $asString - determines whether the current URL should be returned as string, not as object.
      * @return string|boolean
      * @access public
      * @static
      */
-    public static function current($asString = false)
+    public static function createFromGlobals($asString = false)
     {
         if (!isset($_SERVER['HTTP_HOST']))
         {
