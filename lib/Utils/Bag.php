@@ -149,6 +149,16 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
     }
     
     /**
+     * Removes all key/value pairs.
+     *
+     * @access public
+     */
+    public function clean()
+    {
+        $this->arr = [];
+    }
+    
+    /**
      * Returns value of an array element, defined by its compound key.
      *
      * @param array|string $key - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
@@ -218,12 +228,12 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      * Removes an element of the array, defined by its compound key.
      *
      * @param array|string $key - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param boolean $removeEmptyParent - determines whether the parent element should be removed if it no longer contains elements after removing the given one.
      * @param boolean $compositeKey - determines whether the key is compound key.
      * @param string $delimiter - the key delimiter in composite keys.
+     * @param boolean $removeEmptyParent - determines whether the parent element should be removed if it no longer contains elements after removing the given one.
      * @access public
      */
-    public function remove($key, $removeEmptyParent = false, $compositeKey = false, $delimiter = null)
+    public function remove($key, $compositeKey = false, $delimiter = null, $removeEmptyParent = false)
     {
         if (!$compositeKey)
         {

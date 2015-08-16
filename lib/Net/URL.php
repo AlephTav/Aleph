@@ -22,13 +22,14 @@
  
 namespace Aleph\Net;
 
-use Aleph\Core;
+use Aleph\Core,
+	Aleph\Utils;
 
 /**
  * URL Class is designed to modify existing URL strings and to construct new ones.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
+ * @version 1.1.0
  * @package aleph.net
  */
 class URL
@@ -63,13 +64,36 @@ class URL
     public $scheme = null;
 
     /**
-     * Source component of a URL.
-     * Source represents associative array of the following structure: ['host' => ..., 'port' => ..., 'user' => ..., 'pass' => ...]
+     * The host of the URL.
      *
-     * @var array $source
+     * @var string $host
      * @access public
      */
-    public $source = [];
+    public $host = null;
+    
+    /**
+     * The port of the URL.
+     *
+     * @var integer $port
+     * @access public
+     */
+    public $port = null;
+    
+    /**
+     * The user.
+     *
+     * @var string $user
+     * @access public
+     */
+    public $user = null;
+    
+    /**
+     * The password.
+     *
+     * @var string $password
+     * @access public
+     */
+    public $password = null;
 
     /**
      * Path component of a URL.
@@ -86,10 +110,10 @@ class URL
      * Query represents associative array in which keys and values are names and values of query fields.
      * E.g.: URL query ?var1=val1&var2=val2&var3=val3 will be represented as ['var1' => 'val1', 'var2' => 'val2', 'var3' => 'val3']
      *
-     * @var array $query
+     * @var Aleph\Utils\Bag $query
      * @access public
      */
-    public $query = [];
+    public $query = null;
 
     /**
      * Fragment component of a URL.
@@ -113,68 +137,38 @@ class URL
     }
   
     /**
-     * Returns the current URL of a page, if HTTP request was made and FALSE otherwise.
+     * Returns the current URL of the request.
      *
      * @param boolean $asString - determines whether the current URL should be returned as string, not as object.
-     * @return string|boolean
+     * @return string
      * @access public
      * @static
      */
     public static function createFromGlobals($asString = false)
     {
-        if (!isset($_SERVER['HTTP_HOST']))
-        {
-            return false;
-        }
-        $url = (empty($_SERVER['HTTPS']) || $_SERVER['HTTPS'] == 'off') && (empty($_SERVER['HTTP_X_FORWARDED_PROTO']) || $_SERVER['HTTP_X_FORWARDED_PROTO'] != 'https') ? 'http://' : 'https://';
-        if (isset($_SERVER['PHP_AUTH_USER']))
-        {
-            $url .= $_SERVER['PHP_AUTH_USER'] . ':' . $_SERVER['PHP_AUTH_PW'] . '@';
-        }
-        $url .= $_SERVER['HTTP_HOST'];
-        if (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] != 80)
-        {
-            $url .= ':' . $_SERVER['SERVER_PORT'];
-        }
-        $uri = '';
-        if (isset($_SERVER['X_ORIGINAL_URL']))
-        {
-            $uri = $_SERVER['X_ORIGINAL_URL'];
-        }
-        else if (isset($_SERVER['X_REWRITE_URL']))
-        {
-            $uri = $_SERVER['X_REWRITE_URL'];
-        }
-        else if (isset($_SERVER['IIS_WasUrlRewritten']) && $_SERVER['IIS_WasUrlRewritten'] == '1' && !empty($_SERVER['UNENCODED_URL']))
-        {
-            $uri = $_SERVER['UNENCODED_URL'];
-        }
-        else if (isset($_SERVER['REQUEST_URI'])) 
-        {
-            $uri = $_SERVER['REQUEST_URI'];
-            if (strpos($uri, $url) === 0)
-            {
-                $uri = substr($uri, strlen($url));
-            }
-        }
-        else if (isset($_SERVER['ORIG_PATH_INFO']))
-        {
-            $uri = $_SERVER['ORIG_PATH_INFO'];
-            if (!empty($_SERVER['QUERY_STRING']))
-            {
-                $uri .= '?' . $_SERVER['QUERY_STRING'];
-            }
-        }
-        else if (isset($_SERVER['PHP_SELF']))
-        {
-            $uri = $_SERVER['PHP_SELF'];
-        }
-        $url .= $uri;
-        if ($asString)
-        {
-            return $url;
-        }
-        return new static($url);
+		$url = '';
+		if (!empty($_SERVER) && is_array($_SERVER))
+		{
+            $url = (new ServerBag($_SERVER))->getURL();
+		}
+        return $asString ? $url : new static($url);
+    }
+    
+    /**
+     * Resets URL parameters.
+     *
+     * @access public
+     */
+    public function reset()
+    {
+        $this->scheme = '';
+        $this->host = '';
+        $this->port = '';
+        $this->user = '';
+        $this->password = '';
+        $this->path = [];
+        $this->query = new Utils\Bag([]);
+        $this->fragment = '';
     }
   
     /**
@@ -185,26 +179,31 @@ class URL
      */
     public function parse($url)
     {
+        $url = (string)$url;
+        if ($url === '')
+        {
+            $this->reset();
+            return;
+        }
         preg_match_all('@^(([^:/?#]+):)?(//([^/?#]*))?([^?#]*)(\?([^#]*))?(#(.*))?@', $url, $arr);
         $this->scheme = strtolower($arr[2][0]);
-        $this->source = [];
         $data = explode('@', $arr[4][0]);
         if (empty($data[1]))
         {
             $data = explode(':', $data[0]);
-            $this->source['host'] = urldecode($data[0]);
-            $this->source['port'] = isset($data[1]) ? $data[1] : '';
-            $this->source['user'] = '';
-            $this->source['pass'] = '';
+            $this->host = urldecode($data[0]);
+            $this->port = isset($data[1]) ? (int)$data[1] : '';
+            $this->user = '';
+            $this->password = '';
         }
         else
         {
             $d1 = explode(':', $data[1]);
-            $this->source['host'] = urldecode($d1[0]);
-            $this->source['port'] = isset($d1[1]) ? $d1[1] : '';
+            $this->host = urldecode($d1[0]);
+            $this->port = isset($d1[1]) ? (int)$d1[1] : '';
             $d2 = explode(':', $data[0]);
-            $this->source['user'] = urldecode($d2[0]);
-            $this->source['pass'] = urldecode(isset($d2[1]) ? $d2[1] : '');
+            $this->user = urldecode($d2[0]);
+            $this->password = urldecode(isset($d2[1]) ? $d2[1] : '');
         }
         $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), 'strlen')) : [];
         foreach ($this->path as &$part)
@@ -213,6 +212,7 @@ class URL
         }
         $this->query = $arr[7][0];
         parse_str($this->query, $this->query);
+		$this->query = new Utils\Bag($this->query);
         $this->fragment = urldecode($arr[9][0]);
     }
   
@@ -234,43 +234,52 @@ class URL
      * @return string
      * @access public
      */
-    public function build($component = self::ALL)
+    public function build($component = null)
     {
         $url = '';
-        if ($component & self::SCHEME && $this->scheme) 
+		$component = $component === null ? static::ALL : $component;
+        if ($component & static::SCHEME && isset($this->scheme) && strlen($this->scheme)) 
         {
             $url .= strtolower($this->scheme) . '://';
         }
-        if ($component & self::HOST)
+        if ($component & static::HOST && isset($this->host) && strlen($this->host))
         {
-            $credentials = $this->source['user'] ? $this->source['user'] . ':' . $this->source['pass'] : '';
-            $url .= ($credentials ? $credentials . '@' : '') . $this->source['host'] . ($this->source['port'] ? ':' . $this->source['port'] : '');
+            $credentials = isset($this->user) && strlen($this->user) ? $this->user . ':' . (isset($this->password) ? $this->password : '') : '';
+            $url .= ($credentials ? $credentials . '@' : '') . $this->host;
+            if (isset($this->port))
+            {
+                $secure = $this->isSecure();
+                if ($secure && $this->port != 443 || !$secure && $this->port != 80)
+                {
+                    $url .= strlen($this->port) ? ':' . (int)$this->port : '';
+                }
+            }
         }
-        if ($component & self::PATH)
+        if ($component & static::PATH && isset($this->path))
         {
             $tmp = [];
-            foreach ($this->path as $part)
+            foreach ((array)$this->path as $part)
             {
                 if (strlen($part))
                 {
                     $tmp[] = urlencode($part);
                 }
             }
-            if ($component & self::HOST && count($tmp))
+            if ($component & static::HOST && count($tmp))
             {
                 $url .= '/';
             }
             $url .= implode('/', $tmp);
         }
-        if ($component & self::QUERY && count($this->query))
+        if ($component & static::QUERY && isset($this->query) && $this->query instanceof Utils\Bag && count($this->query))
         {
-            if (strlen($url) || $component & self::PATH)
+            if (strlen($url) || $component & static::PATH)
             {
                 $url .= '?';
             }
-            $url .= http_build_query($this->query);
+            $url .= http_build_query($this->query->all());
         }
-        if ($component & self::FRAGMENT && $this->fragment)
+        if ($component & static::FRAGMENT && isset($this->fragment) && strlen($this->fragment))
         {
             if (strlen($url))
             {
@@ -287,7 +296,7 @@ class URL
      * @return boolean
      * @access public
      */
-    public function isSecured()
+    public function isSecure()
     {
         return isset($this->scheme) && strtolower($this->scheme) === 'https';
     }

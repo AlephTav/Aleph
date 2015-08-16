@@ -28,10 +28,10 @@ use Aleph\Utils;
  * Class provides access to HTTP headers of the server's request or response.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.1
+ * @version 1.1.0
  * @package aleph.net
  */
-class Headers
+class HeaderBag extends Utils\Bag
 {
     /**
      * Array of content type aliases.
@@ -48,14 +48,6 @@ class Headers
         'json' => 'application/json',
         'xml' => 'application/xml'
     ];
-    
-    /**
-     * HTTP headers of the server's request or response.
-     *
-     * @var array $headers
-     * @access protected
-     */
-    protected $headers = [];
 
     /**
      * Directives of the Cache Control header.
@@ -64,40 +56,6 @@ class Headers
      * @access protected
      */
     protected $cacheControl = [];
-
-    /**
-     * Request instance of this class.
-     * 
-     * @var array $requestInstance
-     * @access private
-     */           
-    private static $requestInstance = null;
-    
-    /**
-     * Response instance of this class.
-     * 
-     * @var array $responseInstance
-     * @access private
-     */           
-    private static $responseInstance = null;
-
-    /**
-     * Clones an object of this class. The private method '__clone' doesn't allow to clone an instance of the class.
-     * 
-     * @access private
-     */
-    private function __clone(){}
-  
-    /**
-     * Constructor.
-     *
-     * @param array $headers - headers of the response or request.
-     * @access private
-     */
-    private function __construct(array $headers)
-    {
-        $this->headers = $headers;
-    }
   
     /**
      * Returns HTTP headers of the current HTTP request.
@@ -108,26 +66,19 @@ class Headers
      */
     public static function getRequestHeaders()
     {
-        if (self::$requestInstance === null)
+        if (function_exists('apache_request_headers'))
         {
-            if (function_exists('apache_request_headers'))
-            {
-                $headers = apache_request_headers();
-            }
-            else
-            {
-                $headers = [];
-                foreach ($_SERVER as $key => $value) 
-                {
-                    if (strpos($key, 'HTTP_') === 0) 
-                    {
-                        $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))))] = $value;
-                    }
-                }
-            }
-            self::$requestInstance = new self($headers);
+            return apache_request_headers();
         }
-        return self::$requestInstance;
+        $headers = [];
+        foreach ($_SERVER as $key => $value) 
+        {
+            if (strpos($key, 'HTTP_') === 0) 
+            {
+                $headers[substr($key, 5)] = $value;
+            }
+        }
+        return new static($headers);
     }
   
     /**
@@ -139,26 +90,19 @@ class Headers
      */
     public static function getResponseHeaders()
     {
-        if (self::$responseInstance === null)
+        if (function_exists('apache_response_headers'))
         {
-            $headers = [];
-             if (function_exists('apache_response_headers'))
-             {
-                 $headers = apache_response_headers();
-             }
-            else
-            {
-                foreach (headers_list() as $header) 
-                {
-                    $header = explode(':', $header);
-                    $headers[array_shift($header)] = trim(implode(':', $header));
-                }
-            } 
-            self::$responseInstance = new self($headers);
+            return apache_response_headers();
         }
-        return self::$responseInstance;
+        $headers = [];
+        foreach (headers_list() as $header) 
+        {
+            $header = explode(':', $header);
+            $headers[array_shift($header)] = trim(implode(':', $header));
+        }
+        return new static($headers);
     }
-  
+    
     /**
      * Returns normalized header name.
      *
@@ -173,63 +117,71 @@ class Headers
         $name = ucwords(strtolower($name));
         return str_replace(' ', '-', $name);
     }
-  
+    
     /**
-     * Returns array of all HTTP headers.
+     * Returns normalized header array.
      *
+     * @param array $headers
      * @return array
      * @access public
+     * @static
      */
-    public function getHeaders()
+    public static function normalizeHeaders(array $headers)
     {
-        return $this->headers;
+        $tmp = [];
+        foreach ($headers as $name => $value)
+        {
+            $tmp[static::normalizeHeaderName($name)] = $value;
+        }
+        return $tmp;
     }
-  
+    
     /**
-     * Sets array of all HTTP headers.
+     * Constructor.
+     * The most of the code of this method is taken from the Symfony framework (see Symfony\Component\HttpFoundation\ServerBag::getHeaders()).
      *
-     * @param array $headers - new HTTP headers.
+     * @param array $arr - an array of key/value pairs.
+     * @param string $delimiter - the default key delimiter in composite keys.
      * @access public
      */
-    public function setHeaders(array $headers)
+    public function __construct(array $arr = [], $delimiter = Utils\Arr::DEFAULT_KEY_DELIMITER)
     {
-        $this->headers = [];
-        $this->merge($headers);
+        parent::__construct(static::normalizeHeaders($arr), $delimiter);
     }
-  
+    
     /**
-     * Adds and merges array of new headers.
+     * Adds new headers to the current set.
      *
      * @param array $headers
      * @access public
      */
-    public function merge(array $headers)
+    public function add(array $headers = [])
     {
-        foreach ($headers as $name => $value)
-        {
-            $this->set($name, $value);
-        }
+        parent::add(static::normalizeHeaders($headers));
     }
-  
+    
     /**
-     * Removes all headers.
+     * Merge existing headers with new set.
      *
+     * @param array $headers
      * @access public
      */
-    public function clean()
+    public function merge(array $headers = [])
     {
-        $this->headers = [];
+        parent::merge(static::normalizeHeaders($headers));
     }
   
     /**
      * Returns TRUE if the HTTP header is defined and FALSE otherwise.
      *
      * @param string $name - the header name.
+     * @param boolean $compositeKey - determines whether the key is compound key.
+     * @param string $delimiter - the key delimiter in composite keys.
      * @access public
      */
-    public function has($name)
+    public function has($name, $compositeKey = false, $delimiter = null)
     {
-        return isset($this->headers[static::normalizeHeaderName($name)]);
+        return parent::has(static::normalizeHeaderName($name), $compositeKey, $delimiter);
     }
   
     /**
@@ -237,13 +189,14 @@ class Headers
      *
      * @param string $name - the header name.
      * @param mixed $default - the default header value.
+     * @param boolean $compositeKey - determines whether the key is compound key.
+     * @param string $delimiter - the key delimiter in composite keys.
      * @return mixed
      * @access public
      */
-    public function get($name, $default = null)
+    public function get($name, $default = null, $compositeKey = false, $delimiter = null)
     {
-        $name = static::normalizeHeaderName($name);
-        return isset($this->headers[$name]) ? $this->headers[$name] : $default;
+        return parent::get(static::normalizeHeaderName($name), $default, $compositeKey, $delimiter);
     }
   
     /**
@@ -251,12 +204,15 @@ class Headers
      *
      * @param string $name - the header name.
      * @param mixed $value - new header value.
+     * @param boolean $merge - determines whether the old element value should be merged with new one.
+     * @param boolean $compositeKey - determines whether the key is compound key.
+     * @param string $delimiter - the key delimiter in composite keys.
      * @access public
      */
-    public function set($name, $value)
+    public function set($name, $value, $merge = false, $compositeKey = false, $delimiter = null)
     {
         $name = static::normalizeHeaderName($name);
-        $this->headers[$name] = $value;
+        parent::set($name, $value, $merge, $compositeKey, $delimiter);
         if ($name === 'Cache-Control')
         {
             $this->cacheControl = [];
@@ -272,12 +228,15 @@ class Headers
      * Removes an HTTP header by its name.
      *
      * @param string $name - the header name.
+     * @param boolean $compositeKey - determines whether the key is compound key.
+     * @param string $delimiter - the key delimiter in composite keys.
+     * @param boolean $removeEmptyParent - determines whether the parent element should be removed if it no longer contains elements after removing the given one.
      * @access public
      */
-    public function remove($name)
+    public function remove($name, $compositeKey = false, $delimiter = null, $removeEmptyParent = false)
     {
         $name = static::normalizeHeaderName($name);
-        unset($this->headers[$name]);
+        parent::remove($name, $compositeKey, $delimiter, $removeEmptyParent);
         if ($name === 'Cache-Control')
         {
             $this->cacheControl = [];
@@ -293,7 +252,7 @@ class Headers
      */
     public function getContentType($withCharset = false)
     {
-        @list($type, $charset) = explode(';', $this->get('Content-Type'));
+        @list($type, $charset) = explode(';', $this->__get('Content-Type'));
         $type = trim($type);
         if ($withCharset)
         {

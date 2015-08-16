@@ -60,9 +60,9 @@ class Arr
      * @access public
      * @static
      */
-    public static function get(array $array, $keys, $default = null, $delimiter = static::DEFAULT_KEY_DELIMITER)
+    public static function get(array $array, $keys, $default = null, $delimiter = null)
     {
-        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         $arr = $array;
         foreach ($keys as $key)
         {
@@ -86,10 +86,10 @@ class Arr
      * @access public
      * @static
      */
-    public static function set(array &$array, $keys, $value, $merge = false, $delimiter = static::DEFAULT_KEY_DELIMITER)
+    public static function set(array &$array, $keys, $value, $merge = false, $delimiter = null)
     {
         $arr = &$array;
-        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key)
         {
             $arr = &$arr[$key];
@@ -114,10 +114,10 @@ class Arr
      * @access public
      * @static
      */
-    public static function has(array $array, $keys, $delimiter = static::DEFAULT_KEY_DELIMITER)
+    public static function has(array $array, $keys, $delimiter = null)
     {
         $arr = $array;
-        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key)
         {
             if (!is_array($arr) || !array_key_exists($key, $arr))
@@ -139,9 +139,9 @@ class Arr
      * @access public
      * @static
      */
-    public static function remove(array &$array, $keys, $removeEmptyParent = false, $delimiter = static::DEFAULT_KEY_DELIMITER)
+    public static function remove(array &$array, $keys, $removeEmptyParent = false, $delimiter = null)
     {
-        $keys = is_array($keys) ? $keys : explode($delimiter, $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         if ($removeEmptyParent)
         {
             $key = array_shift($keys);
