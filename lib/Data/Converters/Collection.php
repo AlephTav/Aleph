@@ -254,8 +254,8 @@ class Collection extends Converter
     {
       if ($part == $this->keyAssociative) $part = ['$'];
       else if ($part == $this->keyNumeric) $part = ['*'];
-      else if ($part == '\\' . $this->keyAssociative) $part = $this->$this->keyAssociative;
-      else if ($part == '\\' . $this->keyNumeric) $part = $this->$this->keyNumeric;
+      else if ($part == '\\' . $this->keyAssociative) $part = $this->keyAssociative;
+      else if ($part == '\\' . $this->keyNumeric) $part = $this->keyNumeric;
       else $part = str_replace('\\' . $this->separator, $this->separator, $part);
     }
     return $keys;

@@ -26,7 +26,7 @@ namespace Aleph\Core;
  * Exception allows to generate exceptions with parameterized error messages which possible to get by their tokens.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
+ * @version 1.1.1
  * @package aleph.core
  */
 class Exception extends \Exception
@@ -46,17 +46,26 @@ class Exception extends \Exception
      * @access protected
      */
     protected $class = null;
+    
+    /**
+     * Additional information about the exception.
+     *
+     * @var mixed $data
+     * @access protected
+     */
+    protected $data = null;
 
     /**
      * Constructor.
      *
      * @param mixed $const - the name of a constant that contains error message template.
      * @param mixed $vars - the error template variable or variables.
+     * @param mixed $data - some additional information about the exception.
      * @param integer $code - the exception code.
      * @param Exception $previous - the previous exception used for the exception chaining. 
      * @access public
      */
-    public function __construct($const, $vars = [], $code = 0, \Exception $previous = null)
+    public function __construct($const, $vars = [], $data = null, $code = 0, \Exception $previous = null)
     {
         if (is_array($const))
         {
@@ -91,6 +100,7 @@ class Exception extends \Exception
         {
             $error = vsprintf($this->token, $vars);
         }
+        $this->data = $data;
         parent::__construct($error, $code, $previous);
     }
   
@@ -114,6 +124,17 @@ class Exception extends \Exception
     public function getToken()
     {
         return $this->token;
+    }
+    
+    /**
+     * Returns additional information about the exception.
+     *
+     * @return mixed
+     * @access public
+     */
+    public function getData()
+    {
+        return $this->data;
     }
   
     /**

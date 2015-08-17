@@ -150,6 +150,17 @@ class HeaderBag extends Utils\Bag
     }
     
     /**
+     * Replaces the current header set by a new one.
+     *
+     * @param array $headers
+     * @access public
+     */
+    public function replace(array $headers = [])
+    {
+        parent::replace(static::normalizeHeaders($headers));
+    }
+    
+    /**
      * Adds new headers to the current set.
      *
      * @param array $headers
@@ -275,7 +286,7 @@ class HeaderBag extends Utils\Bag
     public function setContentType($type, $charset = null)
     {
         $type = isset(static::$contentTypeMap[$type]) ? static::$contentTypeMap[$type] : $type;
-        $this->headers['Content-Type'] = $type . ($charset !== null ? '; charset=' . $charset : '');
+        $this->arr['Content-Type'] = $type . ($charset !== null ? '; charset=' . $charset : '');
     }
   
     /**
@@ -324,9 +335,9 @@ class HeaderBag extends Utils\Bag
     public function getDate($name)
     {
         $name = static::normalizeHeaderName($name);
-        if (isset($this->headers[$name]))
+        if (isset($this->arr[$name]))
         {
-            return Utils\DT::createFromFormat(\DateTime::DATE_RFC2822, $this->headers[$name]);
+            return Utils\DT::createFromFormat(\DateTime::DATE_RFC2822, $this->arr[$name]);
         }
         return false;
     }
@@ -343,7 +354,7 @@ class HeaderBag extends Utils\Bag
         $date = new Utils\DT($date);
         $date->setTimezone('UTC');
         $date = $date->format(\DateTime::DATE_RFC2822);
-        $this->headers[static::normalizeHeaderName($name)] = $date;
+        $this->arr[static::normalizeHeaderName($name)] = $date;
     }
   
     /**
@@ -381,7 +392,7 @@ class HeaderBag extends Utils\Bag
     public function setCacheControlDirective($directive, $value = true)
     {
         $this->cacheControl[$directive] = $value;
-        $this->headers['Cache-Control'] = $this->formCacheControlHeader();
+        $this->arr['Cache-Control'] = $this->formCacheControlHeader();
     }
   
     /**
@@ -392,7 +403,7 @@ class HeaderBag extends Utils\Bag
     public function removeCacheControlDirective($directive)
     {
         unset($this->cacheControl[$directive]);
-        $this->headers['Cache-Control'] = $this->formCacheControlHeader();
+        $this->arr['Cache-Control'] = $this->formCacheControlHeader();
     }
   
     /**
@@ -404,7 +415,7 @@ class HeaderBag extends Utils\Bag
     public function __toString()
     {
         $headers = '';
-        foreach ($this->headers as $name => $value)
+        foreach ($this->arr as $name => $value)
         {
             $headers .= $name . ': ' . $value . "\r\n";
         }

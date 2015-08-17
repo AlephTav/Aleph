@@ -258,7 +258,7 @@ class Request
             rewind($this->body);
             return stream_get_contents($this->body);
         }
-        if ($this->content === null)
+        if ($this->body === null)
         {
             $this->body = file_get_contents('php://input');
         }
