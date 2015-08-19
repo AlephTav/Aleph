@@ -22,7 +22,8 @@
  
 namespace Aleph\Net;
 
-use Aleph\Utils;
+use Aleph\Utils,
+    Aleph\Converters;
 
 /**
  * Request Class provides easier interaction with variables of the current HTTP request.
@@ -107,7 +108,7 @@ class Request
     public static function createFromGlobals()
     {
         $request = new static(
-            URL::createFromGlobals(true), 
+            URL::createFromGlobals(true),
             $_SERVER,
             isset($_GET) ? $_GET : [],
             isset($_POST) ? $_POST : [],
@@ -115,10 +116,22 @@ class Request
             isset($_FILES) ? $_FILES : [],
             HeaderBag::getRequestHeaders()
         );
-        if (in_array(strtoupper($request->server->__get('REQUEST_METHOD', 'GET')), ['PUT', 'DELETE', 'PATCH']))
+        if ($request->headers->getContentType() == HeaderBag::$contentTypeMap['json'])
         {
-            parse_str($request->getBody(), $data);
-            $request->post = new Utils\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
+            $body = $request->getBody();
+            if (is_array($body))
+            {
+                $request->post = new Utils\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
+            }
+        }
+        else if (in_array(strtoupper($request->server->__get('REQUEST_METHOD', 'GET')), ['PUT', 'DELETE', 'PATCH']))
+        {
+            $body = $request->getRawBody();
+            if (strlen($body))
+            {
+                parse_str($body, $data);
+                $request->post = new Utils\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
+            }
         }
         return $request;
     }
@@ -170,7 +183,7 @@ class Request
      * @return boolean
      * @access public
      */
-    public function isXmlHttpRequest()
+    public function isAjax()
     {
         return $this->headers->__get('X-Requested-With') == 'XMLHttpRequest';
     }
@@ -228,13 +241,13 @@ class Request
     }
     
     /**
-     * Returns the request body content or a resource to read the body stream.
+     * Returns the request raw body data or a resource to read the body stream.
      *
      * @param boolean $asResource - if true, a resource will be returned.
      * @return string|resource
      * @access public
      */
-    public function getBody($asResource = false)
+    public function getRawBody($asResource = false)
     {
         $isResource = is_resource($this->body);
         if ($asResource)
@@ -263,6 +276,23 @@ class Request
             $this->body = file_get_contents('php://input');
         }
         return $this->body;
+    }
+    
+    /**
+     * Returns the request body converted according to the request content type.
+     *
+     * @return mixed
+     * @access public
+     */
+    public function getBody()
+    {
+        $output = [
+            'application/json' => Converters\TextConverter::JSON_ENCODED
+        ];
+        $type = $this->headers->getContentType();
+        $converter = new Converters\TextConverter();
+        $converter->input = isset($output[$type]) ? $output[$type] : Converters\TextConverter::ANY;
+        return $converter->convert($this->getRawBody());
     }
   
     /**
