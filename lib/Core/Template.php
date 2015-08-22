@@ -28,7 +28,7 @@ use Aleph\Cache;
  * This class is templator using PHP as template language.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.2
  * @package aleph.core
  */
 class Template implements \ArrayAccess
@@ -85,10 +85,10 @@ class Template implements \ArrayAccess
      * Global template variables.
      *
      * @var array $globals
-     * @access protected
+     * @access private
      * @static
      */
-    protected static $globals = [];
+    private static $globals = [];
   
     /**
      * Returns array of global template variables.

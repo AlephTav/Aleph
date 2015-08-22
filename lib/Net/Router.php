@@ -28,11 +28,16 @@ use Aleph\Core;
  * With this class you can route the requested URLs.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
+ * @version 1.1.1
  * @package aleph.core
  */
 class Router
 {
+    /**
+     * Error message templates.
+     */
+    const ERR_ROUTER_1 = 'No action is defined. You should first call bind() method.';
+    
     /**
      * This property is used as the cache of parsed URL templates.
      *
@@ -379,13 +384,14 @@ class Router
      * @param string $option
      * @param mixed $value
      * @return static
+     * @throws BadMethodCallException
      * @access private
      */
     private function option($option, $value)
     {
         if ($this->lastAction === null)
         {
-            throw new \InvalidArgumentException('No action is defined. You should first call bind() method.');
+            throw new \BadMethodCallException(static::ERR_ROUTER_1);
         }
         if (is_array($value))
         {

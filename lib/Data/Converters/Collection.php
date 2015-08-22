@@ -131,6 +131,10 @@ class Collection extends Converter
             if (count($info[1]) == 0) throw new Core\Exception([$this, 'ERR_CONVERTER_COLLECTION_3'], [$from, $to]);
             $key = array_shift($info[1]);
           }
+          if (!is_array($a))
+                    {
+                        $a = [$a];
+                    }
           if (!array_key_exists($key, $a)) $a[$key] = [];
           $a = &$a[$key];
         }

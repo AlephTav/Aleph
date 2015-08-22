@@ -28,7 +28,7 @@ use Aleph\Core;
  * The class is intended for caching of different data using the direct connection to the Redis server.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.0
+ * @version 1.2.1
  * @package aleph.cache
  */
 class Redis extends Cache
@@ -64,7 +64,7 @@ class Redis extends Cache
         $this->rp = stream_socket_client($host . ':' . $port, $errno, $errstr, $timeout !== null ? $timeout : ini_get('default_socket_timeout'));
         if (!$this->rp)
         {
-            throw new Core\Exception([$this, 'ERR_CACHE_REDIS_1'], [$errno, $errstr]);
+            throw new \RuntimeException(sprintf(static::ERR_CACHE_REDIS_1, $errno, $errstr));
         }
         if ($password !== null)
         {
@@ -94,7 +94,7 @@ class Redis extends Cache
         {
             if (false === $line = fgets($this->rp))
             {
-                throw new Core\Exception([$this, 'ERR_CACHE_REDIS_2']);
+                throw new \RuntimeException(static::ERR_CACHE_REDIS_2);
             }
             $type = $line[0];
             $line = substr($line, 1, -2);
@@ -103,7 +103,7 @@ class Redis extends Cache
                 case '+':
                     return true;
                 case '-':
-                    throw new Core\Exception([$this, 'ERR_CACHE_REDIS_3'], $line);
+                    throw new \RuntimeException(sprintf(static::ERR_CACHE_REDIS_3, $line));
                 case ':':
                     return $line;
                 case '$':

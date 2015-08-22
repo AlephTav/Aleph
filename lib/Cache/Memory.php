@@ -28,7 +28,7 @@ use Aleph\Core;
  * The class is intended for caching of different data using the memcache extension.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.0
+ * @version 1.2.1
  * @package aleph.cache
  */
 class Memory extends Cache
@@ -141,7 +141,7 @@ class Memory extends Cache
     {
         if ($compress && !extension_loaded('zlib'))
         {
-            throw new Core\Exception([$this, 'ERR_CACHE_MEMORY_1']);
+            throw new \RuntimeException(static::ERR_CACHE_MEMORY_1);
         }
         $this->compress = $compress ? MEMCACHE_COMPRESSED : 0;
     }

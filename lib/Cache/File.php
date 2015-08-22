@@ -28,7 +28,7 @@ use Aleph\Core;
  * The class is intended for caching of different data using the file system.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.0
+ * @version 1.2.1
  * @package aleph.cache
  */
 class File extends Cache
@@ -157,7 +157,7 @@ class File extends Cache
         }
         if (!is_writable($dir) && !chmod($dir, $this->directoryMode))
         {
-            throw new Core\Exception([$this, 'ERR_CACHE_FILE_1'], $dir);
+            throw new \RuntimeException(sprintf(static::ERR_CACHE_FILE_1, $dir));
         }
         $this->dir = rtrim($dir, '/\\') . DIRECTORY_SEPARATOR;
     }
@@ -341,6 +341,6 @@ class File extends Cache
             @chmod($file, $this->fileMode);
             return @touch($file, $expire + time()); 
         }
-        throw new Core\Exception([$this, 'ERR_CACHE_FILE_1'], $file);
+        throw new \RuntimeException(sprintf(static::ERR_CACHE_FILE_2, $file));
     }
 }

@@ -28,7 +28,7 @@ use Aleph\Core;
  * Base abstract class for building of classes that intended for caching different data.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.0
+ * @version 1.2.1
  * @package aleph.cache
  * @abstract
  */
@@ -91,7 +91,7 @@ abstract class Cache implements \Countable
             case 'memcached':
                 if (!Memory::isAvailable($type))
                 {
-                    throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'Memory');
+                    throw new \RuntimeException(sprintf(static::ERR_CACHE_1, 'Memory'));
                 }
                 return new Memory($type,
                                   isset($params['servers']) ? (array)$params['servers'] : [], 
@@ -99,25 +99,29 @@ abstract class Cache implements \Countable
             case 'apc':
                 if (!APC::isAvailable())
                 {
-                    throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'APC');
+                    throw new \RuntimeException(sprintf(static::ERR_CACHE_1, 'APC'));
                 }
                 return new APC();
             case 'phpredis':
                 if (!PHPRedis::isAvailable())
                 {
-                    throw new Core\Exception('Aleph\Cache\Cache::ERR_CACHE_1', 'PHPRedis');
+                    throw new \RuntimeException(sprintf(static::ERR_CACHE_1, 'PHPRedis'));
                 }
-                return new PHPRedis(isset($params['host']) ? $params['host'] : '127.0.0.1',
-                                    isset($params['port']) ? $params['port'] : 6379,
-                                    isset($params['timeout']) ? $params['timeout'] : 0,
-                                    isset($params['password']) ? $params['password'] : null,
-                                    isset($params['database']) ? $params['database'] : 0);
+                return new PHPRedis(
+                    isset($params['host']) ? $params['host'] : '127.0.0.1',
+                    isset($params['port']) ? $params['port'] : 6379,
+                    isset($params['timeout']) ? $params['timeout'] : 0,
+                    isset($params['password']) ? $params['password'] : null,
+                    isset($params['database']) ? $params['database'] : 0
+                );
             case 'redis':
-                return new Redis(isset($params['host']) ? $params['host'] : '127.0.0.1',
-                                 isset($params['port']) ? $params['port'] : 6379,
-                                 isset($params['timeout']) ? $params['timeout'] : null,
-                                 isset($params['password']) ? $params['password'] : null,
-                                 isset($params['database']) ? $params['database'] : 0);
+                return new Redis(
+                    isset($params['host']) ? $params['host'] : '127.0.0.1',
+                    isset($params['port']) ? $params['port'] : 6379,
+                    isset($params['timeout']) ? $params['timeout'] : null,
+                    isset($params['password']) ? $params['password'] : null,
+                    isset($params['database']) ? $params['database'] : 0
+                );
             case 'session':
                 $cache = new Session();
                 if (isset($params['namespace']))

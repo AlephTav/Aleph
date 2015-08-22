@@ -28,7 +28,7 @@ use Aleph\Core;
  * The simple class that allows to manage asset dependencies and compound several asset files to the single one.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.1
  * @package aleph.utils
  */
 class AssetManager
@@ -279,7 +279,7 @@ class AssetManager
         {
             if (empty($this->assets[$dest]))
             {
-                throw new Core\Exception([$this, 'ERR_ASSET_MANAGER_2'], $dest);
+                throw new \LogicException(sprintf(static::ERR_ASSET_MANAGER_2, $dest));
             }
             $asset = empty($this->basePath) ? $dest : rtrim($this->basePath, '\\/') . DIRECTORY_SEPARATOR . $dest;
             $srcPath = empty($this->sourcePath) ? '' : rtrim($this->sourcePath, '\\/') . DIRECTORY_SEPARATOR;
@@ -374,7 +374,7 @@ class AssetManager
                 }
                 else if ($checkDuplicates)
                 {
-                    throw new Core\Exception([$this, 'ERR_ASSET_MANAGER_1'], $dest);
+                    throw new \LogicException(sprintf(static::ERR_ASSET_MANAGER_1, $dest));
                 }
             }
             $this->assets[$dest] = [array_unique($src), $type];

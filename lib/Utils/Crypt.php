@@ -26,11 +26,18 @@ namespace Aleph\Utils;
  * This class contains some helpful methods that can be used in cryptography purposes.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.2
+ * @version 1.1.3
  * @package aleph.utils
  */
 class Crypt
 {
+    /**
+     * Error message templates.
+     */
+    const ERR_CRYPT_1 = 'Unable to get random sequence.';
+    const ERR_CRYPT_2 = 'Alphabet must not be an empty string.';
+    const ERR_CRYPT_3 = 'Integer overflow.';
+    
     /**
      * Generates a pseudo-random sequence of bytes.
      *
@@ -84,7 +91,7 @@ class Crypt
                 return $sequence;
             }
         }
-        throw new \RuntimeException('Unable to get random sequence.');
+        throw new \RuntimeException(static::ERR_CRYPT_1);
     }
 
     /**
@@ -144,7 +151,7 @@ class Crypt
             $len = strlen($set);
             if ($len == 0)
             {
-                throw new \InvalidArgumentException('Alphabet must not be an empty string.');
+                throw new \InvalidArgumentException(static::ERR_CRYPT_2);
             }
             $t += $p;
             $tmp[] = [$t, $len - 1, $set];
@@ -189,7 +196,7 @@ class Crypt
         $range = $max - $min + 1;
         if (!is_int($range))
         {
-            throw new \InvalidArgumentException('Integer overflow.');
+            throw new \OverflowException(static::ERR_CRYPT_3);
         }
         if ($min > $max)
         {

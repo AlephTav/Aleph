@@ -28,11 +28,16 @@ use Aleph\Utils;
  * The simple container container for uploaded files.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.1
  * @package aleph.net
  */
 class FileBag extends Utils\Bag
-{   
+{
+    /**
+     * Error message templates.
+     */
+    const ERR_FILEBAG_1 = 'An uploaded file must be an array or an instance of Aleph\Utils\UploadedFile.';
+
     /**
      * Structure of the uploaded file array.
      *
@@ -64,33 +69,36 @@ class FileBag extends Utils\Bag
      * Replaces the current file set by a new one.
      *
      * @param array $files
+     * @return static
      * @access public
      */
     public function replace(array $files = [])
     {
-        parent::replace($this->convertFiles($files));
+        return parent::replace($this->convertFiles($files));
     }
     
     /**
      * Adds new files to the current set.
      *
      * @param array $files
+     * @return static
      * @access public
      */
     public function add(array $files = [])
     {
-        parent::add($this->convertFiles($files));
+        return parent::add($this->convertFiles($files));
     }
     
     /**
      * Merge existing files with new set.
      *
      * @param array $files
+     * @return static
      * @access public
      */
     public function merge(array $files = [])
     {
-        parent::merge($this->convertFiles($files));
+        return parent::merge($this->convertFiles($files));
     }
   
     /**
@@ -101,11 +109,12 @@ class FileBag extends Utils\Bag
      * @param boolean $merge - determines whether the old element value should be merged with new one.
      * @param boolean $compositeKey - determines whether the key is compound key.
      * @param string $delimiter - the key delimiter in composite keys.
+     * @return static
      * @access public
      */
     public function set($name, $value, $merge = false, $compositeKey = false, $delimiter = null)
     {
-        parent::set($name, $this->convertFile($value), $merge, $compositeKey, $delimiter);
+        return parent::set($name, $this->convertFile($value), $merge, $compositeKey, $delimiter);
     }
     
     /**
@@ -139,7 +148,7 @@ class FileBag extends Utils\Bag
         }
         if (!is_array($file))
         {
-            throw new \InvalidArgumentException('An uploaded file must be an array or an instance of Aleph\Utils\UploadedFile.');
+            throw new \InvalidArgumentException(static::ERR_FILEBAG_1);
         }        
         $file = $this->fixArray($file);
         if (is_array($file))

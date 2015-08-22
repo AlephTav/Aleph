@@ -28,7 +28,7 @@ use Aleph\Core;
  * The class intended for caching of different data using the APC extension. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.0
+ * @version 1.2.1
  * @package aleph.cache
  */
 class APC extends Cache
@@ -61,11 +61,11 @@ class APC extends Cache
         parent::__construct();
         if (!ini_get('apc.enabled'))
         {
-            throw new Core\Exception([$this, 'ERR_CACHE_APC_1']);
+            throw new \RuntimeException(static::ERR_CACHE_APC_1);
         }
         if (PHP_SAPI === 'cli' && !ini_get('apc.enable_cli'))
         {
-            throw new Core\Exception([$this, 'ERR_CACHE_APC_2']);
+            throw new \RuntimeException(static::ERR_CACHE_APC_2);
         }
     }
     

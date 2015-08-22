@@ -28,7 +28,7 @@ use Aleph\Core;
  * The simple view class using PHP as template language.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.1
  * @package aleph.core
  */
 class View
@@ -240,7 +240,7 @@ class View
                 return $path;
             }
         }
-        throw new Core\Exception([$this, 'ERR_VIEW_1'], $view);
+        throw new \InvalidArgumentException(sprintf(static::ERR_VIEW_1, $view));
     }
     
     /**
@@ -299,7 +299,7 @@ class View
     {
         if (!$this->stack)
         {
-            throw new Core\Exception([$this, 'ERR_VIEW_2']);
+            throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         $block = array_pop($this->stack);
         if ($overwrite)
@@ -339,7 +339,7 @@ class View
     {
         if (!$this->stack)
         {
-            throw new Core\Exception([$this, 'ERR_VIEW_2']);
+            throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         $block = array_pop($this->stack);
         if (isset($this->blocks[$block]))
@@ -373,7 +373,7 @@ class View
     {
         if (!$this->stack)
         {
-            throw new Core\Exception([$this, 'ERR_VIEW_2']);
+            throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         echo md5(end($this->stack));
     }

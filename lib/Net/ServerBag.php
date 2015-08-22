@@ -142,13 +142,13 @@ class ServerBag extends Utils\Bag
      */
     public function getScheme()
     {
-        if ($proto = $this->__get('HTTP_X_FORWARDED_PROTO'))
+        if ($proto = $this['HTTP_X_FORWARDED_PROTO'])
         {
             $secure = in_array(strtolower(current(explode(',', $proto))), ['https', 'on', 'ssl', '1']);
         }
         else
         {
-            $https = $this->__get('HTTPS');
+            $https = $this['HTTPS'];
             $secure = !empty($https) && strtolower($https) !== 'off';
         }
         return $secure ? 'https' : 'http';
@@ -162,16 +162,16 @@ class ServerBag extends Utils\Bag
      */
     public function getHost()
     {
-        if ($host = $this->__get('HTTP_X_FORWARDED_HOST'))
+        if ($host = $this['HTTP_X_FORWARDED_HOST'])
         {
             $parts = explode(',', $host);
             $host = $parts[count($parts) - 1];
         }
-        else if (!$host = $this->__get('HTTP_HOST'))
+        else if (!$host = $this['HTTP_HOST'])
         {
-            if (!$host = $this->__get('SERVER_NAME'))
+            if (!$host = $this['SERVER_NAME'])
             {
-                $host = $this->get('SERVER_ADDR', '');
+                $host = (string)$this['SERVER_ADDR'];
             }
         }
         return strtolower(preg_replace('/:\d+$/', '', trim($host)));
@@ -185,15 +185,15 @@ class ServerBag extends Utils\Bag
      */
     public function getPort()
     {
-        if ($port = (int)$this->__get('HTTP_X_FORWARDED_PORT'))
+        if ($port = (int)$this['HTTP_X_FORWARDED_PORT'])
         {
             return $port;
         }
-        if ($this->__get('HTTP_X_FORWARDED_PROTO') === 'https')
+        if ($this['HTTP_X_FORWARDED_PROTO'] === 'https')
         {
             return 443;
         }
-        if ($host = $this->__get('HTTP_HOST'))
+        if ($host = $this['HTTP_HOST'])
         {
             $pos = strrpos($host, ':');
             if ($pos !== false)
@@ -202,7 +202,7 @@ class ServerBag extends Utils\Bag
             }
             return $this->getScheme() === 'https' ? 443 : 80;
         }
-        return $this->__get('SERVER_PORT');
+        return $this['SERVER_PORT'];
     }
     
     /**
@@ -213,7 +213,7 @@ class ServerBag extends Utils\Bag
      */
     public function getUser()
     {
-        return $this->__get('PHP_AUTH_USER');
+        return $this['PHP_AUTH_USER'];
     }
     
     /**
@@ -224,7 +224,7 @@ class ServerBag extends Utils\Bag
      */
     public function getPassword()
     {
-        return $this->__get('PHP_AUTH_PW');
+        return $this['PHP_AUTH_PW'];
     }
     
     /**
@@ -246,42 +246,42 @@ class ServerBag extends Utils\Bag
             $host = $this->getHost() . ':' . $port;
         }
         $uri = '';
-        if ($this->__isset('HTTP_X_ORIGINAL_URL'))
+        if (isset($this['HTTP_X_ORIGINAL_URL']))
         {
             // IIS with Microsoft Rewrite Module
-            $uri = $this->__get('HTTP_X_ORIGINAL_URL');
+            $uri = $this['HTTP_X_ORIGINAL_URL'];
         }
-        else if ($this->__isset('HTTP_X_REWRITE_URL'))
+        else if (isset($this['HTTP_X_REWRITE_URL']))
         {
             // IIS with ISAPI_Rewrite
-            $uri = $this->__get('HTTP_X_REWRITE_URL');
+            $uri = $this['HTTP_X_REWRITE_URL'];
         }
-        else if ($this->__get('IIS_WasUrlRewritten') == '1' && $this->__get('UNENCODED_URL') != '')
+        else if ($this['IIS_WasUrlRewritten'] == '1' && $this['UNENCODED_URL'] != '')
         {
             // IIS7 with URL Rewrite: make sure we get the unencoded URL (double slash problem)
-            $uri = $this->__get('UNENCODED_URL');
+            $uri = $this['UNENCODED_URL'];
         }
-        else if ($this->__isset('REQUEST_URI'))
+        else if (isset($this['REQUEST_URI']))
         {
-            $uri = $this->__get('REQUEST_URI');
+            $uri = $this['REQUEST_URI'];
             // HTTP proxy reqs setup request URI with scheme and host [and port] + the URL path, only use URL path
             if (strpos($uri, $host) === 0)
             {
                 $uri = substr($uri, strlen($host));
             }
         }
-        else if ($this->__isset('ORIG_PATH_INFO'))
+        else if (isset($this['ORIG_PATH_INFO']))
         {
             // IIS 5.0, PHP as CGI
-            $uri = $this->__get('ORIG_PATH_INFO');
-            if ($this->__get('QUERY_STRING') != '')
+            $uri = $this['ORIG_PATH_INFO'];
+            if ($this['QUERY_STRING'] != '')
             {
-                $uri .= '?' . $this->__get('QUERY_STRING');
+                $uri .= '?' . $this['QUERY_STRING'];
             }
         }
-        else if ($this->__isset('PHP_SELF'))
+        else if (isset($this['PHP_SELF']))
         {
-            $uri = $this->__get('PHP_SELF');
+            $uri = $this['PHP_SELF'];
         }
         $user = $this->getUser();
         if (strlen($user))

@@ -223,10 +223,11 @@ final class Aleph
      *
      * @param string $root - the document root directory. If it is not set the $_SERVER['DOCUMENT_ROOT'] is used.
      * @param string $timezone - the current timezone. If it is not set the timezone specified in php.ini is used.
+     * @param boolean $useOutputCompression - determines whether the zlib output compression should be used.
      * @access public
      * @static
      */
-    public static function init($root = null, $timezone = null)
+    public static function init($root = null, $timezone = null, $useOutputCompression = true)
     {
         if (self::$isInitialized)
         {
@@ -234,7 +235,7 @@ final class Aleph
         }
         self::$time['script_execution_time'] = microtime(true);
         ini_set('html_errors', 0);
-        if (!defined('NO_GZHANDLER') && extension_loaded('zlib') && !ini_get('zlib.output_compression'))
+        if ($useOutputCompression && extension_loaded('zlib') && !ini_get('zlib.output_compression'))
         {
             ini_set('output_buffering', 1);
             ini_set('zlib.output_compression', 4096);
@@ -457,6 +458,51 @@ final class Aleph
             $cfg = &$cfg[$key];
         }
         unset($cfg[$last]);
+    }
+    
+    /**
+     * Cleans or flushes output buffers up to target level.
+     * Resulting level can be greater than target level if a non-removable buffer has been encountered.
+     *
+     * @param integer $targetLevel - the target output buffering level.
+     * @param boolean $flush - determines whether to flush or clean the buffers.
+     * @param boolean $returnContent - determines whether the buffer contents should be returned.
+     * @return string|null
+     * @access public
+     * @static
+     */
+    public static function closeOutputBuffers($targetLevel, $flush = false, $returnContent = false)
+    {
+        $content = null;
+        $status = ob_get_status(true);
+        $level = count($status);
+        $flags = defined('PHP_OUTPUT_HANDLER_REMOVABLE') ? PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE) : -1;
+        while ($level-- > $targetLevel && ($s = $status[$level]) && (!isset($s['del']) ? !isset($s['flags']) || $flags === ($s['flags'] & $flags) : $s['del']))
+        {
+            if ($flush)
+            {
+                if ($returnContent)
+                {
+                    $content .= ob_get_flush();
+                }
+                else
+                {
+                    ob_end_flush();
+                }
+            }
+            else
+            {
+                if ($returnContent)
+                {
+                    $content .= ob_get_clean();
+                }
+                else
+                {
+                    ob_end_clean();
+                }
+            }
+        }
+        return $content;
     }
   
     /**

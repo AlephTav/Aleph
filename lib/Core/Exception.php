@@ -23,30 +23,14 @@
 namespace Aleph\Core;
  
 /**
- * Exception allows to generate exceptions with parameterized error messages which possible to get by their tokens.
+ * Exception allows to generate user exceptions with some additional information about exception.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.1
+ * @version 2.0.0
  * @package aleph.core
  */
 class Exception extends \Exception
-{
-    /**
-     * Name of a error message constant.
-     * 
-     * @var string $token
-     * @access protected
-     */
-    protected $token = null;
-  
-    /**
-     * Class name in which there is a constant of exception message.
-     *
-     * @var string $class
-     * @access protected
-     */
-    protected $class = null;
-    
+{    
     /**
      * Additional information about the exception.
      *
@@ -58,72 +42,27 @@ class Exception extends \Exception
     /**
      * Constructor.
      *
-     * @param mixed $const - the name of a constant that contains error message template.
-     * @param mixed $vars - the error template variable or variables.
+     * @param mixed $const - the exception message to throw.
      * @param mixed $data - some additional information about the exception.
      * @param integer $code - the exception code.
      * @param Exception $previous - the previous exception used for the exception chaining. 
      * @access public
      */
-    public function __construct($const, $vars = [], $data = null, $code = 0, \Exception $previous = null)
+    public function __construct($message = '', array $data = null, $code = 0, \Exception $previous = null)
     {
-        if (is_array($const))
-        {
-            if (count($const))
-            {
-                $class = array_shift($const);
-                $this->class = is_object($class) ? get_class($class) : $class;
-                $token = array_shift($const);
-                $this->token = $token;
-            }
-        }
-        else
-        {
-            $const = explode('::', $const);
-            if (isset($const[1]))
-            {
-                $this->class = ltrim($const[0], '\\');
-                $this->token = $const[1];
-            }
-            else
-            {
-                $this->token = $const[0];
-            }
-        }
-        $vars = is_array($vars) ? $vars : [$vars];
-        if ($this->class)
-        {
-            $error = $this->token ? constant($this->class . '::' . $this->token) : '';			
-            $error = vsprintf($error, $vars);
-        }
-        else
-        {
-            $error = vsprintf($this->token, $vars);
-        }
+        parent::__construct($message, $code, $previous);
         $this->data = $data;
-        parent::__construct($error, $code, $previous);
     }
-  
+
     /**
-     * Returns class name in which there is a error message constant.
+     * Returns the data associated with the exception, otherwise it returns the exception message.
      *
-     * @return string
+     * @return mixed
      * @access public
      */
-    public function getClass()
+    public function getDataOrMessage()
     {
-        return $this->class;
-    }
-  
-    /**
-     * Returns token of the error message.
-     *
-     * @return string
-     * @access public
-     */
-    public function getToken()
-    {
-        return $this->token;
+        return $this->data !== null ? $this->data : $this->getMessage();
     }
     
     /**

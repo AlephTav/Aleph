@@ -26,11 +26,16 @@ namespace Aleph\Utils;
  * This class is designed for different manipulations with date and time.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
+ * @version 1.1.1
  * @package aleph.utils
  */
 class DT extends \DateTime
 {
+    /**
+     * Error message templates.
+     */
+    const ERR_DT_1 = 'Invalid timezone "%s".';
+    
     /**
      * Default datetime format to use for __toString() and format() methods.
      */
@@ -890,6 +895,35 @@ class DT extends \DateTime
     {
         return (new static('now', $timezone))->setTimestamp($timestamp);
     }
+    
+    /**
+     * Converts the given timezone string to DateTimeZone object.
+     *
+     * @param string $timezone|DateTimeZone - the timezone to convert.
+     * @return DateTimeZone
+     * @throws InvalidArgumentException
+     * @access public
+     * @static
+     */
+    public static function normalizeTimeZone($timezone)
+    {
+        if (!($timezone instanceof \DateTimeZone))
+        {
+            if ($timezone === null)
+            {
+                return new \DateTimeZone(date_default_timezone_get());
+            }
+            try
+            {
+                $timezone = new \DateTimeZone($timezone);
+            }
+            catch (\Exception $e)
+            {
+                throw new \InvalidArgumentException(sprintf(static::ERR_DT_1, $timezone));
+            }
+        }
+        return $timezone;
+    }
 
     /**
      * Constructor.
@@ -918,7 +952,11 @@ class DT extends \DateTime
                 throw new \InvalidArgumentException(implode(PHP_EOL, static::getLastErrors()['errors']));
             }
         }
-        parent::__construct($date->format('Y-m-d H:i:s.u'), $date->getTimeZone());
+        else if ($timezone !== null)
+        {
+            $date->setTimezone(static::normalizeTimeZone($timezone));
+        }
+        parent::__construct($date->format('Y-m-d H:i:s.u'), $date->getTimezone());
     }
     
     /**
@@ -1393,34 +1431,5 @@ class DT extends \DateTime
                 $k++;
             }
         }
-    }
-  
-    /**
-     * Converts the given timezone string to DateTimeZone object.
-     *
-     * @param string $timezone|DateTimeZone - the timezone to convert.
-     * @return DateTimeZone
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
-     */
-    protected static function normalizeTimeZone($timezone)
-    {
-        if (!($timezone instanceof \DateTimeZone))
-        {
-            if ($timezone === null)
-            {
-                return new \DateTimeZone(date_default_timezone_get());
-            }
-            try
-            {
-                $timezone = new \DateTimeZone($timezone);
-            }
-            catch (\Exception $e)
-            {
-                throw new \InvalidArgumentException('Invalid timezone "' . $timezone . '".');
-            }
-        }
-        return $timezone;
     }
 }
