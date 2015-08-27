@@ -22,46 +22,54 @@
 
 namespace Aleph\Data\Converters;
 
-use Aleph\Core;
-
 /**
  * This class is the base class for all converters.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.1
  * @package aleph.data.converters
  */
 abstract class Converter
 {
-  /**
-   * Error message templates.
-   */
-  const ERR_CONVERTER_1 = 'Invalid converter type "%s". The only following types are valid: "type", "text", "collection".';
+    /**
+     * Error message templates.
+     */
+    const ERR_CONVERTER_1 = 'Invalid converter type "%s". The only following types are valid: "type", "text", "collection".';
 
-  /**
-   * Creates and returns a converter object of the required type.
-   * Converter type can be one of the following values: "type", "text", "collection".
-   *
-	  * @param string $type - the type of the converter object.
-   * @param array $params - initial values to be applied to the converter properties.
-   * @return Aleph\Data\Converters\Converter
-   * @access public
-   */
-  final public static function getInstance($type, array $params = [])
-  {
-    $class = 'Aleph\Data\Converters\\' . $type;
-    if (!\Aleph::loadClass($class)) throw new Core\Exception('Aleph\Data\Converters\Converter::ERR_CONVERTER_1', $type);
-    $converter = new $class;
-    foreach ($params as $k => $v) $converter->{$k} = $v;
-    return $converter;
-  }
+    /**
+     * Creates and returns a converter object of the required type.
+     * Converter type can be one of the following values: "type", "text", "collection".
+     *
+     * @param string $type - the type of the converter object.
+     * @param array $params - initial values to be applied to the converter properties.
+     * @return Aleph\Data\Converters\Converter
+     * @throws InvalidArgumentException
+     * @access public
+     * @static
+     * @final
+     */
+    final public static function getInstance($type, array $params = [])
+    {
+        $class = 'Aleph\Data\Converters\\' . $type;
+        if (!\Aleph::loadClass($class))
+        {
+            throw new \InvalidArgumentException(sprintf(static::ERR_CONVERTER_1, $type));
+        }
+        $converter = new $class;
+        foreach ($params as $k => $v)
+        {
+            $converter->{$k} = $v;
+        }
+        return $converter;
+    }
   
-  /**
-   * Converts the entity from one data format to another according to the specified options.
-   *
-   * @param mixed $entity - the entity to convert.
-   * @return mixed - the converted data.
-   * @access public
-   */
-  abstract public function convert($entity);
+    /**
+     * Converts the entity from one data format to another according to the specified options.
+     *
+     * @param mixed $entity - the entity to convert.
+     * @return mixed - the converted data.
+     * @access public
+     * @abstract
+     */
+    abstract public function convert($entity);
 }

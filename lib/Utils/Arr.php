@@ -398,4 +398,32 @@ class Arr
         $reduce($nodes);
         return $tree;
     }
+    
+    /**
+     * Recursively iterates an array.
+     *
+     * @param array $array - the array to iterate.
+     * @param boolean $iterateObjects - determines whether to iterate an objects (all objects will be converted to an array).
+     * @return Generator
+     * @access public
+     * @static
+     */
+    public static function iterate(array $array, $iterateObjects = false)
+    {
+        foreach ($array as $key => $value)
+        {
+            if ($iterateObjects && is_object($value))
+            {
+                $value = get_object_vars($value);
+            }
+            yield $key => $value;
+            if (is_array($value))
+            {
+                foreach (self::iterate($value) as $key => $value)
+                {
+                    yield $key => $value;
+                }
+            }
+        }
+    }
 }

@@ -43,12 +43,9 @@ final class Aleph
     /**
      * Error message templates throwing by Aleph class.
      */
-    const ERR_GENERAL_1 = 'Class "%s" is not found.';
-    const ERR_GENERAL_2 = 'Method "%s" of class "%s" doesn\'t exist.';
-    const ERR_GENERAL_3 = 'Property "%s" of class "%s" doesn\'t exist.';
-    const ERR_GENERAL_4 = 'Class "%s" found in file "%s" is duplicated in file "%s".';
-    const ERR_GENERAL_5 = 'Path to the class map file is not set. You should define the configuration variable "classmap" in section "autoload".';
-    const ERR_CONFIG_1 = 'File "%s" is not correct INI file.';
+    const ERR_ALEPH_1 = 'Class "%s" is not found.';
+    const ERR_ALEPH_2 = 'Class "%s" found in file "%s" is duplicated in file "%s".';
+    const ERR_ALEPH_3 = 'Path to the class map file is not set. You should define the configuration variable "classmap" in section "autoload".';
     
     /**
      * Determines whether the framework was initialized or not.
@@ -1478,6 +1475,7 @@ final class Aleph
      *
      * @param array $classes - array of paths to the class files.
      * @param string $classmap - path to the class map file.
+     * @throws RuntimeException
      * @access public
      */
     public static function setClassMap(array $classes, $classmap = null)
@@ -1485,7 +1483,7 @@ final class Aleph
         $file = $classmap ? self::dir($classmap) : (empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']));;
         if (!$file) 
         {
-            throw new Core\Exception('Aleph::ERR_GENERAL_5');
+            throw new \RuntimeException(self::ERR_ALEPH_3);
         }
         $code = [];
         foreach ($classes as $class => $path) 
@@ -1570,7 +1568,7 @@ final class Aleph
         {
             if ($throwException)
             {
-                throw new \RuntimeException(vsprintf(self::ERR_GENERAL_1, [$class]));
+                throw new \RuntimeException(sprintf(self::ERR_ALEPH_1, $class));
             }
             return false;
         }
@@ -1581,7 +1579,7 @@ final class Aleph
         }
         if ($throwException)
         {
-            throw new \RuntimeException(vsprintf(self::ERR_GENERAL_1, [$class]));
+            throw new \RuntimeException(sprintf(self::ERR_ALEPH_1, $class));
         }
         return false;
     }
@@ -1592,6 +1590,7 @@ final class Aleph
      * @param string $class
      * @param array $options - an array of additional search parameters.
      * @return integer|boolean
+     * @throws RuntimeException
      * @access private
      * @static
      */
@@ -1607,7 +1606,7 @@ final class Aleph
             $classmap = empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']);
             if (!$classmap)
             {
-                throw new \RuntimeException(self::ERR_GENERAL_5);
+                throw new \RuntimeException(self::ERR_ALEPH_3);
             }
             if (file_exists($classmap) && (require($classmap)) === false)
             {
@@ -1713,7 +1712,7 @@ final class Aleph
                                         return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                                     };
                                     file_put_contents($this->classmap, '<?php return [];');
-                                    throw new \RuntimeException(vsprintf(self::ERR_GENERAL_4, [ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file)]));
+                                    throw new \RuntimeException(sprintf(self::ERR_ALEPH_2, ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file)));
                                     exit;
                                 }
                                 self::$classes[$cs] = strpos($file, self::$root) === 0 ? ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;
