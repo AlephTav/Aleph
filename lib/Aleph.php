@@ -1711,8 +1711,8 @@ final class Aleph
                                     {
                                         return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                                     };
-                                    file_put_contents($this->classmap, '<?php return [];');
-                                    throw new \RuntimeException(sprintf(self::ERR_ALEPH_2, ltrim($namespace . $t[1], '\\'), $normalize($this->classes[$cs]), $normalize($file)));
+                                    file_put_contents(self::$classmap, '<?php return [];');
+                                    throw new \RuntimeException(sprintf(self::ERR_ALEPH_2, ltrim($namespace . $t[1], '\\'), $normalize(self::$classes[$cs]), $normalize($file)));
                                     exit;
                                 }
                                 self::$classes[$cs] = strpos($file, self::$root) === 0 ? ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;
