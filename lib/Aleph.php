@@ -48,6 +48,11 @@ final class Aleph
     const ERR_ALEPH_3 = 'Path to the class map file is not set. You should define the configuration variable "classmap" in section "autoload".';
     
     /**
+     * Fatal error code.
+     */
+    const FATAL_ERROR_CODE = 999;
+    
+    /**
      * Determines whether the framework was initialized or not.
      *
      * @var boolean $isInitialized
@@ -247,7 +252,7 @@ final class Aleph
                 $error = error_get_last();
                 if ($error && in_array($error['type'], $errors) && $error !== $fatal)
                 {
-                    Aleph::exception(new \ErrorException($error['message'], 999, 1, $error['file'], $error['line']));
+                    Aleph::exception(new \ErrorException($error['message'], self::FATAL_ERROR_CODE, 1, $error['file'], $error['line']));
                 }
             }
             return strlen(Aleph::getOutput()) ? Aleph::getOutput() : $output;
@@ -260,7 +265,7 @@ final class Aleph
                 $fatal = error_get_last();
                 if ($fatal && in_array($fatal['type'], $errors))
                 {
-                    Aleph::exception(new \ErrorException($fatal['message'], 999, 1, $fatal['file'], $fatal['line']));
+                    Aleph::exception(new \ErrorException($fatal['message'], self::FATAL_ERROR_CODE, 1, $fatal['file'], $fatal['line']));
                 }
             }
         });
@@ -1061,7 +1066,7 @@ final class Aleph
         $info = [];
         $info['time'] = date('Y-m-d H:i:s:u');
         $info['sessionID'] = session_id();
-        $info['isFatalError'] = $e->getCode() == 999;
+        $info['isFatalError'] = $e->getCode() == self::FATAL_ERROR_CODE;
         $message = $e->getMessage();
         $file = $e->getFile();
         $line = $e->getLine();
