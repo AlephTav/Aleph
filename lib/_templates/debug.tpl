@@ -155,7 +155,7 @@ foreach ($trace as $n => $item)
 $stack .= '</table>';
 
 $dump = '';
-foreach (array(array('request', 'response'), array('GET', 'POST'), array('COOKIE', 'FILES'), array('SESSION', 'SERVER')) as $key)
+foreach ([['request', 'response'], ['GET', 'POST'], ['COOKIE', 'FILES'], ['SERVER', 'ENV'], ['SESSION', 'GLOBALS']] as $key)
 {
   if ($info[$key[0]])
   {

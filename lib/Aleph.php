@@ -1150,6 +1150,17 @@ final class Aleph
             $code = $fragment($file, $line, $index, $command);
             array_unshift($trace, ['file' => $reducedFile, 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index]);
         }
+        $globals = array_diff_key($GLOBALS, [
+            'GLOBALS' => true,
+            '_REQUEST' => true,
+            '_GET' => true,
+            '_POST' => true,
+            '_FILES' => true,
+            '_COOKIE' => true,
+            '_SERVER' => true,
+            '_ENV' => true,
+            '_SESSION' => true
+        ]);
         $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
         $info['executionTime'] = self::getExecutionTime();
         $info['message'] = ltrim($message);
@@ -1162,12 +1173,14 @@ final class Aleph
         $info['traceAsString'] = $e->getTraceAsString();
         $info['request'] = $request();
         $info['response'] = $response();
+        $info['ENV'] = isset($_ENV) ? $_ENV : [];
         $info['GET'] = isset($_GET) ? $_GET : [];
         $info['POST'] = isset($_POST) ? $_POST : [];
         $info['COOKIE'] = isset($_COOKIE) ? $_COOKIE : [];
         $info['FILES'] = isset($_FILES) ? $_FILES : [];
         $info['SERVER'] = isset($_SERVER) ? $_SERVER : [];
         $info['SESSION'] = isset($_SESSION) ? $_SESSION : [];
+        $info['GLOBALS'] = $makeSerializable($globals);
         unset($info['SESSION']['__DEBUG_INFORMATION__']);
         unset($info['SESSION']['__VS__']);
         return $info;
