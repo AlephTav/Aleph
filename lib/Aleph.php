@@ -180,13 +180,16 @@ final class Aleph
         ],
         // Class autoload settings.
         'autoload' => [
-            'search' => true,
+            'search' => false,
             'unique' => true,
             'classmap' => 'classmap.php',
             'mask' => '/.+\\.php\\z/i', 
             'timeout' => 300,
+            'disableExceptions' => false,
             'directories' => [],
-            'namespaces' => [],
+            'namespaces' => [
+                'App' => '@app'
+            ],
             'exclusions' => [
                 '@aleph/_tests',
                 '@aleph/_templates'
@@ -285,7 +288,7 @@ final class Aleph
         ini_set('unserialize_callback_func', 'spl_autoload_call');
         spl_autoload_register(function($class)
         {
-            Aleph::loadClass($class, true);
+            Aleph::loadClass($class, empty(self::$config['autoload']['disableExceptions']));
         });
         if (!session_id())
         {
@@ -1558,7 +1561,7 @@ final class Aleph
         // PSR-4 loader.
         if (empty(self::$config['autoload']['namespaces']['Aleph'])) 
         {
-            self::$config['autoload']['namespaces'] = array_merge(['Aleph' => __DIR__], isset($cfg['namespaces']) ? (array)$cfg['namespaces'] : []);
+            self::$config['autoload']['namespaces'] = array_merge(['Aleph' => __DIR__], isset(self::$config['autoload']['namespaces']) ? (array)self::$config['autoload']['namespaces'] : []);
         }
         $namespaces = self::$config['autoload']['namespaces'];
         $prefix = $class;
