@@ -1084,24 +1084,25 @@ class Response
     {
         $this->setBody($message);
         $this->setStatusCode($status, $this->statusText);
-        $this->send();
-        if ($stop)
-        {
-            exit;
-        }
+        return $this->send($stop);
     }
     
     /**
      * Sends HTTP headers and content.
      *
+     * @param boolean $stop - determines whether to stop the script execution.
      * @return static
      * @access public
      */
-    public function send()
+    public function send($stop = false)
     {
         $this->sendHeaders();
         $this->sendBody();
         $this->isSent = true;
+        if ($stop)
+        {
+            exit;
+        }
         return $this;
     }
     
