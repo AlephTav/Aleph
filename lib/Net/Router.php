@@ -196,18 +196,28 @@ class Router
   
     /**
      * Performs all actions matching all URL templates.
+     * The method returns array of the following structure:
+     * [
+     *  'result' => ...eaction execution's result..., 
+     *  'status' => ...HTTP status code...,
+     *  'methods' => [...HTTP methods that match request...]
+     * ]
      *
      * @param Aleph\Net\Request $request - the current request instance.
-     * @param mixed $status - a variable which the HTTP status will be written in.
-     * @return mixed 
+     * @return array
      * @access public
      */
-    public function route(Request $request = null, &$status = null)
+    public function route(Request $request = null)
     {
         $this->lastAction = null;
         $request = $request ?: Request::createFromGlobals();
         $method = $request->getMethod();
         $url = $request->url;
+        $res = [
+            'result' => null,
+            'status' => 200,
+            'methods' => [$method]
+        ];
         $urls = [];
         if (isset($this->actions[$method]))
         {
@@ -224,8 +234,8 @@ class Router
                 }
                 if (!empty($data['secure']) && !$url->isSecured())
                 {
-                    $status = 403;
-                    return;
+                    $res['status'] = 403;
+                    return $res;
                 }
                 $flag = true;
                 foreach ($data['validation'] as $param => $rgx)
@@ -283,12 +293,13 @@ class Router
                         }
                     }
                 }
-                $status = 200;
-                return $action->call($params);
+                $res['result'] = $action->call($params);
+                return $res;
             }
         }
         else
         {
+            $methods = [];
             foreach ($this->actions as $method => $actions)
             {
                 foreach ($actions as $regex => $data)
@@ -300,13 +311,19 @@ class Router
                     $data['params'] = $this->parseURLTemplate($regex);
                     if (preg_match($regex, $urls[$data['component']], $matches))
                     {
-                        $status = 405;
-                        return;
+                        $methods[$regex][] = $method;
                     }
                 }
             }
+            if ($methods = reset($methods))
+            {
+                $res['status'] = in_array($method, $methods) ? 405 : 501;
+                $res['methods'] = $methods;
+                return $res;
+            }
         }
-        $status = 404;
+        $res['status'] = 404;
+        return $res;
     }
   
     /**

@@ -32,7 +32,7 @@ use Aleph\Core,
  * @version 1.0.0
  * @package aleph.data.converters
  */
-class Collection extends Converter
+class ArrayConverter extends Converter
 {
   /**
    * Error message templates.

@@ -275,13 +275,23 @@ class Response
      */
     public function setBody($body)
     {
+        if ($body === null)
+        {
+            $this->body = null;
+            return $this;
+        }
         $output = [
             'application/json' => Converters\TextConverter::JSON_ENCODED
         ];
-        $type = $this->headers->getContentType();
+        $type = $this->headers->getContentType(true);
         $converter = new Converters\TextConverter();
-        $converter->output = isset($output[$type]) ? $output[$type] : Converters\TextConverter::ANY;
-        return $converter->convert($this->getBody());
+        $converter->output = isset($output[$type['type']]) ? $output[$type['type']] : Converters\TextConverter::ANY;
+        if ($type['charset'])
+        {
+            $converter->outputCharset = $type['charset'];
+        }
+        $this->body = $converter->convert($body);
+        return $this;
     }
     
     /**
@@ -344,12 +354,12 @@ class Response
         }
         if ($text === null)
         {
-            $this->statusText = static::getStatusText($this->statusCode, '');
+            $this->statusText = static::getStatusText($code, '');
             return $this;
         }
         if ($text === false)
         {
-            $this->statusText = '';
+            $this->statusText = null;
             return $this;
         }
         $this->statusText = $text;
@@ -1075,7 +1085,10 @@ class Response
         $this->setBody($message);
         $this->setStatusCode($status, $this->statusText);
         $this->send();
-        exit;
+        if ($stop)
+        {
+            exit;
+        }
     }
     
     /**
@@ -1140,7 +1153,7 @@ class Response
      */
     protected function sendHeaders()
     {
-        if (headers_sent())
+        if ($this->isSent)
         {
             return $this;
         }

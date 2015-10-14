@@ -22,8 +22,7 @@
 
 namespace Aleph\Net;
 
-use Aleph\Core,
-    Aleph\Data\Converters;
+use Aleph\Core;
 
 /**
  * The base class for creating of the RESTFul API system.
@@ -34,309 +33,360 @@ use Aleph\Core,
  */
 class API
 {
-  /**
-   * Error message templates.
-   */
-  const ERR_API_1 = 'Callback parameter is not set for resource "%s".';
+    /**
+     * Error message templates.
+     */
+    const ERR_API_1 = 'Callback parameter is not set for resource "%s".';
 
-  /**
-   * The map of the API methods.
-   *
-   * @var array $map
-   * @access protected
-   * @static
-   */
-  protected static $map = [];
+    /**
+     * The map of the API methods.
+     *
+     * @var array $map
+     * @access public
+     * @static
+     */
+    public static $map = [];
   
-  /**
-   * The current request object.
-   *
-   * @var Aleph\Net\Request $request
-   * @access protected
-   * @static
-   */
-  protected static $request = null;
+    /**
+     * The current request object.
+     *
+     * @var Aleph\Net\Request $request
+     * @access public
+     * @static
+     */
+    public static $request = null;
   
-  /**
-   * The current response object.
-   *
-   * @var Aleph\Net\Response $response
-   * @access protected
-   * @static
-   */
-  protected static $response = null;
+    /**
+     * The current response object.
+     *
+     * @var Aleph\Net\Response $response
+     * @access public
+     * @static
+     */
+    public static $response = null;
   
-  /**
-   * The response content type. It can be regular MIME-type or its alias (if exists).
-   *
-   * @var string $contentType
-   * @access protected
-   * @static
-   */
-  protected static $contentType = 'json';
+    /**
+     * The response content type. It can be regular MIME-type or its alias (if exists).
+     *
+     * @var string $contentType
+     * @access public
+     * @static
+     */
+    public static $contentType = 'json';
   
-  /**
-   * The output charset of the response body.
-   *
-   * @var string $outputCharset
-   * @access protected
-   * @static
-   */
-  protected static $outputCharset = 'UTF-8';
-  
-  /**
-   * The input charset of the response body.
-   *
-   * @var string $inputCharset
-   * @access protected
-   * @static
-   */
-  protected static $inputCharset = 'UTF-8';
+    /**
+     * The output charset of the response body.
+     *
+     * @var string $charset
+     * @access public
+     * @static
+     */
+    public static $charset = 'UTF-8';
 
-  /**
-   * The namespace prefix for the callbacks that specified in the $map.
-   *
-   * @var string $namespace
-   * @access protected
-   * @static
-   */
-  protected static $namespace = '\\';
+    /**
+     * The namespace prefix for the callbacks that specified in the $map.
+     *
+     * @var string $namespace
+     * @access public
+     * @static
+     */
+    public static $namespace = '\\';
   
-  /**
-   * Prefix for URLs.
-   *
-   * @var string $urlPrefix
-   * @access protected
-   * @static
-   */
-  protected static $urlPrefix = '';
+    /**
+     * Prefix for URLs.
+     *
+     * @var string $urlPrefix
+     * @access public
+     * @static
+     */
+    public static $urlPrefix = '';
   
-  /**
-   * Determines whether the response body is converted according to the defined content type.
-   *
-   * @var boolean $convertOutput
-   * @access protected
-   * @static
-   */
-  protected static $convertOutput = false;
+    /**
+     * Determines whether the response body is converted according to the defined content type and charset.
+     *
+     * @var boolean $convertOutput
+     * @access public
+     * @static
+     */
+    public static $convertOutput = true;
   
-  /**
-   * Determines whether any error information is converted according to the defined content type.
-   *
-   * @var boolean $convertErrors
-   * @access protected
-   * @static
-   */
-  protected static $convertErrors = false;
+    /**
+     * Determines whether any error information is converted according to the defined content type and charset.
+     *
+     * @var boolean $convertErrors
+     * @access public
+     * @static
+     */
+    public static $convertErrors = true;
   
-  /**
-   * The error and exception handler of the API class system.
-   * This method stops the script execution and sets the response status code to 500.
-   *
-   * @param Exception $e - the exception that occurred.
-   * @param array $info - the exception information.
-   * @return mixed
-   * @access public
-   * @static
-   */
-  public static function error(\Exception $e, array $info)
-  {
-    if (!\Aleph::get('debugging')) static::$response->stop(500, '');
-    if (!static::$convertErrors) return true;
-    static::$response->setContentType(static::$contentType, static::$outputCharset);
-    static::$response->stop(500, static::convert($info));
-  }
-
-  /**
-   * Invokes and performs the requested API method.
-   * This method is the entry point of the API class system.
-   *
-   * @access public
-   * @static
-   */
-  final public static function process()
-  {
-    \Aleph::setErrorHandler(get_called_class() . '::error');
-    static::$request = Request::getInstance();
-    static::$response = Response::getInstance();
-    static::$response->setContentType(static::$contentType, static::$outputCharset);
-    $namespace = static::$namespace;
-    $process = function(array $resource, array $params = null) use($namespace)
+    /**
+     * The error and exception handler of the API class system.
+     * This method stops the script execution and sets the response status code to 500.
+     *
+     * @param Exception $e - the exception that occurred.
+     * @param array $info - the exception information.
+     * @return mixed
+     * @access public
+     * @static
+     */
+    public static function error(\Exception $e, array $info)
     {
-      if (empty($resource['callback']))
-      {
-        throw new Core\Exception(['Aleph\Net\API', 'ERR_API_1'], $resource);
-      }
-      $callback = $resource['callback'];
-      foreach ($params as $param => $value)
-      {
-        $callback = str_replace('#' . $param . '#', $value, $callback, $count);
-        if ($count > 0)
+        if (!\Aleph::get('debugging'))
         {
-          unset($params[$param]);
+            static::$response->stop(500, null);
         }
-      }
-      if ($callback[0] != '\\')
-      {
-        $callback = $namespace . $callback;
-      }
-      $callback = new Core\Delegate($callback);
-      if ($callback->isStatic()) 
-      {
-        return $callback->call($params);
-      }
-      $api = $callback->getClassObject($params);
-      if ($api instanceof API)
-      {
-        $api->before($resource, $params);
-        $result = call_user_func_array([$api, $callback->getMethod()], $params);
-        $api->after($resource, $params, $result);
-      }
-      else
-      {
-        $result = call_user_func_array([$api, $callback->getMethod()], $params);
-      }
-      return $result;
-    };
-    $router = new Router();
-    foreach (static::$map as $resource => $info)
-    {
-      if ($resource && $resource[0] == '@') 
-      {
-        $resource = static::$urlPrefix . substr($resource, 1);
-      }
-      foreach ($info as $methods => $data)
-      {
-        if (empty($data['redirect']))
+        if (!static::$convertErrors)
         {
-          $router->bind($resource, $process, $methods)
-                 ->ssl(empty($data['ssl']) ? false : $data['ssl'])
-                 ->component(empty($data['component']) ? URL::PATH : $data['component'])
-                 ->coordinateParameterNames(empty($data['coordinateParameterNames']) ? false : $data['coordinateParameterNames'])
-                 ->validation(empty($data['validation']) ? [] : $data['validation'])
-                 ->args(['resource' => $data])
-                 ->extra('params');
+            return true;
+        }
+        static::$response->stop(500, $info);
+    }
+    
+    /**
+     * This method is automatically called when the server cannot or will not process the request
+     * due to something that is perceived to be a client error.
+     * The method stops the script execution and sets the response status code to 400.
+     *
+     * @param mixed $content - the response body.
+     * @access public
+     * @static
+     */
+    public static function badRequest($content = null)
+    {
+        static::$response->stop(400, $content);
+    }
+    
+    /**
+     * This method is automatically called when authentication is required and has failed or has not yet been provided.
+     * The method stops the script execution and sets the response status code to 401.
+     *
+     * @param mixed $content - the response body.
+     * @access public
+     * @static
+     */
+    public static function unauthorized($content = null)
+    {
+        static::$response->stop(401, $content);
+    }
+    
+    /**
+     * This method is automatically called when the request was a valid request, but the server is refusing to respond to it.
+     * The method stops the script execution and sets the response status code to 403.
+     *
+     * @param mixed $content - the response body.
+     * @access public
+     * @static
+     */
+    public static function forbidden($content = null)
+    {
+        static::$response->stop(403, $content);
+    }
+    
+    /**
+     * This method is automatically called when the current request does not match any API methods ($map's callbacks).
+     * The method stops the script execution and sets the response status code to 404.
+     *
+     * @param mixed $content - the response body.
+     * @access public
+     * @static
+     */
+    public static function notFound($content = null)
+    {
+        static::$response->stop(404, $content);
+    }
+  
+    /**
+     * This method is automatically called when a request was made of a resource using a request method not supported by that resource.
+     * The method stops the script execution and sets the response status code to 405.
+     *
+     * @param array $methods - the HTTP methods that supported by the resource.
+     * @param mixed $content - the response body.
+     * @access public
+     * @static
+     */
+    public static function notAllowed(array $methods = [], $content = null)
+    {
+        static::$response->headers->set('Allow', implode(', ', $methods));
+        static::$response->stop(405, $content);
+    }
+    
+    /**
+     * This method is automatically called when the server either does not recognize the request method, or it lacks the ability to fulfill the request. 
+     * The method stops the script execution and sets the response status code to 501.
+     *
+     * @param mixed $content - the response body.
+     * @access public
+     * @static
+     */
+    public static function notImplemented($content = null)
+    {
+        static::$response->stop(501, $content);
+    }
+
+    /**
+     * Invokes and performs the requested API method.
+     * This method is the entry point of the API class system.
+     *
+     * @access public
+     * @static
+     */
+    final public static function run()
+    {
+        $class = get_called_class();
+        $action = $class . '::action';
+        \Aleph::setErrorHandler($class . '::error');
+        static::$request = static::$request instanceof Request ? static::$request : Request::createFromGlobals();
+        static::$response = static::$response instanceof Response ? static::$response : new Response();
+        static::$response->setContentType(static::$contentType, static::$charset);
+        $router = new Router();
+        foreach (static::$map as $resource => $info)
+        {
+            if ($resource && $resource[0] == '@') 
+            {
+                $resource = static::$urlPrefix . substr($resource, 1);
+            }
+            foreach ($info as $methods => $data)
+            {
+                $router->bind($methods, $resource, $action)
+                       ->secure(empty($data['secure']) ? false : $data['secure'])
+                       ->component(empty($data['component']) ? URL::PATH : $data['component'])
+                       ->where(empty($data['where']) ? [] : $data['where'])
+                       ->associateWithParameters(empty($data['associateWithParameters']) ? false : $data['associateWithParameters'])
+                       ->args(['resource' => $data])
+                       ->extra('params');
+            }
+        }
+        $res = $router->route(static::$request);
+        if (headers_sent())
+        {
+            return;
+        }
+        static::$response->setStatusCode($res['status']);
+        switch ($res['status'])
+        {
+            case 400:
+                $res['result'] = static::badRequest();
+                break;
+            case 401:
+                $res['result'] = static::unauthorized();
+                break;
+            case 403:
+                $res['result'] = static::forbidden();
+                break;
+            case 404:
+                $res['result'] = static::notFound();
+                break;
+            case 405:
+                $res['result'] = static::notAllowed($res['methods']);
+                break;
+            case 501:
+                $res['result'] = static::notImplemented();
+                break;
+        }
+        if ($res['result'] instanceof Response)
+        {
+            $res['result']->send();
         }
         else
         {
-          $router->redirect($resource, $data['redirect'], $methods)
-                 ->ssl(empty($data['ssl']) ? false : $data['ssl'])
-                 ->component(empty($data['component']) ? URL::PATH : $data['component'])
-                 ->validation(empty($data['validation']) ? [] : $data['validation']);
+            static::$response->setBody($res['result']);
+            static::$response->send();
         }
-      }
     }
-    $output = $router->route($status);
-    switch ($status)
+    
+    /**
+     * Executes an action on the controller.
+     *
+     * @param array $resource - the URL templater of the requested resource.
+     * @param array $params - the URL template variables.
+     * @return mixed
+     * @access public
+     * @static
+     */
+    public static function action(array $resource, array $params = null)
     {
-      case 403:
-        static::forbidden();
-      case 404:
-        static::notFound();
-      case 405:
-        static::notAllowed();
-      case 501:
-        static::notImplemented();
+        if (empty($resource['callback']))
+        {
+            throw new \RuntimeException(sprintf(static::ERR_API_1, $resource));
+        }
+        $callback = $resource['callback'];
+        foreach ($params as $param => $value)
+        {
+            $callback = str_replace('#' . $param . '#', $value, $callback, $count);
+            if ($count > 0)
+            {
+                unset($params[$param]);
+            }
+        }
+        if ($callback[0] != '\\')
+        {
+            $callback = rtrim(static::$namespace, '\\') . '\\' . ltrim($callback, '\\');
+        }
+        $callback = new Core\Delegate($callback);
+        if ($callback->isStatic()) 
+        {
+            return $callback->call($params);
+        }
+        $api = $callback->getClassObject($params);
+        if ($api instanceof API)
+        {
+            $api->before($resource, $params);
+            $result = call_user_func_array([$api, $callback->getMethod()], $params);
+            $api->after($resource, $params, $result);
+        }
+        else
+        {
+            $result = call_user_func_array([$api, $callback->getMethod()], $params);
+        }
+        return $result;
     }
-    if (!static::$response->isSent())
+  
+    /**
+     * The batch API method allowing to perform several independent between themselves API methods at once.
+     * The method returns execution result of all API endpoints. 
+     *
+     * @return array
+     * @access protected
+     */
+    /*protected function batch()
     {
-      static::$response->body = static::convert($output);
-      static::$response->send();
-    }
-  }
+        $result = [];
+        $data = json_decode(static::$request->getBody(), true);
+        if (!is_array($data))
+        {
+            static::badRequest();
+        }
+        foreach ($data as $request)
+        {
+            static::$request->setMethod($request['method']);
+            static::$request->url->parse($request['url']);
+            if (!empty($request['get']))
+            {
+                static::$request->get->replace($request['get']);
+            }
+            $this->request->setBody($request['body']);
+            self::run();
+            $result[] = static::$response->getBody();
+        }
+        return $result;
+    }*/
   
-  /**
-   * This method is automatically called when the current request does not match any API methods ($map's callbacks).
-   * The method stops the script execution and sets the response status code to 404.
-   *
-   * @param mixed $content - the response body.
-   * @access protected
-   * @static
-   */
-  protected static function notFound($content = null)
-  {
-    static::$response->stop(404, $content !== null ? static::convert($content) : null);
-  }
+    /**
+     * Automatically invokes before the API method call.
+     *
+     * @param array $resource - the part of $map which corresponds the current request.
+     * @param array $params - the values of the URL template variables.
+     * @access protected
+     */
+    protected function before(array $resource, array &$params){}
   
-  /**
-   * This method is automatically called when a request was made of a resource using a request method not supported by that resource.
-   * The method stops the script execution and sets the response status code to 405.
-   *
-   * @param mixed $content - the response body.
-   * @access protected
-   * @static
-   */
-  protected static function notAllowed($content = null)
-  {
-    static::$response->stop(405, $content !== null ? static::convert($content) : null);
-  }
-  
-  /**
-   * Converts the execution result of the requested API method to the specified text format according to the output charset.
-   *
-   * @param mixed $content - the response body.
-   * @return string
-   * @access protected
-   * @static
-   */
-  protected static function convert($content)
-  {
-    if (!static::$convertOutput) return $content;
-    switch (strtolower(static::$contentType))
-    {
-      case 'json':
-      case 'application/json':
-        $output = 'json-encoded';
-        break;
-      default:
-        $output = 'any';
-        break;        
-    }
-    $converter = new Converters\Text();
-    $converter->output = $output;
-    $converter->outputCharset = static::$outputCharset;
-    $converter->inputCharset = static::$inputCharset;
-    return $converter->convert($content);
-  }
-  
-  /**
-   * The batch API method allowing to perform several independent between themselves API methods at once.
-   *
-   * @return array
-   * @access protected
-   */
-  protected function batch()
-  {
-    $result = [];
-    $data = json_decode($this->request->body, true);
-    foreach ($data as $request)
-    {
-      $this->request->method = $request['method'];
-      $this->request->url->parse($request['url']);
-      $this->request->data = $this->request->url->query;
-      $this->request->body = $request['body'];
-      self::process();
-      $result[] = $this->response->body;
-    }
-    return $result;
-  }
-  
-  /**
-   * Automatically invokes before the API method call.
-   *
-   * @param array $resource - the part of $map which corresponds the current request.
-   * @param array $params - the values of the URL template variables.
-   * @access protected
-   */
-  protected function before(array $resource, array &$params){}
-  
-  /**
-   * Automatically invokes after the API method call.
-   *
-   * @param array $resource - the part of $map which corresponds the current request.
-   * @param array $params - the values of the URL template variables.
-   * @param mixed $result - the result of the API method execution.
-   * @access protected
-   */
-  protected function after(array $resource, array $params, &$result){}
+    /**
+     * Automatically invokes after the API method call.
+     *
+     * @param array $resource - the part of $map which corresponds the current request.
+     * @param array $params - the values of the URL template variables.
+     * @param mixed $result - the result of the API method execution.
+     * @access protected
+     */
+    protected function after(array $resource, array $params, &$result){}
 }
