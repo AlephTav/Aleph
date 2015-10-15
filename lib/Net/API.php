@@ -235,7 +235,7 @@ class API
         $class = get_called_class();
         $action = $class . '::action';
         \Aleph::setErrorHandler($class . '::error');
-        static::$request = static::$request instanceof Request ? static::$request : Request::createFromGlobals();
+        static::$request = static::$request instanceof Request ? static::$request : Request::createFromGlobals(true);
         static::$response = static::$response instanceof Response ? static::$response : new Response();
         static::$response->setContentType(static::$contentType, static::$charset);
         $router = new Router();

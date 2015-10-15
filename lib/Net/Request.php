@@ -99,14 +99,28 @@ class Request
     protected $body = null;
     
     /**
+     * Used for singleton version of the request.
+     *
+     * @var Aleph\Net\Request $request
+     * @access private
+     * @static
+     */
+    private static $request = null;
+    
+    /**
      * Creates a new request with values from PHP's super globals.
      *
+     * @param boolean $asSingleton - determines whether the request instance should be stored as singleton.
      * @return static
      * @access public
      * @static
      */
-    public static function createFromGlobals()
+    public static function createFromGlobals($asSingleton = false)
     {
+        if ($asSingleton && self::$request)
+        {
+            return self::$request;
+        }
         $request = new static(
             URL::createFromGlobals(true),
             $_SERVER,
@@ -132,6 +146,10 @@ class Request
                 parse_str($body, $data);
                 $request->post = new Utils\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
             }
+        }
+        if ($asSingleton)
+        {
+            self::$request = $request;
         }
         return $request;
     }
