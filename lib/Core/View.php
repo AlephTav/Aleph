@@ -89,6 +89,25 @@ class View
     protected $parentBlock = null;
     
     /**
+     * View string or path to the view file.
+     *
+     * @var string $view
+     * @access protected
+     */
+    protected $view = null;
+    
+    /**
+     * Constructor.
+     *
+     * @param string $view - a view string or path to a view file.
+     * @access public
+     */
+    public function __construct($view = null)
+    {
+        $this->view = $view;
+    }
+    
+    /**
      * Sets value of a view variable.
      *
      * @param string $name - the variable name.
@@ -176,8 +195,9 @@ class View
      * @return string
      * @access public
      */
-    public function render($view)
+    public function render($view = null)
     {
+        $view = $view !== null ? $view : $this->view;
         ${'(_._)'} = $this->findViewFile($view);
         unset($view);
         $this->level++;
