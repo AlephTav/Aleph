@@ -23,7 +23,7 @@
 namespace Aleph\Data\Converters;
 
 /**
- * CollectionConverter is intended for converting the given array to an array with another structure. 
+ * ArrayConverter is intended for converting the given array to an array with another structure. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 2.0.0
@@ -151,6 +151,22 @@ class ArrayConverter extends Converter
      * @var boolean $preservePartlyExistingElements
      */
     public $preservePartlyExistingElements = false;
+    
+    /**
+     * Determines whether to treat objects as arrays.
+     *
+     * @var boolean $treatObjectAsArray
+     * @access public
+     */
+    public $treatObjectAsArray = true;
+    
+    /**
+     * The default precision for float values.
+     *
+     * @var integer $precision
+     * @access public
+     */
+    public $precision = 2;
     
     /**
      * Normalized schema.
@@ -939,15 +955,26 @@ class ArrayConverter extends Converter
             $type = explode($this->typeParamDelimiter, $type, 2);
         }
         @list($type, $param) = $type;
-        if (strtolower($type) == 'callback' && $param)
+        $type = strtolower($type);
+        if ($type == 'callback')
         {
-            if (strncmp($param, '::', 2) == 0)
+            if ($param)
             {
-                $param = get_class($this) . $param;
+                if (strncmp($param, '::', 2) == 0)
+                {
+                    $param = get_class($this) . $param;
+                }
+                else if (strncmp($param, '->', 2) == 0)
+                {
+                    $param = [$this, substr($param, 2)];
+                }
             }
-            else if (strncmp($param, '->', 2) == 0)
+        }
+        else if ($type == 'float' || $type == 'double' || $type == 'real')
+        {
+            if ($param === null)
             {
-                $param = [$this, substr($param, 2)];
+                $param = $this->precision;
             }
         }
         $type = [$type, $param];
@@ -1129,6 +1156,10 @@ class ArrayConverter extends Converter
     {
         foreach ($keys as $n => $key)
         {
+            if ($this->treatObjectAsArray && is_object($value))
+            {
+                $value = (array)$value;
+            }
             if (is_array($key))
             {
                 if (!is_array($value))
@@ -1145,6 +1176,10 @@ class ArrayConverter extends Converter
                 {
                     foreach ($value as $k => $v)
                     {
+                        if ($this->treatObjectAsArray && is_object($v))
+                        {
+                            $v = (array)$v;
+                        }
                         foreach ($this->getIterator($v, $keys, array_merge($keyValues, [$k]), $required) as $val) 
                         {
                             yield $val;
@@ -1195,6 +1230,10 @@ class ArrayConverter extends Converter
         $last = count($keys) - 1;
         foreach ($keys as $n => $key)
         {
+            if ($this->treatObjectAsArray && is_object($a))
+            {
+                $a = (array)$a;
+            }
             if (is_array($key))
             {
                 if (!is_array($a))
@@ -1210,6 +1249,10 @@ class ArrayConverter extends Converter
                     $keys = array_slice($keys, $n + 1);
                     foreach ($a as $k => &$v)
                     {
+                        if ($this->treatObjectAsArray && is_object($v))
+                        {
+                            $v = (array)$v;
+                        }
                         $this->removeElements($v, $keys, array_merge($keyValues, [$k])); 
                     }
                 }

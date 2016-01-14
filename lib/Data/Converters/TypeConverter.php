@@ -142,6 +142,7 @@ class TypeConverter extends Converter
      */
     private function normalizeType($type)
     {
+        $type = strtolower($type);
         switch ($type)
         {
             case 'int':
@@ -152,6 +153,6 @@ class TypeConverter extends Converter
             case 'bool':
                 return 'boolean';
         }
-        return strtolower($type);
+        return $type;
     }
 }
