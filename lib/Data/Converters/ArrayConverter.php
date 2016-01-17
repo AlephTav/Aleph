@@ -303,7 +303,11 @@ class ArrayConverter extends Converter
                             $key = $key === $in['name'] ? $value : $values[$key];
                         }
                     }
-                    $a = &$a[$key];
+                    if (!is_array($a))
+                    {
+                        $a = [];
+                    }
+                    @$a = &$a[$key];
                 }
                 if ($valueType === $this->valueNamePrefix)
                 {
