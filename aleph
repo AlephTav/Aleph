@@ -1,0 +1,8 @@
+#!/usr/bin/php
+<?php
+
+// Framework initialization and config loading.
+require_once(__DIR__ . '/bootstrap.php');
+
+// Executes the current console command.
+(new \Aleph\Console\Controller())->run();

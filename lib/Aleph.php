@@ -23,29 +23,37 @@
 use Aleph\Core,
     Aleph\Cache;
 
+if (!defined('START_ALEPH_TS'))
+{
+    define('START_ALEPH_TS', microtime(true));
+}
+
 /**
  * General class of the framework.
- * With this class you can log error messages, profile your code, catch any errors, load classes, configure your application and store any global objects. 
+ * Using this class you can log error messages, profile your code,
+ * catch any errors, load classes and configure your application.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.1
+ * @version 1.2.1
  * @package aleph.core
- * @final
  */
 final class Aleph
 {
     /**
      * Bug and debug templates.
      */
-    const DEBUG_TEMPLATE = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>$message</pre> has been catched in file <b>$file</b> on line $line<br /><br /><b style="font-size: 14px;">Stack Trace:</b><pre>$traceAsString</pre><b>Execution Time:</b><pre>$executionTime sec</pre><b>Memory Usage:</b><pre>$memoryUsage Mb</pre></pre></body></html>';
+    const DEBUG_TEMPLATE = '<!doctype html><html><head><meta content="text/html; charset=UTF-8" http-equiv="Content-Type" /><title>Bug Report</title><body bgcolor="gold">The following error <pre>$message</pre> has been catched in file <b>$file</b> on line $line<br /><br /><b style="font-size: 14px;">Stack Trace:</b><pre>$traceAsString</pre><b>Execution Time:</b><pre>$executionTime sec</pre><b>Memory Usage:</b><pre>$memoryUsage Mb</pre></body></html>';
     const ERROR_TEMPLATE = 'Sorry, server is not available at the moment. Please wait. This site will be working very soon!';
   
     /**
      * Error message templates throwing by Aleph class.
      */
-    const ERR_ALEPH_1 = 'Class "%s" is not found.';
-    const ERR_ALEPH_2 = 'Class "%s" found in file "%s" is duplicated in file "%s".';
-    const ERR_ALEPH_3 = 'Path to the class map file is not set. You should define the configuration variable "classmap" in section "autoload".';
+    const ERR_1 = 'Class "%s" is not found.';
+    const ERR_2 = 'Class "%s" found in file "%s" is duplicated in file "%s".';
+    const ERR_3 = 'Path to the class map file is not set. You should define the configuration variable "classmap" in section "autoload".';
+    const ERR_4 = 'Timestamp with mark "%s" is not found.';
+    const ERR_5 = 'Failed to build URL. The given directory "%s" is outside of the application document root directory.';
+    const ERR_6 = 'Failed to load zlib extension.';
     
     /**
      * Fatal error code.
@@ -53,118 +61,108 @@ final class Aleph
     const FATAL_ERROR_CODE = 999;
     
     /**
+     * Initialization flags.
+     */
+    const INIT_COMPRESS_OUTPUT = 1;      // determines whether the zlib output compression should be used.
+    const INIT_START_SESSION = 2;        // determines whether the session should be started.
+    const INIT_CLOSE_OUTPUT_BUFFERS = 4; // determines whether the previous opened output buffers should be closed before Aleph's initialization.
+    const INIT_USE_OUTPUT_BUFFERING = 8; // determines whether the output buffering should be used.
+    
+    /**
      * Determines whether the framework was initialized or not.
      *
-     * @var boolean $isInitialized
-     * @access private
-     * @static
+     * @var bool
      */
     private static $isInitialized = false;
+    
+    /**
+     * Initialization flags value.
+     *
+     * @var int
+     */
+    private static $flags = 0;
   
     /**
      * Unique ID of the application (site).
      *
-     * @var private $siteUniqueID
-     * @access private
-     * @static
+     * @var string
      */
-    private static $siteUniqueID = null;
+    private static $appUniqueID = '';
   
     /**
      * Path to site root directory.
      *
-     * @var string $root
-     * @access private
-     * @static
+     * @var string
      */
-    private static $root = null;
+    private static $root = '';
   
     /**
      * Array of timestamps.
      *
-     * @var array @time
-     * @access private
-     * @static
+     * @var array
      */
-    private static $time = [];
+    private static $ts = [];
   
     /**
      * The response body.
      *
-     * @var string $output
-     * @access private
-     * @static
+     * @var string
      */
     private static $output = null;
   
     /**
      * Array with information about some code that was executed by the operator eval.
      *
-     * @var array $eval
-     * @access private
-     * @static
+     * @var array
      */
     private static $eval = [];
   
     /**
      * Marker of the error handling mode.
      *
-     * @var boolean $errorHandling
-     * @access private
-     * @static
+     * @var bool
      */
     private static $errorHandling = false;
     
     /**
      * Custom error handler.
      *
-     * @var callable $errorHandler
-     * @access private
-     * @static
+     * @var mixed
      */
     private static $errorHandler = null;
     
     /**
      * Custom log function.
      *
-     * @var callable $logger
-     * @access private
-     * @static
+     * @var mixed
      */
     private static $logger = null;
   
     /**
      * Instance of the class Aleph\Cache\Cache (or its child).
      *
-     * @var Aleph\Cache\Cache $cache
-     * @access private
-     * @static
+     * @var \Aleph\Cache\Cache
      */
     private static $cache = null;
   
     /**
      * Array of paths to all classes of the application and framework.
      *
-     * @var array $classes
-     * @access private
-     * @static
+     * @var array
      */
-    private static $classes = null;
+    private static $classes = [];
   
     /**
      * Path to the class map file.
      *
-     * @var string $classmap
-     * @access private
-     * @static
+     * @var string
      */
-    private static $classmap = null;
+    private static $classmap = '';
   
     /**
-     * Array of configuration variables.
+     * Default configuration variables.
      *
-     * @var array $config
-     * @access private  
+     * @var array
      */
     private static $config = [
         // General settings.
@@ -220,49 +218,53 @@ final class Aleph
             'logs' => 'tmp/logs',
             'cache' => 'tmp/cache',
             'temp' => 'tmp/temp'
+        ],
+        // Console settings
+        'console' => [
+            'commands' => [
+                'Aleph\Console\Commands\Chuck'
+            ]
         ]
     ];
     
     /**
      * Initializes the Aleph framework.
      *
-     * @param string $root - the document root directory. If it is not set the $_SERVER['DOCUMENT_ROOT'] is used.
-     * @param string $timezone - the current timezone. If it is not set the timezone specified in php.ini is used.
-     * @param boolean $useOutputCompression - determines whether the zlib output compression should be used.
-     * @access public
-     * @static
+     * @param string $root The document root directory. If it is not set the $_SERVER['DOCUMENT_ROOT'] is used.
+     * @param string $timezone The current timezone. If it is not set the timezone specified in php.ini is used.
+     * @param int|null $flags The initilization flags. If $flags is NULL the default value is used.
+     * @param array $sessionOptions An associative array of options that will override the currently set session configuration directives.
+     * @return void
+     * @throws \RuntimeException When zlib extension is not loaded.
      */
-    public static function init($root = null, $timezone = null, $useOutputCompression = true)
+    public static function init(string $root = '', string $timezone = '', int $flags = null, array $sessionOptions = [])
     {
         if (self::$isInitialized)
         {
             return;
         }
-        self::$time['script_execution_time'] = microtime(true);
         ini_set('html_errors', 0);
-        if ($useOutputCompression && extension_loaded('zlib') && !ini_get('zlib.output_compression'))
+        self::$flags = $flags ?: (PHP_SAPI === 'cli' ? 0 : self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING);
+        if (self::$flags & self::INIT_CLOSE_OUTPUT_BUFFERS)
         {
+            self::closeOutputBuffers(0);
+        }
+        if (self::$flags & self::INIT_COMPRESS_OUTPUT)
+        {
+            if (!extension_loaded('zlib'))
+            {
+                throw new \RuntimeException(self::ERR_6);
+            }
+            ini_set('output_handler', '');
             ini_set('output_buffering', 1);
+            ini_set('implicit_flush', 0);
             ini_set('zlib.output_compression', 4096);
         }
         $fatal = null;
         $errors = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
-        self::reserveMemory(262144); // 256KB
-        ob_start(function($output) use(&$fatal, $errors)
-        {
-            if (Aleph::isErrorHandlingEnabled()) 
-            {
-                $error = error_get_last();
-                if ($error && in_array($error['type'], $errors) && $error !== $fatal)
-                {
-                    Aleph::exception(new \ErrorException($error['message'], self::FATAL_ERROR_CODE, 1, $error['file'], $error['line']));
-                }
-            }
-            return strlen(Aleph::getOutput()) ? Aleph::getOutput() : $output;
-        });
         register_shutdown_function(function() use(&$fatal, $errors)
         {
-            Aleph::reserveMemory(false);
+            Aleph::reserveMemory(0);
             if (Aleph::isErrorHandlingEnabled())
             {
                 $fatal = error_get_last();
@@ -272,6 +274,21 @@ final class Aleph
                 }
             }
         });
+        if (self::$flags & self::INIT_USE_OUTPUT_BUFFERING)
+        {
+            ob_start(function($output) use(&$fatal, $errors)
+            {
+                if (Aleph::isErrorHandlingEnabled()) 
+                {
+                    $error = error_get_last();
+                    if ($error && in_array($error['type'], $errors) && $error !== $fatal)
+                    {
+                        Aleph::exception(new \ErrorException($error['message'], self::FATAL_ERROR_CODE, 1, $error['file'], $error['line']));
+                    }
+                }
+                return self::$output !== null ? self::$output : $output;
+            });
+        }
         if ($timezone) 
         {
             date_default_timezone_set($timezone);
@@ -282,40 +299,47 @@ final class Aleph
         }
         self::setErrorLevel(E_ALL);
         self::enableErrorHandling();
-        self::$root = $root !== null ? realpath($root) : (isset($_SERVER['DOCUMENT_ROOT']) ? $_SERVER['DOCUMENT_ROOT'] : __DIR__);
-        self::$siteUniqueID = md5(self::$root);
+        self::$root = $root ? realpath($root) : ($_SERVER['DOCUMENT_ROOT'] ?? __DIR__);
+        self::$appUniqueID = md5(self::$root);
         $_SERVER['DOCUMENT_ROOT'] = self::$root;
         ini_set('unserialize_callback_func', 'spl_autoload_call');
         spl_autoload_register(function($class)
         {
             Aleph::loadClass($class, empty(self::$config['autoload']['disableExceptions']));
         });
-        if (!session_id())
+        if (self::$flags & self::INIT_START_SESSION)
         {
-            session_start();
-        }
-        if (isset($_GET['__DEBUG_INFORMATION__']) && isset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]))
-        {
-            self::$output = $_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']];
-            unset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]);
-            exit;
+            if (!session_id())
+            {
+                session_start($sessionOptions);
+            }
+            self::showDebugInfo(true);
         }
         set_time_limit(0);
         self::$isInitialized = true;
     }
     
     /**
-     * Reserves a block of memory to prevent out-of-memory errors.
-     * If $size is set to FALSE or 0 the reserved block will be freed.
+     * Returns TRUE if Aleph has been initialized and FALSE otherwise.
      *
-     * @param integer|boolean $size - the size of the reserved memory.
-     * @access public
-     * @static
+     * @return bool
      */
-    public static function reserveMemory($size)
+    public static function isInitialized() : bool
+    {
+        return self::$isInitialized;
+    }
+    
+    /**
+     * Reserves a block of memory to prevent out-of-memory errors.
+     * If $size is set to 0 the reserved block will be freed.
+     *
+     * @param int $size The size of the reserved memory.
+     * @return void
+     */
+    public static function reserveMemory(int $size = 5242880)
     {
         static $reservedMemory;
-        if ($size == 0)
+        if ($size === 0)
         {
             $reservedMemory = null;
         }
@@ -324,15 +348,37 @@ final class Aleph
             $reservedMemory = str_repeat(chr(0), $size);
         }
     }
+
+    /**
+     * Sets value of the response body.
+     *
+     * @param string $output The response body.
+     * @param bool $terminate If it equals TRUE the script execution will be immediately terminated.
+     * @param int $exitCode The exit status.
+     * @return void
+     */
+    public static function output($output, bool $terminate = true, int $exitCode = 0)
+    {
+        if (self::$flags & self::INIT_USE_OUTPUT_BUFFERING)
+        {
+            self::$output = $output;
+        }
+        else
+        {
+            echo $output;
+        }
+        if ($terminate)
+        {
+            exit($exitCode > 254 ? 254 : $exitCode);
+        }
+    }
   
     /** 
      * Returns array of configuration variables.
      *
      * @return array
-     * @access public
-     * @static
      */
-    public static function getConfig()
+    public static function getConfig() : array
     {
         return self::$config;
     }
@@ -340,12 +386,11 @@ final class Aleph
     /**
      * Specifies configuration variables.
      *
-     * @param mixed $data - the path to the configuration file or array of configuration variables.
-     * @param boolean $merge - determines whether the existing variables should be merged with new ones.
-     * @access public
-     * @static
+     * @param mixed $data The path to the configuration file or array of configuration variables.
+     * @param bool $merge Determines whether the existing variables should be merged with new ones.
+     * @return void
      */
-    public static function setConfig($data, $merge = true)
+    public static function setConfig($data, bool $merge = true)
     {
         if (!is_array($data))
         {
@@ -374,13 +419,11 @@ final class Aleph
     /**
      * Returns a configuration variable by its name.
      *
-     * @param string $name - the name of a configuration variable.
-     * @param mixed $default - the default value of a configuration variable.
+     * @param string $name The name of a configuration variable.
+     * @param mixed $default The default value of a configuration variable.
      * @return mixed
-     * @access public
-     * @static
      */
-    public static function get($name, $default = null)
+    public static function get(string $name, $default = null)
     {
         $cfg = self::$config;
         foreach (explode('.', $name) as $key)
@@ -397,13 +440,12 @@ final class Aleph
     /**
      * Sets new value of a configuration variable.
      *
-     * @param string $name - the name of a configuration variable.
-     * @param mixed $value - the value of a configuration variable.
-     * @param boolean $merge - determines whether the old configuration value should be merged with new one.
-     * @access public
-     * @static
+     * @param string $name The name of a configuration variable.
+     * @param mixed $value The value of a configuration variable.
+     * @param bool $merge Determines whether the old configuration value should be merged with new one.
+     * @return void
      */
-    public static function set($name, $value, $merge = false)
+    public static function set(string $name, $value, bool $merge = false)
     {
         $cfg = &self::$config;
         foreach (explode('.', $name) as $key)
@@ -423,12 +465,10 @@ final class Aleph
     /**
      * Checks whether a configuration variable is defined or not.
      *
-     * @param string $name - the name of a configuration variable.
-     * @return boolean
-     * @access public
-     * @static
+     * @param string $name The name of a configuration variable.
+     * @return bool
      */
-    public static function has($name)
+    public static function has(string $name) : bool
     {
         $cfg = self::$config;
         foreach (explode('.', $name) as $key)
@@ -445,11 +485,10 @@ final class Aleph
     /**
      * Removes a configuration variable by its name. 
      *
-     * @param string $name - the name of a configuration variable.
-     * @access public
-     * @static
+     * @param string $name The name of a configuration variable.
+     * @return void
      */
-    public static function remove($name)
+    public static function remove(string $name)
     {
         $cfg = &self::$config;
         $keys = explode('.', $name);
@@ -469,16 +508,14 @@ final class Aleph
      * Cleans or flushes output buffers up to target level.
      * Resulting level can be greater than target level if a non-removable buffer has been encountered.
      *
-     * @param integer $targetLevel - the target output buffering level.
-     * @param boolean $flush - determines whether to flush or clean the buffers.
-     * @param boolean $returnContent - determines whether the buffer contents should be returned.
-     * @return string|null
-     * @access public
-     * @static
+     * @param int $targetLevel The target output buffering level.
+     * @param bool $flush Determines whether to flush or clean the buffers.
+     * @param bool $returnContent Determines whether the buffer contents should be returned.
+     * @return string
      */
-    public static function closeOutputBuffers($targetLevel, $flush = false, $returnContent = false)
+    public static function closeOutputBuffers(int $targetLevel, bool $flush = false, bool $returnContent = false) : string
     {
-        $content = null;
+        $content = '';
         $status = ob_get_status(true);
         $level = count($status);
         $flags = defined('PHP_OUTPUT_HANDLER_REMOVABLE') ? PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE) : -1;
@@ -511,37 +548,11 @@ final class Aleph
     }
   
     /**
-     * Sets value of the response body.
-     *
-     * @param string $output - new response body
-     * @access public
-     * @static
-     */
-    public static function setOutput($output)
-    {
-        self::$output = $output;
-    }
-  
-    /**
-     * Returns value of the response body.
-     *
-     * @return string
-     * @access public
-     * @static
-     */
-    public static function getOutput()
-    {
-        return self::$output;
-    }
-  
-    /**
      * Returns site root directory.
      *
      * @return string
-     * @access public
-     * @static
      */
-    public static function getRoot()
+    public static function getRoot() : string
     {
         return self::$root;
     }
@@ -549,40 +560,37 @@ final class Aleph
     /**
      * Sets start time point for some code part.
      *
-     * @param string $key - time mark for some code part.
-     * @access public
-     * @static
+     * @param string $key The timestamp mark for some code part.
+     * @return void
      */
-    public static function start($key)
+    public static function start(string $key)
     {
-        self::$time[$key] = microtime(true);
+        self::$ts[$key] = microtime(true);
     }
   
     /**
      * Returns execution time of some code part by its time mark.
      * If a such time mark doesn't exit then the method return false.
      *
-     * @param string $key - time mark of some code part.
-     * @return boolean|float
-     * @static
+     * @param string $key The timestamp mark of some code part.
+     * @return float
+     * @throws \OutOfBoundsException If timestamp with the given mark does not exist. 
      */
-    public static function stop($key)
+    public static function stop(string $key) : float
     {
-        if (!isset(self::$time[$key]))
+        if (!isset(self::$ts[$key]))
         {
-            return false;
+            throw new \OutOfBoundsException(sprintf(self::ERR_4, $key));
         }
-        return microtime(true) - self::$time[$key];
+        return microtime(true) - self::$ts[$key];
     }
 
     /**
      * Returns the amount of memory, in bytes, that's currently being allocated to your PHP script.
      *
-     * @return integer
-     * @access public
-     * @static
+     * @return int
      */
-    public static function getMemoryUsage()
+    public static function getMemoryUsage() : int
     {
         return memory_get_usage(true);
     }
@@ -590,11 +598,9 @@ final class Aleph
     /**
      * Returns the peak of memory, in bytes, that's been allocated to your PHP script.
      *
-     * @return integer
-     * @access public
-     * @static
+     * @return int
      */
-    public static function getPeakMemoryUsage()
+    public static function getPeakMemoryUsage() : int
     {
         return memory_get_peak_usage(true);
     }
@@ -603,68 +609,56 @@ final class Aleph
      * Returns the execution time (in seconds) of your PHP script.
      *
      * @return float
-     * @access public
-     * @static
      */
-    public static function getExecutionTime()
+    public static function getExecutionTime() : float
     {
-        return self::stop('script_execution_time');
+        return microtime(true) - START_ALEPH_TS;
     }
   
     /**
-    * Returns the request time (in seconds) of your PHP script or false on failure. 
-    *
-    * @return boolean|float
-    * @access public
-    * @static
-    */
-    public static function getRequestTime()
+     * Returns the request time (in seconds) of your PHP script or 0 on failure. 
+     *
+     * @return float
+     */
+    public static function getRequestTime() : float
     {
         if (!isset($_SERVER['REQUEST_TIME']))
         {
-            return false;
+            return 0;
         }
-        return number_format(microtime(true) - (float)$_SERVER['REQUEST_TIME'], 6);
+        return microtime(true) - (float)$_SERVER['REQUEST_TIME'];
     }
   
     /**
      * Returns the unique ID of your application (site).
      *
      * @return string
-     * @access public
-     * @static
      */
-    public static function getSiteUniqueID()
+    public static function getAppUniqueID() : string
     {
-        return self::$siteUniqueID;
+        return self::$appUniqueID;
     }
   
     /**
-     * Creates and executes a delegate.
+     * Calls a user-defined callback.
      *
-     * @param mixed $callback - a delegate.
-     * @params arguments of the callback.
+     * @param mixed $callback A user-defined callback.
+     * @params mixed $args Arguments of the callback.
      * @return mixed
-     * @access public
-     * @static
      */
-    public static function delegate(/* $callback, $arg1, $arg2, ... */)
+    public static function call($callback, ...$args)
     {
-        $params = func_get_args();
-        $callback = array_shift($params);
         if (is_callable($callback))
         {
-            return call_user_func_array($callback, $params);
+            return call_user_func_array($callback, $args);
         }
-        return (new Core\Delegate($callback))->call($params);
+        return (new Core\Callback($callback))->call($args);
     }
     
     /**
      * Returns custom error handler or NULL if not specified.
      *
      * @return mixed
-     * @access public
-     * @static
      */
     public static function getErrorHandler()
     {
@@ -674,9 +668,8 @@ final class Aleph
     /**
      * Sets custom error handler.
      *
-     * @param mixed $callback - a delegate that will be automatically invoked when an error is occurred.
-     * @access public
-     * @static
+     * @param mixed $callback A user-defined callback that will be automatically invoked when an error is occurred.
+     * @return void
      */
     public static function setErrorHandler($callback)
     {
@@ -686,11 +679,9 @@ final class Aleph
     /**
      * Checks whether the error handling is turned on.
      *
-     * @return boolean
-     * @access public
-     * @static
+     * @return bool
      */
-    public static function isErrorHandlingEnabled()
+    public static function isErrorHandlingEnabled() : bool
     {
         return self::$errorHandling;
     }
@@ -698,11 +689,10 @@ final class Aleph
     /**
      * Turns on the error handling.
      *
-     * @param boolean $enable - determines whether the error handling is enabled.
-     * @access public
-     * @static
+     * @param bool $enable Determines whether the error handling is enabled.
+     * @return void
      */
-    public static function enableErrorHandling($enable = true)
+    public static function enableErrorHandling(bool $enable = true)
     {
         if ($enable)
         {
@@ -733,11 +723,10 @@ final class Aleph
     /**
      * Turns off the error handling.
      *
-     * @param boolean $enable - determines whether the error handling is disabled.
-     * @access public
-     * @static
+     * @param bool $enable Determines whether the error handling is disabled.
+     * @return void
      */
-    public static function disableErrorHandling($disable = true)
+    public static function disableErrorHandling(bool $disable = true)
     {
         self::enableErrorHandling(!$disable);
     }
@@ -745,11 +734,9 @@ final class Aleph
     /**
      * Returns the current error level.
      *
-     * @return integer
-     * @access public
-     * @static
+     * @return int
      */
-    public static function getErrorLevel()
+    public static function getErrorLevel() : int
     {
         return error_reporting();
     }
@@ -757,11 +744,10 @@ final class Aleph
     /**
      * Sets error reporting level.
      *
-     * @param integer $level - new error reporting level.
-     * @access public
-     * @static
+     * @param int $level The error reporting level.
+     * @return void
      */
-    public static function setErrorLevel($level)
+    public static function setErrorLevel(int $level)
     {
         error_reporting($level);
     }
@@ -769,11 +755,10 @@ final class Aleph
     /**
      * Set the debug output for an exception.
      *
-     * @param Exception $e
-     * @access public
-     * @static
+     * @param \Throwable $e
+     * @return void
      */
-    public static function exception(\Exception $e)
+    public static function exception(\Throwable $e)
     {
         static $inErrorHandler = false;
         static $inLogger = false;
@@ -789,7 +774,7 @@ final class Aleph
                     $inLogger = true;
                     if (self::$logger)
                     {
-                        self::delegate(self::$logger, $info);
+                        self::call(self::$logger, $info);
                     }
                     else
                     {
@@ -798,7 +783,7 @@ final class Aleph
                     $inLogger = false;
                 }
             }
-            catch (\Exception $e)
+            catch (\Throwable $e)
             {
                 $info = self::analyzeException($e);
             }
@@ -810,7 +795,7 @@ final class Aleph
                 if (!$inErrorHandler)
                 {
                     $inErrorHandler = true;
-                    if (!self::delegate(self::$errorHandler, $e, $info))
+                    if (!self::call(self::$errorHandler, $e, $info))
                     {
                         $inErrorHandler = false;
                         return;
@@ -818,13 +803,13 @@ final class Aleph
                     $inErrorHandler = false;
                 }
             }
-            catch (\Exception $e)
+            catch (\Throwable $e)
             {
                 $info = self::analyzeException($e);
             }
         }
         $debug = empty(self::$config['debugging']) ? false : true;
-        if (PHP_SAPI == 'cli' || empty($_SERVER['REMOTE_ADDR']))
+        if (PHP_SAPI === 'cli')
         {
             if ($debug)
             {
@@ -832,17 +817,19 @@ final class Aleph
                 $output .= 'The following error [[ ' . $info['message'] . ' ]] has been catched in file ' . $info['file'] . ' on line ' . $info['line'] . PHP_EOL . PHP_EOL;
                 $output .= 'Stack Trace:' . PHP_EOL . $info['traceAsString'] . PHP_EOL . PHP_EOL;
                 $output .= 'Execution Time: ' . $info['executionTime'] . ' sec' . PHP_EOL . 'Memory Usage: ' . $info['memoryUsage'] . ' Mb' . PHP_EOL . PHP_EOL;
-                self::$output = $output;
             }
             else
             {
-                self::$output = self::ERROR_TEMPLATE . PHP_EOL;
+                $output = self::ERROR_TEMPLATE . PHP_EOL;
             }
-            return;
         }
-        if ($debug)
+        else if ($debug)
         {
             $debugTemplate = empty(self::$config['debugTemplate']) ? null : self::dir(self::$config['debugTemplate']);
+            if (!is_file($debugTemplate) || !is_readable($debugTemplate))
+            {
+                $debugTemplate = self::DEBUG_TEMPLATE;
+            }
             $render = function($tpl, $info)
             {
                 ${'(_._)'} = $tpl;
@@ -857,51 +844,74 @@ final class Aleph
                 eval('$res = "' . str_replace('"', '\"', ${'(_._)'}) . '";');
                 return $res;
             };
-            if (!is_file($debugTemplate) || !is_readable($debugTemplate))
-            {
-                $debugTemplate = self::DEBUG_TEMPLATE;
-            }
             $debugTemplate = $render($debugTemplate, $info);
-            if (isset($_SESSION))
+            if (isset($_SESSION) && (isset($_SERVER['REQUEST_URI']) || isset($_SERVER['PHP_SELF'])))
             {
-                $hash = md5(microtime() . uniqid('', true));
+                $hash = md5(uniqid('', true));
                 $_SESSION['__DEBUG_INFORMATION__'][$hash] = $debugTemplate;
-                $url = isset($_SERVER['REQUEST_URI']) ? $_SERVER['REQUEST_URI'] : $_SERVER['PHP_SELF'];
+                $url = $_SERVER['REQUEST_URI'] ?? $_SERVER['PHP_SELF'];
                 $url .= ((strpos($url, '?') !== false) ? '&' : '?') . '__DEBUG_INFORMATION__=' . $hash;
-                self::go($url, true, !$info['isFatalError']);
+                self::go($url, true);
             }
             else 
             {
-                self::$output = $debugTemplate;
+                $output = $debugTemplate;
             }
         }
         else
         {
             $errorTemplate = empty(self::$config['errorTemplate']) ? null : self::dir(self::$config['errorTemplate']);
-            self::$output = (is_file($errorTemplate) && is_readable($errorTemplate)) ? file_get_contents($errorTemplate) : self::ERROR_TEMPLATE;
+            $output = (is_file($errorTemplate) && is_readable($errorTemplate)) ? file_get_contents($errorTemplate) : self::ERROR_TEMPLATE;
+        }
+        self::output($output);
+    }
+    
+    /**
+     * Displays the debug information about catched errors or exceptions.
+     * If there is no catched errors or exception this method do nothing.
+     *
+     * @param bool $removeDebugInfo Determines whether the debug info should be removed from session.
+     * @return void
+     */
+    public static function showDebugInfo(bool $removeDebugInfo = true)
+    {
+        if (isset($_GET['__DEBUG_INFORMATION__']) && isset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]))
+        {
+            $output = $_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']];
+            if ($removeDebugInfo)
+            {
+                unset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]);
+            }
+            self::output($output);
         }
     }
   
     /**
      * Analyzes an exception.
      *
-     * @param \Exception $e
-     * @return array - exception information.
-     * @access public
-     * @static  
+     * @param \Throwable $e
+     * @return array The exception information.
      */
-    public static function analyzeException(\Exception $e)
+    public static function analyzeException(\Throwable $e) : array
     {
+        // Makes an object serializable.
         $makeSerializable = function($obj) use(&$makeSerializable)
         {
             if (is_array($obj))
             {
+                $obj = array_diff_key($obj, [
+                    'GLOBALS' => true,
+                    '_REQUEST' => true,
+                    '_GET' => true,
+                    '_POST' => true,
+                    '_FILES' => true,
+                    '_COOKIE' => true,
+                    '_SERVER' => true,
+                    '_ENV' => true,
+                    '_SESSION' => true
+                ]);
                 foreach ($obj as $k => &$v) 
                 {
-                    if ($k == 'GLOBALS')
-                    {
-                        continue;
-                    }
                     $v = $makeSerializable($v);
                 }
                 return $obj;
@@ -912,7 +922,7 @@ final class Aleph
                 {
                     serialize($obj);
                 }
-                catch (\Exception $e)
+                catch (\Throwable $e)
                 {
                     $tmp = new \stdClass;
                     $tmp->object = get_class($obj);
@@ -930,6 +940,7 @@ final class Aleph
             }
             return $obj;
         };
+        // Removes all repeating information from an object.
         $reduceObject = function($obj) use(&$reduceObject)
         {
             if ($obj === null)
@@ -983,6 +994,7 @@ final class Aleph
             }
             return $obj;
         };
+        // Remove base application path from the given file path.
         $reducePath = function($file)
         {
             if (strpos($file, Aleph::getRoot()) === 0)
@@ -991,36 +1003,7 @@ final class Aleph
             }
             return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $file);
         };
-        $request = function()
-        {
-            if (function_exists('apache_request_headers'))
-            {
-                return apache_request_headers();
-            }
-            $headers = [];
-            foreach ($_SERVER as $key => $value) 
-            {
-                if (strpos($key, 'HTTP_') === 0) 
-                {
-                    $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))))] = $value;
-                }
-            }
-            return $headers;
-        };
-        $response = function()
-        {
-            if (function_exists('apache_response_headers'))
-            {
-                return apache_response_headers();
-            }
-            $headers = [];
-            foreach (headers_list() as $header) 
-            {
-                $header = explode(':', $header);
-                $headers[array_shift($header)] = trim(implode(':', $header));
-            }
-            return $headers;
-        };
+        // Gets fragment of a file.
         $fragment = function($file, $line, &$index, &$command = null, $half = 10)
         {
             $lines = explode("\n", preg_replace('/\r\n|\r/', "\n", (is_file($file) && is_readable($file)) ? file_get_contents($file) : $file));
@@ -1040,6 +1023,7 @@ final class Aleph
             $command = empty($lines[$index]) ? '' : $lines[$index];
             return implode("\n", $lines);
         };
+        // Searches the given function in a source file.
         $findFunc = function($func, $line, $code)
         {
             $line--;
@@ -1064,15 +1048,47 @@ final class Aleph
             }
             return end($code);
         };
-        $flag = false;
+        // Gets request headers.
+        $request = function()
+        {
+            if (function_exists('apache_request_headers'))
+            {
+                return apache_request_headers();
+            }
+            $headers = [];
+            foreach ($_SERVER as $key => $value) 
+            {
+                if (strpos($key, 'HTTP_') === 0) 
+                {
+                    $headers[str_replace(' ', '-', ucwords(strtolower(str_replace('_', ' ', substr($key, 5)))))] = $value;
+                }
+            }
+            return $headers;
+        };
+        // Gets response headers.
+        $response = function()
+        {
+            if (function_exists('apache_response_headers'))
+            {
+                return apache_response_headers();
+            }
+            $headers = [];
+            foreach (headers_list() as $header) 
+            {
+                $header = explode(':', $header);
+                $headers[array_shift($header)] = trim(implode(':', $header));
+            }
+            return $headers;
+        };
+        // Exceptions analysis.
+        $message = $e->getMessage();
+        $file = $e->getFile();
+        $line = $e->getLine();
         $trace = $e->getTrace();
         $info = [];
         $info['time'] = date('Y-m-d H:i:s:u');
         $info['sessionID'] = session_id();
         $info['isFatalError'] = $e->getCode() == self::FATAL_ERROR_CODE;
-        $message = $e->getMessage();
-        $file = $e->getFile();
-        $line = $e->getLine();
         if (self::$eval && (strpos($file, 'eval()\'d') !== false || strpos($message, 'eval()\'d') !== false))
         {
             if (preg_match('/, called in ([^ ]+) on line (\d+)/', $message, $matches))
@@ -1158,37 +1174,26 @@ final class Aleph
             $code = $fragment($file, $line, $index, $command);
             array_unshift($trace, ['file' => $reducedFile, 'line' => $line, 'command' => $command, 'code' => $code, 'index' => $index]);
         }
-        $globals = array_diff_key($GLOBALS, [
-            'GLOBALS' => true,
-            '_REQUEST' => true,
-            '_GET' => true,
-            '_POST' => true,
-            '_FILES' => true,
-            '_COOKIE' => true,
-            '_SERVER' => true,
-            '_ENV' => true,
-            '_SESSION' => true
-        ]);
         $info['memoryUsage'] = number_format(self::getMemoryUsage() / 1048576, 4);
         $info['executionTime'] = self::getExecutionTime();
         $info['message'] = ltrim($message);
         $info['file'] = $reducedFile;
         $info['line'] = $line;
-        $info['trace'] = $trace;
+        $info['trace'] = $makeSerializable($trace);
         $info['class'] = method_exists($e, 'getClass') ? $e->getClass() : '';
         $info['token'] = method_exists($e, 'getToken') ? $e->getToken() : '';
         $info['severity'] = method_exists($e, 'getSeverity') ? $e->getSeverity() : '';
         $info['traceAsString'] = $e->getTraceAsString();
         $info['request'] = $request();
         $info['response'] = $response();
-        $info['ENV'] = isset($_ENV) ? $_ENV : [];
-        $info['GET'] = isset($_GET) ? $_GET : [];
-        $info['POST'] = isset($_POST) ? $_POST : [];
-        $info['COOKIE'] = isset($_COOKIE) ? $_COOKIE : [];
-        $info['FILES'] = isset($_FILES) ? $_FILES : [];
-        $info['SERVER'] = isset($_SERVER) ? $_SERVER : [];
-        $info['SESSION'] = isset($_SESSION) ? $_SESSION : [];
-        $info['GLOBALS'] = $makeSerializable($globals);
+        $info['ENV'] = $_ENV ?? [];
+        $info['GET'] = $_GET ?? [];
+        $info['POST'] = $_POST ?? [];
+        $info['COOKIE'] = $_COOKIE ?? [];
+        $info['FILES'] = $_FILES ?? [];
+        $info['SERVER'] = $_SERVER ?? [];
+        $info['SESSION'] = $_SESSION ?? [];
+        $info['GLOBALS'] = $makeSerializable($GLOBALS);
         unset($info['SESSION']['__DEBUG_INFORMATION__']);
         unset($info['SESSION']['__VS__']);
         return $info;
@@ -1197,12 +1202,10 @@ final class Aleph
     /**
      * Collects and stores information about some eval's code. 
      *
-     * @param string $code - the code that will be executed by eval operator.
+     * @param string $code The code that will be executed by eval operator.
      * @return string
-     * @access public
-     * @static
      */
-    public static function ecode($code)
+    public static function ecode(string $code) : string
     {
         self::$eval[md5($code)] = $code;
         return $code;
@@ -1211,15 +1214,14 @@ final class Aleph
     /**
      * Executes PHP code that inserted into HTML.
      *
-     * @param string $code - the PHP inline code.
-     * @param array $vars - variables to extract to the PHP code.
+     * @param string $code The PHP inline code.
+     * @param array $vars Variables to extract to the PHP code.
      * @return string
-     * @access public
-     * @static
      */
-    public static function exe($code, array $vars = null)
+    public static function exe(string $code, array $vars = []) : string
     {
-        ${'(_._)'} = ' ?>' . $code . '<?php '; unset($code);
+        ${'(_._)'} = ' ?>' . $code . '<?php ';
+        unset($code);
         if ($vars) 
         {
             extract($vars);
@@ -1239,14 +1241,12 @@ final class Aleph
      * Returns the canonicalized absolute pathname of a directory specified by its alias. 
      * The resulting path will have no symbolic link, '/./' or '/../' components and extra '/' characters.
      * 
-     * @param string $dir - directory alias.
+     * @param string $dir The directory alias.
      * @return string
-     * @access public
-     * @static
      */
-    public static function dir($dir)
+    public static function dir(string $dir) : string
     {
-        if (strlen($dir) == 0)
+        if ($dir === '')
         {
             return self::$root;
         }
@@ -1256,12 +1256,12 @@ final class Aleph
             if ($last === false)
             {
                 $dir = substr($dir, 1);
-                $dir = isset(self::$config['dirs'][$dir]) ? self::$config['dirs'][$dir] : $dir;
+                $dir = self::$config['dirs'][$dir] ?? $dir;
             }
             else
             {
                 $dir = substr($dir, 1, -strlen($last));
-                $dir = isset(self::$config['dirs'][$dir]) ? self::$config['dirs'][$dir] : $dir;
+                $dir = self::$config['dirs'][$dir] ?? $dir;
                 $dir .= $last;
             }
             return self::dir($dir);
@@ -1287,11 +1287,11 @@ final class Aleph
         $absolutes = [];
         foreach ($parts as $part)
         {
-            if ('.'  == $part)
+            if ($part === '.')
             {
                 continue;
             }
-            if ('..' == $part)
+            if ($part === '..')
             {
                 array_pop($absolutes);
             }
@@ -1305,19 +1305,19 @@ final class Aleph
         {
             $dir = readlink($dir);
         }
-        return !$unipath ? '/'. $dir : $dir;
+        return $unipath ? $dir : '/' . $dir;
     }
   
     /**
      * Returns a directory url relative to the site root.
-     * It returns FALSE if an URL cannot be construct for the given directory. 
      *
-     * @param string $dir - directory alias.
-     * @return string|boolean
+     * @param string $dir The directory alias.
+     * @return string
+     * @throws \LogicException If an URL cannot be constructed for the given directory. 
      */
-    public static function url($dir)
+    public static function url(string $dir) : string
     {
-        if (strlen($dir) == 0)
+        if ($dir === '')
         {
             return '/';
         }
@@ -1326,7 +1326,7 @@ final class Aleph
             $dir = self::dir($dir);
             if (strpos($dir, self::$root) !== 0)
             {
-                return false;
+                throw new \LogicException(sprintf(self::ERR_5, $dir));
             }
             $dir = substr($dir, strlen(self::$root));
         }
@@ -1336,9 +1336,7 @@ final class Aleph
     /**
      * Returns custom log handler or NULL if not specified.
      *
-     * @return callable
-     * @access public
-     * @static
+     * @return mixed
      */
     public static function getLogger()
     {
@@ -1348,9 +1346,8 @@ final class Aleph
     /**
      * Sets custom log handler.
      *
-     * @param callable $callback - a delegate that will be automatically invoked when an error is logging.
-     * @access public
-     * @static
+     * @param mixed $callback A user-defined callback that will be automatically invoked when an error is logging.
+     * @return void
      */
     public static function setLogger($callback)
     {
@@ -1360,9 +1357,8 @@ final class Aleph
     /**
      * Logs some data into log files.
      *
-     * @param mixed $data - some data to log.
-     * @access public
-     * @static
+     * @param mixed $data Some data to log.
+     * @return void
      */
     public static function log($data)
     {
@@ -1377,74 +1373,65 @@ final class Aleph
      * Performs redirect to given URL.
      *
      * @param string $url
-     * @param boolean $isNewWindow - determines whether the new window should be opened.
-     * @param boolean $immediately - determines whether the redirect should immediately happen.
-     * @access public
-     * @static
+     * @param bool $isNewWindow Determines whether the new window should be opened.
+     * @param bool $immediately Determines whether the redirect should immediately happen.
+     * @return void
      */
     public static function go($url, $inNewWindow = false, $immediately = true)
     {
+        $url = addslashes($url);
         if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
         {
             if ($inNewWindow)
             {
-                self::$output = 'window.open(\'' . addslashes($url) . '\');';
+                $output = 'window.open(\'' . $url . '\');';
             }
             else
             {
-                self::$output = 'window.location.assign(\'' . addslashes($url) . '\');';
+                $output = 'window.location.assign(\'' . $url . '\');';
             }
         }
         else
         {
             if ($inNewWindow)
             {
-                self::$output = '<script type="text/javascript">window.open(\'' . addslashes($url) . '\');</script>';
+                $output = '<script type="text/javascript">window.open(\'' . $url . '\');</script>';
             }
             else
             {
-                self::$output = '<script type="text/javascript">window.location.assign(\'' . addslashes($url) . '\');</script>';
+                $output = '<script type="text/javascript">window.location.assign(\'' . $url . '\');</script>';
             }
         }
-        if ($immediately) 
-        {
-            exit;
-        }
+        self::output($output, $immediately);
     }
   
     /**
      * Performs the page reloading.
      *
-     * @param boolean $immediately - determines whether the page should be immediately reloaded.
-     * @param boolean $forceGet - specifies the type of reloading: FALSE (default) - reloads the current page from the cache, TRUE - reloads the current page from the server.
-     * @access public
-     * @static
+     * @param bool $immediately Determines whether the page should be immediately reloaded.
+     * @param bool $forceGet Specifies the type of reloading: FALSE (default) - reloads the current page from the cache, TRUE - reloads the current page from the server.
+     * @return void
      */
     public static function reload($immediately = true, $forceGet = false)
     {
         $forceGet = $forceGet ? 'true' : 'false';
         if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
         {
-            self::$output = 'window.location.reload(' . $forceGet . ');';
+            $output = 'window.location.reload(' . $forceGet . ');';
         }
         else 
         {
-            self::$output = '<script type="text/javascript">window.location.reload(' . $forceGet . ');</script>';
+            $output = '<script type="text/javascript">window.location.reload(' . $forceGet . ');</script>';
         }
-        if ($immediately)
-        {
-            exit;
-        }
+        self::output($output, $immediately);
     }
     
     /**
      * Returns the default cache object.
      *
-     * @return Aleph\Cache\Cache
-     * @access public
-     * @static
+     * @return \Aleph\Cache\Cache
      */
-    public static function getCache()
+    public static function getCache() : Cache\Cache
     {
         if (self::$cache === null)
         {
@@ -1456,9 +1443,8 @@ final class Aleph
     /**
      * Sets the default cache object.
      *
-     * @param Aleph\Cache\Cache $cache
-     * @access public
-     * @static
+     * @param \Aleph\Cache\Cache $cache
+     * @return void
      */
     public static function setCache(Cache\Cache $cache)
     {
@@ -1468,11 +1454,9 @@ final class Aleph
     /**
      * Creates the class map.
      *
-     * @return integer - the number of all found classes.
-     * @access public
-     * @static
+     * @return int The number of all found classes.
      */
-    public static function createClassMap()
+    public static function createClassMap() : int
     {
         return self::find();
     }
@@ -1480,11 +1464,9 @@ final class Aleph
     /**
      * Returns array of class paths.
      *
-     * @return array
-     * @access public
-     * @static
+     * @return string[]
      */
-    public static function getClassMap()
+    public static function getClassMap() : array
     {
         $classmap = empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']);
         self::$classes = file_exists($classmap) ? (array)require($classmap) : [];
@@ -1494,17 +1476,17 @@ final class Aleph
     /**
      * Sets array of class paths.
      *
-     * @param array $classes - array of paths to the class files.
-     * @param string $classmap - path to the class map file.
-     * @throws RuntimeException
-     * @access public
+     * @param string[] $classes An array of paths to the class files.
+     * @param string $classmap The path to the class map file.     
+     * @return void
+     * @throws \LogicException If the given classmap file (or config variable autoload.classmap) is not defined.
      */
-    public static function setClassMap(array $classes, $classmap = null)
+    public static function setClassMap(array $classes, string $classmap = '')
     {
         $file = $classmap ? self::dir($classmap) : (empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']));;
         if (!$file) 
         {
-            throw new \RuntimeException(self::ERR_ALEPH_3);
+            throw new \LogicException(self::ERR_3);
         }
         $code = [];
         foreach ($classes as $class => $path) 
@@ -1531,13 +1513,12 @@ final class Aleph
      * Searches a class, interface or trait and includes it to the script.
      * Returns FALSE if the given class does not exist and TRUE otherwise.
      *
-     * @param string $class - a class, interface or trait to search and include.
-     * @param boolean $throwException - determines whether an exception should be thrown if class not found.
-     * @return boolean
-     * @access public
-     * @static
+     * @param string $class A class, an interface or a trait to search and include.
+     * @param bool $throwException Determines whether an exception should be thrown if a class is not found.
+     * @return bool
+     * @throws \RuntimeException When a class is not found and $throwException is TRUE.
      */
-    public static function loadClass($class, $throwException = false)
+    public static function loadClass(string $class, bool $throwException = false) : bool
     {
         if (class_exists($class, false) || interface_exists($class, false) || trait_exists($class, false))
         {
@@ -1589,7 +1570,7 @@ final class Aleph
         {
             if ($throwException)
             {
-                throw new \RuntimeException(sprintf(self::ERR_ALEPH_1, $class));
+                throw new \RuntimeException(sprintf(self::ERR_1, $class));
             }
             return false;
         }
@@ -1600,7 +1581,7 @@ final class Aleph
         }
         if ($throwException)
         {
-            throw new \RuntimeException(sprintf(self::ERR_ALEPH_1, $class));
+            throw new \RuntimeException(sprintf(self::ERR_1, $class));
         }
         return false;
     }
@@ -1609,13 +1590,11 @@ final class Aleph
      * Finds a class or interface to include into your PHP script.
      *
      * @param string $class
-     * @param array $options - an array of additional search parameters.
-     * @return integer|boolean
-     * @throws RuntimeException
-     * @access private
-     * @static
+     * @param array $options An array of additional search parameters.
+     * @return int|bool Number of found classes if $class is not specified, TRUE - if $class is found and FALSE if it isn't. 
+     * @throws \LogicException If classmap is not defined or some class definition is duplicated.
      */
-    private static function find($class = null, array $options = null)
+    private static function find(string $class = '', array $options = [])
     {
         if ($options) 
         {
@@ -1624,14 +1603,15 @@ final class Aleph
         }
         else
         {
-            $classmap = empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']);
+            $classmap = empty(self::$config['autoload']['classmap']) ? '' : self::dir(self::$config['autoload']['classmap']);
             if (!$classmap)
             {
-                throw new \RuntimeException(self::ERR_ALEPH_3);
+                throw new \LogicException(self::ERR_3);
             }
             if (file_exists($classmap) && (require($classmap)) === false)
             {
-                $seconds = 0; $timeout = isset(self::$config['autoload']['timeout']) ? (int)self::$config['autoload']['timeout'] : 300;
+                $seconds = 0;
+                $timeout = self::$config['autoload']['timeout'] ?? 300;
                 while (($classes = require($classmap)) === false && ++$seconds <= $timeout) sleep(1);
                 if ($seconds <= $timeout)
                 {
@@ -1669,7 +1649,7 @@ final class Aleph
         {
             foreach (scandir($path) as $item)
             {
-                if ($item == '.' || $item == '..' || $item == '.svn' || $item == '.hg' || $item == '.git')
+                if ($item === '.' || $item === '..' || $item === '.svn' || $item === '.hg' || $item === '.git')
                 {
                     continue; 
                 }
@@ -1732,9 +1712,8 @@ final class Aleph
                                     {
                                         return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
                                     };
-                                    file_put_contents(self::$classmap, '<?php return [];');
-                                    throw new \RuntimeException(sprintf(self::ERR_ALEPH_2, ltrim($namespace . $t[1], '\\'), $normalize(self::$classes[$cs]), $normalize($file)));
-                                    exit;
+                                    file_put_contents(self::dir(self::$config['autoload']['classmap']), '<?php return [];');
+                                    throw new \LogicException(sprintf(self::ERR_2, ltrim($namespace . $t[1], '\\'), $normalize(self::dir(self::$classes[$cs])), $normalize($file)));
                                 }
                                 self::$classes[$cs] = strpos($file, self::$root) === 0 ? ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;
                                 break;
@@ -1749,7 +1728,7 @@ final class Aleph
         }
         if (isset($first)) 
         {
-            self::setClassMap(self::$classes);
+            self::setClassMap(self::$classes, self::$config['autoload']['classmap'] ?? '');
             if ($class !== null)
             {
                 if (isset(self::$classes[$class]))
@@ -1767,7 +1746,7 @@ final class Aleph
     /**
      * Private constructor prevents this object creation.
      *
-     * @access private
+     * @return void
      */
     private function __construct(){}
 }
