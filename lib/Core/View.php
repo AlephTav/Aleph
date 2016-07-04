@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,19 +16,20 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
 namespace Aleph\Core;
 
-use Aleph\Core;
+use Aleph,
+    Aleph\Core;
 
 /**
  * The simple view class using PHP as template language.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.1
+ * @version 1.0.2
  * @package aleph.core
  */
 class View
@@ -36,73 +37,66 @@ class View
     /**
      * Error message templates.
      */
-    const ERR_VIEW_1 = 'View "%s" not found.';
-    const ERR_VIEW_2 = 'No blocks have been started yet.';
+    const ERR_1 = 'View "%s" is not found.';
+    const ERR_2 = 'No blocks have been started yet.';
     
     /**
      * Blocks of views.
      *
-     * @var array $blocks
-     * @access protected
+     * @var array
      */
     protected $blocks = [];
     
     /**
      * Contains in-progress blocks.
      *
-     * @var array $stack
-     * @access protected
+     * @var array
      */
     protected $stack = [];
     
     /**
      * View data.
      *
-     * @var array $vars
-     * @access protected
+     * @var array
      */
     protected $vars = [];
     
     /**
      * The number of rendering views.
      *
-     * @var integer $level
-     * @access protected
+     * @var int
      */
     protected $level = 0;
     
     /**
      * Name of the parent view.
      *
-     * @var string $parentView
-     * @access protected
+     * @var string
      */
-    protected $parentView = null;
+    protected $parentView = '';
     
     /**
      * Name of the parent block.
      * This block is used as container that contains all outputs of the current view.
      *
-     * @var string $parentBlock
-     * @access protected
+     * @var string
      */
-    protected $parentBlock = null;
+    protected $parentBlock = '';
     
     /**
      * View string or path to the view file.
      *
-     * @var string $view
-     * @access protected
+     * @var string
      */
-    protected $view = null;
+    protected $view = '';
     
     /**
      * Constructor.
      *
-     * @param string $view - a view string or path to a view file.
-     * @access public
+     * @param string $view A view string or path to a view file.
+     * @return void
      */
-    public function __construct($view = null)
+    public function __construct(string $view = '')
     {
         $this->view = $view;
     }
@@ -110,11 +104,11 @@ class View
     /**
      * Sets value of a view variable.
      *
-     * @param string $name - the variable name.
-     * @param mixed $value - the variable value.
-     * @access public
+     * @param string $name The variable name.
+     * @param mixed $value The variable value.
+     * @return void
      */
-    public function __set($name, $value)
+    public function __set(string $name, $value)
     {
         $this->vars[$name] = $value;
     }
@@ -122,11 +116,10 @@ class View
     /**
      * Returns value of a view variable.
      *
-     * @param string $name - the variable name.
+     * @param string $name The variable name.
      * @return mixed
-     * @access public
      */
-    public function &__get($name)
+    public function &__get(string $name)
     {
         if (!isset($this->vars[$name]))
         {
@@ -138,11 +131,10 @@ class View
     /**
      * Checks whether or not a view variable exists and its value is not NULL.
      *
-     * @param string $name - the variable name.
-     * @return boolean
-     * @access public
+     * @param string $name The variable name.
+     * @return bool
      */
-    public function __isset($name)
+    public function __isset($name) : bool
     {
         return isset($this->vars[$name]);
     }
@@ -150,8 +142,8 @@ class View
     /**
      * Deletes a view variable.
      *
-     * @param string $name - the variable name.
-     * @access public
+     * @param string $name The variable name.
+     * @return void
      */
     public function __unset($name)
     {
@@ -162,9 +154,8 @@ class View
      * Returns array of view variables.
      *
      * @return array
-     * @access public
      */
-    public function getVars()
+    public function getVars() : array
     {
         return $this->vars;
     }
@@ -173,10 +164,10 @@ class View
      * Sets view variables.
      *
      * @param array $vars
-     * @param boolean $merge - determines whether new variables should be merged with existing variables.
-     * @access public
+     * @param bool $merge Determines whether new variables should be merged with existing variables.
+     * @return void
      */
-    public function setVars(array $vars, $merge = false)
+    public function setVars(array $vars, bool $merge = false)
     {
         if (!$merge)
         {
@@ -191,13 +182,12 @@ class View
     /**
      * Returns rendered view content.
      *
-     * @param string $view - the view name or path to the view file.
+     * @param string $view The view name or path to the view file.
      * @return string
-     * @access public
      */
-    public function render($view = null)
+    public function render(string $view = '') : string
     {
-        $view = $view !== null ? $view : $this->view;
+        $view = $view !== '' ? $view : $this->view;
         ${'(_._)'} = $this->findViewFile($view);
         unset($view);
         $this->level++;
@@ -232,10 +222,10 @@ class View
     /**
      * Outputs a rendered view to a browser.
      *
-     * @param string $view - the view name or path to the view file.
-     * @access public
+     * @param string $view The view name or path to the view file.
+     * @return void
      */
-    public function show($view = null)
+    public function show(string $view = '')
     {
         echo $this->render($view);
     }
@@ -243,48 +233,47 @@ class View
     /**
      * Searches view file by view name.
      *
-     * @param string $view - the name of a view file.
-     * @access protected
+     * @param string $view The name of a view file.
+     * @return void
+     * @throws \LogicException If the given view is not found.
      */
-    protected function findViewFile($view)
+    protected function findViewFile(string $view)
     {
         if (is_file($view))
         {
             return $view;
         }
-        foreach (\Aleph::get('view.directories', []) as $path)
+        foreach (Aleph::get('view.directories', []) as $path)
         {
-            $path = \Aleph::dir($path) . DIRECTORY_SEPARATOR . $view;
+            $path = Aleph::dir($path) . DIRECTORY_SEPARATOR . $view;
             if (is_file($path))
             {
                 return $path;
             }
         }
-        throw new \InvalidArgumentException(sprintf(static::ERR_VIEW_1, $view));
+        throw new \LogicException(sprintf(static::ERR_1, $view));
     }
     
     /**
      * Returns the block content.
      *
-     * @param string $block - the block name.
-     * @param mixed $default - the default block content.
-     * @return mixed
-     * @access protected
+     * @param string $block The block name.
+     * @param mixed $default The default block content.
+     * @return string
      */
-    protected function getBlock($block, $default = null)
+    protected function getBlock(string $block, $default = null) : string
     {
-        $content = isset($this->blocks[$block]) ? $this->blocks[$block] : $default;
-        return str_replace(md5($block), '', $content);
+        return str_replace(md5($block), '', $this->blocks[$block] ?? $default);
     }
     
     /**
      * Sets block content.
      *
-     * @param string $block - the block name.
-     * @param mixed $content - the block content.
-     * @access protected
+     * @param string $block The block name.
+     * @param mixed $content The block content.
+     * @return void
      */
-    protected function setBlock($block, $content)
+    protected function setBlock(string $block, $content)
     {
         $this->blocks[$block] = $content;
     }
@@ -292,12 +281,13 @@ class View
     /**
      * Starts the new block of a view.
      *
-     * @param string $block - the block name.
-     * @access protected
+     * @param string $block The block name.
+     * @param mixed $content The block content.
+     * @return void
      */
-    protected function startBlock($block, $content = null)
+    protected function startBlock(string $block, $content = null)
     {
-        if (strlen($content))
+        if ((string)$content === '')
         {
             $this->extendBlock($block, $content);
         }
@@ -312,14 +302,15 @@ class View
     /**
      * Ends the block of a view.
      *
-     * @return string - the block name.
-     * @access protected
+     * @param bool $overwrite Determines if the old block content should be overwritten.
+     * @return string The block name.
+     * @throws \BadMethodCallException If no blocks have been started yet.
      */
-    protected function endBlock($overwrite = false)
+    protected function endBlock(bool $overwrite = false) : string
     {
         if (!$this->stack)
         {
-            throw new \BadMethodCallException(static::ERR_VIEW_2);
+            throw new \BadMethodCallException(static::ERR_2);
         }
         $block = array_pop($this->stack);
         if ($overwrite)
@@ -336,11 +327,11 @@ class View
     /**
      * Extends the given block.
      *
-     * @param string $block - the block name.
-     * @param mixed $content - the inherited block content.
-     * @access protected
+     * @param string $block The block name.
+     * @param mixed $content The inherited block content.
+     * @return void
      */
-    protected function extendBlock($block, $content)
+    protected function extendBlock(string $block, $content)
     {
         if (isset($this->blocks[$block]))
         {
@@ -352,14 +343,14 @@ class View
     /**
      * Ends block and appends its content.
      *
-     * @return string - the block name.
-     * @access protected
+     * @return string The block name.
+     * @throws \BadMethodCallException If no blocks have been started yet.
      */
-    protected function appendBlock()
+    protected function appendBlock() : string
     {
         if (!$this->stack)
         {
-            throw new \BadMethodCallException(static::ERR_VIEW_2);
+            throw new \BadMethodCallException(static::ERR_2);
         }
         $block = array_pop($this->stack);
         if (isset($this->blocks[$block]))
@@ -376,24 +367,25 @@ class View
     /**
      * Outputs the block content.
      *
-     * @param string $block - the block name. If it is not defined, the previously started block will be shown.
-     * @access protected
+     * @param string $block The block name. If it is not defined, the previously started block will be shown.
+     * @return void
      */
-    protected function showBlock($block = null)
+    protected function showBlock(string $block = '')
     {
-        echo $this->getBlock($block !== null ? $block : $this->endBlock(false));
+        echo $this->getBlock($block !== '' ? $block : $this->endBlock(false));
     }
     
     /**
      * Outputs the parent block content.
      *
-     * @access protected
+     * @return void
+     * @throws \BadMethodCallException If no blocks have been started yet.
      */
     protected function parentContent()
     {
         if (!$this->stack)
         {
-            throw new \BadMethodCallException(static::ERR_VIEW_2);
+            throw new \BadMethodCallException(static::ERR_2);
         }
         echo md5(end($this->stack));
     }
@@ -401,11 +393,11 @@ class View
     /**
      * Extends the current view from the parent one.
      *
-     * @param string $view - the parent view name or path to the view file.
-     * @param string $block - the name of the parent view's block which the current view's content will be inserted to.
-     * @access protected
+     * @param string $view The parent view name or path to the view file.
+     * @param string $block The name of the parent view's block which the current view's content will be inserted to.
+     * @return void
      */
-    protected function inherit($view, $block = null)
+    protected function inherit(string $view, string $block = '')
     {
         $this->parentView = $view;
         $this->parentBlock = $block;

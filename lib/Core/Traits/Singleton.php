@@ -20,68 +20,53 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Core;
+namespace Aleph\Core\Traits;
 
-use Aleph;
- 
 /**
- * Exception allows to generate user exceptions with some additional information about exception.
+ * Implementation of singleton pattern.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 2.0.1
+ * @version 1.0.0
  * @package aleph.core
  */
-class Exception extends \Exception
-{    
+trait Singleton
+{
     /**
-     * Additional information about the exception.
+     * The instance of singleton object.
      *
-     * @var mixed
+     * @var static
      */
-    protected $data = null;
+    private static $instance = null;
 
     /**
-     * Constructor.
+     * Protects against creation through "new".
      *
-     * @param mixed $message The exception message to throw.
-     * @param mixed $data Some additional information about the exception.
-     * @param int $code The exception code.
-     * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = '', $data = null, int $code = 0, \Throwable $previous = null)
-    {
-        parent::__construct($message, $code, $previous);
-        $this->data = $data;
-    }
-
-    /**
-     * Returns the data associated with the exception, otherwise it returns the exception message.
-     *
-     * @return mixed
-     */
-    public function getDataOrMessage()
-    {
-        return $this->data !== null ? $this->data : $this->getMessage();
-    }
+    private function __construct(){}
     
     /**
-     * Returns additional information about the exception.
+     * Protects against creation through "clone".
      *
-     * @return mixed
+     * @return void
      */
-    public function getData()
-    {
-        return $this->data;
-    }
-  
+    private function __clone(){}
+    
     /**
-     * Returns full information about the current exception.
+     * Protects against creation through "unserialize".
      *
-     * @return array
+     * @return void
      */
-    public function getInfo() : array
+    private function __wakeup(){}
+
+    /**
+     * Returns an instance of a class.
+     *
+     * @param array $params Constructor arguments.
+     * @return static
+     */
+    public static function getInstance(...$params)
     {
-        return Aleph::analyzeException($this);
+        return self::$instance === null ? self::$instance = new static(...$params) : self::$instance;
     }
 }

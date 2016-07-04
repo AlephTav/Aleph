@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -28,72 +28,65 @@ use Aleph\MVC;
  * With this class you can transform a string in certain format into a method or function invoking.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.1
+ * @version 1.1.0
  * @package aleph.core
  */
-class Delegate implements IDelegate
+class Callback
 {
     /**
      * Error message templates.
      */
-    const ERR_DELEGATE_1 = 'Callback is not callable.';
-    const ERR_DELEGATE_2 = 'Control with UID = "%s" not found.';
+    const ERR_1 = 'Callback %s is not callable.';
+    const ERR_2 = 'Control with UID = "%s" is not found.';
 
     /**
      * A string in the Aleph callback format.
      *
-     * @var string $callback
-     * @access protected
+     * @var string
      */
-    protected $callback = null;
+    protected $callback = '';
   
     /**
      * Full name (class name with namespace) of a callback class.
      *
-     * @var string $class
-     * @access protected
+     * @var string
      */
-    protected $class = null;
+    protected $class = '';
   
     /**
      * Method name of a callback class.
      *
-     * @var string $method
-     * @access protected
+     * @var string
      */
-    protected $method = null;
+    protected $method = '';
   
     /**
      * Equals TRUE if a callback method is static and FALSE if it isn't.
      *
-     * @var boolean $static
-     * @access protected
+     * @var bool
      */
     protected $static = false;
   
     /**
      * Shows number of callback arguments that should be transmited into callback constructor.
      *
-     * @var integer $numargs
-     * @access protected
+     * @var int
      */
-    protected $numargs = null;
+    protected $numargs = 0;
   
     /**
      * Contains logic identifier or unique identifier of a web-control.
      *
-     * @var string $cid
-     * @access protected
+     * @var string
      */
-    protected $cid = null;
+    protected $cid = '';
   
     /**
      * Can be equal 'function', 'closure' or 'class' according to callback format.
      *
-     * @var string $type
-     * @access protected
+     * @var string
      */
-    protected $type = null;
+    protected $type = '';
 
     /**
      * Constructor. The only argument of it is string in Aleph framework format.
@@ -111,12 +104,12 @@ class Delegate implements IDelegate
      * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
      * 'class@cid->method' - invokes a method 'method' of web control type of 'class' with unique (or logic) ID equals 'cid'.
      *
-     * @param mixed $callback - an Aleph framework callback string or a callable callback.
-     * @access public
+     * @param mixed $callback An Aleph framework callback string or a callable callback.
+     * @return void
      */
     public function __construct($callback)
     {
-        if ($callback instanceof IDelegate)
+        if ($callback instanceof Callback)
         {
             foreach ($callback->getInfo() as $var => $value)
             {
@@ -143,7 +136,11 @@ class Delegate implements IDelegate
         {
             if (!is_callable($callback))
             {
-                throw new \InvalidArgumentException(static::ERR_DELEGATE_1);
+                if (isset($callback[0]) && is_object($callback[0]))
+                {
+                    $callback[0] = '{' . get_class($callback[0]) . '}';
+                }
+                throw new \InvalidArgumentException(sprintf(static::ERR_1, json_encode($callback)));
             }
             $this->type = 'class';
             $this->class = $callback[0];
@@ -156,13 +153,13 @@ class Delegate implements IDelegate
         {
             if ($callback == '' || is_numeric($callback))
             {
-                throw new \InvalidArgumentException(static::ERR_DELEGATE_1);
+                throw new \InvalidArgumentException(sprintf(static::ERR_1, $callback));
             }
             $callback = htmlspecialchars_decode($callback);
             preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*|[^:-]*parent::[^:-]*)$/', $callback, $matches);
             if (count($matches) == 0)
             {
-                throw new \InvalidArgumentException(static::ERR_DELEGATE_1);
+                throw new \InvalidArgumentException(sprintf(static::ERR_1, $callback));
             }
             if ($matches[4] == '' && $matches[2] == '')
             {
@@ -175,7 +172,7 @@ class Delegate implements IDelegate
                 $this->class = $matches[1] ?: (MVC\Page::$current instanceof MVC\Page ? get_class(MVC\Page::$current) : false);
                 if ($this->class === false)
                 {
-                    throw new Exception([$this, 'ERR_DELEGATE_1']);
+                    throw new \InvalidArgumentException(sprintf(static::ERR_1, $callback));
                 }
                 if ($this->class[0] == '\\')
                 {
@@ -200,9 +197,8 @@ class Delegate implements IDelegate
      * The magic method allowing to convert an object of this class to a callback string.
      *
      * @return string
-     * @access public
      */
-    public function __toString()
+    public function __toString() : string
     {
         return $this->callback;
     }
@@ -212,7 +208,6 @@ class Delegate implements IDelegate
      * The method can take different number of arguments.
      *
      * @return mixed
-     * @access public
      */
     public function __invoke()
     {
@@ -224,11 +219,10 @@ class Delegate implements IDelegate
      * For callbacks in format 'class[n]' and 'class[n]->method' first n arguments of the method
      * are arguments of constructor of a class 'class'.
      *
-     * @param array $args - array of method arguments.
+     * @param array $args An array of method arguments.
      * @return mixed
-     * @access public
     */
-    public function call(array $args = null)
+    public function call(array $args = [])
     {
         $args = (array)$args;
         if ($this->type == 'function' || $this->type == 'closure')
@@ -239,7 +233,7 @@ class Delegate implements IDelegate
         {
             if (($class = MVC\Page::$current->get($this->cid)) === false)
             {
-                throw new \InvalidArgumentException(sprintf(static::ERR_DELEGATE_2, $this->cid));
+                throw new \LogicException(sprintf(static::ERR_2, $this->cid));
             }
             if ($this->method == '__construct')
             {
@@ -274,20 +268,20 @@ class Delegate implements IDelegate
     }
 
     /**
-     * Checks whether or not the delegate can be invoked according to permissions.
+     * Checks whether or not the callback can be invoked according to permissions.
      * Permissions array have the following structure:
      * [
      *   'permitted' => ['regexp1', 'regexp2', ... ],
      *   'forbidden' => ['regexp1', 'regexp2', ...]
      * ]
-     * If string representation of the delegate matches at least one of 'permitted' regular expressions and none of 'forbidden' regular expressions, the method returns TRUE.
-     * Otherwise it returns FALSE.
+     * If string representation of the callback matches at least one of 'permitted'
+     * regular expressions and none of 'forbidden' regular expressions, the method
+     * returns TRUE. Otherwise it returns FALSE.
      *
-     * @param array $permissions - permissions to check.
-     * @return boolean
-     * @access public
+     * @param array $permissions Permissions to check.
+     * @return bool
      */
-    public function isPermitted(array $permissions)
+    public function isPermitted(array $permissions) : bool
     {
         foreach (['permitted' => true, 'forbidden' => false] as $type => $res)
         {
@@ -312,13 +306,12 @@ class Delegate implements IDelegate
     }
   
     /**
-     * Verifies that the delegate exists and can be invoked.
+     * Verifies that the callack exists and can be invoked.
      *
-     * @param boolean $autoload - whether or not to call __autoload by default.
-     * @return boolean
-     * @access public
+     * @param boolean $autoload Whether or not to call __autoload by default.
+     * @return bool
      */
-    public function isCallable($autoload = true)
+    public function isCallable(bool $autoload = true) : bool
     {
         if ($this->type == 'closure')
         {
@@ -375,9 +368,8 @@ class Delegate implements IDelegate
      * ]
      *
      * @return array
-     * @access public
      */
-    public function getInfo()
+    public function getInfo() : array
     {
         return [
             'class' => $this->class, 
@@ -393,9 +385,8 @@ class Delegate implements IDelegate
      * Returns full class name (with namespace) of the callback.
      *
      * @return string
-     * @access public
      */
-    public function getClass()
+    public function getClass() : string
     {
         return $this->class;
     }
@@ -404,9 +395,8 @@ class Delegate implements IDelegate
      * Returns method name of the callback.
      *
      * @return string
-     * @access public
      */
-    public function getMethod()
+    public function getMethod() : string
     {
         return $this->method;
     }
@@ -415,9 +405,8 @@ class Delegate implements IDelegate
      * Returns callback type. Possible values can be "closure", "function", "class" or "control".
      *
      * @return string
-     * @access public
      */
-    public function getType()
+    public function getType() : string
     {
         return $this->type;
     }
@@ -425,21 +414,19 @@ class Delegate implements IDelegate
     /**
      * Returns TRUE if the given callback is a static class method and FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isStatic()
+    public function isStatic() : bool
     {
         return $this->static;
     }
   
     /**
-     * Returns parameters of a delegate class method, function or closure. 
+     * Returns parameters of a callback class method, function or closure. 
      * Method returns FALSE if class method doesn't exist.
      * Parameters are returned as an array of \ReflectionParameter class instance.
      *
-     * @return array | boolean
-     * @access public
+     * @return array|bool
      */
     public function getParameters()
     {
@@ -458,11 +445,10 @@ class Delegate implements IDelegate
     /**
      * Creates and returns object of callback's class.
      *
-     * @param array $args - arguments of the class constructor.
-     * @return object
-     * @access public
+     * @param array $args Arguments of the class constructor.
+     * @return object|null
      */
-    public function getClassObject(array $args = null)
+    public function getClassObject(array $args = [])
     {
         if (empty($this->class))
         {

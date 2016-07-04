@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,19 +16,20 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
 namespace Aleph\Core;
 
-use Aleph\Cache;
+use Aleph,
+    Aleph\Cache;
 
 /**
  * This class is templator using PHP as template language.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
+ * @version 1.0.3
  * @package aleph.core
  */
 class Template implements \ArrayAccess
@@ -36,57 +37,49 @@ class Template implements \ArrayAccess
     /**
      * Unique cache identifier of template.
      *
-     * @var string $cacheID
-     * @access public
+     * @var string
      */
-    public $cacheID = null;
+    public $cacheID = '';
   
     /**
      * Cache expiration time of template.
      *
-     * @var integer $cacheExpire
-     * @access public
+     * @var int
      */
-    public $cacheExpire = null;
+    public $cacheExpire = 0;
   
     /**
      * Name of the cache group.
      *
-     * @var string $cacheGroup
-     * @access public
+     * @var string
      */
-    public $cacheGroup = null;
+    public $cacheGroup = '';
   
     /**
      * An instance of Aleph\Cache\Cache class.
      *
-     * @var Aleph\Cache\Cache $cache
-     * @access protected
+     * @var \Aleph\Cache\Cache
      */
     protected $cache = null;
 
     /**
      * Template variables.
      *
-     * @var array $vars
-     * @access protected
+     * @var array
      */
     protected $vars = [];
   
     /**
      * Template string or path to a template file. 
      *
-     * @var string $template
-     * @access protected
+     * @var string
      */
-    protected $template = null;
+    protected $template = '';
   
     /**
      * Global template variables.
      *
-     * @var array $globals
-     * @access private
-     * @static
+     * @var array
      */
     private static $globals = [];
   
@@ -94,8 +87,6 @@ class Template implements \ArrayAccess
      * Returns array of global template variables.
      *
      * @return array
-     * @access public
-     * @static
      */
     public static function getGlobals()
     {
@@ -105,12 +96,11 @@ class Template implements \ArrayAccess
     /**
      * Sets global template variables.
      *
-     * @param array $globals - new global template variables.
-     * @param boolean $merge - determines whether new variables are merged with existing variables.
-     * @access public
-     * @static
+     * @param array $globals A global template variables.
+     * @param bool $merge Determines whether new variables are merged with existing variables.
+     * @return void
      */
-    public static function setGlobals(array $globals, $merge = false)
+    public static function setGlobals(array $globals, bool $merge = false)
     {
         if (!$merge)
         {
@@ -125,19 +115,19 @@ class Template implements \ArrayAccess
     /**
      * Constructor.
      *
-     * @param string $template - the template string or path to a template file.
-     * @param integer $expire - the template cache life time in seconds.
-     * @param string $cacheID - the unique cache identifier of template.
-     * @param Aleph\Cache\Cache - an instance of caching class.
-     * @access public
+     * @param string $template The template string or path to a template file.
+     * @param int $expire The template cache life time in seconds.
+     * @param string $cacheID The unique cache identifier of template.
+     * @param \Aleph\Cache\Cache An instance of caching class.
+     * @return void
      */
-    public function __construct($template = null, $expire = 0, $cacheID = null, Cache\Cache $cache = null)
+    public function __construct(string $template = '', int $expire = 0, string $cacheID = '', Cache\Cache $cache = null)
     {
         $this->template = $template;
         $this->cacheExpire = (int)$expire;
         if ($this->cacheExpire > 0) 
         {
-            $this->setCache($cache ?: \Aleph::getCache());
+            $this->setCache($cache ?: Aleph::getCache());
             $this->cacheID = $cacheID;
         }
     }
@@ -145,14 +135,13 @@ class Template implements \ArrayAccess
     /**
      * Returns an instance of caching class.
      *
-     * @return Aleph\Cache\Cache
-     * @access public
+     * @return \Aleph\Cache\Cache
      */
-    public function getCache()
+    public function getCache() : Cache\Cache
     {
         if ($this->cache === null)
         {
-            $this->cache = \Aleph::getCache();
+            $this->cache = Aleph::getCache();
         }
         return $this->cache;
     }
@@ -160,8 +149,8 @@ class Template implements \ArrayAccess
     /**
      * Sets an instance of caching class.
      *
-     * @param Aleph\Cache\Cache $cache
-     * @access public
+     * @param \Aleph\Cache\Cache $cache
+     * @return void
      */
     public function setCache(Cache\Cache $cache)
     {
@@ -171,10 +160,9 @@ class Template implements \ArrayAccess
     /**
      * Checks whether or not a template cache lifetime is expired.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isExpired()
+    public function isExpired() : bool
     {
         if ((int)$this->cacheExpire <= 0)
         {
@@ -187,9 +175,8 @@ class Template implements \ArrayAccess
      * Returns array of template variables.
      *
      * @return array
-     * @access public
      */
-    public function getVars()
+    public function getVars() : array
     {
         return $this->vars;
     }
@@ -197,11 +184,11 @@ class Template implements \ArrayAccess
     /**
      * Sets template variables.
      *
-     * @param array $vars - the template variables.
-     * @param boolean $merge - determines whether new variables should be merged with existing variables.
-     * @access public
+     * @param array $vars The template variables.
+     * @param bool $merge Determines whether new variables should be merged with existing variables.
+     * @return void
      */
-    public function setVars(array $vars, $merge = false)
+    public function setVars(array $vars, bool $merge = false)
     {
         if (!$merge)
         {
@@ -217,9 +204,8 @@ class Template implements \ArrayAccess
      * Returns template string.
      *
      * @return string
-     * @access public
      */
-    public function getTemplate()
+    public function getTemplate() : string
     {
         return $this->template;
     }
@@ -227,10 +213,10 @@ class Template implements \ArrayAccess
     /**
      * Sets template.
      *
-     * @param string $template - template string or path to a template file.
-     * @access public
+     * @param string $template Template string or path to a template file.
+     * @return void
      */
-    public function setTemplate($template)
+    public function setTemplate(string $template)
     {
         $this->template = $template;
     }
@@ -238,11 +224,11 @@ class Template implements \ArrayAccess
     /**
      * Sets new value of a global template variable.
      *
-     * @param string $name - the global variable name.
-     * @param mixed $value - the global variable value. 
-     * @access public
+     * @param string $name The global variable name.
+     * @param mixed $value The global variable value. 
+     * @return void
      */
-    public function offsetSet($name, $value)
+    public function offsetSet(string $name, $value)
     {
         self::$globals[$name] = $value;
     }
@@ -250,11 +236,10 @@ class Template implements \ArrayAccess
     /**
      * Checks whether or not a global template variable with the same name exists.
      *
-     * @param string $name - the global variable name.
-     * @return boolean
-     * @access public
+     * @param string $name The global variable name.
+     * @return bool
      */
-    public function offsetExists($name)
+    public function offsetExists(string $name) : bool
     {
         return isset(self::$globals[$name]);
     }
@@ -262,10 +247,10 @@ class Template implements \ArrayAccess
     /**
      * Deletes a global template variable.
      *
-     * @param string $key - the global variable name.
-     * @access public
+     * @param string $key The global variable name.
+     * @return void
      */
-    public function offsetUnset($name)
+    public function offsetUnset(string $name)
     {
         unset(self::$globals[$name]);
     }
@@ -273,11 +258,10 @@ class Template implements \ArrayAccess
     /**
      * Gets value of a global template variable.
      *
-     * @param string $name - the global variable name.
+     * @param string $name The global variable name.
      * @return mixed
-     * @access public
      */
-    public function &offsetGet($name)
+    public function &offsetGet(string $name)
     {
         if (!isset(self::$globals[$name]))
         {
@@ -289,11 +273,11 @@ class Template implements \ArrayAccess
     /**
      * Sets value of a template variable.
      *
-     * @param string $name - the variable name.
-     * @param mixed $value - the variable value.
-     * @access public
+     * @param string $name The variable name.
+     * @param mixed $value The variable value.
+     * @return void
      */
-    public function __set($name, $value)
+    public function __set(string $name, $value)
     {
         $this->vars[$name] = $value;
     }
@@ -301,11 +285,10 @@ class Template implements \ArrayAccess
     /**
      * Returns value of a template variable.
      *
-     * @param string $name - the variable name.
+     * @param string $name The variable name.
      * @return mixed
-     * @access public
      */
-    public function &__get($name)
+    public function &__get(string $name)
     {
         if (!isset($this->vars[$name]))
         {
@@ -317,11 +300,10 @@ class Template implements \ArrayAccess
     /**
      * Checks whether or not a template variable exists.
      *
-     * @param string $name - the variable name.
-     * @return boolean
-     * @access public
+     * @param string $name The variable name.
+     * @return bool
      */
-    public function __isset($name)
+    public function __isset(string $name) : bool
     {
         return isset($this->vars[$name]);
     }
@@ -329,10 +311,10 @@ class Template implements \ArrayAccess
     /**
      * Deletes a template variable.
      *
-     * @param string $name - the variable name.
-     * @access public
+     * @param string $name The variable name.
+     * @return void
      */
-    public function __unset($name)
+    public function __unset(string $name)
     {
         unset($this->vars[$name]);
     }
@@ -341,9 +323,8 @@ class Template implements \ArrayAccess
      * Returns a rendered template.
      *
      * @return string
-     * @access public
      */
-    public function render()
+    public function render() : string
     {
         $render = function($tpl)
         {
@@ -357,7 +338,7 @@ class Template implements \ArrayAccess
                 require(${'(_._)'}->getTemplate());
                 return ob_get_clean();
             }
-            return \Aleph::exe($tpl->getTemplate(), array_merge(Template::getGlobals(), $tpl->getVars()));
+            return Aleph::exe($tpl->getTemplate(), array_merge(Template::getGlobals(), $tpl->getVars()));
         };
         if ((int)$this->cacheExpire <= 0)
         {
@@ -426,7 +407,7 @@ class Template implements \ArrayAccess
     /**
      * Push a rendered template to a browser.
      *
-     * @access public
+     * @return void
      */
     public function show()
     {
@@ -437,28 +418,26 @@ class Template implements \ArrayAccess
      * Converts an instance of this class to a string.
      *
      * @return string
-     * @access public
      */
-    public function __toString()
+    public function __toString() : string
     {
         try
         {
             return $this->render();
         }
-        catch (\Exception $e)
+        catch (\Throwable $e)
         {
-            \Aleph::exception($e);
+            Aleph::exception($e);
         }
     }
   
     /**
      * Returns template cache ID.
      *
-     * @return mixed 
-     * @access protected
+     * @return string
      */
-    protected function getCacheID()
+    protected function getCacheID() : string
     {
-        return $this->cacheID !== null ? $this->cacheID : md5($this->template);
+        return (string)$this->cacheID !== '' ? $this->cacheID : md5($this->template);
     }
 }

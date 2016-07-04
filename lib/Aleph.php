@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -1744,9 +1744,23 @@ final class Aleph
     }
   
     /**
-     * Private constructor prevents this object creation.
+     * Protects against creation through "new".
      *
      * @return void
      */
     private function __construct(){}
+    
+    /**
+     * Protects against creation through "clone".
+     *
+     * @return void
+     */
+    private function __clone(){}
+    
+    /**
+     * Protects against creation through "unserialize".
+     *
+     * @return void
+     */
+    private function __wakeup(){}
 }
