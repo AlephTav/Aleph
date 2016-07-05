@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,19 +16,20 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
 namespace Aleph\Cache;
 
-use Aleph\Core;
+use Aleph,
+    Aleph\Core;
 
 /**
  * The class is intended for caching of different data using the file system.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.1
+ * @version 1.2.2
  * @package aleph.cache
  */
 class File extends Cache
@@ -42,16 +43,14 @@ class File extends Cache
     /**
      * Permissions for newly created cache directory.
      *
-     * @var integer $directoryMode
-     * @access protected
+     * @var int
      */
     protected $directoryMode = 0711;
   
     /**
      * Permissions for newly created cache files.
      *
-     * @var integer $fileMode
-     * @access protected
+     * @var int
      */
     protected $fileMode = 0644;
 
@@ -59,17 +58,15 @@ class File extends Cache
      * The directory in which cache files will be stored.
      *
      * @var string $dir
-     * @access protected   
      */
     protected $dir = null;
     
     /**
      * Returns permissions of the cache directory.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getDirectoryMode()
+    public function getDirectoryMode() : int
     {
         return $this->directoryMode;
     }
@@ -77,11 +74,10 @@ class File extends Cache
     /**
      * Sets permissions of the cache directory.
      *
-     * @param integer $mode - the directory permissions.
-     * @return boolean - TRUE on success or FALSE on failure.
-     * @access public
+     * @param int $mode The directory permissions.
+     * @return bool TRUE on success or FALSE on failure.
      */
-    public function setDirectoryMode($mode)
+    public function setDirectoryMode(int $mode) : bool
     {
         if (is_dir($this->dir))
         {
@@ -97,10 +93,9 @@ class File extends Cache
     /**
      * Returns file permissions.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getFileMode()
+    public function getFileMode() : int
     {
         return $this->fileMode;
     }
@@ -108,12 +103,11 @@ class File extends Cache
     /**
      * Sets permissions of cache files.
      *
-     * @param integer $mode  - the cache file permissions.
-     * @param boolean $change - determines whether permissions of all cache files should set to $mode.  
-     * @return boolean - TRUE on success or FALSE on failure.
-     * @access public
+     * @param int $mode The cache file permissions.
+     * @param bool $change Determines whether permissions of all cache files should set to $mode.  
+     * @return bool TRUE on success or FALSE on failure.
      */
-    public function setFileMode($mode, $change = false)
+    public function setFileMode(int $mode, bool $change = false)
     {
         $this->fileMode = $mode;
         if ($change)
@@ -134,9 +128,8 @@ class File extends Cache
      * Returns the current cache directory.
      *
      * @return string
-     * @access public
      */
-    public function getDirectory()
+    public function getDirectory() : string
     {
         return $this->dir;
     }
@@ -146,11 +139,12 @@ class File extends Cache
      * If this directory doesn't exist it will be created.
      *
      * @param string $path
-     * @access public
+     * @return void
+     * @throws \RuntimeException If the directory is not writable.
      */
-    public function setDirectory($path = null)
+    public function setDirectory(string $path = '')
     {
-        $dir = \Aleph::dir($path ?: '@cache');
+        $dir = Aleph::dir($path ?: '@cache');
         if (!is_dir($dir))
         {
             mkdir($dir, $this->directoryMode, true);
@@ -163,64 +157,64 @@ class File extends Cache
     }
     
     /**
-     * Returns meta information (expiration time and group) of the cached data.
-     * It returns FALSE if the data does not exist.
+     * Returns meta information (expiration time and tags) of the cached data.
+     * It returns empty array if the meta data does not exist.
      *
-     * @param mixed $key - the data key.
+     * @param mixed $key The data key.
      * @return array
      * @access public
      */
-    public function getMeta($key)
+    public function getMeta($key) : array
     {
-        $meta = $this->getValue(self::META_PREFIX . $this->normalizeKey($key));
-        return $meta !== false ? unserialize($meta) : false;
+        $meta = $this->getValue(static::META_PREFIX . $this->normalizeKey($key));
+        return $meta !== false ? unserialize($meta) : [];
     }
     
     /**
      * Returns some data previously stored in the cache.
      *
-     * @param mixed $key - the data key.
-     * @param boolean $isExpired - will be set to TRUE if the given cache is expired and FALSE otherwise.
+     * @param mixed $key The data key.
+     * @param mixed $isExpired It will be set to TRUE if the given cache is expired and FALSE otherwise.
      * @return mixed
-     * @access public
-     * @abstract
      */
     public function get($key, &$isExpired = null)
     {                     
         $key = $this->normalizeKey($key);
         $file = $this->dir . $key;
         $isExpired = @filemtime($file) <= time();
-        $content = $this->getValue($key);
-        return $isExpired ? null : ($content !== false ? unserialize($content) : null);
+        if (!$isExpired)
+        {
+            $content = $this->getValue($key);
+            return $content === false ? null : unserialize($content);
+        }
     }
 
     /**
      * Stores some data identified by a key in the cache.
      *
-     * @param mixed $key - the data key.
-     * @param mixed $content - the cached data.
-     * @param integer $expire - the cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
-     * @param string $group - the group of data.
-     * @access public
+     * @param mixed $key The data key.
+     * @param mixed $content The cached data.
+     * @param int $expire The cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string[] $tags An array of tags associated with the data.
+     * @return void
      */
-    public function set($key, $content, $expire = 0, $group = null)
+    public function set($key, $content, int $expire = 0, array $tags = [])
     {
         $k = $this->normalizeKey($key);
         $expire = $this->normalizeExpire($expire);
         $this->setValue($k, serialize($content), $expire);
-        $this->setValue(self::META_PREFIX . $k, serialize([$expire, $group]), $expire);
-        $this->saveKeyToVault($key, $expire, $group);
+        $this->setValue(static::META_PREFIX . $k, serialize([$expire, $tags]), $expire);
+        $this->saveKeyToVault($key, $expire, $tags);
     }
     
     /**
      * Updates the previously stored data with new data.
      *
-     * @param mixed $key - the key of the data being updated.
-     * @param mixed $content - the new data.
-     * @return boolean - returns TRUE on success and FALSE on failure (if cache does not exist or expired).
-     * @access public
+     * @param mixed $key The key of the data being updated.
+     * @param mixed $content The new data.
+     * @return bool TRUE on success and FALSE on failure (if cache does not exist or expired).
      */
-    public function update($key, $content)
+    public function update($key, $content) : bool
     {
         $meta = $this->getMeta($key);
         return $meta ? $this->setValue($this->normalizeKey($key), serialize($content), $meta[0]) : false;
@@ -230,12 +224,11 @@ class File extends Cache
      * Sets a new expiration on an cached data.
      * Returns TRUE on success or FALSE on failure. 
      *
-     * @param mixed $key - the data key.
-     * @param integer $expire - the new expiration time.
-     * @return boolean
-     * @access public
+     * @param mixed $key The data key.
+     * @param int $expire The new expiration time.
+     * @return bool
      */
-    public function touch($key, $expire = 0)
+    public function touch($key, int $expire = 0) : bool
     {
         $meta = $this->getMeta($key);
         if ($meta)
@@ -243,7 +236,7 @@ class File extends Cache
             $expire = $this->normalizeExpire($expire);
             $meta[0] = $expire;
             $key = $this->normalizeKey($key);
-            $this->setValue(self::META_PREFIX . $key, serialize($meta), $expire);
+            $this->setValue(static::META_PREFIX . $key, serialize($meta), $expire);
             return @touch($this->dir . $key, $expire + time());
         }
         return false;
@@ -252,24 +245,23 @@ class File extends Cache
     /**
      * Removes some data identified by a key from the cache.
      *
-     * @param mixed $key - the data key.
-     * @access public
+     * @param mixed $key The data key.
+     * @return void
      */
     public function remove($key)
     {
         $key = $this->normalizeKey($key);
         @unlink($this->dir . $key);
-        @unlink($this->dir . self::META_PREFIX . $key);
+        @unlink($this->dir . static::META_PREFIX . $key);
     }
 
     /**
      * Checks whether cache lifetime is expired or not.
      *
-     * @param string $key - the data key.
-     * @return boolean
-     * @access public
+     * @param mixed $key The data key.
+     * @return bool
      */
-    public function isExpired($key)
+    public function isExpired($key) : bool
     {                      
         return @filemtime($this->dir . $this->normalizeKey($key)) <= time();
     }
@@ -277,11 +269,11 @@ class File extends Cache
     /**
      * Removes all previously stored data from the cache.
      *
-     * @access public
+     * @return void
      */
     public function clean()
     {
-        if (strtolower(substr(PHP_OS, 0, 3)) == 'win')
+        if (strtolower(substr(PHP_OS, 0, 3)) === 'win')
         {
             exec('del /Q /F ' . escapeshellarg($this->dir));
         }
@@ -294,32 +286,38 @@ class File extends Cache
     /**
      * Removes keys of the expired data from the key vault.
      *
-     * @access protected
+     * @return void
      */
     protected function normalizeVault()
     {
-        if (strtolower(substr(PHP_OS, 0, 3)) == 'win') exec('forfiles /P ' . escapeshellarg(rtrim($this->dir, '/\\')) . ' /D -0 /C "cmd /c IF @ftime LEQ %TIME:~0,-3% del @file"');
-        else exec('find ' . escapeshellarg($this->dir) . ' -type f -mmin +0 -delete');
+        if (strtolower(substr(PHP_OS, 0, 3)) === 'win')
+        {
+            exec('forfiles /P ' . escapeshellarg(rtrim($this->dir, '/\\')) . ' /D -0 /C "cmd /c IF @ftime LEQ %TIME:~0,-3% del @file"');
+        }
+        else
+        {
+            exec('find ' . escapeshellarg($this->dir) . ' -type f -mmin +0 -delete');
+        }
         parent::normalizeVault();
     }
   
     /**
-     * Retrieves data from the cache. Returns FALSE on failure.
+     * Retrieves data from the cache.
+     * Returns FALSE on failure.
      *
      * @param string $key - the normalized data key.
-     * @return string
-     * @access protected
+     * @return string|bool
      */
-    protected function getValue($key)
+    protected function getValue($key) : string
     {
-        $fp = @fopen($this->dir . $key, 'r');
+        $fp = @fopen($this->dir . $key, 'rb');
         if ($fp !== false)
         {
             @flock($fp, LOCK_SH);
             $meta = @stream_get_contents($fp);
             @flock($fp, LOCK_UN);
             @fclose($fp);
-            return $meta === false ? false : $meta;
+            return $meta;
         }
         return false;
     }
@@ -327,13 +325,13 @@ class File extends Cache
     /**
      * Stores data in the cache.
      *
-     * @param string $key - the normalized data key.
-     * @param string $content - the serialized data.
-     * @param integer $expire - the normalized cache expiration time.
-     * @return boolean - TRUE on success and FALSE on failure.
-     * @access protected
+     * @param string $key The normalized data key.
+     * @param string $content The serialized data.
+     * @param int $expire The normalized cache expiration time.
+     * @return bool TRUE on success and FALSE on failure.
+     * @throws \RuntimeException If unable to create a cache file.
      */
-    protected function setValue($key, $content, $expire)
+    protected function setValue($key, $content, int $expire)
     {
         $file = $this->dir . $key;
         if (@file_put_contents($file, $content, LOCK_EX) !== false)

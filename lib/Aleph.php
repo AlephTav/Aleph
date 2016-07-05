@@ -244,7 +244,7 @@ final class Aleph
             return;
         }
         ini_set('html_errors', 0);
-        self::$flags = $flags ?: (PHP_SAPI === 'cli' ? 0 : self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING);
+        self::$flags = $flags ?? (PHP_SAPI === 'cli' ? 0 : self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING);
         if (self::$flags & self::INIT_CLOSE_OUTPUT_BUFFERS)
         {
             self::closeOutputBuffers(0);
@@ -753,7 +753,7 @@ final class Aleph
     }
   
     /**
-     * Set the debug output for an exception.
+     * Sets the debug output for an exception.
      *
      * @param \Throwable $e
      * @return void

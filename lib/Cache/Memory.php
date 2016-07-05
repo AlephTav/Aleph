@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -28,7 +28,7 @@ use Aleph\Core;
  * The class is intended for caching of different data using the memcache extension.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.1
+ * @version 1.2.2
  * @package aleph.cache
  */
 class Memory extends Cache
@@ -46,35 +46,32 @@ class Memory extends Cache
     /**
      * Determines whether the data will be compressed before placing in the cache.
      *
-     * @var boolean $compress
-     * @access protected
+     * @var int
      */
-    protected $compress = true;
+    protected $compress = 0;
   
     /**
-     * The vault lifetime. Defined as 1 year by default.
+     * The vault lifetime (in seconds).
+     * Defined as 1 month by default.
      *
-     * @var integer $vaultLifeTime - given in seconds.
-     * @access protected
+     * @var int
      */
-    protected $vaultLifeTime = 2592000; // 1 month
+    protected $vaultLifeTime = 2592000;
 
     /**
      * The instance of Memcache or Memcached class.
      *
-     * @var Memcache|Memcached $mem
-     * @access private
+     * @var \Memcache|\Memcached
      */
     private $mem = null;
   
     /**
      * Checks whether the current type of cache is available or not.
      *
-     * @return boolean
-     * @access public
-     * @static
+     * @param string $type The memory cache type. Valid values "memcache" or "memcached".
+     * @return bool
      */
-    public static function isAvailable($type = null)
+    public static function isAvailable(string $type = '') : bool
     {
         if ($type == 'memcache' || $type == 'memcached')
         {
@@ -86,12 +83,12 @@ class Memory extends Cache
     /**
      * Constructor.
      *
-     * @param string $type - determines type of cache extensions. The valid values: memcache, memcached.
-     * @param array $servers - hosts for a memcache connection.
-     * @param boolean $compress - if value of this parameter is TRUE any data will be compressed before placing in a cache, otherwise data will not be compressed.
-     * @access public
+     * @param string $type Determines type of cache extensions. The valid values: memcache, memcached.
+     * @param array $servers Hosts for a memcache connection.
+     * @param bool $compress If value of this parameter is TRUE any data will be compressed before placing in a cache, otherwise data will not be compressed.
+     * @return void
      */
-    public function __construct($type, array $servers, $compress = true)
+    public function __construct(string $type, array $servers, bool $compress = true)
     {
         parent::__construct();
         if ($type != 'memcache' && $type != 'memcached')
@@ -105,22 +102,26 @@ class Memory extends Cache
             {
                 foreach ($servers as $server)
                 {
-                    $this->mem->addServer(isset($server['host']) ? $server['host'] : '127.0.0.1',
-                                          isset($server['port']) ? $server['port'] : 11211,
-                                          isset($server['persistent']) ? $server['persistent'] : true,
-                                          isset($server['weight']) ? $server['weight'] : 1,
-                                          isset($server['timeout']) ? $server['timeout'] : 1,
-                                          isset($server['retryInterval']) ? $server['retryInterval'] : 15,
-                                          isset($server['status']) ? $server['status'] : true);
+                    $this->mem->addServer(
+                        $server['host'] ?? '127.0.0.1',
+                        $server['port'] ?? 11211,
+                        $server['persistent'] ?? true,
+                        $server['weight'] ?? 1,
+                        $server['timeout'] ?? 1,
+                        $server['retryInterval'] ?? 15,
+                        $server['status'] ?? true
+                    );
                 }
             }
             else
             {
                 foreach ($servers as $server)
                 {
-                    $this->mem->addServer(isset($server['host']) ? $server['host'] : '127.0.0.1',
-                                          isset($server['port']) ? $server['port'] : 11211,
-                                          isset($server['weight']) ? $server['weight'] : 0);
+                    $this->mem->addServer(
+                        $server['host'] ?? '127.0.0.1',
+                        $server['port'] ?? 11211,
+                        $server['weight'] ?? 0
+                    );
                 }
             }
         }
@@ -134,10 +135,11 @@ class Memory extends Cache
     /**
      * Turns on or turns off the data compression for memcache.
      *
-     * @param boolean $flag
-     * @access public
+     * @param bool $flag
+     * @return void
+     * @throws \RuntimeException If zlib extension is not loaded.
      */
-    public function compress($flag = true)
+    public function compress(bool $flag = true)
     {
         if ($compress && !extension_loaded('zlib'))
         {
@@ -149,8 +151,7 @@ class Memory extends Cache
     /**
      * Gets the native caching object.
      *
-     * @return Memcache|Memcached
-     * @access public
+     * @return \Memcache|\Memcached
      */
     public function getNativeObject()
     {
@@ -158,36 +159,35 @@ class Memory extends Cache
     }
     
     /**
-     * Returns meta information (expiration time and group) of the cached data.
-     * It returns FALSE if the data does not exist.
+     * Returns meta information (expiration time and tags) of the cached data.
+     * It returns empty array if the meta data does not exist.
      *
-     * @param mixed $key - the data key.
+     * @param mixed $key The data key.
      * @return array
-     * @access public
      */
-    public function getMeta($key)
+    public function getMeta($key) : array
     {
-        return $this->getValue(self::META_PREFIX . $this->normalizeKey($key));
+        $meta = $this->getValue(static::META_PREFIX . $this->normalizeKey($key));
+        return is_array($meta) ? $meta : [];
     }
     
     /**
      * Stores some data identified by a key in the cache, only if it's not already stored.
      *
-     * @param mixed $key - the data key.
-     * @param mixed $content - the cached data.
-     * @param integer $expire - the cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
-     * @param string $group - the group of data.
-     * @return boolean - returns TRUE if something has effectively been added into the cache, FALSE otherwise.
-     * @access public
+     * @param mixed $key The data key.
+     * @param mixed $content The cached data.
+     * @param int $expire The cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string[] $tags An array of tags associated with the data.
+     * @return bool Returns TRUE if something has effectively been added into the cache, FALSE otherwise.
      */
-    public function add($key, $content, $expire = 0, $group = null)
+    public function add($key, $content, int $expire = 0, array $tags = [])
     {
         $k = $this->normalizeKey($key);
         $expire = $this->normalizeExpire($expire);
         if ($this->setValue($k, serialize($content), $expire, 'add'))
         {
-            $this->setValue(self::META_PREFIX . $k, [$expire, $group], $expire);
-            $this->saveKeyToVault($key, $expire, $group);
+            $this->setValue(static::META_PREFIX . $k, [$expire, $tags], $expire);
+            $this->saveKeyToVault($key, $expire, $tags);
             return true;
         }
         return false;
@@ -196,11 +196,9 @@ class Memory extends Cache
     /**
      * Returns some data previously stored in the cache.
      *
-     * @param mixed $key - the data key.
-     * @param boolean $isExpired - will be set to TRUE if the given cache is expired and FALSE otherwise.
+     * @param mixed $key The data key.
+     * @param mixed $isExpired It will be set to TRUE if the given cache is expired and FALSE otherwise.
      * @return mixed
-     * @access public
-     * @abstract
      */
     public function get($key, &$isExpired = null)
     {
@@ -217,33 +215,32 @@ class Memory extends Cache
     /**
      * Stores some data identified by a key in the cache.
      *
-     * @param mixed $key - the data key.
-     * @param mixed $content - the cached data.
-     * @param integer $expire - the cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
-     * @param string $group - the group of data.
-     * @access public
+     * @param mixed $key The data key.
+     * @param mixed $content The cached data.
+     * @param int $expire The cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
+     * @param string[] $tags An array of tags associated with the data.
+     * @return void
      */
-    public function set($key, $content, $expire = 0, $group = null)
+    public function set($key, $content, int $expire = 0, array $tags = [])
     {
         $k = $this->normalizeKey($key);
         $expire = $this->normalizeExpire($expire);
         $this->setValue($k, serialize($content), $expire);
-        $this->setValue(self::META_PREFIX . $k, [$expire, $group], $expire);
-        $this->saveKeyToVault($key, $expire, $group);
+        $this->setValue(static::META_PREFIX . $k, [$expire, $tags], $expire);
+        $this->saveKeyToVault($key, $expire, $tags);
     }
     
     /**
      * Updates the previously stored data with new data.
      *
-     * @param mixed $key - the key of the data being updated.
-     * @param mixed $content - the new data.
-     * @return boolean - returns TRUE on success and FALSE on failure (if cache does not exist or expired).
-     * @access public
+     * @param mixed $key The key of the data being updated.
+     * @param mixed $content The new data.
+     * @return bool Returns TRUE on success and FALSE on failure (if cache does not exist or expired).
      */
-    public function update($key, $content)
+    public function update($key, $content) : bool
     {
         $key = $this->normalizeKey($key);
-        $meta = $this->getValue(self::META_PREFIX . $key);
+        $meta = $this->getValue(static::META_PREFIX . $key);
         return $meta ? $this->setValue($key, serialize($content), $meta[0]) : false;
     }
     
@@ -251,15 +248,14 @@ class Memory extends Cache
      * Sets a new expiration on an cached data.
      * Returns TRUE on success or FALSE on failure. 
      *
-     * @param mixed $key - the data key.
-     * @param integer $expire - the new expiration time.
-     * @return boolean
-     * @access public
+     * @param mixed $key The data key.
+     * @param int $expire The new expiration time.
+     * @return bool
      */
-    public function touch($key, $expire = 0)
+    public function touch($key, int $expire = 0) : bool
     {
         $key = $this->normalizeKey($key);
-        $mkey = self::META_PREFIX . $key;
+        $mkey = static::META_PREFIX . $key;
         $content = $this->getValue($key);
         if ($content === false)
         {
@@ -280,8 +276,8 @@ class Memory extends Cache
     /**
      * Removes some data identified by a key from the cache.
      *
-     * @param mixed $key - the data key.
-     * @access public
+     * @param mixed $key The data key.
+     * @return void
      */
     public function remove($key)
     {
@@ -295,17 +291,16 @@ class Memory extends Cache
             }
         }
         $this->mem->delete($key);
-        $this->mem->delete(self::META_PREFIX . $key);
+        $this->mem->delete(static::META_PREFIX . $key);
     }
 
     /**
      * Checks whether cache lifetime is expired or not.
      *
-     * @param string $key - the data key.
-     * @return boolean
-     * @access public
+     * @param string $key The data key.
+     * @return bool
      */
-    public function isExpired($key)
+    public function isExpired($key) : bool
     {
         return $this->mem->get($this->normalizeKey($key)) === false;
     }
@@ -313,7 +308,7 @@ class Memory extends Cache
     /**
      * Removes all previously stored data from the cache.
      *
-     * @access public
+     * @return void
      */
     public function clean()
     {
@@ -323,9 +318,8 @@ class Memory extends Cache
     /**
      * Retrieves data from the cache. Returns FALSE on failure.
      *
-     * @param string $key - the normalized data key.
-     * @return string|boolean
-     * @access protected
+     * @param string $key The normalized data key.
+     * @return string|bool
      */
     protected function getValue($key)
     {
@@ -352,16 +346,15 @@ class Memory extends Cache
     /**
      * Stores data in the cache.
      *
-     * @param string $key - the normalized data key.
-     * @param string $content - the serialized data.
-     * @param integer $expire - the normalized cache expiration time.
-     * @param string $method - the native method that used for storing. Valid values: "set" or "add".
-     * @return boolean - TRUE on success and FALSE on failure.
-     * @access protected
+     * @param string $key The normalized data key.
+     * @param string $content The serialized data.
+     * @param int $expire The normalized cache expiration time.
+     * @param string $method The native method that used for storing. Valid values: "set" or "add".
+     * @return bool TRUE on success and FALSE on failure.
      */
-    protected function setValue($key, $content, $expire, $method = 'set')
+    protected function setValue($key, $content, int $expire, string $method = 'set') : bool
     {
-        if (strlen($content) <= self::MAX_BLOCK_SIZE)
+        if (strlen($content) <= static::MAX_BLOCK_SIZE)
         {
             if ($this->mem instanceof \Memcache)
             {
@@ -371,7 +364,7 @@ class Memory extends Cache
         }
         if ($this->mem instanceof \Memcache)
         {
-            foreach (str_split($content, self::MAX_BLOCK_SIZE) as $n => $part)
+            foreach (str_split($content, static::MAX_BLOCK_SIZE) as $n => $part)
             {
                 if ($this->mem->{$method}($key . $n, $part, $this->compress, $expire) === false)
                 {
@@ -380,7 +373,7 @@ class Memory extends Cache
             }
             return $this->mem->{$method}($key, [$key => $n], $this->compress, $expire);
         }
-        foreach (str_split($content, self::MAX_BLOCK_SIZE) as $n => $part)
+        foreach (str_split($content, static::MAX_BLOCK_SIZE) as $n => $part)
         {
             if ($this->mem->{$method}($key . $n, $part, $expire) === false)
             {

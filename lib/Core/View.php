@@ -37,8 +37,8 @@ class View
     /**
      * Error message templates.
      */
-    const ERR_1 = 'View "%s" is not found.';
-    const ERR_2 = 'No blocks have been started yet.';
+    const ERR_VIEW_1 = 'View "%s" is not found.';
+    const ERR_VIEW_2 = 'No blocks have been started yet.';
     
     /**
      * Blocks of views.
@@ -251,7 +251,7 @@ class View
                 return $path;
             }
         }
-        throw new \LogicException(sprintf(static::ERR_1, $view));
+        throw new \LogicException(sprintf(static::ERR_VIEW_1, $view));
     }
     
     /**
@@ -310,7 +310,7 @@ class View
     {
         if (!$this->stack)
         {
-            throw new \BadMethodCallException(static::ERR_2);
+            throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         $block = array_pop($this->stack);
         if ($overwrite)
@@ -350,7 +350,7 @@ class View
     {
         if (!$this->stack)
         {
-            throw new \BadMethodCallException(static::ERR_2);
+            throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         $block = array_pop($this->stack);
         if (isset($this->blocks[$block]))
@@ -385,7 +385,7 @@ class View
     {
         if (!$this->stack)
         {
-            throw new \BadMethodCallException(static::ERR_2);
+            throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         echo md5(end($this->stack));
     }

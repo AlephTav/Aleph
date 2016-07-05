@@ -36,8 +36,8 @@ class Callback
     /**
      * Error message templates.
      */
-    const ERR_1 = 'Callback %s is not callable.';
-    const ERR_2 = 'Control with UID = "%s" is not found.';
+    const ERR_CALLBACK_1 = 'Callback %s is not callable.';
+    const ERR_CALLBACK_2 = 'Control with UID = "%s" is not found.';
 
     /**
      * A string in the Aleph callback format.
@@ -140,7 +140,7 @@ class Callback
                 {
                     $callback[0] = '{' . get_class($callback[0]) . '}';
                 }
-                throw new \InvalidArgumentException(sprintf(static::ERR_1, json_encode($callback)));
+                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, json_encode($callback)));
             }
             $this->type = 'class';
             $this->class = $callback[0];
@@ -153,13 +153,13 @@ class Callback
         {
             if ($callback == '' || is_numeric($callback))
             {
-                throw new \InvalidArgumentException(sprintf(static::ERR_1, $callback));
+                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
             }
             $callback = htmlspecialchars_decode($callback);
             preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*|[^:-]*parent::[^:-]*)$/', $callback, $matches);
             if (count($matches) == 0)
             {
-                throw new \InvalidArgumentException(sprintf(static::ERR_1, $callback));
+                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
             }
             if ($matches[4] == '' && $matches[2] == '')
             {
@@ -172,7 +172,7 @@ class Callback
                 $this->class = $matches[1] ?: (MVC\Page::$current instanceof MVC\Page ? get_class(MVC\Page::$current) : false);
                 if ($this->class === false)
                 {
-                    throw new \InvalidArgumentException(sprintf(static::ERR_1, $callback));
+                    throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
                 }
                 if ($this->class[0] == '\\')
                 {
@@ -233,7 +233,7 @@ class Callback
         {
             if (($class = MVC\Page::$current->get($this->cid)) === false)
             {
-                throw new \LogicException(sprintf(static::ERR_2, $this->cid));
+                throw new \LogicException(sprintf(static::ERR_CALLBACK_2, $this->cid));
             }
             if ($this->method == '__construct')
             {
