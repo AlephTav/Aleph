@@ -22,13 +22,13 @@
 
 namespace Aleph\Core;
 
-use Aleph\MVC;
+use Aleph\Web;
 
 /**
  * With this class you can transform a string in certain format into a method or function invoking.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
+ * @version 1.1.2
  * @package aleph.core
  */
 class Callback
@@ -92,8 +92,8 @@ class Callback
      * Constructor. The only argument of it is string in Aleph framework format.
      * The following formats are possible:
      * 'function' - invokes a global function with name 'function'.
-     * '->method' - invokes a method 'method' of Aleph\MVC\Page::$current object (if defined) or Aleph object. 
-     * '::method' - invokes a static method 'method' of Aleph\MVC\Page::$current object (if defined) or Aleph object.
+     * '->method' - invokes a method 'method' of Aleph\Web\Page::current() object (if defined) or Aleph object. 
+     * '::method' - invokes a static method 'method' of Aleph\Web\Page::current() object (if defined) or Aleph object.
      * 'class::method' - invokes a static method 'method' of a class 'class'.
      * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
      * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -169,7 +169,7 @@ class Callback
             else
             {
                 $this->type = 'class';
-                $this->class = $matches[1] ?: (MVC\Page::$current instanceof MVC\Page ? get_class(MVC\Page::$current) : false);
+                $this->class = $matches[1] ?: (Web\Page::current() instanceof Web\Page ? get_class(Web\Page::current()) : false);
                 if ($this->class === false)
                 {
                     throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
@@ -220,18 +220,27 @@ class Callback
      * are arguments of constructor of a class 'class'.
      *
      * @param array $args An array of method arguments.
+     * @param object $newthis The object to which the given closure function should be bound.
      * @return mixed
     */
-    public function call(array $args = [])
+    public function call(array $args = [], $newthis = null)
     {
         $args = (array)$args;
-        if ($this->type == 'function' || $this->type == 'closure')
+        if ($this->type == 'closure')
         {
-            return call_user_func_array($this->method, $args);
+            if (is_object($newthis))
+            {
+                return $this->method->call($newthis, ...$args);
+            }
+            return $this->method(...$args);
+        }
+        if ($this->type == 'function')
+        {
+            return $this->method(...$args);
         }
         if ($this->type == 'control')
         {
-            if (($class = MVC\Page::$current->get($this->cid)) === false)
+            if (($class = Web\Page::current()->get($this->cid)) === false)
             {
                 throw new \LogicException(sprintf(static::ERR_CALLBACK_2, $this->cid));
             }
@@ -251,9 +260,9 @@ class Callback
             {
                 $class = $this->class;
             }
-            else if (MVC\Page::$current instanceof MVC\Page && $this->class == get_class(MVC\Page::$current))
+            else if (Web\Page::current() instanceof Web\Page && $this->class == get_class(Web\Page::current()))
             {
-                $class = MVC\Page::$current;
+                $class = Web\Page::current();
             }
             else
             {
@@ -323,7 +332,7 @@ class Callback
         }
         if ($this->type == 'control')
         {
-            return MVC\Page::$current->get($this->cid) !== false;
+            return Web\Page::current()->get($this->cid) !== false;
         }
         $static = $this->static;
         $methodExists = function($class, $method) use ($static)
@@ -456,7 +465,7 @@ class Callback
         }
         if ($this->type == 'control')
         {
-            return MVC\Page::$current->get($this->cid);
+            return Web\Page::current()->get($this->cid);
         }
         $class = new \ReflectionClass($this->class);
         if ($this->numargs == 0)
