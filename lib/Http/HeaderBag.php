@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,22 +16,24 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Net;
+namespace Aleph\Http;
 
-use Aleph\Utils;
+use Aleph,
+    Aleph\Data,
+    Aleph\Utils;
 
 /**
  * Class provides access to HTTP headers of the server's request or response.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
- * @package aleph.net
+ * @version 1.1.1
+ * @package aleph.http
  */
-class HeaderBag extends Utils\Bag
+class HeaderBag extends Data\Bag
 {
     /**
      * Error message templates.
@@ -45,9 +47,7 @@ class HeaderBag extends Utils\Bag
     /**
      * Array of content type aliases.
      *
-     * @var array $contentTypeMap
-     * @access public
-     * @static
+     * @var array
      */
     public static $contentTypeMap = [
         'text' => 'text/plain',
@@ -61,9 +61,7 @@ class HeaderBag extends Utils\Bag
     /**
      * Cache-Control header's directives.
      *
-     * @var array $cacheControlDirectives
-     * @access protected
-     * @static
+     * @var array
      */
     protected static $cacheControlDirectives = [
         'no-cache',
@@ -87,8 +85,7 @@ class HeaderBag extends Utils\Bag
     /**
      * The Set-Cookie header values.
      *
-     * @var array $cookies
-     * @access protected
+     * @var array
      */
     protected $cookies = [];
   
@@ -96,10 +93,8 @@ class HeaderBag extends Utils\Bag
      * Returns HTTP headers of the current HTTP request.
      *
      * @return array
-     * @access public
-     * @static
      */
-    public static function getRequestHeaders()
+    public static function getRequestHeaders() : array
     {
         if (function_exists('apache_request_headers'))
         {
@@ -120,10 +115,8 @@ class HeaderBag extends Utils\Bag
      * Returns HTTP headers of the server response.
      *
      * @return array
-     * @access public
-     * @static
      */
-    public static function getResponseHeaders()
+    public static function getResponseHeaders() : array
     {
         if (function_exists('apache_response_headers'))
         {
@@ -143,10 +136,8 @@ class HeaderBag extends Utils\Bag
      *
      * @param string $name
      * @return string
-     * @access public
-     * @static
      */
-    public static function normalizeHeaderName($name)
+    public static function normalizeHeaderName(string $name) : string
     {
         $name = strtr(trim($name), ['_' => ' ', '-' => ' ']);
         $name = ucwords(strtolower($name));
@@ -156,13 +147,11 @@ class HeaderBag extends Utils\Bag
     /**
      * Returns the parsed HTTP headers.
      *
-     * @param array $headers - the HTTP headers.
+     * @param array $headers The HTTP headers.
      * @return array
-     * @throws InvalidArgumentException
-     * @access public
-     * @static
+     * @throws \InvalidArgumentException
      */
-    public static function parseHeaders(array $headers)
+    public static function parseHeaders(array $headers) : array
     {
         $tmp = [];
         foreach ($headers as $name => $value)
@@ -176,13 +165,11 @@ class HeaderBag extends Utils\Bag
     /**
      * Returns the computed HTTP headers.
      *
-     * @param array $headers - the parsed HTTP headers.
+     * @param array $headers The parsed HTTP headers.
      * @return array
-     * @throws InvalidArgumentException
-     * @access public
-     * @static
+     * @throws \InvalidArgumentException
      */
-    public static function computeHeaders(array $headers)
+    public static function computeHeaders(array $headers) : array
     {
         $tmp = [];
         foreach ($headers as $name => $value)
@@ -195,14 +182,12 @@ class HeaderBag extends Utils\Bag
     /**
      * Parses the given header value.
      *
-     * @param string $name - the normalized header name.
-     * @param mixed $value - the header value.
+     * @param string $name The normalized header name.
+     * @param mixed $value The header value.
      * @return mixed
-     * @throws InvalidArgumentException
-     * @access public
-     * @static
+     * @throws \InvalidArgumentException
      */
-    public static function parseHeaderValue($name, $value)
+    public static function parseHeaderValue(string $name, $value)
     {
         return static::transformHeaderValue($name, $value, 'parse');
     }
@@ -210,14 +195,12 @@ class HeaderBag extends Utils\Bag
     /**
      * Returns the computed header value.
      *
-     * @param string $name - the normalized header name.
-     * @param mixed $value - the parsed header value.
+     * @param string $name The normalized header name.
+     * @param mixed $value The parsed header value.
      * @return mixed
-     * @throws InvalidArgumentException
-     * @access public
-     * @static
+     * @throws \InvalidArgumentException
      */
-    public static function computeHeaderValue($name, $value)
+    public static function computeHeaderValue(string $name, $value)
     {
         return static::transformHeaderValue($name, $value, 'compute');
     }
@@ -226,15 +209,13 @@ class HeaderBag extends Utils\Bag
     /**
      * Parses or computes the header value.
      *
-     * @param string $name - the normalized header name.
-     * @param mixed $value - the header value.
-     * @param string $type - the type of transformation. The valid values are "parse" and "compute".
+     * @param string $name The normalized header name.
+     * @param mixed $value The header value.
+     * @param string $type The type of transformation. The valid values are "parse" and "compute".
      * @return mixed
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @throws \InvalidArgumentException
      */
-    protected static function transformHeaderValue($name, $value, $type)
+    protected static function transformHeaderValue(string $name, $value, string $type)
     {
         $method = $type . str_replace('-', '', $name);
         if (method_exists(get_called_class(), $method))
@@ -253,11 +234,9 @@ class HeaderBag extends Utils\Bag
      *
      * @param string|array $value
      * @return array
-     * throws InvalidArgumentException
-     * @access protected
-     * @static
+     * throws \InvalidArgumentException
      */
-    protected static function parseContentType($value)
+    protected static function parseContentType($value) : array
     {
         if (is_scalar($value))
         {
@@ -283,12 +262,10 @@ class HeaderBag extends Utils\Bag
      *
      * @param array $value - the parsed Content-Type header value.
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeContentType(array $value)
+    protected static function computeContentType(array $value) : string
     {
-        return (isset($value['type']) ? $value['type'] : 'text/html') . ($value['charset'] ? '; charset=' . $value['charset'] : '');
+        return ($value['type'] ?? 'text/html') . ($value['charset'] ? '; charset=' . $value['charset'] : '');
     }
     
     /**
@@ -296,11 +273,9 @@ class HeaderBag extends Utils\Bag
      *
      * @param string|array $value
      * @return array
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @throws \InvalidArgumentException
      */
-    protected static function parseAccept($value)
+    protected static function parseAccept($value) : array
     {
         if (is_scalar($value) || is_callable([$value, '__toString']))
         {
@@ -316,12 +291,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the Accept header value.
      *
-     * @param array $value - the parsed Accept header value.
+     * @param array $value The parsed Accept header value.
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeAccept(array $value)
+    protected static function computeAccept(array $value) : string
     {
         return implode(',', $value);
     }
@@ -331,11 +304,9 @@ class HeaderBag extends Utils\Bag
      *
      * @param string|array $value
      * @return array
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @throws \InvalidArgumentException
      */
-    protected static function parseAcceptEncoding($value)
+    protected static function parseAcceptEncoding($value) : array
     {
         return static::parseAccept($value);
     }
@@ -343,12 +314,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the Accept-Encoding header value.
      *
-     * @param array $value - the parsed Accept-Encoding header value.
+     * @param array $value The parsed Accept-Encoding header value.
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeAcceptEncoding(array $value)
+    protected static function computeAcceptEncoding(array $value) : string
     {
         return static::computeAccept($value);
     }
@@ -358,11 +327,9 @@ class HeaderBag extends Utils\Bag
      *
      * @param string|array $value
      * @return array
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @throws \InvalidArgumentException
      */
-    protected static function parseAcceptCharset($value)
+    protected static function parseAcceptCharset($value) : array
     {
         return static::parseAccept($value);
     }
@@ -370,12 +337,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the Accept-Charset header value.
      *
-     * @param array $value - the parsed Accept-Charset header value.
+     * @param array $value The parsed Accept-Charset header value.
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeAcceptCharset(array $value)
+    protected static function computeAcceptCharset(array $value) : string
     {
         return static::computeAccept($value);
     }
@@ -383,11 +348,9 @@ class HeaderBag extends Utils\Bag
     /**
      * Parses the Date header value.
      *
-     * @param string|DateTimeInterface $value
-     * @return Aleph\Utils\DT|null
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @param string|\DateTimeInterface $value
+     * @return \Aleph\Utils\DT|null
+     * @throws \InvalidArgumentException
      */
     protected static function parseDate($value)
     {
@@ -405,12 +368,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the Date header value.
      *
-     * @param Aleph\Utils\DT $value
+     * @param \Aleph\Utils\DT $value
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeDate(Utils\DT $value)
+    protected static function computeDate(Utils\DT $value) : string
     {
         return $value->format('D, d M Y H:i:s') . ' GMT';
     }
@@ -418,11 +379,9 @@ class HeaderBag extends Utils\Bag
     /**
      * Parses the Expires header value.
      *
-     * @param string|DateTimeInterface $value
-     * @return Aleph\Utils\DT|null
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @param string|\DateTimeInterface $value
+     * @return \Aleph\Utils\DT|null
+     * @throws \InvalidArgumentException
      */
     protected static function parseExpires($value)
     {
@@ -432,12 +391,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the Expires header value.
      *
-     * @param Aleph\Utils\DT $value
+     * @param \Aleph\Utils\DT $value
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeExpires(Utils\DT $value)
+    protected static function computeExpires(Utils\DT $value) : string
     {
         return static::computeDate($value);
     }
@@ -445,11 +402,9 @@ class HeaderBag extends Utils\Bag
     /**
      * Parses the Last-Modified header value.
      *
-     * @param string|DateTimeInterface $value
-     * @return Aleph\Utils\DT|null
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @param string|\DateTimeInterface $value
+     * @return \Aleph\Utils\DT|null
+     * @throws \InvalidArgumentException
      */
     protected static function parseLastModified($value)
     {
@@ -459,12 +414,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the Last-Modified header value.
      *
-     * @param Aleph\Utils\DT $value
+     * @param \Aleph\Utils\DT $value
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeLastModified(Utils\DT $value)
+    protected static function computeLastModified(Utils\DT $value) : string
     {
         return static::computeDate($value);
     }
@@ -472,11 +425,9 @@ class HeaderBag extends Utils\Bag
     /**
      * Parses the If-Modified-Since header value.
      *
-     * @param string|DateTimeInterface $value
-     * @return Aleph\Utils\DT|null
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @param string|\DateTimeInterface $value
+     * @return \Aleph\Utils\DT|null
+     * @throws \InvalidArgumentException
      */
     protected static function parseIfModifiedSince($value)
     {
@@ -486,12 +437,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the If-Modified-Since header value.
      *
-     * @param Aleph\Utils\DT $value
+     * @param \Aleph\Utils\DT $value
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeIfModifiedSince(Utils\DT $value)
+    protected static function computeIfModifiedSince(Utils\DT $value) : string
     {
         return static::computeDate($value);
     }
@@ -501,11 +450,9 @@ class HeaderBag extends Utils\Bag
      *
      * @param string|array $value
      * @return array
-     * @throws InvalidArgumentException
-     * @access protected
-     * @static
+     * @throws \InvalidArgumentException
      */
-    protected static function parseCacheControl($value)
+    protected static function parseCacheControl($value) : array
     {
         if (is_array($value))
         {
@@ -536,12 +483,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Computes the Cache-Control header value.
      *
-     * @param array $value - the parsed Cache-Control header value.
+     * @param array $value The parsed Cache-Control header value.
      * @return string
-     * @access protected
-     * @static
      */
-    protected static function computeCacheControl(array $value)
+    protected static function computeCacheControl(array $value) : string
     {
         $tmp = [];
         foreach (static::$cacheControlDirectives as $directive)
@@ -569,15 +514,14 @@ class HeaderBag extends Utils\Bag
     
     /**
      * Constructor.
-     * The most of the code of this method is taken from the Symfony framework (see Symfony\Component\HttpFoundation\ServerBag::getHeaders()).
      *
-     * @param array $arr - an array of key/value pairs.
-     * @param string $delimiter - the default key delimiter in composite keys.
-     * @access public
+     * @param array $headers An array of key/value pairs.
+     * @param string $delimiter The default key delimiter in composite keys.
+     * @return void
      */
-    public function __construct(array $arr = [], $delimiter = Utils\Arr::DEFAULT_KEY_DELIMITER)
+    public function __construct(array $headers = [], string $delimiter = Utils\Arr::DEFAULT_KEY_DELIMITER)
     {
-        parent::__construct(static::parseHeaders($arr), $delimiter);
+        parent::__construct(static::parseHeaders($headers), $delimiter);
     }
     
     /**
@@ -585,7 +529,6 @@ class HeaderBag extends Utils\Bag
      *
      * @param array $headers
      * @return static
-     * @access public
      */
     public function replace(array $headers = [])
     {
@@ -597,7 +540,6 @@ class HeaderBag extends Utils\Bag
      *
      * @param array $headers
      * @return static
-     * @access public
      */
     public function add(array $headers = [])
     {
@@ -609,7 +551,6 @@ class HeaderBag extends Utils\Bag
      *
      * @param array $headers
      * @return static
-     * @access public
      */
     public function merge(array $headers = [])
     {
@@ -619,12 +560,12 @@ class HeaderBag extends Utils\Bag
     /**
      * Returns TRUE if the HTTP header is defined and FALSE otherwise.
      *
-     * @param string $name - the header name.
-     * @param boolean $compositeKey - determines whether the key is compound key.
-     * @param string $delimiter - the key delimiter in composite keys.
-     * @access public
+     * @param string $name The header name.
+     * @param bool $compositeKey Determines whether the key is compound key.
+     * @param string $delimiter The key delimiter in composite keys.
+     * @return void
      */
-    public function has($name, $compositeKey = false, $delimiter = null)
+    public function has($name, bool $compositeKey = false, string $delimiter = '') : bool
     {
         return parent::has(static::normalizeHeaderName($name), $compositeKey, $delimiter);
     }
@@ -632,14 +573,13 @@ class HeaderBag extends Utils\Bag
     /**
      * Returns value of an HTTP header.
      *
-     * @param string $name - the header name.
-     * @param mixed $default - the default header value.
-     * @param boolean $compositeKey - determines whether the key is compound key.
-     * @param string $delimiter - the key delimiter in composite keys.
+     * @param string $name The header name.
+     * @param mixed $default The default header value.
+     * @param bool $compositeKey Determines whether the key is compound key.
+     * @param string $delimiter The key delimiter in composite keys.
      * @return mixed
-     * @access public
      */
-    public function get($name, $default = null, $compositeKey = false, $delimiter = null)
+    public function get($name, $default = null, bool $compositeKey = false, string $delimiter = '')
     {
         return parent::get(static::normalizeHeaderName($name), $default, $compositeKey, $delimiter);
     }
@@ -647,15 +587,14 @@ class HeaderBag extends Utils\Bag
     /**
      * Sets an HTTP header.
      *
-     * @param string $name - the header name.
-     * @param mixed $value - new header value.
-     * @param boolean $merge - determines whether the old element value should be merged with new one.
-     * @param boolean $compositeKey - determines whether the key is compound key.
-     * @param string $delimiter - the key delimiter in composite keys.
+     * @param string $name The header name.
+     * @param mixed $value The new header value.
+     * @param bool $merge Determines whether the old element value should be merged with new one.
+     * @param bool $compositeKey Determines whether the key is compound key.
+     * @param string $delimiter The key delimiter in composite keys.
      * @return static
-     * @access public
      */
-    public function set($name, $value, $merge = false, $compositeKey = false, $delimiter = null)
+    public function set($name, $value, bool $merge = false, bool $compositeKey = false, string $delimiter = '')
     {
         $name = static::normalizeHeaderName($name);
         return parent::set($name, static::parseHeaderValue($name, $value), $merge, $compositeKey, $delimiter);
@@ -664,14 +603,13 @@ class HeaderBag extends Utils\Bag
     /**
      * Removes an HTTP header by its name.
      *
-     * @param string $name - the header name.
-     * @param boolean $compositeKey - determines whether the key is compound key.
-     * @param string $delimiter - the key delimiter in composite keys.
-     * @param boolean $removeEmptyParent - determines whether the parent element should be removed if it no longer contains elements after removing the given one.
+     * @param string $name The header name.
+     * @param bool $compositeKey Determines whether the key is compound key.
+     * @param string $delimiter The key delimiter in composite keys.
+     * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains elements after removing the given one.
      * @return static
-     * @access public
      */
-    public function remove($name, $compositeKey = false, $delimiter = null, $removeEmptyParent = false)
+    public function remove($name, bool $compositeKey = false, string $delimiter = '', bool $removeEmptyParent = false)
     {
         return parent::remove(static::normalizeHeaderName($name), $compositeKey, $delimiter, $removeEmptyParent);
     }
@@ -680,21 +618,19 @@ class HeaderBag extends Utils\Bag
      * Returns all computed HTTP headers.
      *
      * @return array
-     * @access public
      */
-    public function getComputedHeaders()
+    public function getComputedHeaders() : array
     {
-        return static::computeHeaders($this->arr);
+        return static::computeHeaders($this->items);
     }
   
     /**
      * Returns the content type and/or response charset.
      *
-     * @param boolean $withCharset - if TRUE the method returns an array of the following structure ['type' => ..., 'charset' => ...], otherwise only content type will be returned.
+     * @param bool $withCharset If TRUE the method returns an array of the following structure ['type' => ..., 'charset' => ...], otherwise only content type will be returned.
      * @return array|string
-     * @access public
      */
-    public function getContentType($withCharset = false)
+    public function getContentType(bool $withCharset = false)
     {
         $type = $this['Content-Type'] ?: ['type' => '', 'charset' => ''];
         return $withCharset ? $type : $type['type'];
@@ -703,15 +639,14 @@ class HeaderBag extends Utils\Bag
     /**
      * Sets content type header. You can use content type alias instead of some HTTP headers (that are determined by $contentTypeMap property).
      *
-     * @param string $type - content type or its alias.
-     * @param string $charset - the content charset.
+     * @param string $type The content type or its alias.
+     * @param string $charset The content charset.
      * @return static
-     * @access public
      */
-    public function setContentType($type, $charset = null)
+    public function setContentType(string $type, string $charset = '')
     {
         $type = isset(static::$contentTypeMap[$type]) ? static::$contentTypeMap[$type] : $type;
-        $this['Content-Type'] = ['type' => $type, 'charset' => $charset === null ? $this->getCharset() : (string)$charset];
+        $this['Content-Type'] = ['type' => $type, 'charset' => $charset === '' ? $this->getCharset() : $charset];
         return $this;
     }
   
@@ -720,9 +655,8 @@ class HeaderBag extends Utils\Bag
      * If the Content-Type header with charset is not set the method returns NULL.
      *
      * @return string
-     * @access public
      */
-    public function getCharset()
+    public function getCharset() : string
     {
         return $this->getContentType(true)['charset'];
     }
@@ -730,11 +664,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Sets the response charset.
      *
-     * @param string $charset - the response charset.
+     * @param string $charset The response charset.
      * @return static
-     * @access public
      */
-    public function setCharset($charset = 'UTF-8')
+    public function setCharset(string $charset = 'UTF-8')
     {
         return $this->setContentType($this->getContentType() ?: 'text/html', $charset);
     }
@@ -744,9 +677,8 @@ class HeaderBag extends Utils\Bag
      * If header "Accept" is not set the methods returns empty array.
      *
      * @return array
-     * @access public
      */
-    public function getAcceptableContentTypes()
+    public function getAcceptableContentTypes() : array
     {
         return $this['Accept'] ?: [];
     }
@@ -754,9 +686,8 @@ class HeaderBag extends Utils\Bag
     /**
      * Sets the content types acceptable by the client browser.
      *
-     * @param string|array $types - the aceptable content types.
+     * @param string|array $types The aceptable content types.
      * @return static
-     * @access public
      */
     public function setAcceptableContentTypes($types)
     {
@@ -767,11 +698,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Checks whether the given cache control directive is set.
      *
-     * @param string $directive - the directive name.
-     * @return boolean
-     * @access public
+     * @param string $directive The directive name.
+     * @return bool
      */
-    public function hasCacheControlDirective($directive)
+    public function hasCacheControlDirective(string $directive)
     {
         return $this->has('Cache-Control.' . $directive);
     }
@@ -780,11 +710,10 @@ class HeaderBag extends Utils\Bag
      * Returns the value of the given cache control directive.
      * If the directive is not set the method returns NULL.
      *
-     * @param string $directive - the directive name.
+     * @param string $directive The directive name.
      * @return mixed
-     * @access public
      */
-    public function getCacheControlDirective($directive)
+    public function getCacheControlDirective(string $directive)
     {
         return $this->get('Cache-Control.' . $directive);
     }
@@ -792,12 +721,11 @@ class HeaderBag extends Utils\Bag
     /**
      * Sets the value of the given cache control directive.
      *
-     * @param string $directive - the directive name.
-     * @param mixed $value - the directive value.
+     * @param string $directive The directive name.
+     * @param mixed $value The directive value.
      * @return static
-     * @access public
      */
-    public function setCacheControlDirective($directive, $value = '')
+    public function setCacheControlDirective(string $directive, $value = '')
     {
         return $this->set('Cache-Control.' . $directive, $value);
     }
@@ -805,11 +733,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Removes the given cache control directive.
      *
-     * @param string $directive - the directive name.
+     * @param string $directive The directive name.
      * @return static
-     * @access public
      */
-    public function removeCacheControlDirective($directive)
+    public function removeCacheControlDirective(string $directive)
     {
         return $this->remove('Cache-Control.' . $directive);
     }
@@ -818,9 +745,8 @@ class HeaderBag extends Utils\Bag
      * Returns cookies.
      *
      * @return array
-     * @access public
      */
-    public function getCookies()
+    public function getCookies() : array
     {
         return $this->cookies;
     }
@@ -828,29 +754,27 @@ class HeaderBag extends Utils\Bag
     /**
      * Returns cookie information.
      *
-     * @param string $name - the cookie name.
+     * @param string $name The cookie name.
      * @return array|null
-     * @access public
      */
-    public function getCookie($name)
+    public function getCookie(string $name)
     {
-        return isset($this->cookies[$name]) ? $this->cookies[$name] : null;
+        return $this->cookies[$name] ?? null;
     }
     
     /**
      * Sets a cookie.
      *
-     * @param string $name - the name of the cookie.
-     * @param array|string - the value of the cookie. It can be an array of all cookie parameters: value, expire, path and so on.
-     * @param integer $expire - the time (Unix timestamp) the cookie expires.
-     * @param string $path - the path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
-     * @param string $domain - the domain that the cookie is available to.
-     * @param boolean $secure - indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
-     * @param boolean $httpOnly - when TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
+     * @param string $name The name of the cookie.
+     * @param array|string $value The value of the cookie. It can be an array of all cookie parameters: value, expire, path and so on.
+     * @param int $expire The time (Unix timestamp) the cookie expires.
+     * @param string $path The path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
+     * @param string $domain The domain that the cookie is available to.
+     * @param bool $secure Indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
+     * @param bool $httpOnly When it is TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
      * @return static
-     * @access public
      */
-    public function setCookie($name, $value = null, $expire = 0, $path = null, $domain = null, $secure = false, $httpOnly = false)
+    public function setCookie(string $name, $value = '', int $expire = 0, string $path = '', string $domain = '', bool $secure = false, bool $httpOnly = false)
     {
         if (!is_array($value))
         {
@@ -870,11 +794,10 @@ class HeaderBag extends Utils\Bag
     /**
      * Clears a cookie in the browser.
      *
-     * @param string $name - the cookie name.
+     * @param string $name The cookie name.
      * @return static
-     * @access public
      */
-    public function removeCookie($name)
+    public function removeCookie(string $name)
     {
         unset($this->cookies[$name]);
         return $this;
@@ -883,26 +806,24 @@ class HeaderBag extends Utils\Bag
     /**
      * Clears a cookie in the browser.
      *
-     * @param string $name - the cookie name.
-     * @param string $path - the path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
-     * @param string $domain - the domain that the cookie is available to.
-     * @param boolean $secure - indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
-     * @param boolean $httpOnly - when TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
+     * @param string $name The cookie name.
+     * @param string $path The path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
+     * @param string $domain The domain that the cookie is available to.
+     * @param bool $secure Indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
+     * @param bool $httpOnly When it is TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
      * @return static
-     * @access public
      */
-    public function clearCookie($name, $path = '/', $domain = null, $secure = false, $httpOnly = true)
+    public function clearCookie(string $name, string $path = '/', string $domain = '', bool $secure = false, bool $httpOnly = true)
     {
-        return $this->setCookie($name, null, 1, $path, $domain, $secure, $httpOnly);
+        return $this->setCookie($name, '', 1, $path, $domain, $secure, $httpOnly);
     }
     
     /**
      * Returns computed cookie values.
      *
      * @return array
-     * @access public
      */
-    public function getComputedCookies()
+    public function getComputedCookies() : array
     {
         $tmp = [];
         foreach ($this->cookies as $name => $data)
@@ -915,7 +836,7 @@ class HeaderBag extends Utils\Bag
             else
             {
                 $cookie .= urlencode($data['value']);
-                if ((int)$data['expire'] !== 0)
+                if ($data['expire'] !== 0)
                 {
                     $cookie .= '; expires=' . gmdate('D, d-M-Y H:i:s T', $data['expire']);
                 }
@@ -945,9 +866,8 @@ class HeaderBag extends Utils\Bag
      * Returns the headers as a string.
      *
      * @return string
-     * @access public
      */
-    public function __toString()
+    public function __toString() : string
     {
         $headers = '';
         try
@@ -961,9 +881,9 @@ class HeaderBag extends Utils\Bag
                 $headers .= 'Set-Cookie: ' . $cookie . "\r\n";
             }
         }
-        catch (\Exception $e)
+        catch (\Throwable $e)
         {
-            \Aleph::exception($e);
+            Aleph::exception($e);
         }
         return $headers;
     }

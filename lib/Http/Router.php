@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,11 +16,11 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
  
-namespace Aleph\Net;
+namespace Aleph\Http;
 
 use Aleph\Core;
 
@@ -28,48 +28,51 @@ use Aleph\Core;
  * With this class you can route the requested URLs.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.1
- * @package aleph.core
+ * @version 1.1.3
+ * @package aleph.http
  */
 class Router
 {
     /**
      * Error message templates.
      */
-    const ERR_ROUTER_1 = 'No action is defined. You should first call bind() method.';
+    const ERR_ROUTER_1 = 'No action is defined. You should first call one of the methods that specified any action (bind(), get(), post() etc.).';
     
     /**
      * This property is used as the cache of parsed URL templates.
      *
-     * @var array $rex
-     * @access private
+     * @var array
      */
     private static $rex = [];
 
     /**
      * Array of actions for the routing.
      * 
-     * @var array $actions
-     * @access private
+     * @var array
      */
     private $actions = [];
   
     /**
      * Stores the link on the last invoked method.
      *
-     * @var array $lastAction
-     * @access private
+     * @var array
      */
-    private $lastAction = null;
+    private $lastAction = [];
+    
+    /**
+     * The group options stack.
+     *
+     * @var array
+     */
+    private $groupOptions = [];
   
     /**
      * Sets URL component for the current URL template.
      *
-     * @param integer $component
+     * @param int $component
      * @return static
-     * @access public
      */
-    public function component($component)
+    public function component(int $component)
     {
         return $this->option('component', $component);
     }
@@ -80,11 +83,10 @@ class Router
      *
      * @param array $where
      * @return static
-     * @access public   
      */
     public function where(array $where)
     {
-        return $this->option('validation', $where);
+        return $this->option('validate', $where);
     }
   
     /**
@@ -92,7 +94,6 @@ class Router
      *
      * @param array $args
      * @return static
-     * @access public
      */
     public function args(array $args)
     {
@@ -102,9 +103,8 @@ class Router
     /**
      * If this parameter is set then all URL template variables (as associated array) are passed to extra parameter.
      *
-     * @param string $parameter - name of action parameter determining as extra parameter.
+     * @param string $parameter The name of action parameter determining as extra parameter.
      * @return static
-     * @access public
      */
     public function extra($parameter = 'extra')
     {
@@ -114,43 +114,40 @@ class Router
     /**
      * Determines whether the request should have the secure HTTPS protocol.
      *
-     * @param boolean $flag - if equals TRUE, the request is supposed to be secure.
+     * @param bool $flag If equals TRUE, the request is supposed to be secure.
      * @return static
-     * @access public
      */
-    public function secure($flag = true)
+    public function secure(bool $flag = true)
     {
-        return $this->option('secure', (bool)$flag);
+        return $this->option('secure', $flag);
     }
     
     /**
      * Determines whether to synchronize the URL template variables and parameters of the action.
      *
-     * @param boolean $flag
+     * @param bool $flag
      * @return static
-     * @access public
      */
-    public function associateWithParameters($flag = true)
+    public function sync(bool $flag = true)
     {
-        return $this->option('associate', (bool)$flag);
+        return $this->option('sync', $flag);
     }
   
     /**
      * Removes the defined action for the given HTTP methods.
      *
-     * @param string $regex - a regex corresponding to the specified URL.
-     * @param array|string $methods - the HTTP methods.
+     * @param string $regex A regex corresponding to the specified URL.
+     * @param array|string $methods The HTTP methods.
      * @return static
-     * @access public
      */
-    public function remove($regex, $methods = '@')
+    public function remove(string $regex, $methods = '@')
     {
         $methods = $this->normalizeMethods($methods);
         foreach ($methods as $method)
         {
             unset($this->actions[$method][$regex]);
         }
-        $this->lastAction = null;
+        $this->lastAction = [];
         return $this;
     }
   
@@ -158,34 +155,54 @@ class Router
      * Removes all routes. 
      *
      * @return static
-     * @access public
      */
     public function clean()
     {
         $this->actions = [];
-        $this->lastAction = null;
+        $this->lastAction = [];
         return $this;
     }
   
     /**
-     * Binds some action (delegate) with the given URL template (regex).
+     * Binds some action (user-defined callback) with the given URL template (regex).
      *
-     * @param array|string $methods - HTTP methods for which the given action is permitted.
-     * @param string $regex - regex URL template.
-     * @param mixed $action - a delegate.
+     * @param array|string $methods HTTP methods for which the given action is permitted.
+     * @param string $regex The regex URL template.
+     * @param mixed $action A user-defined callback.
      * @return static
-     * @access public
      */
-    public function bind($methods, $regex, $action)
+    public function bind($methods, string $regex, $action)
     {
         $methods = $this->normalizeMethods($methods);
         $data = [
             'action' => $action,
             'component' => URL::PATH,
-            'validation' => [],
+            'validate' => [],
             'args' => [],
-            'associate' => false
+            'sync' => false
         ];
+        $options = end($this->groupOptions);
+        if ($options)
+        {
+            foreach($options as $option => $value)
+            {
+                if ($option == 'prefix')
+                {
+                    $regex = $value . '/' . ltrim($regex, '/');
+                }
+                else if ($option == 'namespace')
+                {
+                    if (is_string($action) && $action !=== '' && $action[0] != '\\')
+                    {
+                        $action = $value . '\\' . $action;
+                    }
+                }
+                else
+                {
+                    $data[$option] = $value;
+                }
+            }            
+        }
         foreach ($methods as $method)
         {
             $this->actions[$method][$regex] = $data;
@@ -193,23 +210,125 @@ class Router
         $this->lastAction = [$regex, $methods];
         return $this;
     }
+    
+    /**
+     * Binds some action with the given URL template for GET request.
+     *
+     * @param string $regex The regex URL template.
+     * @param mixed $action A user-defined callback.
+     * @return static
+     */
+    public function get(string $regex, $action)
+    {
+        return $this->bind('GET', $regex, $action);
+    }
+    
+    /**
+     * Binds some action with the given URL template for POST request.
+     *
+     * @param string $regex The regex URL template.
+     * @param mixed $action A user-defined callback.
+     * @return static
+     */
+    public function post(string $regex, $action)
+    {
+        return $this->bind('POST', $regex, $action);
+    }
+    
+    /**
+     * Binds some action with the given URL template for PUT request.
+     *
+     * @param string $regex The regex URL template.
+     * @param mixed $action A user-defined callback.
+     * @return static
+     */
+    public function put(string $regex, $action)
+    {
+        return $this->bind('PUT', $regex, $action);
+    }
+    
+    /**
+     * Binds some action with the given URL template for PATCH request.
+     *
+     * @param string $regex The regex URL template.
+     * @param mixed $action A user-defined callback.
+     * @return static
+     */
+    public function patch(string $regex, $action)
+    {
+        return $this->bind('PATCH', $regex, $action);
+    }
+    
+    /**
+     * Binds some action with the given URL template for DELETE request.
+     *
+     * @param string $regex The regex URL template.
+     * @param mixed $action A user-defined callback.
+     * @return static
+     */
+    public function delete(string $regex, $action)
+    {
+        return $this->bind('DELETE', $regex, $action);
+    }
+    
+    /**
+     * Binds some action with the given URL template for OPTIONS request.
+     *
+     * @param string $regex The regex URL template.
+     * @param mixed $action A user-defined callback.
+     * @return static
+     */
+    public function options(string $regex, $action)
+    {
+        return $this->bind('OPTIONS', $regex, $action);
+    }
+    
+    /**
+     * Defines the set of options that will be applied to bunch of routes.
+     * Those routes are supposed to be specified during execution of a callback.
+     *
+     * @param array $options An array of options. The valid values: prefix, namespace, component, where, args, extra, sync and secure.
+     * @param mixed $callback A user-defined callback.
+     * @return static
+     */
+    public function group(array $options, $callback)
+    {
+        if ($this->groupOptions)
+        {
+            $old = end($this->groupOptions);
+            if (isset($options['namespace']))
+            {
+                $namespace = trim($options['namespace'], '\\');
+                $options['namespace'] = isset($old['namespace']) ? $old['namespace'] . '\\' . $namespace : $namespace;
+            }
+            if (isset($options['prefix']))
+            {
+                $prefix = trim($options['prefix'], '/');
+                $options['prefix'] = isset($old['prefix']) ? $old['prefix'] . '/' . $prefix : $prefix;
+            }
+            $options = array_merge($old, $options);
+        }
+        $this->groupOptions[] = $options;
+        (new Core\Callback($callback))->call([], $this);
+        array_pop($this->groupOptions);
+        return $this;
+    }
   
     /**
      * Performs all actions matching all URL templates.
      * The method returns array of the following structure:
      * [
-     *  'result' => ...eaction execution's result..., 
+     *  'result' => ...an action execution's result..., 
      *  'status' => ...HTTP status code...,
      *  'methods' => [...HTTP methods that match request...]
      * ]
      *
-     * @param Aleph\Net\Request $request - the current request instance.
+     * @param \Aleph\Http\Request $request - the current request instance.
      * @return array
-     * @access public
      */
-    public function route(Request $request = null)
+    public function route(Request $request = null) : array
     {
-        $this->lastAction = null;
+        $this->lastAction = [];
         $request = $request ?: Request::createFromGlobals();
         $method = $request->getMethod();
         $url = $request->url;
@@ -238,7 +357,7 @@ class Router
                     return $res;
                 }
                 $flag = true;
-                foreach ($data['validation'] as $param => $rgx)
+                foreach ($data['validate'] as $param => $rgx)
                 {
                     if (isset($matches[$param]) && !preg_match($rgx, $matches[$param]))
                     {
@@ -264,7 +383,7 @@ class Router
                         }
                     }
                 }
-                $action = new Core\Delegate($data['action']);
+                $action = new Core\Callback($data['action']);
                 foreach ($data['params'] as &$param)
                 {
                     $param = isset($matches[$param]) ? $matches[$param] : null;
@@ -277,7 +396,7 @@ class Router
                 {
                     $data['args'] = array_merge($data['args'], $data['params']);
                 }
-                if (empty($data['associate']))
+                if (empty($data['sync']))
                 {
                     $params = $data['args'];
                 }
@@ -329,11 +448,10 @@ class Router
     /**
      * Returns array of HTTP methods in canonical form (in uppercase and without spaces).
      *
-     * @param string|array - HTTP methods.
+     * @param string|array HTTP methods.
      * @return array
-     * @access protected
      */
-    protected function normalizeMethods($methods)
+    protected function normalizeMethods($methods) : array
     {
         if ($methods == '*')
         {
@@ -354,11 +472,10 @@ class Router
     /**
      * Parses URL templates for the routing and returns an array of the template variables.
      *
-     * @param string $regex - the given URL template to be parsed.
+     * @param string $regex The given URL template to be parsed.
      * @return array
-     * @access private   
      */
-    private function parseURLTemplate(&$regex)
+    private function parseURLTemplate(string &$regex) : array
     {
         if (isset(self::$rex[$regex]))
         {
@@ -401,12 +518,11 @@ class Router
      * @param string $option
      * @param mixed $value
      * @return static
-     * @throws BadMethodCallException
-     * @access private
+     * @throws \BadMethodCallException If no action is specified.
      */
-    private function option($option, $value)
+    private function option(string $option, $value)
     {
-        if ($this->lastAction === null)
+        if (!$this->lastAction)
         {
             throw new \BadMethodCallException(static::ERR_ROUTER_1);
         }

@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,14 +16,16 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
  
-namespace Aleph\Net;
+namespace Aleph\Http;
 
-use Aleph\Utils,
-    Aleph\Data\Converters;
+use Aleph,
+    Aleph\Data,
+    Aleph\Data\Converters,
+    Aleph\Utils;
     
 
 /**
@@ -31,8 +33,8 @@ use Aleph\Utils,
  * This class is clone of Symfony Response class. See https://github.com/symfony/HttpFoundation/blob/master/Response.php
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
- * @package aleph.net
+ * @version 1.1.1
+ * @package aleph.http
  */
 class Response
 {
@@ -47,25 +49,21 @@ class Response
     /**
      * The instance of this class.
      * 
-     * @var Aleph\Net\Response $instance
-     * @access private
+     * @var \Aleph\Http\Response
      */           
     private static $instance = null;
   
     /**
      * Determines whether the response was sent.
      *
-     * @var boolean $isSent
-     * @access private
+     * @var bool
      */
     private $isSent = false;
 
     /**
      * The HTTP status codes.
      *
-     * @var array $codes
-     * @access protected
-     * @static
+     * @var array
      */
     protected static $codes = [
         100 => 'Continue',
@@ -143,40 +141,35 @@ class Response
     /**
      * The HTTP headers of the request.
      *
-     * @var Aleph\Net\HeaderBag $headers
-     * @access public
+     * @var \Aleph\Http\HeaderBag
      */
     public $headers = null;
   
     /**
      * Version of the HTTP protocol.
      *
-     * @var string $version
-     * @access protected
+     * @var string
      */
     protected $version = '1.1';
   
     /**
      * Status code of the HTTP response.
      *
-     * @var integer $statusCode
-     * @access protected
+     * @var int
      */
-    protected $statusCode = null;
+    protected $statusCode = 200;
     
     /**
      * Status text of the HTTP response.
      *
-     * @var string $statusText
-     * @access protected
+     * @var string
      */
-    protected $statusText = null;
+    protected $statusText = '';
   
     /**
      * The HTTP response raw body.
      *
-     * @var mixed $body
-     * @access protected
+     * @var mixed
      */
     protected $body = null;
     
@@ -184,13 +177,11 @@ class Response
      * Returns an HTTP status message by its code. 
      * If such message doesn't exist the method returns $default.
      * 
-     * @param integer $status - the HTTP status code.
-     * @param mixed $default - the default value of the HTTP status text.
+     * @param int $status The HTTP status code.
+     * @param mixed $default The default value of the HTTP status text.
      * @return mixed
-     * @access public
-     * @static
      */
-    public static function getStatusText($status, $default = null)
+    public static function getStatusText(int $status, $default = null)
     {
         return isset(static::$codes[$status]) ? static::$codes[$status] : $default;
     }
@@ -199,8 +190,6 @@ class Response
      * Creates a new response with values from PHP's super globals.
      *
      * @return static
-     * @access public
-     * @static
      */
     public static function createFromGlobals()
     {
@@ -210,13 +199,13 @@ class Response
     /**
      * Constructor.
      *
-     * @param mixed $body - the response raw body.
-     * @param integer $status - the response status code.
-     * @param array $headers - an array of the response headers.
+     * @param mixed $body The response raw body.
+     * @param int $status The response status code.
+     * @param array $headers An array of the response headers.
+     * @return void
      * @throws \InvalidArgumentException When the HTTP status code is not valid
-     * @access public
      */
-    public function __construct($body = '', $status = 200, $headers = [])
+    public function __construct($body = '', int $status = 200, $headers = [])
     {
         $this->headers = new HeaderBag($headers);
         $this->setStatusCode($status);
@@ -226,7 +215,7 @@ class Response
     /**
      * Clones the current response instance.
      *
-     * @access public
+     * @return void
      */
     public function __clone()
     {
@@ -237,9 +226,8 @@ class Response
      * Returns the response as an HTTP string.
      *
      * @return string
-     * @access public
      */
-    public function __toString()
+    public function __toString() : string
     {
         $this->prepareHeaders();
         return 'HTTP/' . $this->version . ' ' . $this->statusCode . ' ' . $this->statusText . "\r\n" . $this->headers . "\r\n" . $this->body;
@@ -251,8 +239,7 @@ class Response
      *
      * @param mixed $body
      * @return static
-     * @throws UnexpectedValueException
-     * @access public
+     * @throws \UnexpectedValueException
      */
     public function setRawBody($body)
     {
@@ -270,8 +257,7 @@ class Response
      *
      * @param mixed $body
      * @return static
-     * @throws UnexpectedValueException
-     * @access public
+     * @throws \UnexpectedValueException
      */
     public function setBody($body)
     {
@@ -298,7 +284,6 @@ class Response
      * Returns the response raw body.
      *
      * @return mixed
-     * @access public
      */
     public function getBody()
     {
@@ -308,16 +293,15 @@ class Response
     /**
      * Sets the HTTP protocol version (1.0 or 1.1).
      *
-     * @param string $version - the HTTP protocol version.
+     * @param string $version The HTTP protocol version.
      * @return static
-     * @throws InvalidArgumentException
-     * @access public
+     * @throws \UnexpectedValueException
      */
-    public function setVersion($version)
+    public function setVersion(string $version)
     {
         if ($version != '1.0' && $version != '1.1')
         {
-            throw new \InvalidArgumentException(static::ERR_RESPONSE_1);
+            throw new \UnexpectedValueException(static::ERR_RESPONSE_1);
         }
         $this->version = $version;
         return $this;
@@ -326,10 +310,9 @@ class Response
     /**
      * Returns the HTTP protocol version.
      *
-     * @return string - the HTTP protocol version.
-     * @access public
+     * @return string The HTTP protocol version.
      */
-    public function getVersion()
+    public function getVersion() : string
     {
         return $this->version;
     }
@@ -339,27 +322,21 @@ class Response
      * If the status text is null it will be automatically populated for the known
      * status codes and left empty otherwise.
      *
-     * @param integer $code - the HTTP status code.
-     * @param mixed $text - the HTTP status text.
+     * @param int $code The HTTP status code.
+     * @param string|null $text The HTTP status text.
      * @return static
-     * @throws InvalidArgumentException
-     * @access public
+     * @throws \UnexpectedValueException
      */
-    public function setStatusCode($code, $text = null)
+    public function setStatusCode(int $code, string $text = null)
     {
-        $this->statusCode = $code = (int)$code;
+        $this->statusCode = $code;
         if ($this->isInvalid())
         {
-            throw new \InvalidArgumentException(sprintf(static::ERR_RESPONSE_2, $code));
+            throw new \UnexpectedValueException(sprintf(static::ERR_RESPONSE_2, $code));
         }
         if ($text === null)
         {
             $this->statusText = static::getStatusText($code, '');
-            return $this;
-        }
-        if ($text === false)
-        {
-            $this->statusText = null;
             return $this;
         }
         $this->statusText = $text;
@@ -369,10 +346,9 @@ class Response
     /**
      * Returns the status code for the current response.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getStatusCode()
+    public function getStatusCode() : int
     {
         return $this->statusCode;
     }
@@ -380,11 +356,10 @@ class Response
     /**
      * Sets the response charset.
      *
-     * @param string $charset - the response charset.
+     * @param string $charset The response charset.
      * @return static
-     * @access public
      */
-    public function setCharset($charset = 'UTF-8')
+    public function setCharset(string $charset = 'UTF-8')
     {
         $this->headers->setCharset($charset);
         return $this;
@@ -395,9 +370,8 @@ class Response
      * If the Content-Type header with charset is not set the method returns NULL.
      *
      * @return string
-     * @access public
      */
-    public function getCharset()
+    public function getCharset() : string
     {
         return $this->headers->getCharset();
     }
@@ -405,12 +379,11 @@ class Response
     /**
      * Sets content type header. You can use content type alias instead of some HTTP headers.
      *
-     * @param string $type - the content type or its alias.
-     * @param string $charset - the content charset.
+     * @param string $type The content type or its alias.
+     * @param string $charset The content charset.
      * @return static
-     * @access public
      */
-    public function setContentType($type, $charset = null)
+    public function setContentType(string $type, string $charset = '')
     {
         $this->headers->setContentType($type, $charset);
         return $this;
@@ -419,11 +392,10 @@ class Response
     /**
      * Returns the content type and/or response charset.
      *
-     * @param boolean $withCharset - if TRUE the method returns an array of the following structure ['type' => ..., 'charset' => ...], otherwise only content type will be returned.
+     * @param bool $withCharset If it is TRUE the method returns an array of the following structure ['type' => ..., 'charset' => ...], otherwise only content type will be returned.
      * @return string|array
-     * @access public
      */
-    public function getContentType($withCharset = false)
+    public function getContentType(bool $withCharset = false)
     {
         return $this->headers->getContentType($withCharset);
     }
@@ -431,9 +403,8 @@ class Response
     /**
      * Sets the "Date" header value.
      *
-     * @param string|DateTimeInterface $date - the "Date" header value.
+     * @param string|\DateTimeInterface $date The "Date" header value.
      * @return static
-     * @access public
      */
     public function setDate($date = 'now')
     {
@@ -445,10 +416,9 @@ class Response
      * Returns the "Date" header of the response as a Aleph\Utils\DT instance.
      * If the "Date" header is not set or not parseable the method returns a Aleph\Utils\DT object that represents the current time.
      *
-     * @return Aleph\Utils\DT
-     * @access public
+     * @return \Aleph\Utils\DT
      */
-    public function getDate()
+    public function getDate() : Utils\DT
     {
         if (!isset($this->headers['Date']))
         {
@@ -461,9 +431,8 @@ class Response
      * Sets the "Expires" header value.
      * Passing null as value will remove the header.
      *
-     * @param string|DateTimeInterface $date - the "Expires" header value.
+     * @param string|\DateTimeInterface $date The "Expires" header value.
      * @return static
-     * @access public
      */
     public function setExpires($date = null)
     {
@@ -481,10 +450,9 @@ class Response
     /**
      * Returns the value of the "Expires" header as a Aleph\Utils\DT instance.
      *
-     * @return Aleph\Utils\DT
-     * @access public
+     * @return \Aleph\Utils\DT
      */
-    public function getExpires()
+    public function getExpires() : Utils\DT
     {
         if ($date = $this->headers['Expires'])
         {
@@ -496,9 +464,9 @@ class Response
     /**
      * Returns the response's time-to-live in seconds.
      *
-     * @return integer
+     * @return int
      */
-    public function getTTL()
+    public function getTTL() : int
     {
         return $this->getMaxAge() - $this->getAge();
     }
@@ -507,11 +475,10 @@ class Response
      * Sets the response's time-to-live for shared caches.
      * This method adjusts the Cache-Control s-maxage directive.
      *
-     * @param integer $value - the number of seconds.
+     * @param int $value The number of seconds.
      * @return static
-     * @access public
      */
-    public function setTTL($value)
+    public function setTTL(int $value)
     {
         $this->setSharedMaxAge($this->getAge() + $value);
         return $this;
@@ -521,11 +488,10 @@ class Response
      * Sets the response's time-to-live for private client caches.
      * This method adjusts the Cache-Control max-age directive.
      *
-     * @param integer $value - the number of seconds.
+     * @param int $value The number of seconds.
      * @return static
-     * @access public
      */
-    public function setClientTTL($value)
+    public function setClientTTL(int $value)
     {
         $this->setMaxAge($this->getAge() + $value);
     }
@@ -534,10 +500,9 @@ class Response
      * Returns the number of seconds after the time specified in the response's Date
      * header when the response should no longer be considered fresh.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getMaxAge()
+    public function getMaxAge() : int
     {
         if ($this->headers->hasCacheControlDirective('s-maxage'))
         {
@@ -554,11 +519,10 @@ class Response
      * Sets the number of seconds after which the response should no longer be considered fresh.
      * This methods sets the Cache-Control max-age directive.
      *
-     * @param integer $value - the number of seconds.
+     * @param int $value The number of seconds.
      * @return static
-     * @access public
      */
-    public function setMaxAge($value)
+    public function setMaxAge(int $value)
     {
         $this->headers->setCacheControlDirective('max-age', (int)$value);
         return $this;
@@ -567,10 +531,9 @@ class Response
     /**
      * Returns amount of time (in seconds) since the response (or its revalidation) was generated at the origin server.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getAge()
+    public function getAge() : int
     {
         if (null !== $age = $this->headers['Age'])
         {
@@ -583,11 +546,10 @@ class Response
      * Sets the number of seconds after which the response should no longer be considered fresh by shared caches.
      * This methods sets the Cache-Control s-maxage directive.
      *
-     * @param integer $value - the number of seconds.
+     * @param int $value The number of seconds.
      * @return static
-     * @access public
      */
-    public function setSharedMaxAge($value)
+    public function setSharedMaxAge(int $value)
     {
         $this->markAsPublic();
         $this->headers->setCacheControlDirective('s-maxage', (int)$value);
@@ -596,9 +558,9 @@ class Response
     
     /**
      * Returns the Last-Modified HTTP header as a Aleph\Utils\DT instance.
-     * The method returns FALSE if the header does not exist.
+     * The method returns NULL if the header does not exist.
      *
-     * @return Aleph\Utils\DT|null
+     * @return \Aleph\Utils\DT|null
      */
     public function getLastModified()
     {
@@ -609,9 +571,8 @@ class Response
      * Sets the Last-Modified HTTP header with a DateTime instance.
      * Passing null as value will remove the header.
      *
-     * @param string|DateTimeInterface $date - a DateTimeInterface instance or null to remove the header.
+     * @param string|\DateTimeInterface $date A DateTimeInterface instance or NULL to remove the header.
      * @return static
-     * @access public
      */
     public function setLastModified($date = null)
     {
@@ -629,12 +590,11 @@ class Response
     /**
      * Sets the ETag value.
      *
-     * @param string $etag - the ETag unique identifier or null to remove the header.
-     * @param boolean $weak - determines whether you want a weak ETag or not.
+     * @param string|null $etag The ETag unique identifier or NULL to remove the header.
+     * @param bool $weak Determines whether you want a weak ETag or not.
      * @return static
-     * @access public
      */
-    public function setETag($etag = null, $weak = false)
+    public function setETag($etag = null, bool $weak = false)
     {
         if ($etag == null)
         {
@@ -655,7 +615,6 @@ class Response
      * Returns the literal value of the ETag HTTP header.
      *
      * @return string|null
-     * @access public
      */
     public function getETag()
     {
@@ -665,11 +624,10 @@ class Response
     /**
      * Returns cookie information.
      *
-     * @param string $name - the cookie name.
+     * @param string $name The cookie name.
      * @return array
-     * @access public
      */
-    public function getCookie($name)
+    public function getCookie(string $name) : array
     {
         return $this->headers->getCookie($name);
     }
@@ -677,17 +635,16 @@ class Response
     /**
      * Sets a cookie.
      *
-     * @param string $name - the name of the cookie.
-     * @param array|string - the value of the cookie. It can be an array of all cookie parameters: value, expire, path and so on.
-     * @param integer $expire - the time (Unix timestamp) the cookie expires.
-     * @param string $path - the path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
-     * @param string $domain - the domain that the cookie is available to.
-     * @param boolean $secure - indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
-     * @param boolean $httpOnly - when TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
+     * @param string $name The name of the cookie.
+     * @param array|string The value of the cookie. It can be an array of all cookie parameters: value, expire, path and so on.
+     * @param int $expire The time (Unix timestamp) the cookie expires.
+     * @param string $path The path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
+     * @param string $domain The domain that the cookie is available to.
+     * @param bool $secure Indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
+     * @param bool $httpOnly When it is TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
      * @return static
-     * @access public
      */
-    public function setCookie($name, $value = null, $expire = 0, $path = null, $domain = null, $secure = false, $httpOnly = false)
+    public function setCookie(string $name, $value = null, int $expire = 0, string $path = '', string $domain = '', bool $secure = false, bool $httpOnly = false)
     {
         $this->headers->setCookie($name, $value, $expire, $path, $domain, $secure, $httpOnly);
         return $this;
@@ -696,11 +653,10 @@ class Response
     /**
      * Clears a cookie in the browser.
      *
-     * @param string $name - the cookie name.
+     * @param string $name The cookie name.
      * @return static
-     * @access public
      */
-    public function removeCookie($name)
+    public function removeCookie(string $name)
     {
         $this->headers->removeCookie($name);
         return $this;
@@ -709,15 +665,14 @@ class Response
     /**
      * Clears a cookie in the browser.
      *
-     * @param string $name - the cookie name.
-     * @param string $path - the path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
-     * @param string $domain - the domain that the cookie is available to.
-     * @param boolean $secure - indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
-     * @param boolean $httpOnly - when TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
+     * @param string $name The cookie name.
+     * @param string $path The path on the server in which the cookie will be available on. If set to '/', the cookie will be available within the entire domain.
+     * @param string $domain The domain that the cookie is available to.
+     * @param bool $secure Indicates that the cookie should only be transmitted over a secure HTTPS connection from the client. When set to TRUE, the cookie will only be set if a secure connection exists.
+     * @param bool $httpOnly When it is TRUE the cookie will be made accessible only through the HTTP protocol. This means that the cookie won't be accessible by scripting languages, such as JavaScript.
      * @return static
-     * @access public
      */
-    public function clearCookie($name, $path = '/', $domain = null, $secure = false, $httpOnly = true)
+    public function clearCookie(string $name, string $path = '/', string $domain = '', bool $secure = false, bool $httpOnly = true)
     {
         $this->headers->clearCookie($name, $path, $domain, $secure, $httpOnly);
         return $this;
@@ -728,7 +683,6 @@ class Response
      * It makes the response ineligible for serving other clients.
      *
      * @return static
-     * @access public
      */
     public function markAsPrivate()
     {
@@ -742,7 +696,6 @@ class Response
      * It makes the response eligible for serving other clients.
      *
      * @return static
-     * @access public
      */
     public function markAsPublic()
     {
@@ -756,7 +709,6 @@ class Response
      * This sets the status, removes the body, and discards any headers that MUST NOT be included in 304 responses.
      *
      * @return static
-     * @access public
      */
     public function markAsNotModified()
     {
@@ -776,10 +728,9 @@ class Response
      * When present, the TTL of the response should not be overridden to be
      * greater than the value provided by the origin.
      *
-     * @return boolean - TRUE if the response must be revalidated by a cache, FALSE otherwise.
-     * @access public
+     * @return bool It is TRUE if the response must be revalidated by a cache, FALSE otherwise.
      */
-    public function mustRevalidate()
+    public function mustRevalidate() : bool
     {
         return $this->headers->hasCacheControlDirective('must-revalidate') || $this->headers->hasCacheControlDirective('proxy-revalidate');
     }
@@ -788,7 +739,6 @@ class Response
      * Marks the response stale by setting the Age header to be equal to the maximum age of the response.
      *
      * @return static
-     * @access public
      */
     public function expire()
     {
@@ -803,13 +753,12 @@ class Response
      * Sets cache expire for a response.
      * If cache expire is FALSE or equals 0 then no cache will be set.
      * 
-     * @param integer|boolean $expires - new cache expire time in seconds.
+     * @param int $expires The new cache expire time in seconds.
      * @return static
-     * @access public
      */
-    public function cache($expires) 
+    public function cache(int $expires) 
     {
-        if ($expires === false || (int)$expires <= 0) 
+        if ($expires <= 0) 
         {
             $this->headers->merge([
                 'Expires' => 'Sun, 3 Jan 1982 21:30:00 GMT',
@@ -819,7 +768,6 @@ class Response
         }
         else
         {
-            $expires = (int)$expires;
             $this->headers['Expires'] = gmdate('D, d M Y H:i:s', $expires) . ' GMT';
             $this->headers['Cache-Control'] = 'max-age=' . ($expires - time());
         }
@@ -829,10 +777,9 @@ class Response
     /**
      * Returns TRUE if the response was sent and FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isSent()
+    public function isSent() : bool
     {
         return $this->isSent;
     }
@@ -842,10 +789,9 @@ class Response
      * Responses marked "private" with an explicit Cache-Control directive are considered uncacheable.
      * Responses with neither a freshness lifetime (Expires, max-age) nor cache validator (Last-Modified, ETag) are considered uncacheable.
      *
-     * @return boolean - TRUE if the response is worth caching, FALSE otherwise.
-     * @access public
+     * @return bool It is TRUE if the response is worth caching, FALSE otherwise.
      */
-    public function isCacheable()
+    public function isCacheable() : bool
     {
         if (!in_array($this->statusCode, [200, 203, 300, 301, 302, 404, 410]))
         {
@@ -860,14 +806,13 @@ class Response
     
     /**
      * Returns TRUE if the response is "fresh".
-     * Fresh responses may be served from cache without any interaction with the
-     * origin. A response is considered fresh when it includes a Cache-Control/max-age
+     * Fresh responses may be served from cache without any interaction with the origin.
+     * A response is considered fresh when it includes a Cache-Control/max-age
      * indicator or Expires header and the calculated age is less than the freshness lifetime.
      *
-     * @return boolean - TRUE if the response is fresh, FALSE otherwise.
-     * @access public
+     * @return bool It is TRUE if the response is fresh, FALSE otherwise.
      */
-    public function isFresh()
+    public function isFresh() : bool
     {
         return $this->getTTL() > 0;
     }
@@ -876,11 +821,10 @@ class Response
      * Determines if the response validators (ETag, Last-Modified) match a conditional value specified in the Request.
      * If the Response is not modified, it sets the status code to 304 and removes the actual content by calling the setNotModified() method.
      *
-     * @param Aleph\Net\Request $request - the current request instance.
-     * @return boolean - TRUE if the response validators match the request, FALSE otherwise.
-     * @access public
+     * @param \Aleph\Http\Request $request The current request instance.
+     * @return bool It is TRUE if the response validators match the request, FALSE otherwise.
      */
-    public function isNotModified(Request $request)
+    public function isNotModified(Request $request) : bool
     {
         if (!$request->isMethodSafe())
         {
@@ -908,10 +852,9 @@ class Response
      * Returns true if the response includes headers that can be used to validate
      * the response with the origin server using a conditional GET request.
      *
-     * @return boolean - TRUE if the response is validateable, FALSE otherwise.
-     * @access public
+     * @return bool It is TRUE if the response is validateable, FALSE otherwise.
      */
-    public function isValidateable()
+    public function isValidateable() : bool
     {
         return isset($this->headers['Last-Modified']) || isset($this->headers['ETag']);
     }
@@ -919,10 +862,9 @@ class Response
     /**
      * Returns TRUE if the response status code is invalid and FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isInvalid()
+    public function isInvalid() : bool
     {
         return $this->statusCode < 100 || $this->statusCode >= 600;
     }
@@ -930,10 +872,9 @@ class Response
     /**
      * Determines whether the response is informative.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isInformational()
+    public function isInformational() : bool
     {
         return $this->statusCode >= 100 && $this->statusCode < 200;
     }
@@ -941,10 +882,9 @@ class Response
     /**
      * Determines whether the response is successful.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isSuccessful()
+    public function isSuccessful() : bool
     {
         return $this->statusCode >= 200 && $this->statusCode < 300;
     }
@@ -952,10 +892,9 @@ class Response
     /**
      * Determines whether the response is a redirect.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isRedirection()
+    public function isRedirection() : bool
     {
         return $this->statusCode >= 300 && $this->statusCode < 400;
     }
@@ -963,10 +902,9 @@ class Response
     /**
      * Determines whether there is a client error.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isClientError()
+    public function isClientError() : bool
     {
         return $this->statusCode >= 400 && $this->statusCode < 500;
     }
@@ -974,10 +912,9 @@ class Response
     /**
      * Determines whther there is a server side error.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isServerError()
+    public function isServerError() : bool
     {
         return $this->statusCode >= 500 && $this->statusCode < 600;
     }
@@ -986,21 +923,19 @@ class Response
      * Determines whther the response is a redirect of some form.
      *
      * @param string $location
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isRedirect($location = null)
+    public function isRedirect(string $location = '') : bool
     {
-        return in_array($this->statusCode, [201, 301, 302, 303, 307, 308]) && ($location === null || $location == $this->headers['Location']);
+        return in_array($this->statusCode, [201, 301, 302, 303, 307, 308]) && ($location === '' || $location == $this->headers['Location']);
     }
 
     /**
      * Determines whether the response is empty.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isEmpty()
+    public function isEmpty() : bool
     {
         return in_array($this->statusCode, [204, 304]);
     }
@@ -1008,14 +943,13 @@ class Response
     /**
      * Performs an HTTP redirect. This method halts the script execution. 
      *
-     * @param string $url - redirect URL.
-     * @param integer $status - redirect HTTP status code.
-     * @param boolean $stop - determines whether to stop the script execution.
+     * @param string $url An URL to redirect.
+     * @param int $status The redirect HTTP status code.
+     * @param bool $stop Determines whether to stop the script execution.
      * @return static
-     * @throws InvalidArgumentException
-     * @access public
+     * @throws \InvalidArgumentException
      */
-    public function redirect($url, $status = 302, $stop = true)
+    public function redirect(string $url, int $status = 302, bool $stop = true)
     {
         if (empty($url))
         {
@@ -1034,15 +968,14 @@ class Response
     /**
      * Downloads the given file.
      *
-     * @param string $path - the full path to the downloading file.
-     * @param string $filename - the name of the downloading file.
-     * @param string $contentType - the mime type of the downloading file.
-     * @param boolean $deleteAfterDownload - determines whether the file should be deleted after download.
-     * @param boolean $stop - determines whether to stop the script execution.
+     * @param string $path The full path to the downloading file.
+     * @param string $filename The name of the downloading file.
+     * @param string $contentType The mime type of the downloading file.
+     * @param bool $deleteAfterDownload Determines whether the file should be deleted after download.
+     * @param bool $stop Determines whether to stop the script execution.
      * @return static
-     * @access public
      */
-    public function download($path, $filename = null, $contentType = null, $deleteAfterDownload = false, $stop = true)
+    public function download(string $path, string $filename = '', string $contentType = '', bool $deleteAfterDownload = false, bool $stop = true)
     {
         if (!$this->getContentType())
         {
@@ -1074,13 +1007,12 @@ class Response
     /**
      * Stops the script execution with some message and HTTP status code.
      *
-     * @param integer $status - the response status code.
-     * @param string $message - the response body.
-     * @param boolean $stop - determines whether to stop the script execution.
+     * @param int $status The response status code.
+     * @param mixed $message The response body.
+     * @param bool $stop Determines whether to stop the script execution.
      * @return static
-     * @access public
      */
-    public function stop($status = 500, $message = null, $stop = true)
+    public function stop(int $status = 500, $message = '', bool $stop = true)
     {
         $this->setBody($message);
         $this->setStatusCode($status, $this->statusText);
@@ -1090,11 +1022,10 @@ class Response
     /**
      * Sends HTTP headers and content.
      *
-     * @param boolean $stop - determines whether to stop the script execution.
+     * @param bool $stop Determines whether to stop the script execution.
      * @return static
-     * @access public
      */
-    public function send($stop = false)
+    public function send(bool $stop = false)
     {
         $this->sendHeaders();
         $this->sendBody();
@@ -1110,7 +1041,6 @@ class Response
      * Prepares the response headers before they are sent to the client.
      *
      * @return static
-     * @access protected
      */
     protected function prepareHeaders()
     {
@@ -1150,7 +1080,6 @@ class Response
      * Sends HTTP headers.
      *
      * @return static
-     * @access protected
      */
     protected function sendHeaders()
     {
@@ -1175,11 +1104,10 @@ class Response
      * Sends body for the current web response.
      *
      * @return static
-     * @access protected
      */
     protected function sendBody()
     {
-        \Aleph::setOutput($this->body);
+        Aleph::output($this->body, false);
         return $this;
     }
     
@@ -1187,7 +1115,6 @@ class Response
      * Normalizes value of the Cache-Control header.
      *
      * @return static
-     * @access protected
      */
     protected function normalizeCacheControlHeader()
     {

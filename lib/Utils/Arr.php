@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -26,7 +26,7 @@ namespace Aleph\Utils;
  * Contains the set of static methods for facilitating the work with arrays.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.2
+ * @version 1.1.3
  * @package aleph.utils
  */
 class Arr
@@ -40,11 +40,9 @@ class Arr
      * Returns TRUE if the given array is numeric and FALSE otherwise.
      *
      * @param array $array
-     * @return boolean
-     * @access public
-     * @static
+     * @return bool
      */
-    public static function isNumeric(array $array)
+    public static function isNumeric(array $array) : bool
     {
         return array_keys($array) === range(0, count($array) - 1);
     }
@@ -52,18 +50,16 @@ class Arr
     /**
      * Returns element value of a multidimensional array, defined by its compound key.
      *
-     * @param array $array - the multidimensional array.
-     * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param mixed $default - the default value of an element if it don't exist.
-     * @param string $delimiter - the key delimiter in composite keys.
+     * @param array $array The multidimensional array.
+     * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
+     * @param mixed $default The default value of an element if it don't exist.
+     * @param string $delimiter The key delimiter in composite keys.
      * @return mixed
-     * @access public
-     * @static
      */
-    public static function get(array $array, $keys, $default = null, $delimiter = null)
+    public static function get(array $array, $keys, $default = null, string $delimiter = '')
     {
-        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         $arr = $array;
+        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key)
         {
             if (!is_array($arr) || !array_key_exists($key, $arr))
@@ -78,18 +74,17 @@ class Arr
     /**
      * Sets new value of an element of a multidimensional array, defined by its compound key.
      *
-     * @param array $array - the multidimensional array.
-     * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param mixed $value - the new value of an array element.
-     * @param boolean $merge - determines whether the old element value should be merged with new one.
-     * @param string $delimiter - the key delimiter in composite keys.
-     * @access public
-     * @static
+     * @param array $array The multidimensional array.
+     * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
+     * @param mixed $value The new value of an array element.
+     * @param bool $merge Determines whether the old element value should be merged with new one.
+     * @param string $delimiter The key delimiter in composite keys.
+     * @return void
      */
-    public static function set(array &$array, $keys, $value, $merge = false, $delimiter = null)
+    public static function set(array &$array, $keys, $value, bool $merge = false, string $delimiter = '')
     {
         $arr = &$array;
-        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key)
         {
             $arr = &$arr[$key];
@@ -107,17 +102,15 @@ class Arr
     /**
      * Checks whether an element of a multidimensional array exists or not.
      *
-     * @param array $array - the multidimensional array.
-     * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param string $delimiter - the key delimiter in composite keys.
-     * @return boolean
-     * @access public
-     * @static
+     * @param array $array The multidimensional array.
+     * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
+     * @param string $delimiter The key delimiter in composite keys.
+     * @return bool
      */
-    public static function has(array $array, $keys, $delimiter = null)
+    public static function has(array $array, $keys, string $delimiter = '') : bool
     {
         $arr = $array;
-        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key)
         {
             if (!is_array($arr) || !array_key_exists($key, $arr))
@@ -132,16 +125,15 @@ class Arr
     /**
      * Removes an element of a multidimensional array, defined by its compound key.
      *
-     * @param array $array - the array from which an element will be removed.
-     * @param array|string $keys - array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param boolean $removeEmptyParent - determines whether the parent element should be removed if it no longer contains elements after removing the given one.
-     * @param string $delimiter - the key delimiter in composite keys.
-     * @access public
-     * @static
+     * @param array $array The array from which an element will be removed.
+     * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
+     * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains elements after removing the given one.
+     * @param string $delimiter The key delimiter in composite keys.
+     * @return void
      */
-    public static function remove(array &$array, $keys, $removeEmptyParent = false, $delimiter = null)
+    public static function remove(array &$array, $keys, bool $removeEmptyParent = false, string $delimiter = '')
     {
-        $keys = is_array($keys) ? $keys : explode($delimiter === null ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
+        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         if ($removeEmptyParent)
         {
             $key = array_shift($keys);
@@ -163,11 +155,11 @@ class Arr
         }
         else
         {
-            $last = array_pop($keys);
             $arr = &$array;
+            $last = array_pop($keys);
             foreach ($keys as $key)
             {
-                if (!is_array($arr))
+                if (!is_array($arr) || !array_key_exists($key, $arr))
                 {
                     return;
                 }
@@ -180,15 +172,14 @@ class Arr
     /**
      * Swaps two elements of the array.
      *
-     * @param array $array - the array in which the two elements will be swapped.
-     * @param integer $n1 - the first element's key or index.
-     * @param integer $n2 - the second element's key or index.
-     * @param boolean $index - determines whether $key1 and $key2 treated as element indexes. 
-     * @param boolean $swapKeys - determines whether keys of the elements should also be swapped.
-     * @access public
-     * @static
+     * @param array $array The array in which the two elements will be swapped.
+     * @param int|string $n1 The first element's key or index.
+     * @param int|string $n2 The second element's key or index.
+     * @param bool $index Determines whether $key1 and $key2 treated as element indexes. 
+     * @param bool $swapKeys Determines whether keys of the elements should also be swapped.
+     * @return void
      */
-    public static function swap(array &$array, $key1, $key2, $index = false, $swapKeys = false)
+    public static function swap(array &$array, $key1, $key2, bool $index = false, bool $swapKeys = false)
     {
         if ($swapKeys)
         {
@@ -266,13 +257,12 @@ class Arr
     /**
      * Inserts a value or an array to the input array at the specified position.
      *
-     * @param array $array - the input array in which a value will be inserted.
-     * @param mixed $value - the inserting value.
-     * @param integer $offset - the position in the first array.
-     * @access public
-     * @static
+     * @param array $array The input array in which a value will be inserted.
+     * @param mixed $value The inserting value.
+     * @param int $offset The position in the first array.
+     * @return void
      */
-    public static function insert(array &$array, $value, $offset = 0)
+    public static function insert(array &$array, $value, int $offset = 0)
     {
         $array = array_merge(array_slice($array, 0, $offset, true), is_array($value) ? $value : [$value], array_slice($array, $offset, null, true));
     }
@@ -280,13 +270,11 @@ class Arr
     /**
      * Merges two arrays recursively without formation of duplicate values having the same keys.
      *
-     * @param array $a1 - the first array to merge.
-     * @param array $a2 - the second array to merge.
+     * @param array $a1 The first array to merge.
+     * @param array $a2 The second array to merge.
      * @return array
-     * @access public
-     * @static
      */
-    public static function merge(array $a1, array $a2)
+    public static function merge(array $a1, array $a2) : array
     {
         foreach ($a2 as $k => $v)
         {
@@ -341,14 +329,12 @@ class Arr
      *     ]
      * ]
      *
-     * @param array $nodes - the original flat tree-like structure.
-     * @param string $parent - the element key of a node which is parent identifier of the parent node.
-     * @param string $children - the element key of a node which will contain all node children.
+     * @param array $nodes The original flat tree-like structure.
+     * @param int|string $parent The element key of a node which is parent identifier of the parent node.
+     * @param int|string $children The element key of a node which will contain all node children.
      * @return array
-     * @access public
-     * @static
      */
-    public static function makeNested(array $nodes, $parent = 'parent', $children = 'children')
+    public static function makeNested(array $nodes, $parent = 'parent', $children = 'children') : array
     {
         $tree = [];
         foreach ($nodes as $ID => &$node)
@@ -369,14 +355,12 @@ class Arr
      * Converts the nested tree-like structure into the flat tree-like structure.
      * The result of performing this method is opposite of the result of performing makeNested() method.
      *
-     * @param array $nodes - the original nested tree-like structure.
-     * @param string $parent - the element key of a node which will be parent identifier of the parent node.
-     * @param string $children - the element key of a node which contains all node children.
+     * @param array $nodes The original nested tree-like structure.
+     * @param int|string $parent The element key of a node which will be parent identifier of the parent node.
+     * @param int|string $children The element key of a node which contains all node children.
      * @return array
-     * @access public
-     * @static
      */
-    public static function makeFlat(array $nodes, $parent = 'parent', $children = 'children')
+    public static function makeFlat(array $nodes, $parent = 'parent', $children = 'children') : array
     {
         $tree = [];
         $reduce = function(array $nodes, $parentID = null) use(&$reduce, &$tree, $parent, $children)
@@ -402,13 +386,11 @@ class Arr
     /**
      * Recursively iterates an array.
      *
-     * @param array $array - the array to iterate.
-     * @param boolean $iterateObjects - determines whether to iterate an objects (all objects will be converted to an array).
-     * @return Generator
-     * @access public
-     * @static
+     * @param array $array The array to iterate.
+     * @param bool $iterateObjects Determines whether to iterate an objects (all objects will be converted to an array).
+     * @return \Generator
      */
-    public static function iterate(array $array, $iterateObjects = false)
+    public static function iterate(array $array, $iterateObjects = false) : \Generator
     {
         foreach ($array as $key => $value)
         {
@@ -419,10 +401,7 @@ class Arr
             yield $key => $value;
             if (is_array($value))
             {
-                foreach (self::iterate($value) as $key => $value)
-                {
-                    yield $key => $value;
-                }
+                yield from self::iterate($value);
             }
         }
     }

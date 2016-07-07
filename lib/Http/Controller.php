@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,130 +16,156 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Net;
+namespace Aleph\Http;
 
-use Aleph\Core;
+use Aleph,
+    Aleph\Core;
 
 /**
  * The base class for creating of the RESTFul API system.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
- * @package aleph.net
+ * @version 1.0.1
+ * @package aleph.http
  */
-class API
+class Controller
 {
     /**
      * Error message templates.
      */
     const ERR_API_1 = 'Callback parameter is not set for resource "%s".';
-
-    /**
-     * The map of the API methods.
-     *
-     * @var array $map
-     * @access public
-     * @static
-     */
-    public static $map = [];
   
     /**
      * The current request object.
      *
-     * @var Aleph\Net\Request $request
-     * @access public
-     * @static
+     * @var \Aleph\Http\Request
      */
-    public static $request = null;
+    private $request = null;
   
     /**
      * The current response object.
      *
-     * @var Aleph\Net\Response $response
-     * @access public
-     * @static
+     * @var \Aleph\Http\Response
      */
-    public static $response = null;
+    private $response = null;
+    
+    /**
+     * The router instance.
+     *
+     * @var \Aleph\Http\Router
+     */
+    private $router = null;
   
     /**
-     * The response content type. It can be regular MIME-type or its alias (if exists).
+     * Determines whether any error information is converted
+     * according to the defined content type and charset.
      *
-     * @var string $contentType
-     * @access public
-     * @static
+     * @var bool
      */
-    public static $contentType = 'json';
+    protected static $convertErrors = true;
+    
+    /**
+     * Constructor.
+     *
+     * @param \Aleph\Http\Request $request
+     * @param \Aleph\Http\Response $response
+     * @param \Aleph\Http\Router $router
+     * @return void
+     */
+    public function __construct(Request $request = null, Response $response = null, Router $router = null)
+    {
+        Aleph::setErrorHandler([$this, 'errorHandler']);
+        $this->request = $request ?: Request::createFromGlobals(true);
+        $this->response = $response ?: (new Response())->setContentType('json', 'UTF-8');
+        $this->router = $router ?: new Router();
+        $this->adjustRouter();
+    }
+    
+    /**
+     * Returns the request instance.
+     *
+     * @return \Aleph\Http\Request
+     */
+    public function getRequest() : Request
+    {
+        return $this->request;
+    }
+    
+    /**
+     * Sets the new request instance.
+     *
+     * @return void
+     */
+    public function setRequest(Request $request)
+    {
+        $this->request = $request;
+    }
+    
+    /**
+     * Returns the response instance.
+     *
+     * @return \Aleph\Http\Response
+     */
+    public function getResponse() : Response
+    {
+        return $this->response;
+    }
+    
+    /**
+     * Sets the new response instance.
+     *
+     * @param \Aleph\Http\Response $response
+     * @return void
+     */
+    public function setResponse(Response $response)
+    {
+        $this->response = $response;
+    }
+    
+    /**
+     * Returns the router instance.
+     *
+     * @return \Aleph\Http\Router
+     */
+    public function getRouter() : Router
+    {
+        return $this->router;
+    }
+    
+    /**
+     * Sets the new router instance.
+     *
+     * @return void
+     */
+    public function setRouter(Router $router)
+    {
+        $this->router = $router;
+        $this->adjustRouter();
+    }
   
     /**
-     * The output charset of the response body.
-     *
-     * @var string $charset
-     * @access public
-     * @static
-     */
-    public static $charset = 'UTF-8';
-
-    /**
-     * The namespace prefix for the callbacks that specified in the $map.
-     *
-     * @var string $namespace
-     * @access public
-     * @static
-     */
-    public static $namespace = '\\';
-  
-    /**
-     * Prefix for URLs.
-     *
-     * @var string $urlPrefix
-     * @access public
-     * @static
-     */
-    public static $urlPrefix = '';
-  
-    /**
-     * Determines whether the response body is converted according to the defined content type and charset.
-     *
-     * @var boolean $convertOutput
-     * @access public
-     * @static
-     */
-    public static $convertOutput = true;
-  
-    /**
-     * Determines whether any error information is converted according to the defined content type and charset.
-     *
-     * @var boolean $convertErrors
-     * @access public
-     * @static
-     */
-    public static $convertErrors = true;
-  
-    /**
-     * The error and exception handler of the API class system.
+     * The error and exception handler.
      * This method stops the script execution and sets the response status code to 500.
      *
-     * @param Exception $e - the exception that occurred.
-     * @param array $info - the exception information.
-     * @return mixed
-     * @access public
-     * @static
+     * @param \Throwable $e The exception that occurred.
+     * @param array $info The exception information.
+     * @return bool
      */
-    public static function error(\Exception $e, array $info)
+    public function errorHandler(\Throwable $e, array $info) : bool
     {
-        if (!\Aleph::get('debugging'))
+        if (!Aleph::get('debugging'))
         {
-            static::$response->stop(500, null);
+            $this->getResponse()->stop();
         }
-        if (!static::$convertErrors)
+        if (static::$convertErrors)
         {
-            return true;
+            $this->getResponse()->stop(500, $info);
         }
-        static::$response->stop(500, $info);
+        return true;
     }
     
     /**
@@ -147,92 +173,121 @@ class API
      * due to something that is perceived to be a client error.
      * The method stops the script execution and sets the response status code to 400.
      *
-     * @param mixed $content - the response body.
-     * @access public
-     * @static
+     * @param mixed $content The response body.
+     * @return \Aleph\Http\Response
      */
-    public static function badRequest($content = null)
+    public function badRequest($content = '')
     {
-        static::$response->stop(400, $content);
+        return $this->getResponse()->stop(400, $content, false);
     }
     
     /**
      * This method is automatically called when authentication is required and has failed or has not yet been provided.
      * The method stops the script execution and sets the response status code to 401.
      *
-     * @param mixed $content - the response body.
-     * @access public
-     * @static
+     * @param mixed $content The response body.
+     * @return \Aleph\Http\Response
      */
-    public static function unauthorized($content = null)
+    public function unauthorized($content = '')
     {
-        static::$response->stop(401, $content);
+        return $this->getResponse()->stop(401, $content, false);
     }
     
     /**
      * This method is automatically called when the request was a valid request, but the server is refusing to respond to it.
      * The method stops the script execution and sets the response status code to 403.
      *
-     * @param mixed $content - the response body.
-     * @access public
-     * @static
+     * @param mixed $content The response body.
+     * @return \Aleph\Http\Response
      */
-    public static function forbidden($content = null)
+    public function forbidden($content = '')
     {
-        static::$response->stop(403, $content);
+        return $this->getResponse()->stop(403, $content, false);
     }
     
     /**
      * This method is automatically called when the current request does not match any API methods ($map's callbacks).
      * The method stops the script execution and sets the response status code to 404.
      *
-     * @param mixed $content - the response body.
-     * @access public
-     * @static
+     * @param mixed $content The response body.
+     * @return \Aleph\Http\Response
      */
-    public static function notFound($content = null)
+    public function notFound($content = '')
     {
-        static::$response->stop(404, $content);
+        return $this->getResponse()->stop(404, $content, false);
     }
   
     /**
      * This method is automatically called when a request was made of a resource using a request method not supported by that resource.
      * The method stops the script execution and sets the response status code to 405.
      *
-     * @param array $methods - the HTTP methods that supported by the resource.
-     * @param mixed $content - the response body.
-     * @access public
-     * @static
+     * @param array $methods The HTTP methods that supported by the resource.
+     * @param mixed $content The response body.
+     * @return \Aleph\Http\Response
      */
-    public static function notAllowed(array $methods = [], $content = null)
+    public function notAllowed(array $methods = [], $content = '')
     {
-        static::$response->headers->set('Allow', implode(', ', $methods));
-        static::$response->stop(405, $content);
+        $this->getResponse()->headers->set('Allow', implode(', ', $methods));
+        return $this->getResponse()->stop(405, $content, false);
     }
     
     /**
      * This method is automatically called when the server either does not recognize the request method, or it lacks the ability to fulfill the request. 
      * The method stops the script execution and sets the response status code to 501.
      *
-     * @param mixed $content - the response body.
-     * @access public
-     * @static
+     * @param mixed $content The response body.
+     * @return \Aleph\Http\Response
      */
-    public static function notImplemented($content = null)
+    public function notImplemented($content = '')
     {
-        static::$response->stop(501, $content);
+        return $this->getResponse()->stop(501, $content, false);
     }
 
     /**
-     * Invokes and performs the requested API method.
-     * This method is the entry point of the API class system.
+     * Performs the current HTTP request.
      *
-     * @access public
-     * @static
+     * @return void
      */
-    final public static function run()
+    public function run()
     {
-        $class = get_called_class();
+        $res = $this->getRouter()->route($this->getRequest());
+        if (headers_sent())
+        {
+            return;
+        }
+        $this->getResponse()->setStatusCode($res['status']);
+        switch ($res['status'])
+        {
+            case 400:
+                $res['result'] = $this->badRequest();
+                break;
+            case 401:
+                $res['result'] = $this->unauthorized();
+                break;
+            case 403:
+                $res['result'] = $this->forbidden();
+                break;
+            case 404:
+                $res['result'] = $this->notFound();
+                break;
+            case 405:
+                $res['result'] = $this->notAllowed($res['methods']);
+                break;
+            case 501:
+                $res['result'] = $this->notImplemented();
+                break;
+        }
+        if ($res['result'] instanceof Response)
+        {
+            $res['result']->send();
+        }
+        else
+        {
+            $this->getResponse()
+                 ->setBody($res['result'])
+                 ->send();
+        }
+        /*$class = get_called_class();
         $action = $class . '::action';
         \Aleph::setErrorHandler($class . '::error');
         static::$request = static::$request instanceof Request ? static::$request : Request::createFromGlobals(true);
@@ -251,7 +306,7 @@ class API
                        ->secure(empty($data['secure']) ? false : $data['secure'])
                        ->component(empty($data['component']) ? URL::PATH : $data['component'])
                        ->where(empty($data['where']) ? [] : $data['where'])
-                       ->associateWithParameters(empty($data['associateWithParameters']) ? false : $data['associateWithParameters'])
+                       ->sync(empty($data['sync']) ? false : $data['sync'])
                        ->args(['resource' => $data])
                        ->extra('params');
             }
@@ -291,19 +346,25 @@ class API
         {
             static::$response->setBody($res['result']);
             static::$response->send();
-        }
+        }*/
+    }
+    
+    private function adjustRouter()
+    {
+        $this->router->onPreBind(function(array $data)
+        {
+            
+        });
     }
     
     /**
      * Executes an action on the controller.
      *
-     * @param array $resource - the URL templater of the requested resource.
-     * @param array $params - the URL template variables.
+     * @param array $resource The URL templater of the requested resource.
+     * @param array $params The URL template variables.
      * @return mixed
-     * @access public
-     * @static
      */
-    public static function action(array $resource, array $params = null)
+    private function action(array $resource, array $params = null)
     {
         if (empty($resource['callback']))
         {
@@ -322,13 +383,13 @@ class API
         {
             $callback = rtrim(static::$namespace, '\\') . '\\' . ltrim($callback, '\\');
         }
-        $callback = new Core\Delegate($callback);
+        $callback = new Core\Callback($callback);
         if ($callback->isStatic()) 
         {
             return $callback->call($params);
         }
         $api = $callback->getClassObject($params);
-        if ($api instanceof API)
+        if ($api instanceof Controller)
         {
             $api->before($resource, $params);
             $result = call_user_func_array([$api, $callback->getMethod()], $params);

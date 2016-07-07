@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,35 +16,36 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Net;
+namespace Aleph\Http;
 
-use Aleph\Utils;
+use Aleph\Data,
+    Aleph\Utils;
 
 /**
  * The simple container for HTTP headers from the $_SERVER variable.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
- * @package aleph.net
+ * @version 1.0.1
+ * @package aleph.http
  */
-class ServerBag extends Utils\Bag
+class ServerBag extends Data\Bag
 {
     /**
      * Constructor.
      * The most of the code of this method is taken from the Symfony framework (see Symfony\Component\HttpFoundation\ServerBag::getHeaders()).
      *
-     * @param array $arr - an array of key/value pairs.
-     * @param string $delimiter - the default key delimiter in composite keys.
-     * @access public
+     * @param array $items An array of key/value pairs.
+     * @param string $delimiter The default key delimiter in composite keys.
+     * @return void
      */
-    public function __construct(array $arr = [], $delimiter = Utils\Arr::DEFAULT_KEY_DELIMITER)
+    public function __construct(array $items = [], string $delimiter = Utils\Arr::DEFAULT_KEY_DELIMITER)
     {
-        parent::__construct($arr, $delimiter);
-        if (!isset($this->arr['PHP_AUTH_USER']))
+        parent::__construct($items, $delimiter);
+        if (!isset($this->items['PHP_AUTH_USER']))
         {
             /*
              * php-cgi under Apache does not pass HTTP Basic user/pass to PHP by default
@@ -60,13 +61,13 @@ class ServerBag extends Utils\Bag
              * RewriteRule ^(.*)$ app.php [QSA,L]
              */
             $authorizationHeader = null;
-            if (isset($this->arr['HTTP_AUTHORIZATION']))
+            if (isset($this->items['HTTP_AUTHORIZATION']))
             {
-                $authorizationHeader = $this->arr['HTTP_AUTHORIZATION'];
+                $authorizationHeader = $this->items['HTTP_AUTHORIZATION'];
             }
-            else if (isset($this->arr['REDIRECT_HTTP_AUTHORIZATION']))
+            else if (isset($this->items['REDIRECT_HTTP_AUTHORIZATION']))
             {
-                $authorizationHeader = $this->arr['REDIRECT_HTTP_AUTHORIZATION'];
+                $authorizationHeader = $this->items['REDIRECT_HTTP_AUTHORIZATION'];
             }
             if ($authorizationHeader !== null)
             {
@@ -76,12 +77,12 @@ class ServerBag extends Utils\Bag
                     $exploded = explode(':', base64_decode(substr($authorizationHeader, 6)), 2);
                     if (count($exploded) == 2)
                     {
-                        list($this->arr['PHP_AUTH_USER'], $this->arr['PHP_AUTH_PW']) = $exploded;
+                        list($this->items['PHP_AUTH_USER'], $this->items['PHP_AUTH_PW']) = $exploded;
                     }
                 }
-                else if (empty($this->arr['PHP_AUTH_DIGEST']) && (stripos($authorizationHeader, 'digest ') === 0))
+                else if (empty($this->items['PHP_AUTH_DIGEST']) && (stripos($authorizationHeader, 'digest ') === 0))
                 {
-                    $this->arr['PHP_AUTH_DIGEST'] = $authorizationHeader;
+                    $this->items['PHP_AUTH_DIGEST'] = $authorizationHeader;
                 }
                 else if (stripos($authorizationHeader, 'bearer ') === 0)
                 {
@@ -90,7 +91,7 @@ class ServerBag extends Utils\Bag
                      * I'll just set $headers['AUTHORIZATION'] here.
                      * http://php.net/manual/en/reserved.variables.server.php
                      */
-                    $this->arr['AUTHORIZATION'] = $authorizationHeader;
+                    $this->items['AUTHORIZATION'] = $authorizationHeader;
                 }
             }
         }
@@ -100,9 +101,8 @@ class ServerBag extends Utils\Bag
      * Returns HTTP headers of the current HTTP request.
      *
      * @return array
-     * @access public
      */
-    public function getHeaders()
+    public function getHeaders() : array
     {
         $headers = [];
         $contentHeaders = [
@@ -110,7 +110,7 @@ class ServerBag extends Utils\Bag
             'CONTENT_MD5' => true,
             'CONTENT_TYPE' => true
         ];
-        foreach ($this->arr as $key => $value)
+        foreach ($this->items as $key => $value)
         {
             if (strpos($key, 'HTTP_') === 0)
             {
@@ -121,10 +121,10 @@ class ServerBag extends Utils\Bag
                 $headers[$key] = $value;
             }
         }
-        if (isset($this->arr['PHP_AUTH_USER']))
+        if (isset($this->items['PHP_AUTH_USER']))
         {
-            $headers['PHP_AUTH_USER'] = $this->arr['PHP_AUTH_USER'];
-            $headers['PHP_AUTH_PW'] = isset($this->arr['PHP_AUTH_PW']) ? $this->arr['PHP_AUTH_PW'] : '';
+            $headers['PHP_AUTH_USER'] = $this->items['PHP_AUTH_USER'];
+            $headers['PHP_AUTH_PW'] = isset($this->items['PHP_AUTH_PW']) ? $this->items['PHP_AUTH_PW'] : '';
             $headers['AUTHORIZATION'] = 'Basic ' . base64_encode($headers['PHP_AUTH_USER'] . ':' . $headers['PHP_AUTH_PW']);
         }
         else if (isset($headers['PHP_AUTH_DIGEST']))
@@ -138,9 +138,8 @@ class ServerBag extends Utils\Bag
      * Returns the request's scheme.
      *
      * @return string
-     * @access public
      */
-    public function getScheme()
+    public function getScheme() : string
     {
         if ($proto = $this['HTTP_X_FORWARDED_PROTO'])
         {
@@ -158,9 +157,8 @@ class ServerBag extends Utils\Bag
      * Returns the host name.
      *
      * @return string
-     * @access public
      */
-    public function getHost()
+    public function getHost() : string
     {
         if ($host = $this['HTTP_X_FORWARDED_HOST'])
         {
@@ -180,8 +178,7 @@ class ServerBag extends Utils\Bag
     /**
      * Returns the port on which the request is made.
      *
-     * @return integer|null
-     * @access public
+     * @return int|null
      */
     public function getPort()
     {
@@ -209,7 +206,6 @@ class ServerBag extends Utils\Bag
      * Returns the user.
      *
      * @return string|null
-     * @access public
      */
     public function getUser()
     {
@@ -220,7 +216,6 @@ class ServerBag extends Utils\Bag
      * Returns the password.
      *
      * @return string|null
-     * @access public
      */
     public function getPassword()
     {
@@ -231,9 +226,8 @@ class ServerBag extends Utils\Bag
      * Returns URL of the request.
      *
      * @return string
-     * @access public
      */
-    public function getURL()
+    public function getURL() : string
     {
         $scheme = $this->getScheme();
         $port = $this->getPort();

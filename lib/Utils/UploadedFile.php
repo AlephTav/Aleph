@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,17 +16,19 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
 namespace Aleph\Utils;
 
+use Aleph;
+
 /**
  * Helps to validate a file, uploaded through a form and to move it to the specified destination.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
+ * @version 1.0.1
  * @package aleph.utils
  */
 class UploadedFile
@@ -34,24 +36,21 @@ class UploadedFile
     /**
      * The information about the uploaded file.
      *
-     * @var array $data
-     * @access protected
+     * @var array
      */
     protected $data = [];
   
     /**
      * The code of the last happened error.
      *
-     * @var integer $error
-     * @access protected
+     * @var int
      */
     protected $error = 0;
   
     /**
      * The list of default extensions corresponding to file mime types.
      *
-     * @var array $defaultExtensions
-     * @access protected
+     * @var array
      */
     protected $defaultExtensions = [
         'application/andrew-inset' => 'ez',
@@ -762,32 +761,28 @@ class UploadedFile
      * The desired name of the uploaded file.
      * If this property is not defined the uploaded file will have the original name.
      *
-     * @var string $name
-     * @access public
+     * @var string
      */
-    public $name = null;
+    public $name = '';
   
     /**
      * Determines whether the name of the uploaded file should be unique.
      *
-     * @var boolean $unique
-     * @access public
+     * @var bool
      */
     public $unique = false;
   
     /**
      * The desired destination directory for the uploaded file.
      *
-     * @var string $destination
-     * @access public
+     * @var string
     */
-    public $destination = null;
+    public $destination = '';
   
     /**
      * Turns on or turns off the validation of the uploaded file during moving it to a new location.
      *
-     * @var boolean $validate
-     * @access public
+     * @var bool
      */
     public $validate = true;
 
@@ -795,8 +790,7 @@ class UploadedFile
      * Allowable file extensions.
      * The uploaded file should have extension which matches to one of these file extensions.
      *
-     * @var array $extensions
-     * @access public
+     * @var array
      */
     public $extensions = [];
   
@@ -804,8 +798,7 @@ class UploadedFile
      * Allowable mime types.
      * The uploaded file should have mime type which matches to one of these types.
      *
-     * @var array $types
-     * @access public
+     * @var array
      */
     public $types = [];
   
@@ -813,8 +806,7 @@ class UploadedFile
      * The maximum file size (in bytes) of the uploaded file.
      * It should be greater than 0.
      *
-     * @var integer $max
-     * @access public
+     * @var int
      */
     public $max = null;
   
@@ -822,38 +814,35 @@ class UploadedFile
      * The minimum file size (in bytes) of the uploaded file.
      * It should be greater than 0.
      *
-     * @var integer $min
-     * @access public
+     * @var int
      */
     public $min = null;
     
     /**
      * Permissions for newly created directory to store the uploaded file.
      *
-     * @var integer $directoryMode
-     * @access public
+     * @var int
      */
     public $directoryMode = 0711;
   
     /**
      * Permissions for the uploaded file.
      *
-     * @var integer $fileMode
-     * @access public
+     * @var int
      */
     public $fileMode = 0644;
 
     /**
      * Constructor. Accepts the information of the uploaded file as provided by the PHP global $_FILES.
      *
-     * @param string|array - the full temporary path to the file or data array of the uploaded file from $_FILES.
-     * @param string $name - the original file name.
-     * @param string $type - the original file mime type.
-     * @param integer $size - the file size (in bytes).
-     * @param integer $error - the upload error.
-     * @access public
+     * @param string|array The full temporary path to the file or data array of the uploaded file from $_FILES.
+     * @param string $name The original file name.
+     * @param string $type The original file mime type.
+     * @param int $size The file size (in bytes).
+     * @param int $error The upload error.
+     * @return void
      */
-    public function __construct($path, $name = null, $type = null, $size = null, $error = null)
+    public function __construct($path, string $name = '', string $type = '', int $size = 0, int $error = 0)
     {
         if (is_array($path))
         {
@@ -861,8 +850,8 @@ class UploadedFile
                 'name' => $path['name'],
                 'path' => $path['tmp_name'],
                 'type' => $path['type'] ?: 'application/octet-stream',
-                'size' => (int)$path['size'],
-                'error' => (int)$path['error']
+                'size' => $path['size'],
+                'error' => $path['error']
             ];
         }
         else
@@ -871,8 +860,8 @@ class UploadedFile
                 'name' => $name,
                 'path' => $path,
                 'type' => $type ?: 'application/octet-stream',
-                'size' => (int)$size,
-                'error' => (int)$error
+                'size' => $size,
+                'error' => $error
             ];
         }
     }
@@ -882,7 +871,6 @@ class UploadedFile
      * If the mime type is unknown, returns NULL.
      *
      * @return string|null
-     * @access public
      */
     public function getExtensionByType()
     {
@@ -894,9 +882,8 @@ class UploadedFile
      * Returns the extension of the uploaded file.
      *
      * @return string
-     * @access public
      */
-    public function getExtension()
+    public function getExtension() : string
     {
         return pathinfo($this->data['name'], PATHINFO_EXTENSION);
     }
@@ -906,7 +893,6 @@ class UploadedFile
      * If the mime type is unknown, returns NULL.
      *
      * @return string|null
-     * @access public
      */
     public function getType()
     {
@@ -916,10 +902,9 @@ class UploadedFile
     /**
      * Returns the real size (in bytes) of the uploaded file.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getSize()
+    public function getSize() : int
     {
         return filesize($this->data['path']);
     }
@@ -928,9 +913,8 @@ class UploadedFile
      * Returns the original name of the uploaded file.
      *
      * @return string
-     * @access public
      */
-    public function getClientName()
+    public function getClientName() : string
     {
         return $this->data['name'];
     }
@@ -939,9 +923,8 @@ class UploadedFile
      * Returns the original mime type of the uploaded file.
      *
      * @return string
-     * @access public
      */
-    public function	getClientType()
+    public function	getClientType() : string
     {
         return $this->data['type'];
     }
@@ -949,10 +932,9 @@ class UploadedFile
     /**
      * Returns the original size (in bytes) of the uploaded file.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getClientSize()
+    public function getClientSize() : int
     {
         return $this->data['size'];
     }
@@ -960,10 +942,9 @@ class UploadedFile
     /**
      * Returns the code of the last happened error.
      *
-     * @return integer
-     * @access public
+     * @return int
      */
-    public function getErrorCode()
+    public function getErrorCode() : int
     {
         return $this->error;
     }
@@ -972,9 +953,8 @@ class UploadedFile
      * Returns the message of the last happened error.
      *
      * @return string
-     * @access public
      */
-    public function getErrorMessage()
+    public function getErrorMessage() : string
     {
         switch ($this->error)
         {
@@ -1016,10 +996,9 @@ class UploadedFile
      * Checks that the uploaded file was uploaded successfully and match the specified requirements.
      * Returns TRUE if no error occurred during uploading and all requirements are met and FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function validate()
+    public function validate() : bool
     {
         if ($this->data['error'] > 0)
         {
@@ -1068,10 +1047,9 @@ class UploadedFile
   
     /**
      * Moves the uploaded file to a new location.
-     * Returns the information of the moved file and FALSE if an error was occurred.
+     * Returns the information of the moved file and FALSE if an error has occurred.
      *
-     * @return array|boolean
-     * @access public
+     * @return array|bool
      */
     public function move()
     {
@@ -1112,7 +1090,7 @@ class UploadedFile
         $file = realpath($file);
         return [
             'path' => $file,
-            'url' => strpos($file, \Aleph::getRoot()) === 0 ? '/' . str_replace('\\', '/', ltrim(substr($file, strlen(\Aleph::getRoot())), '\\/')) : false,
+            'url' => strpos($file, Aleph::getRoot()) === 0 ? '/' . str_replace('\\', '/', ltrim(substr($file, strlen(Aleph::getRoot())), '\\/')) : false,
             'name' => $name,
             'filename' => pathinfo($name, PATHINFO_FILENAME),
             'extension' => $ext, 

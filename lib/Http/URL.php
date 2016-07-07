@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,21 +16,21 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
  
-namespace Aleph\Net;
+namespace Aleph\Http;
 
 use Aleph\Core,
-	Aleph\Utils;
+	Aleph\Data;
 
 /**
  * URL Class is designed to modify existing URL strings and to construct new ones.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.0
- * @package aleph.net
+ * @version 1.1.1
+ * @package aleph.http
  */
 class URL
 { 
@@ -58,50 +58,44 @@ class URL
     /**
      * Scheme component of a URL.
      *
-     * @var string $scheme
-     * @access public
+     * @var string
      */
-    public $scheme = null;
+    public $scheme = '';
 
     /**
      * The host of the URL.
      *
-     * @var string $host
-     * @access public
+     * @var string
      */
-    public $host = null;
+    public $host = '';
     
     /**
      * The port of the URL.
      *
-     * @var integer $port
-     * @access public
+     * @var integer
      */
-    public $port = null;
+    public $port = 80;
     
     /**
      * The user.
      *
-     * @var string $user
-     * @access public
+     * @var string
      */
-    public $user = null;
+    public $user = '';
     
     /**
      * The password.
      *
-     * @var string $password
-     * @access public
+     * @var string
      */
-    public $password = null;
+    public $password = '';
 
     /**
      * Path component of a URL.
      * Path represents array of separate parts of URL path component.
      * E.g.: URL path /one/two/three will be represented as ['one', 'two', 'three'].
      *
-     * @var array $path
-     * @access public
+     * @var string[]
      */
     public $path = [];
 
@@ -110,39 +104,36 @@ class URL
      * Query represents associative array in which keys and values are names and values of query fields.
      * E.g.: URL query ?var1=val1&var2=val2&var3=val3 will be represented as ['var1' => 'val1', 'var2' => 'val2', 'var3' => 'val3']
      *
-     * @var Aleph\Utils\Bag $query
-     * @access public
+     * @var \Aleph\Data\Bag
      */
     public $query = null;
 
     /**
      * Fragment component of a URL.
      *
-     * @var string $fragment
-     * @access public
+     * @var string
      */
-    public $fragment = null;
+    public $fragment = '';
 
     /**
      * Constructs a new URL object.
-     * - new URL() parses the current requested URL.
-     * - new URL($url) parses the given URL - $url.
      *
      * @param string $url
-     * @access public
+     * @return void
      */
-    public function __construct($url = null)
+    public function __construct(string $url = '')
     {
-        $this->parse($url);
+        if ($url !== '')
+        {
+            $this->parse($url);
+        }
     }
   
     /**
      * Returns the current URL of the request.
      *
-     * @param boolean $asString - determines whether the current URL should be returned as string, not as object.
-     * @return string
-     * @access public
-     * @static
+     * @param bool $asString Determines whether the current URL should be returned as string, not as object.
+     * @return string|static
      */
     public static function createFromGlobals($asString = false)
     {
@@ -157,17 +148,17 @@ class URL
     /**
      * Resets URL parameters.
      *
-     * @access public
+     * @return void
      */
     public function reset()
     {
         $this->scheme = '';
         $this->host = '';
-        $this->port = '';
+        $this->port = 80;
         $this->user = '';
         $this->password = '';
         $this->path = [];
-        $this->query = new Utils\Bag([]);
+        $this->query = new Data\Bag();
         $this->fragment = '';
     }
   
@@ -175,11 +166,10 @@ class URL
      * Parses URL. After parsing you can access to all URL components.
      *
      * @param string $url
-     * @access public
+     * @return void
      */
-    public function parse($url)
+    public function parse(string $url)
     {
-        $url = (string)$url;
         if ($url === '')
         {
             $this->reset();
@@ -205,14 +195,14 @@ class URL
             $this->user = urldecode($d2[0]);
             $this->password = urldecode(isset($d2[1]) ? $d2[1] : '');
         }
-        $this->path = ($arr[5][0] != '') ? array_values(array_filter(explode('/', $arr[5][0]), 'strlen')) : [];
+        $this->path = $arr[5][0] != '' ? array_values(array_filter(explode('/', $arr[5][0]), 'strlen')) : [];
         foreach ($this->path as &$part)
         {
             $part = urldecode($part);
         }
         $this->query = $arr[7][0];
         parse_str($this->query, $this->query);
-		$this->query = new Utils\Bag($this->query);
+		$this->query = new Data\Bag($this->query);
         $this->fragment = urldecode($arr[9][0]);
     }
   
@@ -230,19 +220,17 @@ class URL
      * echo $url->build(URL::QUERY | URL::FRAGMENT);    // shows p1=v1&p2=v2#frag
      * </code>
      *
-     * @param string $component - name of an URL component.
+     * @param int $component The name of an URL component.
      * @return string
-     * @access public
      */
-    public function build($component = null)
+    public function build(int $component = self::ALL) : string
     {
         $url = '';
-		$component = $component === null ? static::ALL : $component;
-        if ($component & static::SCHEME && isset($this->scheme) && strlen($this->scheme)) 
+        if ($component & static::SCHEME && !empty($this->scheme))
         {
             $url .= strtolower($this->scheme) . '://';
         }
-        if ($component & static::HOST && isset($this->host) && strlen($this->host))
+        if ($component & static::HOST && !empty($this->host))
         {
             $credentials = isset($this->user) && strlen($this->user) ? $this->user . ':' . (isset($this->password) ? $this->password : '') : '';
             $url .= ($credentials ? $credentials . '@' : '') . $this->host;
@@ -271,7 +259,7 @@ class URL
             }
             $url .= implode('/', $tmp);
         }
-        if ($component & static::QUERY && isset($this->query) && $this->query instanceof Utils\Bag && count($this->query))
+        if ($component & static::QUERY && isset($this->query) && $this->query instanceof Data\Bag && count($this->query))
         {
             if (strlen($url) || $component & static::PATH)
             {
@@ -291,24 +279,23 @@ class URL
     }
   
     /**
-     * Returns TRUE, if using HTTPS protocol or FALSE otherwise.
+     * Returns TRUE, if using https protocol or FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isSecure()
+    public function isSecure() : bool
     {
         return isset($this->scheme) && strtolower($this->scheme) === 'https';
     }
   
     /**
-     * Set or unset HTTPS protocol.
+     * Set or unset https protocol.
      * If using some other protocol (ftp, mailto etc.) then it will be replaced with HTTP/HTTPS protocol.
      *
-     * @param boolean $flag - sign of the HTTPS protocol.
-     * @access public
+     * @param bool $flag If it is TRUE the secured http protocol is used.
+     * @return void
      */
-    public function secure($flag = true)
+    public function secure(bool $flag = true)
     {
         $this->scheme = $flag ? 'https' : 'http';
     }
@@ -318,9 +305,8 @@ class URL
      * This method is equivalent to method build().
      *
      * @return string
-     * @access public
      */
-    public function __toString()
+    public function __toString() : string
     {
         return $this->build();
     }

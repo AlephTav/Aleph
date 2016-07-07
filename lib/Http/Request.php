@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,106 +16,94 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
  
-namespace Aleph\Net;
+namespace Aleph\Http;
 
-use Aleph\Utils,
+use Aleph\Data,
     Aleph\Data\Converters;
 
 /**
  * Request Class provides easier interaction with variables of the current HTTP request.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.0
- * @package aleph.net
+ * @version 1.0.1
+ * @package aleph.http
  */
 class Request
 {   
     /**
      * The request URL instance.
      *
-     * @var Aleph\Net\URL $url
-     * @access public
+     * @var \Aleph\Http\URL
      */
     public $url = null;
 
     /**
      * The HTTP headers of the request.
      *
-     * @var Aleph\Net\HeaderBag $headers
-     * @access public
+     * @var \Aleph\Http\HeaderBag
      */
     public $headers = null;
     
     /**
      * Query string parameters ($_GET).
      *
-     * @var Aleph\Utils\Bag $get
-     * @access public
+     * @var \Aleph\Data\Bag
      */
     public $get = null;
     
     /**
      * Request body parameters ($_POST).
      *
-     * @var Aleph\Utils\Bag $post
-     * @access public
+     * @var \Aleph\Data\Bag
      */
     public $post = null;
   
     /**
      * Uploaded files ($_FILES).
      *
-     * @var Aleph\Net\FileBag $files
-     * @access public
+     * @var \Aleph\Http\FileBag
      */
     public $files = null;
   
     /**
      * Server and execution environment parameters ($_SERVER).
      *
-     * @var Aleph\Net\ServerBag $server
-     * @access public
+     * @var \Aleph\Http\ServerBag
      */
     public $server = null;
   
     /**
      * Cookies ($_COOKIE).
      *
-     * @var Aleph\Utils\Bag $cookies
-     * @access public
+     * @var \Aleph\Http\Bag
      */
     public $cookies = null;
   
     /**
      * The raw body of the current request.
      *
-     * @var string|resource $body
-     * @access protected
+     * @var string|resource|null
      */
     protected $body = null;
     
     /**
      * Used for singleton version of the request.
      *
-     * @var Aleph\Net\Request $request
-     * @access private
-     * @static
+     * @var \Aleph\Http\Request
      */
     private static $request = null;
     
     /**
      * Creates a new request with values from PHP's super globals.
      *
-     * @param boolean $asSingleton - determines whether the request instance should be stored as singleton.
+     * @param bool $asSingleton Determines whether the request instance should be stored as singleton.
      * @return static
-     * @access public
-     * @static
      */
-    public static function createFromGlobals($asSingleton = false)
+    public static function createFromGlobals(bool $asSingleton = false)
     {
         if ($asSingleton && self::$request)
         {
@@ -135,7 +123,7 @@ class Request
             $body = $request->getBody();
             if (is_array($body))
             {
-                $request->post = new Utils\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
+                $request->post = new Data\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
             }
         }
         else if (in_array(strtoupper($request->server['REQUEST_METHOD']), ['PUT', 'DELETE', 'PATCH']))
@@ -144,7 +132,7 @@ class Request
             if (strlen($body))
             {
                 parse_str($body, $data);
-                $request->post = new Utils\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
+                $request->post = new Data\Bag(array_merge(isset($_POST) ? $_POST : [], $data));
             }
         }
         if ($asSingleton)
@@ -157,23 +145,23 @@ class Request
     /**
      * Constructor. Initializes the request properties.
      * 
-     * @param string|Aleph\Net\URL $url - the URL string.
-     * @param array $server - the SERVER parameters.
-     * @param array $get - the GET parameters.
-     * @param array $post - the POST parameters.
-     * @param array $cookies - the COOKIE parameters.
-     * @param array $files - the FILES parameters.
-     * @param array $headers - the HTTP headers.
-     * @param string|resource $body - the raw body data.
-     * @access public
+     * @param string|\Aleph\Net\URL $url The URL string.
+     * @param array $server The SERVER parameters.
+     * @param array $get The GET parameters.
+     * @param array $post The POST parameters.
+     * @param array $cookies The COOKIE parameters.
+     * @param array $files The FILES parameters.
+     * @param array $headers The HTTP headers.
+     * @param string|resource|null $body The raw body data.
+     * @return void
      */
-    public function __construct($url = null, array $server = [], array $get = [], array $post = [], array $cookies = [], array $files = [], array $headers = [], $body = null)
+    public function __construct($url = '', array $server = [], array $get = [], array $post = [], array $cookies = [], array $files = [], array $headers = [], $body = null)
     {
         $this->url = $url instanceof URL ? $url : new URL($url);
         $this->server = new ServerBag($server);
-        $this->get = new Utils\Bag($get);
-        $this->post = new Utils\Bag($post);
-        $this->cookies = new Utils\Bag($cookies);
+        $this->get = new Data\Bag($get);
+        $this->post = new Data\Bag($post);
+        $this->cookies = new Data\Bag($cookies);
         $this->files = new FileBag($files);
         $this->headers = new HeaderBag($headers ?: $this->server->getHeaders());
         $this->body = $body;
@@ -182,7 +170,7 @@ class Request
     /**
      * Clones the current request.
      *
-     * @access public
+     * @return void
      */
     public function __clone()
     {
@@ -199,10 +187,9 @@ class Request
      * Checks if the request method is of specified type.
      *
      * @param string $method
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isMethod($method)
+    public function isMethod($method) : bool
     {
         return $this->getMethod() === strtoupper($method);
     }
@@ -210,10 +197,9 @@ class Request
     /**
      * Checks whether the HTTP method is safe or not.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isMethodSafe()
+    public function isMethodSafe() : bool
     {
         return in_array($this->getMethod(), ['GET', 'HEAD']);
     }
@@ -222,10 +208,9 @@ class Request
     /**
      * Returns TRUE if the request is a XMLHttpRequest and FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isAjax()
+    public function isAjax() : bool
     {
         return $this->headers['X-Requested-With'] == 'XMLHttpRequest';
     }
@@ -233,10 +218,9 @@ class Request
     /**
      * Returns TRUE if the current request was sent from the same host and FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isOwnHost()
+    public function isOwnHost() : bool
     {
         if (isset($this->server['HTTP_REFERER']))
         {
@@ -248,10 +232,9 @@ class Request
     /**
      * Returns TRUE if the request sent from mobile browser and FALSE otherwise.
      *
-     * @return boolean
-     * @access public
+     * @return bool
      */
-    public function isMobileBrowser()
+    public function isMobileBrowser() : bool
     {
         if ($agent = $this->server['HTTP_USER_AGENT'])
         {
@@ -267,9 +250,8 @@ class Request
      * The method is always an uppercased string.
      *
      * @return string
-     * @access public
      */
-    public function getMethod()
+    public function getMethod() : string
     {
         $method = strtoupper($this->server->get('REQUEST_METHOD', 'GET'));
         if ($method === 'POST')
@@ -286,9 +268,8 @@ class Request
      * Returns the ETags.
      *
      * @return array
-     * @access public
      */
-    public function getETags()
+    public function getETags() : array
     {
         return preg_split('/\s*,\s*/', $this->headers['If-None-Match'], null, PREG_SPLIT_NO_EMPTY);
     }
@@ -296,11 +277,10 @@ class Request
     /**
      * Returns the request raw body data or a resource to read the body stream.
      *
-     * @param boolean $asResource - if true, a resource will be returned.
+     * @param bool $asResource If it is TRUE, a resource will be returned.
      * @return string|resource
-     * @access public
      */
-    public function getRawBody($asResource = false)
+    public function getRawBody(bool $asResource = false)
     {
         $isResource = is_resource($this->body);
         if ($asResource)
@@ -335,7 +315,6 @@ class Request
      * Returns the request body converted according to the request content type.
      *
      * @return mixed
-     * @access public
      */
     public function getBody()
     {
@@ -352,9 +331,8 @@ class Request
      * Returns the request as a string.
      *
      * @return string
-     * @access public
      */
-    public function __toString()
+    public function __toString() : string
     {
         $body = $this->getBody();
         $query = $this->url->build(URL::PATH | URL::QUERY);

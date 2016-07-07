@@ -34,9 +34,7 @@ class CLI
     /**
      * Available console colors and styles.
      *
-     * @var array $colors
-     * @access private
-     * @static
+     * @var array
      */
     private static $colors = [
         'background' => [
@@ -67,38 +65,25 @@ class CLI
             'conceal' => 8
         ]
     ];
-  
-    /**
-     * Returns TRUE if the current interface type is interactive console and FALSE otherwise.
-     *
-     * @return boolean
-     * @access public
-     * @static
-     */
-    public static function isAvailable()
-    {
-        return PHP_SAPI === 'cli' || PHP_SAPI === 'cli-server';
-    }
 
     /**
      * Returns TRUE if the console supports colorization and FALSE otherwise.
      *
      * @return boolean
-     * @access public
-     * @static
      */
-    public static function hasColorSupport()
+    public static function hasColorSupport() : bool
     {
         if (DIRECTORY_SEPARATOR == '\\')
         {
-            return getenv('ANSICON') !== false || getenv('ConEmuANSI') === 'ON';
+            return version_compare('10.0.10586', PHP_WINDOWS_VERSION_MAJOR . '.' . PHP_WINDOWS_VERSION_MINOR . '.' . PHP_WINDOWS_VERSION_BUILD) <= 0 ||
+                   getenv('ANSICON') !== false || getenv('ConEmuANSI') === 'ON' || getenv('TERM') === 'xterm';
         }
         if (!function_exists('posix_isatty'))
         {
             return false;
         }
         $stream = fopen('php://output', 'w');
-        $res = posix_isatty($stream);
+        $res = @posix_isatty($stream);
         fclose($stream);
         return $res;
     }
@@ -112,10 +97,8 @@ class CLI
      * @param integer|string - the background color index or name.
      * @param integer|string|array $styles - the text style index(es) or name(s).
      * @return string
-     * @access public
-     * @static
      */
-    public static function highlight($text, $foreground = 'white', $background = 'black', $styles = null)
+    public static function highlight(string $text, $foreground = 'white', $background = 'black', $styles = null) : string
     {
         $tmp = [];
         if (is_int($foreground))
