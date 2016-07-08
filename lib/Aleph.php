@@ -181,13 +181,11 @@ final class Aleph
             'search' => false,
             'unique' => true,
             'classmap' => 'classmap.php',
-            'mask' => '/.+\\.php\\z/i', 
+            'mask' => '/.+\\.php\\z/i',
             'timeout' => 300,
             'disableExceptions' => false,
             'directories' => [],
-            'namespaces' => [
-                'App' => '@app'
-            ],
+            'namespaces' => [],
             'exclusions' => [
                 '@aleph/_tests',
                 '@aleph/_templates'
@@ -195,9 +193,7 @@ final class Aleph
         ],
         // View settings.
         'view' => [
-            'directories' => [
-                '@app/views'
-            ]
+            'directories' => []
         ],
         // Database log and cache settings
         'db' => [
@@ -286,7 +282,7 @@ final class Aleph
                         Aleph::exception(new \ErrorException($error['message'], self::FATAL_ERROR_CODE, 1, $error['file'], $error['line']));
                     }
                 }
-                return self::$output !== null ? self::$output : $output;
+                return Aleph::getOutput() !== null ? Aleph::getOutput() : $output;
             });
         }
         if ($timezone) 
@@ -348,6 +344,14 @@ final class Aleph
             $reservedMemory = str_repeat(chr(0), $size);
         }
     }
+    
+    /**
+     * Returns value of the response body.
+     */
+    public static function getOutput()
+    {
+        return self::$output;
+    }
 
     /**
      * Sets value of the response body.
@@ -357,7 +361,7 @@ final class Aleph
      * @param int $exitCode The exit status.
      * @return void
      */
-    public static function output($output, bool $terminate = true, int $exitCode = 0)
+    public static function setOutput($output, bool $terminate = true, int $exitCode = 0)
     {
         if (self::$flags & self::INIT_USE_OUTPUT_BUFFERING)
         {
@@ -396,24 +400,7 @@ final class Aleph
         {
             $data = require($data);
         }
-        if ($merge)
-        {
-            foreach ($data as $name => $value)
-            {
-                if (is_array($value) && isset(self::$config[$name]) && is_array(self::$config[$name]))
-                {
-                    self::$config[$name] = array_merge(self::$config[$name], $value);
-                }
-                else
-                {
-                    self::$config[$name] = $value;
-                }
-            }
-        }
-        else
-        {
-            self::$config = $data;
-        }
+        self::$config = $merge ? self::merge(self::$config, $data) : $data;
     }
   
     /**
@@ -863,7 +850,7 @@ final class Aleph
             $errorTemplate = empty(self::$config['errorTemplate']) ? null : self::dir(self::$config['errorTemplate']);
             $output = (is_file($errorTemplate) && is_readable($errorTemplate)) ? file_get_contents($errorTemplate) : self::ERROR_TEMPLATE;
         }
-        self::output($output);
+        self::setOutput($output);
     }
     
     /**
@@ -882,7 +869,7 @@ final class Aleph
             {
                 unset($_SESSION['__DEBUG_INFORMATION__'][$_GET['__DEBUG_INFORMATION__']]);
             }
-            self::output($output);
+            self::setOutput($output);
         }
     }
   
@@ -1402,7 +1389,7 @@ final class Aleph
                 $output = '<script type="text/javascript">window.location.assign(\'' . $url . '\');</script>';
             }
         }
-        self::output($output, $immediately);
+        self::setOutput($output, $immediately);
     }
   
     /**
@@ -1423,7 +1410,7 @@ final class Aleph
         {
             $output = '<script type="text/javascript">window.location.reload(' . $forceGet . ');</script>';
         }
-        self::output($output, $immediately);
+        self::setOutput($output, $immediately);
     }
     
     /**
@@ -1741,6 +1728,44 @@ final class Aleph
             }
             return count(self::$classes);
         }
+    }
+    
+    /**
+     * Merges two arrays recursively.
+     * This method merges values with equal integer keys and replaces values with the same string keys.
+     *
+     * @param array $a1 The first array to merge.
+     * @param array $a2 The second array to merge.
+     * @return array
+     */
+    private static function merge(array $a1, array $a2) : array
+    {
+        foreach ($a2 as $k => $v)
+        {
+            if (is_array($v) && isset($a1[$k]) && is_array($a1[$k]))
+            {
+                if (is_int($k))
+                {
+                   $a1[] = self::merge($a1[$k], $v);
+                }
+                else
+                {
+                    $a1[$k] = self::merge($a1[$k], $v);
+                }
+            }
+            else
+            {
+                if (is_int($k))
+                {
+                    $a1[] = $v;
+                }
+                else
+                {
+                    $a1[$k] = $v;
+                }
+            }
+        }
+        return $a1;
     }
   
     /**

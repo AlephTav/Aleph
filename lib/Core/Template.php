@@ -415,7 +415,7 @@ class Template implements \ArrayAccess
     }
 
     /**
-     * Converts an instance of this class to a string.
+     * Converts an instance of template to string.
      *
      * @return string
      */

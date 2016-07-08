@@ -94,11 +94,13 @@ class View
      * Constructor.
      *
      * @param string $view A view string or path to a view file.
+     * @param array $vars The view variables.
      * @return void
      */
-    public function __construct(string $view = '')
+    public function __construct(string $view = '', array $vars = [])
     {
         $this->view = $view;
+        $this->vars = $vars;
     }
     
     /**
@@ -228,6 +230,23 @@ class View
     public function show(string $view = '')
     {
         echo $this->render($view);
+    }
+    
+    /**
+     * Converts an instance of view to string.
+     *
+     * @return string
+     */
+    public function __toString() : string
+    {
+        try
+        {
+            return $this->render();
+        }
+        catch (\Throwable $e)
+        {
+            Aleph::exception($e);
+        }
     }
     
     /**

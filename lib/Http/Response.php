@@ -276,7 +276,7 @@ class Response
         {
             $converter->outputCharset = $type['charset'];
         }
-        $this->body = $converter->convert($body);
+        $this->body = (string)$converter->convert($body);
         return $this;
     }
     
@@ -1107,7 +1107,7 @@ class Response
      */
     protected function sendBody()
     {
-        Aleph::output($this->body, false);
+        Aleph::setOutput($this->body, false);
         return $this;
     }
     

@@ -22,7 +22,8 @@
 
 namespace Aleph\Core;
 
-use Aleph\Web;
+use Aleph,
+    Aleph\Web;
 
 /**
  * With this class you can transform a string in certain format into a method or function invoking.
@@ -228,15 +229,16 @@ class Callback
         $args = (array)$args;
         if ($this->type == 'closure')
         {
+            $closure = $this->method;
             if (is_object($newthis))
             {
-                return $this->method->call($newthis, ...$args);
+                return $closure->call($newthis, ...$args);
             }
-            return $this->method(...$args);
+            return call_user_func_array($closure, $args);
         }
         if ($this->type == 'function')
         {
-            return $this->method(...$args);
+            return call_user_func_array($this->method, $args);
         }
         if ($this->type == 'control')
         {
@@ -266,13 +268,13 @@ class Callback
             }
             else
             {
-                $class = $this->getClassObject($args);
+                $class = $this->getObject($args);
             }
             if ($this->method == '__construct')
             {
                 return $class;
             }
-            return call_user_func_array([$class, $this->method], $args);
+            return call_user_func_array([$class, $this->method], array_splice($args, $this->numargs));
         }
     }
 
@@ -357,7 +359,7 @@ class Callback
         {
             return false;
         }
-        if (!\Aleph::loadClass($this->class))
+        if (!Aleph::loadClass($this->class))
         {
             return false;
         }
@@ -457,21 +459,24 @@ class Callback
      * @param array $args Arguments of the class constructor.
      * @return object|null
      */
-    public function getClassObject(array $args = [])
+    public function getObject(array $args = [])
     {
-        if (empty($this->class))
+        if ($this->type == 'closure')
         {
-            return;
+            return $this->method;
         }
         if ($this->type == 'control')
         {
             return Web\Page::current()->get($this->cid);
         }
-        $class = new \ReflectionClass($this->class);
-        if ($this->numargs == 0)
+        if ($this->type == 'class')
         {
-            return $class->newInstance();
+            $class = new \ReflectionClass($this->class);
+            if ($this->numargs == 0)
+            {
+                return $class->newInstance();
+            }
+            return $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
         }
-        return $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
     }
 }

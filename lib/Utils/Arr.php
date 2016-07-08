@@ -268,7 +268,8 @@ class Arr
     }
   
     /**
-     * Merges two arrays recursively without formation of duplicate values having the same keys.
+     * Merges two arrays recursively.
+     * This method merges values with equal integer keys and replaces values with the same string keys.
      *
      * @param array $a1 The first array to merge.
      * @param array $a2 The second array to merge.
@@ -280,11 +281,25 @@ class Arr
         {
             if (is_array($v) && isset($a1[$k]) && is_array($a1[$k]))
             {
-                $a1[$k] = self::merge($a1[$k], $v);
+                if (is_int($k))
+                {
+                   $a1[] = self::merge($a1[$k], $v);
+                }
+                else
+                {
+                    $a1[$k] = self::merge($a1[$k], $v);
+                }
             }
             else
             {
-                $a1[$k] = $v;
+                if (is_int($k))
+                {
+                    $a1[] = $v;
+                }
+                else
+                {
+                    $a1[$k] = $v;
+                }
             }
         }
         return $a1;

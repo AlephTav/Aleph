@@ -65,6 +65,13 @@ class Router
      * @var array
      */
     private $groupOptions = [];
+    
+    /**
+     * A callback that is called before each action.
+     *
+     * @var \Aleph\Core\Callback
+     */
+    private $beforeRouteCallback = null;
   
     /**
      * Sets URL component for the current URL template.
@@ -162,6 +169,24 @@ class Router
         $this->lastAction = [];
         return $this;
     }
+    
+    /**
+     * Sets a callback that will be called before each action.
+     * This callback takes an array of binding parameters and should return modified version of it.
+     * If the argument is FALSE the callback will be removed.
+     * If the argument is NULL the method returns callback instance.
+     *
+     * @param mixed $callback
+     * @return \Aleph\Core\Callback|null
+     */
+    public function onBeforeRoute($callback = null)
+    {
+        if ($callback === null)
+        {
+            return $this->beforeRouteCallback; 
+        }
+        $this->beforeRouteCallback = $callback === false ? null : new Core\Callback($callback);
+    }
   
     /**
      * Binds some action (user-defined callback) with the given URL template (regex).
@@ -192,9 +217,9 @@ class Router
                 }
                 else if ($option == 'namespace')
                 {
-                    if (is_string($action) && $action !=== '' && $action[0] != '\\')
+                    if (is_string($action) && $action !== '' && $action[0] != '\\')
                     {
-                        $action = $value . '\\' . $action;
+                        $data['action'] = $value . '\\' . $action;
                     }
                 }
                 else
@@ -369,6 +394,10 @@ class Router
                 {
                     continue;
                 }
+                if ($this->beforeRouteCallback)
+                {
+                    $data = ($this->beforeRouteCallback)($data);
+                }
                 if (is_string($data['action']))
                 {
                     foreach ($data['params'] as $k => $param)
@@ -412,7 +441,7 @@ class Router
                         }
                     }
                 }
-                $res['result'] = $action->call($params);
+                $res['result'] = $action->call($params, $data);
                 return $res;
             }
         }

@@ -66,7 +66,7 @@ class Controller
      *
      * @var bool
      */
-    protected static $convertErrors = true;
+    protected $convertErrors = false;
     
     /**
      * Constructor.
@@ -80,7 +80,7 @@ class Controller
     {
         Aleph::setErrorHandler([$this, 'errorHandler']);
         $this->request = $request ?: Request::createFromGlobals(true);
-        $this->response = $response ?: (new Response())->setContentType('json', 'UTF-8');
+        $this->response = $response ?: new Response();
         $this->router = $router ?: new Router();
         $this->adjustRouter();
     }
@@ -161,7 +161,7 @@ class Controller
         {
             $this->getResponse()->stop();
         }
-        if (static::$convertErrors)
+        if ($this->convertErrors)
         {
             $this->getResponse()->stop(500, $info);
         }
@@ -248,13 +248,9 @@ class Controller
      *
      * @return void
      */
-    public function run()
+    final public function run()
     {
         $res = $this->getRouter()->route($this->getRequest());
-        if (headers_sent())
-        {
-            return;
-        }
         $this->getResponse()->setStatusCode($res['status']);
         switch ($res['status'])
         {
@@ -279,98 +275,70 @@ class Controller
         }
         if ($res['result'] instanceof Response)
         {
-            $res['result']->send();
+            $response = $res['result'];
         }
         else
         {
-            $this->getResponse()
-                 ->setBody($res['result'])
-                 ->send();
+            $response = $this->getResponse()->setBody($res['result']);
         }
-        /*$class = get_called_class();
-        $action = $class . '::action';
-        \Aleph::setErrorHandler($class . '::error');
-        static::$request = static::$request instanceof Request ? static::$request : Request::createFromGlobals(true);
-        static::$response = static::$response instanceof Response ? static::$response : new Response();
-        static::$response->setContentType(static::$contentType, static::$charset);
-        $router = new Router();
-        foreach (static::$map as $resource => $info)
+        if (!$response->isSent())
         {
-            if ($resource && $resource[0] == '@') 
-            {
-                $resource = static::$urlPrefix . substr($resource, 1);
-            }
-            foreach ($info as $methods => $data)
-            {
-                $router->bind($methods, $resource, $action)
-                       ->secure(empty($data['secure']) ? false : $data['secure'])
-                       ->component(empty($data['component']) ? URL::PATH : $data['component'])
-                       ->where(empty($data['where']) ? [] : $data['where'])
-                       ->sync(empty($data['sync']) ? false : $data['sync'])
-                       ->args(['resource' => $data])
-                       ->extra('params');
-            }
+            $response->send();
         }
-        $res = $router->route(static::$request);
-        if (headers_sent())
-        {
-            return;
-        }
-        static::$response->setStatusCode($res['status']);
-        switch ($res['status'])
-        {
-            case 400:
-                $res['result'] = static::badRequest();
-                break;
-            case 401:
-                $res['result'] = static::unauthorized();
-                break;
-            case 403:
-                $res['result'] = static::forbidden();
-                break;
-            case 404:
-                $res['result'] = static::notFound();
-                break;
-            case 405:
-                $res['result'] = static::notAllowed($res['methods']);
-                break;
-            case 501:
-                $res['result'] = static::notImplemented();
-                break;
-        }
-        if ($res['result'] instanceof Response)
-        {
-            $res['result']->send();
-        }
-        else
-        {
-            static::$response->setBody($res['result']);
-            static::$response->send();
-        }*/
     }
     
+    /**
+     * Automatically invokes before the API method call.
+     *
+     * @param string $class The class name of controller.
+     * @param string $method The method of controller.
+     * @param array $params The method parameters.
+     * @return void
+     */
+    protected function before(string $class, string $method, array &$params){}
+  
+    /**
+     * Automatically invokes after the API method call.
+     *
+     * @param string $class The class name of controller.
+     * @param string $method The method of controller.
+     * @param array $params The method parameters.
+     * @param mixed $result The result of the method execution.
+     * @return void
+     */
+    protected function after(string $class, string $method, array $params, &$result){}
+    
+    /**
+     * Adjusts the matched route to call action() method before actual routing.
+     *
+     * @return void
+     */
     private function adjustRouter()
     {
-        $this->router->onPreBind(function(array $data)
+        $action = function(array $resource, array $params)
         {
-            
+            $this->action($resource, $params);
+        };
+        $this->router->onBeforeRoute(function(array $data) use($action)
+        {
+            $data['args'] = ['resource' => $data];
+            $data['action'] = $action;
+            $data['extra'] = 'params';
+            $data['sync'] = false;
+            return $data;
         });
     }
     
     /**
      * Executes an action on the controller.
      *
-     * @param array $resource The URL templater of the requested resource.
+     * @param array $resource The requested resource (an action with options).
      * @param array $params The URL template variables.
      * @return mixed
      */
     private function action(array $resource, array $params = null)
     {
-        if (empty($resource['callback']))
-        {
-            throw new \RuntimeException(sprintf(static::ERR_API_1, $resource));
-        }
-        $callback = $resource['callback'];
+        $callback = $resource['action'];
         foreach ($params as $param => $value)
         {
             $callback = str_replace('#' . $param . '#', $value, $callback, $count);
@@ -379,75 +347,41 @@ class Controller
                 unset($params[$param]);
             }
         }
-        if ($callback[0] != '\\')
-        {
-            $callback = rtrim(static::$namespace, '\\') . '\\' . ltrim($callback, '\\');
-        }
         $callback = new Core\Callback($callback);
-        if ($callback->isStatic()) 
+        if (!empty($resource['extra']))
         {
-            return $callback->call($params);
+            $resource['args'][$resource['extra']] = $params;
         }
-        $api = $callback->getClassObject($params);
-        if ($api instanceof Controller)
+        else 
         {
-            $api->before($resource, $params);
-            $result = call_user_func_array([$api, $callback->getMethod()], $params);
-            $api->after($resource, $params, $result);
+            $resource['args'] = array_merge($resource['args'], $params);
+        }
+        if (empty($resource['sync']))
+        {
+            $params = $resource['args'];
         }
         else
         {
-            $result = call_user_func_array([$api, $callback->getMethod()], $params);
+            $params = [];
+            foreach ($callback->getParameters() as $param)
+            {
+                $name = $param->getName();
+                if (array_key_exists($name, $resource['args']))
+                {
+                    $params[] = $resource['args'][$name];
+                }
+            }
         }
+        $class = $callback->getClass();
+        if ($callback->isStatic() || !is_a($class, self::class, true))
+        {
+            return $callback->call($params);
+        }
+        $method = $callback->getMethod();
+        $obj = $class == self::class ? $this : new $class($this->getRequest(), $this->getResponse(), $this->getRouter());
+        $obj->before($class, $method, $params);
+        $result = call_user_func_array([$obj, $method], $params);
+        $obj->after($class, $method, $params, $result);
         return $result;
     }
-  
-    /**
-     * The batch API method allowing to perform several independent between themselves API methods at once.
-     * The method returns execution result of all API endpoints. 
-     *
-     * @return array
-     * @access protected
-     */
-    /*protected function batch()
-    {
-        $result = [];
-        $data = json_decode(static::$request->getBody(), true);
-        if (!is_array($data))
-        {
-            static::badRequest();
-        }
-        foreach ($data as $request)
-        {
-            static::$request->setMethod($request['method']);
-            static::$request->url->parse($request['url']);
-            if (!empty($request['get']))
-            {
-                static::$request->get->replace($request['get']);
-            }
-            $this->request->setBody($request['body']);
-            self::run();
-            $result[] = static::$response->getBody();
-        }
-        return $result;
-    }*/
-  
-    /**
-     * Automatically invokes before the API method call.
-     *
-     * @param array $resource - the part of $map which corresponds the current request.
-     * @param array $params - the values of the URL template variables.
-     * @access protected
-     */
-    protected function before(array $resource, array &$params){}
-  
-    /**
-     * Automatically invokes after the API method call.
-     *
-     * @param array $resource - the part of $map which corresponds the current request.
-     * @param array $params - the values of the URL template variables.
-     * @param mixed $result - the result of the API method execution.
-     * @access protected
-     */
-    protected function after(array $resource, array $params, &$result){}
 }
