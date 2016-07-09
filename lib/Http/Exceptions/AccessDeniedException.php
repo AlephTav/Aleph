@@ -20,68 +20,27 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Core;
+namespace Aleph\Http\Exceptions;
 
-use Aleph;
- 
 /**
- * Exception allows to generate user exceptions with some additional information about exception.
+ * This type of exception can be used when a user hasn't access to some resource.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 2.0.1
- * @package aleph.core
+ * @version 1.0.0
+ * @package aleph.http
  */
-class Exception extends \Exception
-{    
-    /**
-     * Additional information about the exception.
-     *
-     * @var mixed
-     */
-    protected $data = null;
-
+class AccessDeniedException extends Exception
+{
     /**
      * Constructor.
      *
      * @param string $message The exception message to throw.
-     * @param mixed $data Some additional information about the exception.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = '', $data = null, int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'Forbidden', int $code = 0, \Throwable $previous = null)
     {
-        parent::__construct($message, $code, $previous);
-        $this->data = $data;
-    }
-
-    /**
-     * Returns the data associated with the exception, otherwise it returns the exception message.
-     *
-     * @return mixed
-     */
-    public function getDataOrMessage()
-    {
-        return $this->data !== null ? $this->data : $this->getMessage();
-    }
-    
-    /**
-     * Returns additional information about the exception.
-     *
-     * @return mixed
-     */
-    public function getData()
-    {
-        return $this->data;
-    }
-  
-    /**
-     * Returns full information about the current exception.
-     *
-     * @return array
-     */
-    public function getInfo() : array
-    {
-        return Aleph::analyzeException($this);
+        parent::__construct($message, 403, $code, $previous);
     }
 }

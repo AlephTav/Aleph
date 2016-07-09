@@ -193,6 +193,7 @@ final class Aleph
         ],
         // View settings.
         'view' => [
+            'extension' => 'php',
             'directories' => []
         ],
         // Database log and cache settings
@@ -326,6 +327,16 @@ final class Aleph
     }
     
     /**
+     * Returns initialization flags.
+     *
+     * @return int
+     */
+    public static function flags() : int
+    {
+        return self::$flags;
+    }
+    
+    /**
      * Reserves a block of memory to prevent out-of-memory errors.
      * If $size is set to 0 the reserved block will be freed.
      *
@@ -441,7 +452,7 @@ final class Aleph
         }
         if ($merge && is_array($cfg) && is_array($value))
         {
-            $cfg = array_merge($cfg, $value);
+            $cfg = self::merge($cfg, $value);
         }
         else
         {

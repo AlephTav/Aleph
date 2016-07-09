@@ -29,7 +29,7 @@ use Aleph,
  * The simple view class using PHP as template language.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
+ * @version 1.0.3
  * @package aleph.core
  */
 class View
@@ -91,16 +91,75 @@ class View
     protected $view = '';
     
     /**
+     * Extension of all view files.
+     *
+     * @var string
+     */
+    protected $extension = '';
+    
+    /**
+     * View directories.
+     *
+     * @var array     
+     */
+    protected $directories = [];
+    
+    /**
      * Constructor.
      *
      * @param string $view A view string or path to a view file.
      * @param array $vars The view variables.
+     * @param string $extension Extension of all view files.
      * @return void
      */
-    public function __construct(string $view = '', array $vars = [])
+    public function __construct(string $view = '', array $vars = [], string $extension = '', array $directories = [])
     {
         $this->view = $view;
         $this->vars = $vars;
+        $this->extension = $extension;
+        $this->directories = $directories;
+    }
+    
+    /**
+     * Returns extension of view files.
+     *
+     * @return string
+     */
+    public function getExtension() : string
+    {
+        return $this->extension;
+    }
+    
+    /**
+     * Sets extension of view files.
+     *
+     * @param string $extension
+     * @return void
+     */
+    public function setExtension(string $extension)
+    {
+        $this->extension = $extension;
+    }
+    
+    /** 
+     * Returns directories of view files.
+     *
+     * @return array
+     */
+    public function getDirectories() : array
+    {
+        return $this->directories;
+    }
+    
+    /**
+     * Sets directories of view files.
+     *
+     * @param array $directories
+     * @return void
+     */
+    public function setDirectories(array $directories = [])
+    {
+        $this->directories = $directories;
     }
     
     /**
@@ -252,7 +311,7 @@ class View
     /**
      * Searches view file by view name.
      *
-     * @param string $view The name of a view file.
+     * @param string $view A view file or view name.
      * @return void
      * @throws \LogicException If the given view is not found.
      */
@@ -262,9 +321,11 @@ class View
         {
             return $view;
         }
-        foreach (Aleph::get('view.directories', []) as $path)
+        $ext = '.' . ltrim($this->extension !== '' ? $this->extension : Aleph::get('view.extension', 'php'), '.');
+        $dirs = $this->directories ?: Aleph::get('view.directories', []);
+        foreach ($dirs as $path)
         {
-            $path = Aleph::dir($path) . DIRECTORY_SEPARATOR . $view;
+            $path = Aleph::dir($path) . DIRECTORY_SEPARATOR . $view . $ext;
             if (is_file($path))
             {
                 return $path;

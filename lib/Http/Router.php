@@ -22,7 +22,8 @@
  
 namespace Aleph\Http;
 
-use Aleph\Core;
+use Aleph\Core,
+    Aleph\Http\Exceptions;
 
 /**
  * With this class you can route the requested URLs.
@@ -341,27 +342,16 @@ class Router
   
     /**
      * Performs all actions matching all URL templates.
-     * The method returns array of the following structure:
-     * [
-     *  'result' => ...an action execution's result..., 
-     *  'status' => ...HTTP status code...,
-     *  'methods' => [...HTTP methods that match request...]
-     * ]
      *
-     * @param \Aleph\Http\Request $request - the current request instance.
-     * @return array
+     * @param \Aleph\Http\Request $request The current request instance.
+     * @return mixed
      */
-    public function route(Request $request = null) : array
+    public function route(Request $request = null)
     {
         $this->lastAction = [];
         $request = $request ?: Request::createFromGlobals();
         $method = $request->getMethod();
         $url = $request->url;
-        $res = [
-            'result' => null,
-            'status' => 200,
-            'methods' => [$method]
-        ];
         $urls = [];
         if (isset($this->actions[$method]))
         {
@@ -378,8 +368,7 @@ class Router
                 }
                 if (!empty($data['secure']) && !$url->isSecured())
                 {
-                    $res['status'] = 403;
-                    return $res;
+                    throw new Exceptions\AccessDeniedException();
                 }
                 $flag = true;
                 foreach ($data['validate'] as $param => $rgx)
@@ -441,8 +430,7 @@ class Router
                         }
                     }
                 }
-                $res['result'] = $action->call($params, $data);
-                return $res;
+                return $action->call($params, $data);
             }
         }
         else
@@ -465,13 +453,17 @@ class Router
             }
             if ($methods = reset($methods))
             {
-                $res['status'] = in_array($method, $methods) ? 405 : 501;
-                $res['methods'] = $methods;
-                return $res;
+                if (in_array($method, $methods))
+                {
+                    throw new Exceptions\MethodNotAllowedException();
+                }
+                else
+                {
+                    throw new Exceptions\NotImplementedException();
+                }
             }
         }
-        $res['status'] = 404;
-        return $res;
+        throw new Exceptions\NotFoundException();
     }
   
     /**

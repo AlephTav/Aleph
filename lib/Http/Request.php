@@ -93,7 +93,7 @@ class Request
     /**
      * Used for singleton version of the request.
      *
-     * @var \Aleph\Http\Request
+     * @var static
      */
     private static $request = null;
     

@@ -174,6 +174,13 @@ class Response
     protected $body = null;
     
     /**
+     * Used for singleton version of the response.
+     *
+     * @var static
+     */
+    private static $response = null;
+    
+    /**
      * Returns an HTTP status message by its code. 
      * If such message doesn't exist the method returns $default.
      * 
@@ -189,11 +196,21 @@ class Response
     /**
      * Creates a new response with values from PHP's super globals.
      *
+     * @param bool $asSingleton Determines whether the response instance should be stored as singleton.
      * @return static
      */
-    public static function createFromGlobals()
+    public static function createFromGlobals(bool $asSingleton = false)
     {
-        return new static('', 200, HeaderBag::getResponseHeaders());
+        if ($asSingleton && self::$response)
+        {
+            return self::$response;
+        }
+        $response = new static('', 200, HeaderBag::getResponseHeaders());
+        if ($asSingleton)
+        {
+            self::$response = $response;
+        }
+        return $response;
     }
   
     /**
@@ -781,7 +798,7 @@ class Response
      */
     public function isSent() : bool
     {
-        return $this->isSent;
+        return $this->isSent || headers_sent();
     }
     
     /**
@@ -1083,7 +1100,7 @@ class Response
      */
     protected function sendHeaders()
     {
-        if ($this->isSent)
+        if ($this->isSent())
         {
             return $this;
         }

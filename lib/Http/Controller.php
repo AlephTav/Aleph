@@ -23,7 +23,8 @@
 namespace Aleph\Http;
 
 use Aleph,
-    Aleph\Core;
+    Aleph\Core,
+    Aleph\Http\Exceptions;
 
 /**
  * The base class for creating of the RESTFul API system.
@@ -80,7 +81,7 @@ class Controller
     {
         Aleph::setErrorHandler([$this, 'errorHandler']);
         $this->request = $request ?: Request::createFromGlobals(true);
-        $this->response = $response ?: new Response();
+        $this->response = $response ?: Response::createFromGlobals(true);
         $this->router = $router ?: new Router();
         $this->adjustRouter();
     }
@@ -146,6 +147,60 @@ class Controller
         $this->router = $router;
         $this->adjustRouter();
     }
+    
+    /**
+     * Performs the current HTTP request.
+     *
+     * @return void
+     */
+    final public function run()
+    {
+        $response =  $this->getResponse();
+        try
+        {
+            $res = $this->getRouter()->route($this->getRequest());
+        }
+        catch (Exceptions\BadRequestException $e)
+        {
+            $res = $this->badRequest();
+        }
+        catch (Exceptions\UnauthorizedException $e)
+        {
+            $res = $this->unauthorized();
+        }
+        catch (Exceptions\AccessDeniedException $e)
+        {
+            $res = $this->forbidden();
+        }
+        catch (Exceptions\NotFoundException $e)
+        {
+            $res = $this->notFound();
+        }
+        catch (Exceptions\MethodNotAllowedException $e)
+        {
+            $res = $this->notAllowed($e->getMethods());
+        }
+        catch (Exceptions\NotImplementedException $e)
+        {
+            $res = $this->notImplemented();
+        }
+        catch (Exceptions\Exception $e)
+        {
+            $res = $this->httpError($e->getStatusCode());
+        }
+        if ($res instanceof Response)
+        {
+            $response = $res;
+        }
+        else
+        {
+            $response->setStatusCode(200)->setBody($res);
+        }
+        if (!$response->isSent())
+        {
+            $response->send();
+        }
+    }
   
     /**
      * The error and exception handler.
@@ -155,7 +210,7 @@ class Controller
      * @param array $info The exception information.
      * @return bool
      */
-    public function errorHandler(\Throwable $e, array $info) : bool
+    protected function errorHandler(\Throwable $e, array $info) : bool
     {
         if (!Aleph::get('debugging'))
         {
@@ -176,7 +231,7 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    public function badRequest($content = '')
+    protected function badRequest($content = '') : Response
     {
         return $this->getResponse()->stop(400, $content, false);
     }
@@ -188,7 +243,7 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    public function unauthorized($content = '')
+    protected function unauthorized($content = '') : Response
     {
         return $this->getResponse()->stop(401, $content, false);
     }
@@ -200,7 +255,7 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    public function forbidden($content = '')
+    protected function forbidden($content = '') : Response
     {
         return $this->getResponse()->stop(403, $content, false);
     }
@@ -212,7 +267,7 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    public function notFound($content = '')
+    protected function notFound($content = '') : Response
     {
         return $this->getResponse()->stop(404, $content, false);
     }
@@ -225,7 +280,7 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    public function notAllowed(array $methods = [], $content = '')
+    protected function notAllowed(array $methods = [], $content = '') : Response
     {
         $this->getResponse()->headers->set('Allow', implode(', ', $methods));
         return $this->getResponse()->stop(405, $content, false);
@@ -238,53 +293,22 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    public function notImplemented($content = '')
+    protected function notImplemented($content = '') : Response
     {
         return $this->getResponse()->stop(501, $content, false);
     }
-
+    
     /**
-     * Performs the current HTTP request.
+     * This method is automatically called when the server failed to process request and
+     * the status code was not be equal one of the following codes: 400, 401, 403, 404, 405 and 501.
      *
-     * @return void
+     * @param int $statusCode The response HTTP status code.
+     * @param mixed $content The response body.
+     * @return \Aleph\Http\Response
      */
-    final public function run()
+    protected function httpError(int $statusCode, $content = '') : Response
     {
-        $res = $this->getRouter()->route($this->getRequest());
-        $this->getResponse()->setStatusCode($res['status']);
-        switch ($res['status'])
-        {
-            case 400:
-                $res['result'] = $this->badRequest();
-                break;
-            case 401:
-                $res['result'] = $this->unauthorized();
-                break;
-            case 403:
-                $res['result'] = $this->forbidden();
-                break;
-            case 404:
-                $res['result'] = $this->notFound();
-                break;
-            case 405:
-                $res['result'] = $this->notAllowed($res['methods']);
-                break;
-            case 501:
-                $res['result'] = $this->notImplemented();
-                break;
-        }
-        if ($res['result'] instanceof Response)
-        {
-            $response = $res['result'];
-        }
-        else
-        {
-            $response = $this->getResponse()->setBody($res['result']);
-        }
-        if (!$response->isSent())
-        {
-            $response->send();
-        }
+        return $this->getResponse()->stop($statusCode, $content, false);
     }
     
     /**

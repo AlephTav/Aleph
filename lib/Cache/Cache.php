@@ -87,27 +87,27 @@ abstract class Cache implements \Countable
             case 'memory':
             case 'memcache':
             case 'memcached':
-                if (!Memory::isAvailable($type))
+                if (!MemoryCache::isAvailable($type))
                 {
                     throw new \RuntimeException(sprintf(static::ERR_CACHE_1, 'Memory'));
                 }
-                return new Memory(
+                return new MemoryCache(
                     $type,
                     isset($params['servers']) ? (array)$params['servers'] : [], 
                     isset($params['compress']) ? (bool)$params['compress'] : true
                 );
             case 'apc':
-                if (!APC::isAvailable())
+                if (!APCCache::isAvailable())
                 {
                     throw new \RuntimeException(sprintf(static::ERR_CACHE_1, 'APC'));
                 }
-                return new APC();
+                return new APCCache();
             case 'phpredis':
-                if (!PHPRedis::isAvailable())
+                if (!PHPRedisCache::isAvailable())
                 {
                     throw new \RuntimeException(sprintf(static::ERR_CACHE_1, 'PHPRedis'));
                 }
-                return new PHPRedis(
+                return new PHPRedisCache(
                     $params['host'] ?? '127.0.0.1',
                     $params['port'] ?? 6379,
                     $params['timeout'] ?? 0,
@@ -115,7 +115,7 @@ abstract class Cache implements \Countable
                     $params['database'] ?? 0
                 );
             case 'redis':
-                return new Redis(
+                return new RedisCache(
                     $params['host'] ?? '127.0.0.1',
                     $params['port'] ?? 6379,
                     $params['timeout'] ?? null,
@@ -123,14 +123,14 @@ abstract class Cache implements \Countable
                     $params['database'] ?? 0
                 );
             case 'session':
-                $cache = new Session();
+                $cache = new SessionCache();
                 if (isset($params['namespace']))
                 {
                     $cache->setNamespace($params['namespace']);
                 }
             case 'file':
             default:
-                $cache = new File();
+                $cache = new FileCache();
                 if (isset($params['directory']))
                 {
                     $cache->setDirectory($params['directory']);

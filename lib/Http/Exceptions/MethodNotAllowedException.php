@@ -20,68 +20,40 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Core;
+namespace Aleph\Http\Exceptions;
 
-use Aleph;
- 
 /**
- * Exception allows to generate user exceptions with some additional information about exception.
+ * This type of exception can be used when the method specified in the request
+ * is not allowed for the resource identified by the request URI.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 2.0.1
- * @package aleph.core
+ * @version 1.0.0
+ * @package aleph.http
  */
-class Exception extends \Exception
-{    
-    /**
-     * Additional information about the exception.
-     *
-     * @var mixed
-     */
-    protected $data = null;
-
+class MethodNotAllowedException extends Exception
+{
     /**
      * Constructor.
      *
      * @param string $message The exception message to throw.
-     * @param mixed $data Some additional information about the exception.
+     * @param array $methods Allowed HTTP methods.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = '', $data = null, int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'Method Not Allowed', array $methods = [], int $code = 0, \Throwable $previous = null)
     {
-        parent::__construct($message, $code, $previous);
-        $this->data = $data;
-    }
-
-    /**
-     * Returns the data associated with the exception, otherwise it returns the exception message.
-     *
-     * @return mixed
-     */
-    public function getDataOrMessage()
-    {
-        return $this->data !== null ? $this->data : $this->getMessage();
+        parent::__construct($message, 405, $code, $previous);
+        $this->data = $methods;
     }
     
     /**
-     * Returns additional information about the exception.
-     *
-     * @return mixed
-     */
-    public function getData()
-    {
-        return $this->data;
-    }
-  
-    /**
-     * Returns full information about the current exception.
+     * Returns the allowed HTTP methods.
      *
      * @return array
      */
-    public function getInfo() : array
+    public function getMethods() : array
     {
-        return Aleph::analyzeException($this);
+        return $this->data;
     }
 }

@@ -20,68 +20,48 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Core;
+namespace Aleph\Http\Exceptions;
 
-use Aleph;
- 
+use Aleph\Core;
+
 /**
- * Exception allows to generate user exceptions with some additional information about exception.
+ * The base class for all HTTP exceptions.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 2.0.1
- * @package aleph.core
+ * @version 1.0.0
+ * @package aleph.http
  */
-class Exception extends \Exception
-{    
+class Exception extends Core\Exception
+{
     /**
-     * Additional information about the exception.
+     * An HTTP response status code.
      *
-     * @var mixed
+     * @var int
      */
-    protected $data = null;
-
+    protected $statusCode;
+    
     /**
      * Constructor.
      *
      * @param string $message The exception message to throw.
-     * @param mixed $data Some additional information about the exception.
+     * @param int $statusCode An HTTP response status code.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = '', $data = null, int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = '', int $statusCode = 200, int $code = 0, \Throwable $previous = null)
     {
-        parent::__construct($message, $code, $previous);
-        $this->data = $data;
-    }
-
-    /**
-     * Returns the data associated with the exception, otherwise it returns the exception message.
-     *
-     * @return mixed
-     */
-    public function getDataOrMessage()
-    {
-        return $this->data !== null ? $this->data : $this->getMessage();
+        parent::__construct($message, null, $code, $previous);
+        $this->statusCode = $statusCode;
     }
     
     /**
-     * Returns additional information about the exception.
+     * Returns an HTTP response status code.
      *
-     * @return mixed
+     * @return int
      */
-    public function getData()
+    public function getStatusCode() : int
     {
-        return $this->data;
-    }
-  
-    /**
-     * Returns full information about the current exception.
-     *
-     * @return array
-     */
-    public function getInfo() : array
-    {
-        return Aleph::analyzeException($this);
+        return $this->statusCode;
     }
 }
