@@ -158,35 +158,35 @@ class Controller
         $response =  $this->getResponse();
         try
         {
-            $res = $this->getRouter()->route($this->getRequest());
+            $res = $this->route();
         }
         catch (Exceptions\BadRequestException $e)
         {
-            $res = $this->badRequest();
+            $res = $this->badRequest($e->getMessage());
         }
         catch (Exceptions\UnauthorizedException $e)
         {
-            $res = $this->unauthorized();
+            $res = $this->unauthorized($e->getMessage());
         }
         catch (Exceptions\AccessDeniedException $e)
         {
-            $res = $this->forbidden();
+            $res = $this->forbidden($e->getMessage());
         }
         catch (Exceptions\NotFoundException $e)
         {
-            $res = $this->notFound();
+            $res = $this->notFound($e->getMessage());
         }
         catch (Exceptions\MethodNotAllowedException $e)
         {
-            $res = $this->notAllowed($e->getMethods());
+            $res = $this->notAllowed($e->getMethods(), $e->getMessage());
         }
         catch (Exceptions\NotImplementedException $e)
         {
-            $res = $this->notImplemented();
+            $res = $this->notImplemented($e->getMessage());
         }
         catch (Exceptions\Exception $e)
         {
-            $res = $this->httpError($e->getStatusCode());
+            $res = $this->httpError($e->getStatusCode(), $e->getMessage());
         }
         if ($res instanceof Response)
         {
@@ -201,7 +201,7 @@ class Controller
             $response->send();
         }
     }
-  
+    
     /**
      * The error and exception handler.
      * This method stops the script execution and sets the response status code to 500.
@@ -210,15 +210,15 @@ class Controller
      * @param array $info The exception information.
      * @return bool
      */
-    protected function errorHandler(\Throwable $e, array $info) : bool
+    public function errorHandler(\Throwable $e, array $info) : bool
     {
-        if (!Aleph::get('debugging'))
-        {
-            $this->getResponse()->stop();
-        }
         if ($this->convertErrors)
         {
-            $this->getResponse()->stop(500, $info);
+            if (!Aleph::get('debugging'))
+            {
+                $this->getResponse()->stop();
+            }
+            $this->getResponse()->stop(500, $this->getErrorContent(500, $info));
         }
         return true;
     }
@@ -231,9 +231,9 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    protected function badRequest($content = '') : Response
+    public function badRequest($content = '') : Response
     {
-        return $this->getResponse()->stop(400, $content, false);
+        return $this->getResponse()->stop(400, $this->getErrorContent(400, $content), false);
     }
     
     /**
@@ -243,9 +243,9 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    protected function unauthorized($content = '') : Response
+    public function unauthorized($content = '') : Response
     {
-        return $this->getResponse()->stop(401, $content, false);
+        return $this->getResponse()->stop(401, $this->getErrorContent(401, $content), false);
     }
     
     /**
@@ -255,9 +255,9 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    protected function forbidden($content = '') : Response
+    public function forbidden($content = '') : Response
     {
-        return $this->getResponse()->stop(403, $content, false);
+        return $this->getResponse()->stop(403, $this->getErrorContent(403, $content), false);
     }
     
     /**
@@ -267,9 +267,9 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    protected function notFound($content = '') : Response
+    public function notFound($content = '') : Response
     {
-        return $this->getResponse()->stop(404, $content, false);
+        return $this->getResponse()->stop(404, $this->getErrorContent(404, $content), false);
     }
   
     /**
@@ -280,10 +280,10 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    protected function notAllowed(array $methods = [], $content = '') : Response
+    public function notAllowed(array $methods = [], $content = '') : Response
     {
         $this->getResponse()->headers->set('Allow', implode(', ', $methods));
-        return $this->getResponse()->stop(405, $content, false);
+        return $this->getResponse()->stop(405, $this->getErrorContent(405, $content), false);
     }
     
     /**
@@ -293,9 +293,9 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    protected function notImplemented($content = '') : Response
+    public function notImplemented($content = '') : Response
     {
-        return $this->getResponse()->stop(501, $content, false);
+        return $this->getResponse()->stop(501, $this->getErrorContent(501, $content), false);
     }
     
     /**
@@ -306,9 +306,31 @@ class Controller
      * @param mixed $content The response body.
      * @return \Aleph\Http\Response
      */
-    protected function httpError(int $statusCode, $content = '') : Response
+    public function httpError(int $statusCode, $content = '') : Response
     {
-        return $this->getResponse()->stop($statusCode, $content, false);
+        return $this->getResponse()->stop($statusCode, $this->getErrorContent($statusCode, $content), false);
+    }
+    
+    /**
+     * Returns the response body if any HTTP error is occured.
+     *
+     * @param int $statusCode The HTTP response status code.
+     * @param mixed $content The default error content.
+     * @return mixed
+     */
+    protected function getErrorContent($statusCode, $content)
+    {
+        return $content;
+    }
+    
+    /**
+     * Preforms routing.
+     *
+     * @return mixed
+     */
+    protected function route()
+    {
+        return $this->getRouter()->route($this->getRequest());
     }
     
     /**

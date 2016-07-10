@@ -41,7 +41,7 @@ class MethodNotAllowedException extends Exception
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = 'Method Not Allowed', array $methods = [], int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'Method is not supported.', array $methods = [], int $code = 0, \Throwable $previous = null)
     {
         parent::__construct($message, 405, $code, $previous);
         $this->data = $methods;

@@ -39,7 +39,7 @@ class NotFoundException extends Exception
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = 'Not Found', int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'The requested resource is not found.', int $code = 0, \Throwable $previous = null)
     {
         parent::__construct($message, 404, $code, $previous);
     }

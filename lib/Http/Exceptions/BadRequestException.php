@@ -40,7 +40,7 @@ class BadRequestException extends Exception
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = 'Bad Request', int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'Bad request.', int $code = 0, \Throwable $previous = null)
     {
         parent::__construct($message, 400, $code, $previous);
     }

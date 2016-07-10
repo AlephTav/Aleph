@@ -39,7 +39,7 @@ class UnauthorizedException extends Exception
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = 'Unauthorized', int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'User is not authorized.', int $code = 0, \Throwable $previous = null)
     {
         parent::__construct($message, 401, $code, $previous);
     }

@@ -40,7 +40,7 @@ class NotImplementedException extends Exception
      * @param \Throwable $previous The previous exception used for the exception chaining.
      * @return void
      */
-    public function __construct(string $message = 'Not Implemented', int $code = 0, \Throwable $previous = null)
+    public function __construct(string $message = 'Method is not implemented.', int $code = 0, \Throwable $previous = null)
     {
         parent::__construct($message, 501, $code, $previous);
     }

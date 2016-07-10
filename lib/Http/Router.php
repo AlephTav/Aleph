@@ -214,7 +214,7 @@ class Router
             {
                 if ($option == 'prefix')
                 {
-                    $regex = $value . '/' . ltrim($regex, '/');
+                    $regex = $value . ($regex !== '' ? '/' . ltrim($regex, '/') : '');
                 }
                 else if ($option == 'namespace')
                 {
