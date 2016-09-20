@@ -63,10 +63,11 @@ final class Aleph
     /**
      * Initialization flags.
      */
-    const INIT_COMPRESS_OUTPUT = 1;      // determines whether the zlib output compression should be used.
-    const INIT_START_SESSION = 2;        // determines whether the session should be started.
-    const INIT_CLOSE_OUTPUT_BUFFERS = 4; // determines whether the previous opened output buffers should be closed before Aleph's initialization.
-    const INIT_USE_OUTPUT_BUFFERING = 8; // determines whether the output buffering should be used.
+    const INIT_COMPRESS_OUTPUT = 1;        // determines whether the zlib output compression should be used.
+    const INIT_START_SESSION = 2;          // determines whether the session should be started.
+    const INIT_CLOSE_OUTPUT_BUFFERS = 4;   // determines whether the previous opened output buffers should be closed before Aleph's initialization.
+    const INIT_USE_OUTPUT_BUFFERING = 8;   // determines whether the output buffering should be used.
+    const INIT_ENABLE_ERROR_HANDLING = 16; // determines whether the error handling should be enabled.
     
     /**
      * Determines whether the framework was initialized or not.
@@ -241,7 +242,8 @@ final class Aleph
             return;
         }
         ini_set('html_errors', 0);
-        self::$flags = $flags ?? (PHP_SAPI === 'cli' ? 0 : self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING);
+        self::$flags = $flags ?? (PHP_SAPI === 'cli' ?
+        self::INIT_ENABLE_ERROR_HANDLING : self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING | self::INIT_ENABLE_ERROR_HANDLING);
         if (self::$flags & self::INIT_CLOSE_OUTPUT_BUFFERS)
         {
             self::closeOutputBuffers(0);
@@ -261,9 +263,9 @@ final class Aleph
         $errors = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
         register_shutdown_function(function() use(&$fatal, $errors)
         {
-            Aleph::reserveMemory(0);
             if (Aleph::isErrorHandlingEnabled())
             {
+                Aleph::reserveMemory(0);
                 $fatal = error_get_last();
                 if ($fatal && in_array($fatal['type'], $errors))
                 {

@@ -20,53 +20,45 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Data\Converters;
-
-use Aleph;
+namespace Aleph\Scaffolding\Config\Interfaces;
 
 /**
- * The base class for all converters.
+ * Interface for a specific config builder class.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
- * @package aleph.data.converters
+ * @version 1.0.0
+ * @package aleph.scaffolding
  */
-abstract class Converter
+interface IBuilder
 {
     /**
-     * Error message templates.
+     * Constructor.
+     *
+     * @param array $data The config data.
+     * @return void
      */
-    const ERR_CONVERTER_1 = 'Invalid converter type "%s". The only following types are valid: "type", "text", "array".';
+    public function __construct(array $data);
 
     /**
-     * Creates and returns a converter object of the required type.
-     * Converter type can be one of the following values: "type", "text", "collection".
+     * Returns the given config data.
      *
-     * @param string $type The type of the converter instance.
-     * @param array $params Initial values to be applied to the converter properties.
-     * @return \Aleph\Data\Converters\Converter
-     * @throws \InvalidArgumentException
+     * @return array
      */
-    final public static function getInstance(string $type, array $params = []) : Converter
-    {
-        $class = 'Aleph\Data\Converters\\' . $type;
-        if (!\Aleph::loadClass($class))
-        {
-            throw new \InvalidArgumentException(sprintf(static::ERR_CONVERTER_1, $type));
-        }
-        $converter = new $class;
-        foreach ($params as $k => $v)
-        {
-            $converter->{$k} = $v;
-        }
-        return $converter;
-    }
-  
+    public function getData() : array;
+
     /**
-     * Converts the entity from one data format to another according to the specified options.
+     * Sets the config data.
      *
-     * @param mixed $entity Tthe entity to convert.
-     * @return mixed The converted data.
+     * @param array $data
+     * @return void
      */
-    abstract public function convert($entity);
+    public function setData(array $data);    
+    
+    /**
+     * Creates config file of the given type.
+     *
+     * @param string $path Path to the file where to write the config data.
+     * @return void
+     */
+    public function build(string $path);
 }

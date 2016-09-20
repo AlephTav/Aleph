@@ -116,7 +116,7 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      * @param array $items
      * @return static
      */
-    public function replace(array $items = [])
+    public function replace(array $items = []) : Bag
     {
         $this->items = $items;
         return $this;
@@ -128,7 +128,7 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      * @param array $items
      * @return static
      */
-    public function add(array $items = [])
+    public function add(array $items = []) : Bag
     {
         $this->items = array_replace($this->items, $items);
         return $this;
@@ -140,7 +140,7 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      * @param array $items
      * @return static
      */
-    public function merge(array $items = [])
+    public function merge(array $items = []) : Bag
     {
         $this->items = Utils\Arr::merge($this->items, $items);
         return $this;
@@ -151,7 +151,7 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      *
      * @return static
      */
-    public function clean()
+    public function clean() : Bag
     {
         $this->items = [];
         return $this;
@@ -185,7 +185,7 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      * @param string $delimiter The key delimiter in composite keys.
      * @return static
      */
-    public function set($key, $value, bool $merge = false, bool $compositeKey = false, string $delimiter = '')
+    public function set($key, $value, bool $merge = false, bool $compositeKey = false, string $delimiter = '') : Bag
     {
         if (!$compositeKey)
         {
@@ -231,7 +231,7 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains elements after removing the given one.
      * @return static
      */
-    public function remove($key, bool $compositeKey = false, string $delimiter = '', bool $removeEmptyParent = false)
+    public function remove($key, bool $compositeKey = false, string $delimiter = '', bool $removeEmptyParent = false) : Bag
     {
         if (!$compositeKey)
         {
@@ -260,11 +260,11 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      *
      * @param string $key The simple (not a composite) element key.
      * @param mixed $value The new element value.
-     * @return static
+     * @return void
      */
     public function __set(string $key, $value)
     {
-        return $this->set($key, $value);
+        $this->set($key, $value);
     }
     
     /**
@@ -282,11 +282,11 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      * Remove an array element by its key.
      *
      * @param string $key The simple (not a composite) element key.
-     * @return static
+     * @return void
      */
     public function __unset(string $key)
     {
-        return $this->remove($key);
+        $this->remove($key);
     }
     
     /**
@@ -305,11 +305,11 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
      *
      * @param string $key The simple (not a composite) element key.
      * @param mixed $value The new element value.
-     * @return static
+     * @return void
      */
     public function offsetSet($key, $value)
     {
-        return $this->set($key, $value);
+        $this->set($key, $value);
     }
     
     /**
@@ -324,13 +324,13 @@ class Bag implements \ArrayAccess, \IteratorAggregate, \Countable
     }
     
     /** 
-     * Remove an array element by its key.
+     * Removes an array element by its key.
      *
      * @param string $key The simple (not a composite) element key.
-     * @return static
+     * @return void
      */
     public function offsetUnset($key)
     {
-        return $this->remove($key);
+        $this->remove($key);
     }
 }

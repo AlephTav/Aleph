@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,7 +16,7 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
@@ -26,7 +26,7 @@ namespace Aleph\Data\Converters;
  * This converter is intended for converting the given string (or, in some cases, any value) into the specified data format. 
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
+ * @version 1.0.3
  * @package aleph.data.converters
  */
 class TextConverter extends Converter
@@ -57,8 +57,7 @@ class TextConverter extends Converter
      * The input string format.
      * It can be one of the following valid values: "any", "plain", "serialized", "json-encoded", "base64-encoded", "uu-encoded".
      *
-     * @var string $input
-     * @access public
+     * @var string
      */
     public $input = self::ANY;
   
@@ -66,33 +65,30 @@ class TextConverter extends Converter
      * The output data format.
      * It can be one of the following valid values: "any", "plain", "serialized", "unserialized", "json-encoded", "json-decoded", "base64-encoded", "base64-decoded", "uu-encoded", "uu-decoded".
      *
-     * @var string $output
-     * @access public
+     * @var string
      */
     public $output = self::ANY;
   
     /**
      * The charset of the input string.
      *
-     * @var string $inputCharset
-     * @access public
+     * @var string
      */
     public $inputCharset = 'UTF-8';
   
     /**
      * The charset of the output data.
      *
-     * @var string $outputCharset
-     * @access public
+     * @var string
      */
     public $outputCharset = 'UTF-8';
 
     /**
      * Converts the given value to the specified data format according to the given character sets.
      *
-     * @param mixed $entity - any data to be converted.
+     * @param mixed $entity
      * @return mixed
-     * @access public
+     * @throws \LogicException
      */
     public function convert($entity)
     {
@@ -126,9 +122,9 @@ class TextConverter extends Converter
                         case self::PLAIN:
                         case self::BASE64_ENCODED:
                         case self::UU_ENCODED:
-                            throw new \RuntimeException(sprintf(static::ERR_CONVERTER_TEXT_4, $output));
+                            throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_4, $output));
                         default:
-                            throw new \RuntimeException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
+                            throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
                     }
                     break;
                 }
@@ -163,7 +159,7 @@ class TextConverter extends Converter
                         $entity = convert_uudecode($entity);
                         break;
                     default:
-                       throw new \RuntimeExceptionException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
+                       throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
                 }
                 break;    
             case self::SERIALIZED:
@@ -189,7 +185,7 @@ class TextConverter extends Converter
                         $entity = convert_uuencode(unserialize($entity));
                         break;
                     default:
-                        throw new \RuntimeException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
+                        throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
                 }
                 break;
             case self::JSON_ENCODED:
@@ -215,7 +211,7 @@ class TextConverter extends Converter
                         $entity = convert_uuencode(json_decode($entity, true));
                         break;
                     default:
-                        throw new \RuntimeException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
+                        throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
                 }
                 break;
             case self::BASE64_ENCODED:
@@ -241,7 +237,7 @@ class TextConverter extends Converter
                         $entity = convert_uuencode(base64_decode($entity));
                         break;
                     default:
-                        throw new \RuntimeException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
+                        throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
                 }
                 break;
             case self::UU_ENCODED:
@@ -267,11 +263,11 @@ class TextConverter extends Converter
                         $entity = base64_encode(convert_uudecode($entity));
                         break;
                     default:
-                        throw new \RuntimeException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
+                        throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_3, $output));
                 }
                 break;
             default:
-                throw new \RuntimeException(sprintf(static::ERR_CONVERTER_TEXT_2, $input));
+                throw new \LogicException(sprintf(static::ERR_CONVERTER_TEXT_2, $input));
         }
         return $entity;
     }
@@ -279,11 +275,10 @@ class TextConverter extends Converter
     /**
      * Converts the character encoding of the given string to $outputCharset from $inputCharset.
      *
-     * @param string $entity - the string value to be converted.
+     * @param string $entity The string value to be converted.
      * @return string
-     * @access protected
      */
-    protected function convertEncoding($entity)
+    protected function convertEncoding(string $entity) : string
     {
         if (strpos($this->outputCharset, $this->inputCharset) !== 0)
         {

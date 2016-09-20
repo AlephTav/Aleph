@@ -4,6 +4,6 @@ RewriteEngine On
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteCond %{REQUEST_FILENAME} !-f
 
-# Otherwise forward it to controller.php
-RewriteRule . /controller.php
-DirectoryIndex /controller.php
+# Otherwise forward it to index.php
+RewriteRule . /index.php
+DirectoryIndex /index.php

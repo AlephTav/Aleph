@@ -198,7 +198,7 @@ class URL
         $this->path = $arr[5][0] != '' ? array_values(array_filter(explode('/', $arr[5][0]), 'strlen')) : [];
         foreach ($this->path as &$part)
         {
-            $part = urldecode($part);
+            $part = rawurldecode($part);
         }
         $this->query = $arr[7][0];
         parse_str($this->query, $this->query);
@@ -250,7 +250,7 @@ class URL
             {
                 if (strlen($part))
                 {
-                    $tmp[] = urlencode($part);
+                    $tmp[] = rawurlencode($part);
                 }
             }
             if ($component & static::HOST && count($tmp))

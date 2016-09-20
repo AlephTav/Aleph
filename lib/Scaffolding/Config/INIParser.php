@@ -20,53 +20,65 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Data\Converters;
-
-use Aleph;
+namespace Aleph\Scaffolding\Config;
 
 /**
- * The base class for all converters.
+ * INI config parser.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
- * @package aleph.data.converters
+ * @version 1.0.0
+ * @package aleph.scaffolding
  */
-abstract class Converter
+class INIParser extends Parser
 {
     /**
-     * Error message templates.
-     */
-    const ERR_CONVERTER_1 = 'Invalid converter type "%s". The only following types are valid: "type", "text", "array".';
-
-    /**
-     * Creates and returns a converter object of the required type.
-     * Converter type can be one of the following values: "type", "text", "collection".
+     * Parses an ini config file and returns the config data.
      *
-     * @param string $type The type of the converter instance.
-     * @param array $params Initial values to be applied to the converter properties.
-     * @return \Aleph\Data\Converters\Converter
-     * @throws \InvalidArgumentException
+     * @return array
      */
-    final public static function getInstance(string $type, array $params = []) : Converter
+    public function parse() : array
     {
-        $class = 'Aleph\Data\Converters\\' . $type;
-        if (!\Aleph::loadClass($class))
+        $data = parse_ini_file($this->path, true);
+        $config = [];
+        foreach ($data as $section => $properties)
         {
-            throw new \InvalidArgumentException(sprintf(static::ERR_CONVERTER_1, $type));
+            if (is_array($properties)) 
+            {
+                if (!isset($config[$section]) || !is_array($config[$section]))
+                {
+                    $config[$section] = [];
+                }
+                foreach ($properties as $k => $v)
+                {
+                    $config[$section][$k] = $this->parseValue($v);
+                }
+            }
+            else 
+            {
+                $config[$section] = $this->parseValue($properties);
+            }
         }
-        $converter = new $class;
-        foreach ($params as $k => $v)
-        {
-            $converter->{$k} = $v;
-        }
-        return $converter;
+        return $config;
     }
-  
+    
     /**
-     * Converts the entity from one data format to another according to the specified options.
+     * Parses value of a config parameter.
      *
-     * @param mixed $entity Tthe entity to convert.
-     * @return mixed The converted data.
+     * @param string $value
+     * @return mixed
      */
-    abstract public function convert($entity);
+    private function parseValue(string $value)
+    {
+        if (is_array($value) || is_object($value))
+        {
+            return $value;
+        }
+        $len = strlen($value) - 1;
+        if ($len >= 0 && ($value[0] == '[' || $value[0] == '{') && ($value[$len] == ']' || $value[$len] == '}'))
+        {
+            $tmp = json_decode($value, true);
+            $value = $tmp !== null ? $tmp : $value;
+        }
+        return $value;
+    }
 }

@@ -38,6 +38,7 @@ abstract class Cache implements \Countable
      * Error message templates.
      */
     const ERR_CACHE_1 = 'Cache of type "%s" is not available.';
+    const ERR_CACHE_2 = 'Cache of type "%s" is not supported.';
     
     /**
      * Prefix of all meta data's keys.
@@ -129,7 +130,6 @@ abstract class Cache implements \Countable
                     $cache->setNamespace($params['namespace']);
                 }
             case 'file':
-            default:
                 $cache = new FileCache();
                 if (isset($params['directory']))
                 {
@@ -145,6 +145,7 @@ abstract class Cache implements \Countable
                 }
                 return $cache;
         }
+        throw new \UnexpectedValueException(sprintf(static::ERR_CACHE_2, $type));
     }
   
     /**

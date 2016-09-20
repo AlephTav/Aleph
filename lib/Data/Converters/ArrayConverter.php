@@ -63,8 +63,7 @@ class ArrayConverter extends Converter
     /**
      * The conversion mode.
      *
-     * @var integer $mode
-     * @access public
+     * @var int
      */
     public $mode = self::MODE_TRANSFORM;
     
@@ -72,8 +71,7 @@ class ArrayConverter extends Converter
      * The schema that describes the new array structure and conversion ways.
      * The particular schema format depends on the value of $mode property.
      *
-     * @var array $schema
-     * @access public
+     * @var array
      */
     public $schema = [];
     
@@ -81,8 +79,7 @@ class ArrayConverter extends Converter
      * The delimiter of the key names in the transformation schema.
      * If some array key contains the delimiter symbol you should escape it via backslash.
      *
-     * @var string $keyDelimiter
-     * @access public
+     * @var string
      */
     public $keyDelimiter = '.';
     
@@ -90,16 +87,14 @@ class ArrayConverter extends Converter
      * Used to separate data type and value.
      * To escape the type delimiter need to use backslash.
      *
-     * @var string $typeDelimiter
-     * @access public
+     * @var string
      */
     public $typeDelimiter = '|';
     
     /**
      * Used to separate data type from additional type parameters.
      *
-     * @var string $typeParamDelimiter
-     * @access public
+     * @var string
      */
     public $typeParamDelimiter = ':';
     
@@ -107,40 +102,35 @@ class ArrayConverter extends Converter
      * Represents key of array element that should be replaced by its index number.
      * It can be used only in the right part of the schema.
      *
-     * @var string $indexKey
-     * @access public
+     * @var string
      */
     public $indexKey = '*';
     
     /**
      * Name prefix of the named element keys.
      *
-     * @var string $keyNamePrefix
-     * @access public
+     * @var string
      */
     public $keyNamePrefix = '$';
     
     /**
      * Name prefix of the named element values.
      *
-     * @var string $valueNamePrefix
-     * @access public
+     * @var string
      */
     public $valueNamePrefix = '@';
     
     /**
      * Separates an element compound key definition and its value name.
      *
-     * @var string $valueNameDelimiter
-     * @access public
+     * @var string
      */
     public $valueNameDelimiter = '=>';
     
     /**
      * Determines whether non existing elements should be ignored or not.
      *
-     * @var boolean $ignoreNonExistingElements
-     * @access public
+     * @var bool
      */
     public $ignoreNonExistingElements = false;
     
@@ -148,63 +138,56 @@ class ArrayConverter extends Converter
      * Determines whether to presrve partly existing elements
      * (when only part of compound key exists).
      *
-     * @var boolean $preservePartlyExistingElements
+     * @var bool
      */
     public $preservePartlyExistingElements = false;
     
     /**
      * Determines whether to treat objects as arrays.
      *
-     * @var boolean $treatObjectAsArray
-     * @access public
+     * @var bool
      */
     public $treatObjectAsArray = true;
     
     /**
      * The default precision for float values.
      *
-     * @var integer $precision
-     * @access public
+     * @var int
      */
     public $precision = 2;
     
     /**
      * Normalized schema.
      *
-     * @var array $nschema
-     * @access private
+     * @var array
      */
     private $nschema = null;
     
     /**
      * List of value names.
      *
-     * @var array $names
-     * @access private
+     * @var array
      */
     private $names = null;
     
     /**
      * Contains all iterating named values.
      *
-     * @var array $cache
-     * @access private
+     * @var array
      */
     private $cache = null;
     
     /**
      * Some unique string. Used to generate unique name for empty named keys.
      *
-     * @var string $uid
-     * @access private
+     * @var string
      */
     private $uid = null;
     
     /**
      * Instance of type converter.
      *
-     * @var Aleph\Data\Converters\TypeConverter $typeConverter
-     * @access private
+     * @var \Aleph\Data\Converters\TypeConverter
      */
     private $typeConverter = null;
     
@@ -221,9 +204,9 @@ class ArrayConverter extends Converter
     /**
      * Converts the given array to an array with other structure defining by the specified array schema.
      *
-     * @param array $entity - the array to be converted.
+     * @param array $entity The array to be converted.
      * @return array
-     * @access public
+     * @throws \LogicException
      */
     public function convert($entity)
     {
@@ -250,8 +233,8 @@ class ArrayConverter extends Converter
     /**
      * Transforms an array.
      *
-     * @param array $array - an array to transform.
-     * @access protected
+     * @param array $array An array to transform.
+     * @return void
      */
     protected function transform(array &$array)
     {
@@ -334,8 +317,8 @@ class ArrayConverter extends Converter
     /**
      * Reduces an array by preserving some elements in it.
      *
-     * @param array $array - an array to reduce.
-     * @access protected
+     * @param array $array An array to reduce.
+     * @return void
      */
     protected function reduce(array &$array)
     {
@@ -378,8 +361,8 @@ class ArrayConverter extends Converter
     /**
      * Reduces an array by removing some elements from it.
      *
-     * @param array $array - an array to reduce.
-     * @access protected
+     * @param array $array An array to reduce.
+     * @return void
      */
     protected function exclude(array &$array)
     {
@@ -393,8 +376,8 @@ class ArrayConverter extends Converter
      * This method is automatically invoked before array conversion.
      * You can use it to perform some preparations before the main transformation.
      *
-     * @param array $entity - an array to transform.
-     * @access protected
+     * @param array $entity An array to transform.
+     * @return void
      */
     protected function before(array &$entity){}
     
@@ -402,18 +385,18 @@ class ArrayConverter extends Converter
      * This method is automatically invoked after array conversion.
      * You can use it to perform some additional manipulations with the array.
      *
-     * @param array $entity - an array to transform.
-     * @access protected
+     * @param array $entity An array to transform.
+     * @return void
      */
     protected function after(array &$entity){}
     
     /**
      * Converts value to the given data type.
      *
-     * @param mixed $value - a value to convert.
-     * @param string|array $type - the desired data type information.
+     * @param mixed $value A value to convert.
+     * @param string|array $type The desired data type information.
      * @return mixed
-     * @access protected
+     * @throws \LogicException
      */
     protected function cast($value, $type)
     {
@@ -424,11 +407,11 @@ class ArrayConverter extends Converter
     /**
      * Normalizes (parses) the schema.
      *
-     * @param boolean $force - allows to ignore cache and normalize the schema again.
-     * @throw LogicException
-     * @access protected
+     * @param bool $force Allows to ignore cache and normalize the schema again.
+     * @return void
+     * @throws \LogicException
      */
-    protected function normalizeSchema($force = false)
+    protected function normalizeSchema(bool $force = false)
     {
         if (!$force && is_array($this->nschema))
         {
@@ -457,8 +440,8 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the transformation schema.
      *
-     * @throw LogicException
-     * @access private
+     * @return void
+     * @throws \LogicException
      */
     private function normalizeTransformationSchema()
     {
@@ -535,8 +518,8 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the reduce schema.
      *
-     * @throw LogicException
-     * @access private
+     * @return void
+     * @throws \LogicException
      */
     private function normalizeReduceSchema()
     {
@@ -550,8 +533,8 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the exclusion schema.
      *
-     * @throw LogicException
-     * @access private
+     * @return void
+     * @throw \LogicException
      */
     private function normalizeExclusionSchema()
     {
@@ -564,9 +547,8 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the definition of input array elements.
      *
-     * @param string|array $in - the definition of input array elements.
-     * @throw LogicException
-     * @access private
+     * @param string|array $in The definition of input array elements.
+     * @throws \LogicException
      */
     private function normalizeInputElementDefinition(&$in)
     {
@@ -641,11 +623,12 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the definition of output array elements.
      *
-     * @param string|array|boolean $in - the definition of output array elements.
-     * @param string $inValueName - the name of the input element value.
-     * @access private
+     * @param string|array|bool $in The definition of output array elements.
+     * @param string $inValueName The name of the input element value.
+     * @return void
+     * @throws \LogicException
      */
-    private function normalizeOutputElementDefinition(&$out, $inValueName)
+    private function normalizeOutputElementDefinition(&$out, string $inValueName)
     {
         if ($out === false)
         {
@@ -708,12 +691,11 @@ class ArrayConverter extends Converter
     /**
      * Splits compound key of an input element definition to parts.
      *
-     * @param string|array $keys - the compound key definition.
-     * @param mixed $indexes - a variable to store info about named key part of the compound key.
+     * @param string|array $keys The compound key definition.
+     * @param mixed $indexes A variable to store info about named key part of the compound key.
      * @return array
-     * @access private
      */
-    private function splitInputKeys($keys, &$indexes = null)
+    private function splitInputKeys($keys, &$indexes = null) : array
     {
         $k = 0;
         $indexes = [];
@@ -732,13 +714,12 @@ class ArrayConverter extends Converter
     /**
      * Splits compound key of an output element definition to parts.
      *
-     * @param string|array $keys - the compound key definition.
-     * @param string $inValueName - the name of the input elements' value.
-     * @param mixed $names - a variable to store info about named values encountering in the compound key definition.
+     * @param string|array $keys The compound key definition.
+     * @param string $inValueName The name of the input elements' value.
+     * @param mixed $names A variable to store info about named values encountering in the compound key definition.
      * @return array
-     * @access private
      */
-    private function splitOutputKeys($keys, $inValueName, &$names = null)
+    private function splitOutputKeys($keys, string $inValueName, &$names = null) : array
     {
         $keys = $this->splitKeys($keys);
         $names = [];
@@ -756,8 +737,9 @@ class ArrayConverter extends Converter
     /**
      * Normalizes a key definition of an input compound key definition.
      *
-     * @param string|array - an input key definition.
-     * @access private
+     * @param string|array An input key definition.
+     * @return void
+     * @throws \LogicException
      */
     private function normalizeInputKey(&$key)
     {
@@ -818,8 +800,9 @@ class ArrayConverter extends Converter
     /**
      * Normalizes a key definition of an output compound key definition.
      *
-     * @param string|array - an output key definition.
-     * @access private
+     * @param string|array An output key definition.
+     * @return void
+     * @throws \LogicException
      */
     private function normalizeOutputKey(&$key)
     {
@@ -880,10 +863,10 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the value name of input elements of an array.
      *
-     * @param string $name - the input value name.
-     * @access private
+     * @param string $name The input value name.
+     * @return void
      */
-    private function normalizeInputValueName(&$name)
+    private function normalizeInputValueName(string &$name)
     {
         $name = strtr($name, [
             '\\' . $this->typeDelimiter => $this->typeDelimiter,
@@ -894,8 +877,9 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the value name of output elements of an array.
      *
-     * @param string|array $name - the output value name.
-     * @access private
+     * @param string|array $name The output value name.
+     * @return void
+     * @throws \LogicException
      */
     private function normalizeOutputValueName(&$name)
     {
@@ -948,8 +932,8 @@ class ArrayConverter extends Converter
     /**
      * Normalizes the data type of an element value.
      *
-     * @param string|array - the data type information.
-     * @access private
+     * @param string|array The data type information.
+     * @return void
      */
     private function normalizeValueType(&$type)
     {
@@ -987,11 +971,11 @@ class ArrayConverter extends Converter
     /**
      * Splits a string into key array by the key delimiter.
      *
-     * @param steing|array - the key array or compound key string.
+     * @param steing|array The key array or compound key string.
      * @return array
-     * @access private
+     * @throws \LogicException
      */
-    private function splitKeys($keys)
+    private function splitKeys($keys) : array
     {
         $keys = is_array($keys) ? array_values($keys) : preg_split('/(?<!\\\)' . preg_quote($this->keyDelimiter) . '/', $keys);
         if (!$keys)
@@ -1004,12 +988,11 @@ class ArrayConverter extends Converter
     /**
      * Splits a string into two parts by the given delimiter.
      *
-     * @param string $str - a string to split.
-     * @param string $delimiter - a delimiter.
+     * @param string $str A string to split.
+     * @param string $delimiter A delimiter.
      * @return string
-     * @access private
      */
-    private function extractPart(&$str, $delimiter)
+    private function extractPart(string &$str, string $delimiter) : string
     {
         $lstr = strlen($str);
         $ldel = strlen($delimiter);
@@ -1033,11 +1016,10 @@ class ArrayConverter extends Converter
     /**
      * Returns string representation of an input or output element definition.
      *
-     * @param array $def - an element definition.
+     * @param array $def An element definition.
      * @return string
-     * @access private
      */
-    private function getElementDefinition(array $def)
+    private function getElementDefinition(array $def) : string
     {
         $res = '';
         $isInputElement = empty($def['value']);
@@ -1112,12 +1094,11 @@ class ArrayConverter extends Converter
     /**
      * Caches sequentially returning array elements according to their keys.
      *
-     * @param array $value - the array to iterate.
-     * @param array $keys - keys of array elements to iterate.
+     * @param array $value the array to iterate.
+     * @param array $keys Keys of array elements to iterate.
      * @return Generator
-     * @access private
      */
-    private function getCacheIterator(array $value, array $in)
+    private function getCacheIterator(array $value, array $in) : \Generator
     {
         if ($in['name'] !== '' && isset($this->cache[$in['name']]))
         {
@@ -1149,14 +1130,13 @@ class ArrayConverter extends Converter
     /**
      * Sequentially returns the array elements according to their keys.
      *
-     * @param array $value - the array to iterate.
-     * @param array $keys - keys of array elements to iterate.
-     * @param array $keyValues - values of an array element's keys.
-     * @param string $required - determines whether to throw exception if some array element does not exist.
+     * @param array $value The array to iterate.
+     * @param array $keys Keys of array elements to iterate.
+     * @param array $keyValues Values of an array element's keys.
+     * @param bool $required Determines whether to throw exception if some array element does not exist.
      * @return Generator
-     * @access private
      */
-    private function getIterator(array $value, array $keys, array $keyValues = [], $required = true)
+    private function getIterator(array $value, array $keys, array $keyValues = [], bool $required = true) : \Generator
     {
         foreach ($keys as $n => $key)
         {
@@ -1223,10 +1203,11 @@ class ArrayConverter extends Converter
     /**
      * Removes array elements by their keys.
      *
-     * @param array $array - an array whose elements will be removed.
-     * @param array $keys - the elements' keys.
-     * @param array $keyValues - values of an array element's keys.
-     * @access private
+     * @param array $array An array whose elements will be removed.
+     * @param array $keys The elements' keys.
+     * @param array $keyValues Values of an array element's keys.
+     * @return void
+     * @throws \RuntimeException
      */
     private function removeElements(array &$array, array $keys, array $keyValues = [])
     {
@@ -1281,12 +1262,11 @@ class ArrayConverter extends Converter
     /**
      * Throws an exception for non-existing or invalid array elements.
      *
-     * @param string $message - the error message template.
-     * @param array $keyValues - values of an array element's keys.
-     * @throw LogicException
-     * @access private
+     * @param string $message The error message template.
+     * @param array $keyValues Values of an array element's keys.
+     * @throws \RuntimeException
      */
-    private function throwInvalidElementException($message, array $keyValues)
+    private function throwInvalidElementException(string $message, array $keyValues)
     {
         $key = '';
         foreach ($keyValues as $k)

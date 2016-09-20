@@ -1,6 +1,6 @@
 <?php
 /**
- * Copyright (c) 2013 - 2015 Aleph Tav
+ * Copyright (c) 2013 - 2016 Aleph Tav
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
@@ -16,19 +16,20 @@
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @link http://www.4leph.com
- * @copyright Copyright &copy; 2013 - 2015 Aleph Tav
+ * @copyright Copyright &copy; 2013 - 2016 Aleph Tav
  * @license http://www.opensource.org/licenses/MIT
  */
 
 namespace Aleph\Data\Converters;
 
-use Aleph\Utils;
+use Aleph,
+    Aleph\Utils;
 
 /**
  * This converter converts the variable of the given type into a variable of another type.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.0
+ * @version 1.2.1
  * @package aleph.data.converters
  */
 class TypeConverter extends Converter
@@ -49,8 +50,7 @@ class TypeConverter extends Converter
      * You can also specify the additional parameter after type name using $typeDelimiter
      * or define the type as an array: [type name, additional parameter of the conversion].
      *
-     * @var string|array $type
-     * @access public
+     * @var string|array
      */
     public $type = 'string';
     
@@ -68,7 +68,7 @@ class TypeConverter extends Converter
      *
      * @param mixed $entity
      * @return mixed
-     * @access public
+     * @throws \LogicException
      */
     public function convert($entity)
     {
@@ -79,8 +79,8 @@ class TypeConverter extends Converter
             case 'null':
                 return null;
             case 'string':
-            case 'boolean':
-            case 'integer':
+            case 'bool':
+            case 'int':
             case 'float':
             case 'array':
             case 'object':
@@ -128,7 +128,7 @@ class TypeConverter extends Converter
                 {
                     throw new \LogicException(sprintf(static::ERR_CONVERTER_TYPE_5));
                 }
-                return \Aleph::delegate($param, $entity);
+                return Aleph::call($param, $entity);
         }
         throw new \LogicException(sprintf(static::ERR_CONVERTER_TYPE_1, $type));
     }
@@ -145,13 +145,13 @@ class TypeConverter extends Converter
         $type = strtolower($type);
         switch ($type)
         {
-            case 'int':
-                return 'integer';
+            case 'integer':
+                return 'int';
             case 'real':
             case 'double':
                 return 'float';
-            case 'bool':
-                return 'boolean';
+            case 'boolean':
+                return 'bool';
         }
         return $type;
     }

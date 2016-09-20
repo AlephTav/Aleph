@@ -20,53 +20,27 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Core\Traits;
+namespace Aleph\Console\Commands;
 
 /**
- * Implementation of singleton pattern.
+ * Displays the list of all available commands.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
- * @package aleph.core
+ * @package aleph.console
  */
-trait Singleton
+class ListCommand extends Command
 {
-    /**
-     * The instance of singleton object.
-     *
-     * @var static
-     */
-    private static $instance = null;
-
-    /**
-     * Protects against creation through "new".
-     *
-     * @return void
-     */
-    private function __construct(){}
+    protected $name = 'list';
     
-    /**
-     * Protects against creation through "clone".
-     *
-     * @return void
-     */
-    private function __clone(){}
+    protected $description = 'Lists all available commands.';
     
-    /**
-     * Protects against creation through "unserialize".
-     *
-     * @return void
-     */
-    private function __wakeup(){}
-
-    /**
-     * Returns an instance of a class.
-     *
-     * @param array $params Constructor arguments.
-     * @return static
-     */
-    public static function getInstance(...$params)
+    protected $help = '';
+    
+    protected $definition = '';
+    
+    public function run()
     {
-        return self::$instance === null ? self::$instance = new static(...$params) : self::$instance;
+        
     }
 }

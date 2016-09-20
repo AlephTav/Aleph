@@ -20,53 +20,53 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Data\Converters;
-
-use Aleph;
+namespace Aleph\Patterns\Traits;
 
 /**
- * The base class for all converters.
+ * Implementation of singleton pattern.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
- * @package aleph.data.converters
+ * @version 1.0.0
+ * @package aleph.core
  */
-abstract class Converter
+trait Singleton
 {
     /**
-     * Error message templates.
+     * The instance of singleton object.
+     *
+     * @var static
      */
-    const ERR_CONVERTER_1 = 'Invalid converter type "%s". The only following types are valid: "type", "text", "array".';
+    private static $instance = null;
 
     /**
-     * Creates and returns a converter object of the required type.
-     * Converter type can be one of the following values: "type", "text", "collection".
+     * Protects against creation through "new".
      *
-     * @param string $type The type of the converter instance.
-     * @param array $params Initial values to be applied to the converter properties.
-     * @return \Aleph\Data\Converters\Converter
-     * @throws \InvalidArgumentException
+     * @return void
      */
-    final public static function getInstance(string $type, array $params = []) : Converter
-    {
-        $class = 'Aleph\Data\Converters\\' . $type;
-        if (!\Aleph::loadClass($class))
-        {
-            throw new \InvalidArgumentException(sprintf(static::ERR_CONVERTER_1, $type));
-        }
-        $converter = new $class;
-        foreach ($params as $k => $v)
-        {
-            $converter->{$k} = $v;
-        }
-        return $converter;
-    }
-  
+    private function __construct(){}
+    
     /**
-     * Converts the entity from one data format to another according to the specified options.
+     * Protects against creation through "clone".
      *
-     * @param mixed $entity Tthe entity to convert.
-     * @return mixed The converted data.
+     * @return void
      */
-    abstract public function convert($entity);
+    private function __clone(){}
+    
+    /**
+     * Protects against creation through "unserialize".
+     *
+     * @return void
+     */
+    private function __wakeup(){}
+
+    /**
+     * Returns an instance of a class.
+     *
+     * @param array $params Constructor's arguments.
+     * @return static
+     */
+    public static function getInstance(...$params)
+    {
+        return self::$instance === null ? self::$instance = new static(...$params) : self::$instance;
+    }
 }

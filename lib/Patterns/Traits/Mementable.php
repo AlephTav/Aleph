@@ -20,53 +20,41 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Data\Converters;
+namespace Aleph\Patterns\Traits;
 
-use Aleph;
+use Aleph\Patterns\{Memento, Interfaces\IMemento};
 
 /**
- * The base class for all converters.
+ * Implementation of Memento design pattern.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.0.2
- * @package aleph.data.converters
+ * @version 1.0.0
+ * @package aleph.patterns
  */
-abstract class Converter
+trait Mementable
 {
     /**
-     * Error message templates.
-     */
-    const ERR_CONVERTER_1 = 'Invalid converter type "%s". The only following types are valid: "type", "text", "array".';
-
-    /**
-     * Creates and returns a converter object of the required type.
-     * Converter type can be one of the following values: "type", "text", "collection".
+     * Returns the state of an object.
      *
-     * @param string $type The type of the converter instance.
-     * @param array $params Initial values to be applied to the converter properties.
-     * @return \Aleph\Data\Converters\Converter
-     * @throws \InvalidArgumentException
+     * @return mixed
      */
-    final public static function getInstance(string $type, array $params = []) : Converter
+    abstract protected function getState();
+    
+    /**
+     * Sets the state of an object.
+     *
+     * @param mixed $state
+     * @return void
+     */
+    abstract protected function setState($state);
+    
+    /**
+     * Creates a memento object that encapsulates the internal state of an object.
+     *
+     * @return \Aleph\Patterns\Interfaces\IMemento
+     */
+    public function createMemento() : IMemento
     {
-        $class = 'Aleph\Data\Converters\\' . $type;
-        if (!\Aleph::loadClass($class))
-        {
-            throw new \InvalidArgumentException(sprintf(static::ERR_CONVERTER_1, $type));
-        }
-        $converter = new $class;
-        foreach ($params as $k => $v)
-        {
-            $converter->{$k} = $v;
-        }
-        return $converter;
+        return new Memento($this);
     }
-  
-    /**
-     * Converts the entity from one data format to another according to the specified options.
-     *
-     * @param mixed $entity Tthe entity to convert.
-     * @return mixed The converted data.
-     */
-    abstract public function convert($entity);
 }
