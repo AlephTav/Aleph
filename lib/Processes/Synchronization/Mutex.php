@@ -53,7 +53,7 @@ final class Mutex
      */
     public static function create(string $type = self::TYPE_FILE, bool $lock = false, array $params = []) : IMutex
     {
-        switch ($type)
+        switch (strtolower($type))
         {
             case self::TYPE_FILE:
                 $mutex = new FileMutex($params['key'] ?? null);
