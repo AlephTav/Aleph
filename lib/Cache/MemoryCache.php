@@ -22,8 +22,6 @@
 
 namespace Aleph\Cache;
 
-use Aleph\Core;
-
 /**
  * The class is intended for caching of different data using the memcache extension.
  *

@@ -22,8 +22,6 @@
 
 namespace Aleph\Cache;
 
-use Aleph\Core;
-
 /**
  * The class intended for caching of different data using the APC extension. 
  *

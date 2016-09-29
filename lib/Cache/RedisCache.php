@@ -22,8 +22,6 @@
 
 namespace Aleph\Cache;
 
-use Aleph\Core;
-
 /**
  * The class is intended for caching of different data using the direct connection to the Redis server.
  *
@@ -88,7 +86,7 @@ class RedisCache extends Cache
         {
             $command .= '$' . strlen($param) . "\r\n" . $param . "\r\n";
         }
-        fwrite ($this->rp, $command);
+        fwrite($this->rp, $command);
         $parse = function() use (&$parse)
         {
             if (false === $line = fgets($this->rp))

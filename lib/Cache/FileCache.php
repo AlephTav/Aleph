@@ -22,8 +22,7 @@
 
 namespace Aleph\Cache;
 
-use Aleph,
-    Aleph\Core;
+use Aleph;
 
 /**
  * The class is intended for caching of different data using the file system.
@@ -45,21 +44,21 @@ class FileCache extends Cache
      *
      * @var int
      */
-    protected $directoryMode = 0711;
+    private $directoryMode = 0711;
   
     /**
      * Permissions for newly created cache files.
      *
      * @var int
      */
-    protected $fileMode = 0644;
+    private $fileMode = 0644;
 
     /**
      * The directory in which cache files will be stored.
      *
      * @var string $dir
      */
-    protected $dir = null;
+    private $dir = null;
     
     /**
      * Returns permissions of the cache directory.
@@ -139,12 +138,17 @@ class FileCache extends Cache
      * If this directory doesn't exist it will be created.
      *
      * @param string $path
+     * @param int $mode The directory permissions.
      * @return void
      * @throws \RuntimeException If the directory is not writable.
      */
-    public function setDirectory(string $path = '')
+    public function setDirectory(string $path = '', int $mode = null)
     {
         $dir = Aleph::dir($path ?: '@cache');
+        if ($mode !== null)
+        {
+            $this->directoryMode = $mode;
+        }
         if (!is_dir($dir))
         {
             mkdir($dir, $this->directoryMode, true);

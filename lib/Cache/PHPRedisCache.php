@@ -121,7 +121,7 @@ class PHPRedisCache extends Cache
      */
     public function set($key, $content, int $expire = 0, array $tags = [])
     {
-        $k = $this->normalizeKey($key)
+        $k = $this->normalizeKey($key);
         $expire = $this->normalizeExpire($expire);
         $this->redis->set($k, $content, $expire);
         $this->redis->set(static::META_PREFIX . $k, [$expire, $tags], $expire);

@@ -26,7 +26,7 @@ use Aleph,
     Aleph\Core;
 
 /**
- * Base abstract class for building of classes that intended for caching different data.
+ * Base abstract class for all classes that intended for caching data.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.2.2
@@ -39,6 +39,7 @@ abstract class Cache implements \Countable
      */
     const ERR_CACHE_1 = 'Cache of type "%s" is not available.';
     const ERR_CACHE_2 = 'Cache of type "%s" is not supported.';
+    const ERR_CACHE_3 = 'Cache type is not specified';
     
     /**
      * Prefix of all meta data's keys.
@@ -73,7 +74,8 @@ abstract class Cache implements \Countable
      * @param string $type The cache type.
      * @param array $params Configuration parameters for cache.
      * @return void
-     * @throws \RuntimeException If the cache is not available.
+     * @throws \RuntimeException If the cache type is not specified or the cache is not available.
+     * @throws \UnexpectedValueException If the given cache type is incorrect or not supported yet.
      */
     public static function getInstance(string $type = '', array $params = [])
     {
@@ -81,6 +83,10 @@ abstract class Cache implements \Countable
         {
             $params = Aleph::get('cache');
             $type = $params['type'] ?? '';
+            if ($type == '')
+            {
+                throw new \RuntimeException(static::ERR_CACHE_3);
+            }
         }
         $type = strtolower($type);
         switch ($type)
@@ -131,14 +137,7 @@ abstract class Cache implements \Countable
                 }
             case 'file':
                 $cache = new FileCache();
-                if (isset($params['directory']))
-                {
-                    $cache->setDirectory($params['directory']);
-                }
-                if (isset($params['directoryMode']))
-                {
-                    $cache->setDirectoryMode($params['directoryMode']);
-                }
+                $cache->setDirectory($params['directory'] ?? '', $params['directoryMode'] ?? null);
                 if (isset($params['fileMode']))
                 {
                     $cache->setFileMode($params['fileMode']);
