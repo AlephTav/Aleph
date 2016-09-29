@@ -64,14 +64,14 @@ class FileMutex implements IMutex
     
     /**
      * Creates mutex object.
-     * If $key is not specified, the script name will be used as an ID.
+     * If $key is not specified, the application identifier will be used.
      *
      * @param string $key The unique identifier of a mutex.
      * @return void
      */
     public function __construct(string $key = null)
     {
-        $this->key = md5($key !== null ? $key : __FILE__);
+        $this->key = md5($key !== null ? $key : Aleph::getAppUniqueID());
     }
     
     /**

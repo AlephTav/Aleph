@@ -33,7 +33,7 @@ interface IMutex
 {
     /**
      * Creates mutex object.
-     * If $key is not specified, the script name will be used as an ID.
+     * If $key is not specified, the application identifier will be used.
      *
      * @param string $key The unique identifier of a mutex.
      * @return void
