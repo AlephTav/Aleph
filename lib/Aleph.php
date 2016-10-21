@@ -54,6 +54,7 @@ final class Aleph
     const ERR_4 = 'Timestamp with mark "%s" is not found.';
     const ERR_5 = 'Failed to build URL. The given directory "%s" is outside of the application document root directory.';
     const ERR_6 = 'Failed to load zlib extension.';
+    const ERR_7 = 'Session is not started.';
     
     /**
      * Fatal error code.
@@ -154,7 +155,7 @@ final class Aleph
     private static $classes = [];
   
     /**
-     * Path to the class map file.
+     * The class map file.
      *
      * @var string
      */
@@ -242,8 +243,8 @@ final class Aleph
             return;
         }
         ini_set('html_errors', 0);
-        self::$flags = $flags ?? (PHP_SAPI === 'cli' ?
-        self::INIT_ENABLE_ERROR_HANDLING : self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING | self::INIT_ENABLE_ERROR_HANDLING);
+        self::$flags = $flags ?? (PHP_SAPI === 'cli' ? self::INIT_ENABLE_ERROR_HANDLING :
+        self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING | self::INIT_ENABLE_ERROR_HANDLING);
         if (self::$flags & self::INIT_CLOSE_OUTPUT_BUFFERS)
         {
             self::closeOutputBuffers(0);
@@ -296,8 +297,11 @@ final class Aleph
         {
             date_default_timezone_set('UTC');
         }
-        self::setErrorLevel(E_ALL);
-        self::enableErrorHandling();
+        if (self::$flags & self::INIT_ENABLE_ERROR_HANDLING)
+        {
+            self::setErrorLevel(E_ALL);
+            self::enableErrorHandling();
+        }
         self::$root = $root ? realpath($root) : ($_SERVER['DOCUMENT_ROOT'] ?? __DIR__);
         self::$appUniqueID = md5(self::$root);
         $_SERVER['DOCUMENT_ROOT'] = self::$root;
@@ -310,7 +314,11 @@ final class Aleph
         {
             if (!session_id())
             {
-                session_start($sessionOptions);
+                if (!session_start($sessionOptions))
+                {
+                    self::exception(new \RuntimeException(self::ERR_7));
+                    return;
+                }
             }
             self::showDebugInfo(true);
         }
@@ -587,22 +595,28 @@ final class Aleph
 
     /**
      * Returns the amount of memory, in bytes, that's currently being allocated to your PHP script.
+     * If $realUsage is TRUE the method returns total memory allocated from system, including unused pages.
+     * If $realUsage is FALSE only the used memory is returned.
      *
+     * @param int $realUsage
      * @return int
      */
-    public static function getMemoryUsage() : int
+    public static function getMemoryUsage(bool $realUsage = false) : int
     {
-        return memory_get_usage(true);
+        return memory_get_usage($realUsage);
     }
   
     /**
      * Returns the peak of memory, in bytes, that's been allocated to your PHP script.
+     * If $realUsage is TRUE the method returns the real size of memory allocated from system.
+     * If $realUsage is FALSE only the memory used by emalloc() is returned.
      *
+     * @param int $realUsage
      * @return int
      */
-    public static function getPeakMemoryUsage() : int
+    public static function getPeakMemoryUsage(bool $realUsage = false) : int
     {
-        return memory_get_peak_usage(true);
+        return memory_get_peak_usage($realUsage);
     }
   
     /**
@@ -1377,7 +1391,7 @@ final class Aleph
      * @param bool $immediately Determines whether the redirect should immediately happen.
      * @return void
      */
-    public static function go($url, $inNewWindow = false, $immediately = true)
+    public static function go(string $url, bool $inNewWindow = false, bool $immediately = true)
     {
         $url = addslashes($url);
         if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
@@ -1412,7 +1426,7 @@ final class Aleph
      * @param bool $forceGet Specifies the type of reloading: FALSE (default) - reloads the current page from the cache, TRUE - reloads the current page from the server.
      * @return void
      */
-    public static function reload($immediately = true, $forceGet = false)
+    public static function reload(bool $immediately = true, bool $forceGet = false)
     {
         $forceGet = $forceGet ? 'true' : 'false';
         if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest')
@@ -1468,8 +1482,12 @@ final class Aleph
      */
     public static function getClassMap() : array
     {
-        $classmap = empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']);
-        self::$classes = file_exists($classmap) ? (array)require($classmap) : [];
+        if (isset(self::$config['autoload']['classmap']) && self::$config['autoload']['classmap'] != self::$classmap)
+        {
+            $classmap = self::dir(self::$config['autoload']['classmap']);
+            self::$classes = file_exists($classmap) ? (array)require($classmap) : [];
+            self::$classmap = self::$config['autoload']['classmap'];
+        }
         return self::$classes;
     }
     
@@ -1483,7 +1501,7 @@ final class Aleph
      */
     public static function setClassMap(array $classes, string $classmap = '')
     {
-        $file = $classmap ? self::dir($classmap) : (empty(self::$config['autoload']['classmap']) ? null : self::dir(self::$config['autoload']['classmap']));;
+        $file = $classmap ? self::dir($classmap) : (isset(self::$config['autoload']['classmap']) ? self::dir(self::$config['autoload']['classmap']) : '');
         if (!$file) 
         {
             throw new \LogicException(self::ERR_3);
@@ -1505,7 +1523,7 @@ final class Aleph
         {
             file_put_contents($file, '<?php return [' . PHP_EOL . '  ' . implode(',' . PHP_EOL . '  ', $code) . PHP_EOL . '];');
         }
-        self::$config['autoload']['classmap'] = $classmap;
+        self::$config['autoload']['classmap'] = self::$classmap = $classmap;
         self::$classes = $classes;
     }
     
@@ -1566,6 +1584,7 @@ final class Aleph
                 }
             }
         }
+        // If the class search is disabled throw an exception or return FALSE.
         if (empty(self::$config['autoload']['search']))
         {
             if ($throwException)
@@ -1603,7 +1622,7 @@ final class Aleph
         }
         else
         {
-            $classmap = empty(self::$config['autoload']['classmap']) ? '' : self::dir(self::$config['autoload']['classmap']);
+            $classmap = isset(self::$config['autoload']['classmap']) ? self::dir(self::$config['autoload']['classmap']) : '';
             if (!$classmap)
             {
                 throw new \LogicException(self::ERR_3);
