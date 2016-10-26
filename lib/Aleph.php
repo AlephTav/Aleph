@@ -20,8 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-use Aleph\Core,
-    Aleph\Cache;
+use Aleph\Cache\Cache;
 
 if (!defined('START_ALEPH_TS'))
 {
@@ -54,7 +53,8 @@ final class Aleph
     const ERR_4 = 'Timestamp with mark "%s" is not found.';
     const ERR_5 = 'Failed to build URL. The given directory "%s" is outside of the application document root directory.';
     const ERR_6 = 'Failed to load zlib extension.';
-    const ERR_7 = 'Session is not started.';
+    const ERR_7 = 'Failed to enable the output compression - headers already sent.';
+    const ERR_8 = 'Session is not started.';
     
     /**
      * Fatal error code.
@@ -182,7 +182,7 @@ final class Aleph
         'autoload' => [
             'search' => false,
             'unique' => true,
-            'classmap' => 'classmap.php',
+            'classmap' => '',
             'mask' => '/.+\\.php\\z/i',
             'timeout' => 300,
             'disableExceptions' => false,
@@ -243,23 +243,11 @@ final class Aleph
             return;
         }
         ini_set('html_errors', 0);
+        self::$root = $root ? realpath($root) : ($_SERVER['DOCUMENT_ROOT'] ?? __DIR__);
+        self::$appUniqueID = md5(self::$root);
+        $_SERVER['DOCUMENT_ROOT'] = self::$root;
         self::$flags = $flags ?? (PHP_SAPI === 'cli' ? self::INIT_ENABLE_ERROR_HANDLING :
         self::INIT_START_SESSION | self::INIT_COMPRESS_OUTPUT | self::INIT_USE_OUTPUT_BUFFERING | self::INIT_ENABLE_ERROR_HANDLING);
-        if (self::$flags & self::INIT_CLOSE_OUTPUT_BUFFERS)
-        {
-            self::closeOutputBuffers(0);
-        }
-        if (self::$flags & self::INIT_COMPRESS_OUTPUT)
-        {
-            if (!extension_loaded('zlib'))
-            {
-                throw new \RuntimeException(self::ERR_6);
-            }
-            ini_set('output_handler', '');
-            ini_set('output_buffering', 1);
-            ini_set('implicit_flush', 0);
-            ini_set('zlib.output_compression', 4096);
-        }
         $fatal = null;
         $errors = [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR];
         register_shutdown_function(function() use(&$fatal, $errors)
@@ -274,11 +262,37 @@ final class Aleph
                 }
             }
         });
+        if (self::$flags & self::INIT_ENABLE_ERROR_HANDLING)
+        {
+            self::setErrorLevel(E_ALL);
+            self::enableErrorHandling();
+        }
+        if (self::$flags & self::INIT_CLOSE_OUTPUT_BUFFERS)
+        {
+            self::closeOutputBuffers(0);
+        }
+        if (self::$flags & self::INIT_COMPRESS_OUTPUT)
+        {
+            if (!extension_loaded('zlib'))
+            {
+                self::$flags ^= self::INIT_USE_OUTPUT_BUFFERING;
+                throw new \RuntimeException(self::ERR_6);
+            }
+            if (headers_sent())
+            {
+                self::$flags ^= self::INIT_USE_OUTPUT_BUFFERING;
+                throw new \RuntimeException(self::ERR_7);
+            }
+            ini_set('output_handler', '');
+            ini_set('output_buffering', 1);
+            ini_set('implicit_flush', 0);
+            ini_set('zlib.output_compression', 4096);
+        }
         if (self::$flags & self::INIT_USE_OUTPUT_BUFFERING)
         {
-            ob_start(function($output) use(&$fatal, $errors)
+            if (!@ob_start(function($output) use(&$fatal, $errors)
             {
-                if (Aleph::isErrorHandlingEnabled()) 
+                if (Aleph::isErrorHandlingEnabled())
                 {
                     $error = error_get_last();
                     if ($error && in_array($error['type'], $errors) && $error !== $fatal)
@@ -287,7 +301,10 @@ final class Aleph
                     }
                 }
                 return Aleph::getOutput() !== null ? Aleph::getOutput() : $output;
-            });
+            }))
+            {
+                self::$flags ^= self::INIT_USE_OUTPUT_BUFFERING;
+            }
         }
         if ($timezone) 
         {
@@ -297,14 +314,6 @@ final class Aleph
         {
             date_default_timezone_set('UTC');
         }
-        if (self::$flags & self::INIT_ENABLE_ERROR_HANDLING)
-        {
-            self::setErrorLevel(E_ALL);
-            self::enableErrorHandling();
-        }
-        self::$root = $root ? realpath($root) : ($_SERVER['DOCUMENT_ROOT'] ?? __DIR__);
-        self::$appUniqueID = md5(self::$root);
-        $_SERVER['DOCUMENT_ROOT'] = self::$root;
         ini_set('unserialize_callback_func', 'spl_autoload_call');
         spl_autoload_register(function($class)
         {
@@ -314,14 +323,13 @@ final class Aleph
         {
             if (!session_id())
             {
-                if (!session_start($sessionOptions))
+                if (!@session_start($sessionOptions))
                 {
-                    self::exception(new \RuntimeException(self::ERR_7));
-                    return;
+                    throw new \RuntimeException(self::ERR_8);
                 }
             }
-            self::showDebugInfo(true);
         }
+        self::showDebugInfo(true);
         set_time_limit(0);
         self::$isInitialized = true;
     }
@@ -429,12 +437,13 @@ final class Aleph
      *
      * @param string $name The name of a configuration variable.
      * @param mixed $default The default value of a configuration variable.
+     * @param string $delimiter The name delimiter.
      * @return mixed
      */
-    public static function get(string $name, $default = null)
+    public static function get(string $name, $default = null, string $delimiter = '.')
     {
         $cfg = self::$config;
-        foreach (explode('.', $name) as $key)
+        foreach (explode($delimiter, $name) as $key)
         {
             if (!is_array($cfg) || !isset($cfg[$key]) && !array_key_exists($key, $cfg))
             {
@@ -451,12 +460,13 @@ final class Aleph
      * @param string $name The name of a configuration variable.
      * @param mixed $value The value of a configuration variable.
      * @param bool $merge Determines whether the old configuration value should be merged with new one.
+     * @param string $delimiter The name delimiter.
      * @return void
      */
-    public static function set(string $name, $value, bool $merge = false)
+    public static function set(string $name, $value, bool $merge = false, string $delimiter = '.')
     {
         $cfg = &self::$config;
-        foreach (explode('.', $name) as $key)
+        foreach (explode($delimiter, $name) as $key)
         {
             $cfg = &$cfg[$key];
         }
@@ -474,12 +484,13 @@ final class Aleph
      * Checks whether a configuration variable is defined or not.
      *
      * @param string $name The name of a configuration variable.
+     * @param string $delimiter The name delimiter.
      * @return bool
      */
-    public static function has(string $name) : bool
+    public static function has(string $name, string $delimiter = '.') : bool
     {
         $cfg = self::$config;
-        foreach (explode('.', $name) as $key)
+        foreach (explode($delimiter, $name) as $key)
         {
             if (!is_array($cfg) || !isset($cfg[$key]) && !array_key_exists($key, $cfg))
             {
@@ -494,16 +505,17 @@ final class Aleph
      * Removes a configuration variable by its name. 
      *
      * @param string $name The name of a configuration variable.
+     * @param string $delimiter The name delimiter.
      * @return void
      */
-    public static function remove(string $name)
+    public static function remove(string $name, string $delimiter = '.')
     {
         $cfg = &self::$config;
-        $keys = explode('.', $name);
+        $keys = explode($delimiter, $name);
         $last = array_pop($keys);
         foreach ($keys as $key)
         {
-            if (!is_array($cfg))
+            if (!is_array($cfg) || !array_key_exists($key, $cfg))
             {
                 return;
             }
@@ -652,27 +664,11 @@ final class Aleph
     {
         return self::$appUniqueID;
     }
-  
-    /**
-     * Calls a user-defined callback.
-     *
-     * @param mixed $callback A user-defined callback.
-     * @params mixed $args Arguments of the callback.
-     * @return mixed
-     */
-    public static function call($callback, ...$args)
-    {
-        if (is_callable($callback))
-        {
-            return call_user_func_array($callback, $args);
-        }
-        return (new Core\Callback($callback))->call($args);
-    }
     
     /**
      * Returns custom error handler or NULL if not specified.
      *
-     * @return mixed
+     * @return callable|null
      */
     public static function getErrorHandler()
     {
@@ -682,10 +678,10 @@ final class Aleph
     /**
      * Sets custom error handler.
      *
-     * @param mixed $callback A user-defined callback that will be automatically invoked when an error is occurred.
+     * @param callable $callback A callback that will be automatically invoked when an error is occurred.
      * @return void
      */
-    public static function setErrorHandler($callback)
+    public static function setErrorHandler(callable $callback)
     {
         self::$errorHandler = $callback;
     }
@@ -788,7 +784,7 @@ final class Aleph
                     $inLogger = true;
                     if (self::$logger)
                     {
-                        self::call(self::$logger, $info);
+                        call_user_func(self::$logger, $info);
                     }
                     else
                     {
@@ -809,7 +805,7 @@ final class Aleph
                 if (!$inErrorHandler)
                 {
                     $inErrorHandler = true;
-                    if (!self::call(self::$errorHandler, $e, $info))
+                    if (!call_user_func(self::$errorHandler, $e, $info))
                     {
                         $inErrorHandler = false;
                         return;
@@ -1232,7 +1228,7 @@ final class Aleph
      * @param array $vars Variables to extract to the PHP code.
      * @return string
      */
-    public static function exe(string $code, array $vars = []) : string
+    public static function executeEmbeddedCode(string $code, array $vars = []) : string
     {
         ${'(_._)'} = ' ?>' . $code . '<?php ';
         unset($code);
@@ -1350,7 +1346,7 @@ final class Aleph
     /**
      * Returns custom log handler or NULL if not specified.
      *
-     * @return mixed
+     * @return callable|null
      */
     public static function getLogger()
     {
@@ -1360,10 +1356,10 @@ final class Aleph
     /**
      * Sets custom log handler.
      *
-     * @param mixed $callback A user-defined callback that will be automatically invoked when an error is logging.
+     * @param callable $callback A callback that will be automatically invoked when an error is logging.
      * @return void
      */
-    public static function setLogger($callback)
+    public static function setLogger(callable $callback)
     {
         self::$logger = $callback;
     }
@@ -1445,11 +1441,17 @@ final class Aleph
      *
      * @return \Aleph\Cache\Cache
      */
-    public static function getCache() : Cache\Cache
+    public static function getCache() : Cache
     {
         if (self::$cache === null)
         {
-            self::$cache = Cache\Cache::getInstance();
+            $params = self::$config['cache'] ?? [];
+            if (isset($params['directory']))
+            {
+                $params['directory'] = self::dir($params['directory']);
+            }
+            $type = $params['type'] ?? '';
+            self::$cache = Cache::getInstance($type, $params);
         }
         return self::$cache;
     }
@@ -1460,7 +1462,7 @@ final class Aleph
      * @param \Aleph\Cache\Cache $cache
      * @return void
      */
-    public static function setCache(Cache\Cache $cache)
+    public static function setCache(Cache $cache)
     {
         self::$cache = $cache;
     }
@@ -1482,7 +1484,7 @@ final class Aleph
      */
     public static function getClassMap() : array
     {
-        if (isset(self::$config['autoload']['classmap']) && self::$config['autoload']['classmap'] != self::$classmap)
+        if (isset(self::$config['autoload']['classmap']) && self::$config['autoload']['classmap'] !== self::$classmap)
         {
             $classmap = self::dir(self::$config['autoload']['classmap']);
             self::$classes = file_exists($classmap) ? (array)require($classmap) : [];
@@ -1560,7 +1562,7 @@ final class Aleph
         // PSR-4 loader.
         if (empty(self::$config['autoload']['namespaces']['Aleph'])) 
         {
-            self::$config['autoload']['namespaces'] = array_merge(['Aleph' => __DIR__], isset(self::$config['autoload']['namespaces']) ? (array)self::$config['autoload']['namespaces'] : []);
+            self::$config['autoload']['namespaces']['Aleph'] = __DIR__;
         }
         $namespaces = self::$config['autoload']['namespaces'];
         $prefix = $class;
@@ -1584,20 +1586,15 @@ final class Aleph
                 }
             }
         }
-        // If the class search is disabled throw an exception or return FALSE.
-        if (empty(self::$config['autoload']['search']))
+        // If the class search is enabled try to find a class,
+        if (!empty(self::$config['autoload']['search']))
         {
-            if ($throwException)
+            if (self::find($cs)) 
             {
-                throw new \RuntimeException(sprintf(self::ERR_1, $class));
+                return true;
             }
-            return false;
         }
-        // Search class.
-        if (self::find($cs)) 
-        {
-            return true;
-        }
+        // otherwise throw an exception or return FALSE.
         if ($throwException)
         {
             throw new \RuntimeException(sprintf(self::ERR_1, $class));
@@ -1772,32 +1769,26 @@ final class Aleph
      */
     private static function merge(array $a1, array $a2) : array
     {
-        foreach ($a2 as $k => $v)
+        if ($a1)
         {
-            if (is_array($v) && isset($a1[$k]) && is_array($a1[$k]))
-            {
-                if (is_int($k))
-                {
-                   $a1[] = self::merge($a1[$k], $v);
-                }
-                else
-                {
-                    $a1[$k] = self::merge($a1[$k], $v);
-                }
-            }
-            else
+            foreach ($a2 as $k => $v)
             {
                 if (is_int($k))
                 {
                     $a1[] = $v;
+                }
+                else if (is_array($v) && isset($a1[$k]) && is_array($a1[$k]))
+                {
+                    $a1[$k] = self::merge($a1[$k], $v);
                 }
                 else
                 {
                     $a1[$k] = $v;
                 }
             }
+            return $a1;
         }
-        return $a1;
+        return $a2;
     }
   
     /**
