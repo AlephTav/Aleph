@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -39,7 +39,7 @@ class PHPRedisCache extends Cache
      * @var \Redis $redis
      */
     private $redis = null;
-  
+
     /**
      * Checks whether the current type of cache is available or not.
      *
@@ -58,19 +58,19 @@ class PHPRedisCache extends Cache
      * @param int $timeout The connection timeout, in seconds.
      * @param string|null $password Password for server authentication, optional.
      * @param int $database Number of the redis database to use.
-     * @return void
      */
-    public function __construct(string $host = '127.0.0.1', int $port = 6379, int $timeout = 0, string $password = null, int $database = 0)
+    public function __construct(string $host = '127.0.0.1', int $port = 6379,
+                                int $timeout = 0,string $password = null, int $database = 0)
     {
         parent::__construct();
         $this->redis = new Redis();
         $this->redis->connect($host, $port, $timeout);
-        if ($password !== null)
-        {
+        if ($password !== null) {
             $this->redis->auth($password);
         }
         $this->redis->select($database);
-        $this->redis->setOption(Redis::OPT_SERIALIZER, defined('Redis::SERIALIZER_IGBINARY') ? Redis::SERIALIZER_IGBINARY : Redis::SERIALIZER_PHP);
+        $this->redis->setOption(Redis::OPT_SERIALIZER,
+            defined('Redis::SERIALIZER_IGBINARY') ? Redis::SERIALIZER_IGBINARY : Redis::SERIALIZER_PHP);
     }
 
     /**
@@ -82,102 +82,6 @@ class PHPRedisCache extends Cache
     {
         return $this->redis;
     }
-    
-    /**
-     * Returns meta information (expiration time and tags) of the cached data.
-     * It returns empty array if the meta data does not exist.
-     *
-     * @param mixed $key The data key.
-     * @return array
-     */
-    public function getMeta($key) : array
-    {
-        $meta = $this->redis->get(static::META_PREFIX . $this->normalizeKey($key));
-        return is_array($meta) ? $meta : [];
-    }
-    
-    /**
-     * Returns some data previously stored in the cache.
-     *
-     * @param mixed $key The data key.
-     * @param mixed $isExpired It will be set to TRUE if the given cache is expired and FALSE otherwise.
-     * @return mixed
-     */
-    public function get($key, &$isExpired = null)
-    {
-        $key = $this->normalizeKey($key);
-        $isExpired = !$this->redis->exists($key);
-        return $isExpired ? null : $this->redis->get($key);
-    }
-
-    /**
-     * Stores some data identified by a key in the cache.
-     *
-     * @param mixed $key The data key.
-     * @param mixed $content The cached data.
-     * @param int $expire The cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
-     * @param string[] $tags An array of tags associated with the data.
-     * @return void
-     */
-    public function set($key, $content, int $expire = 0, array $tags = [])
-    {
-        $k = $this->normalizeKey($key);
-        $expire = $this->normalizeExpire($expire);
-        $this->redis->set($k, $content, $expire);
-        $this->redis->set(static::META_PREFIX . $k, [$expire, $tags], $expire);
-        $this->saveKeyToVault($key, $expire, $tags);
-    }
-    
-    /**
-     * Updates the previously stored data with new data.
-     *
-     * @param mixed $key The key of the data being updated.
-     * @param mixed $content The new data.
-     * @return bool Returns TRUE on success and FALSE on failure (if cache does not exist or expired).
-     */
-    public function update($key, $content) : bool
-    {
-        $key = $this->normalizeKey($key);
-        $meta = $this->redis->get(static::META_PREFIX . $key);
-        return $meta ? $this->redis->set($key, $content, $meta[0]) : false;
-    }
-    
-    /**
-     * Sets a new expiration on an cached data.
-     * Returns TRUE on success or FALSE on failure. 
-     *
-     * @param mixed $key The data key.
-     * @param int $expire The new expiration time.
-     * @return bool
-     */
-    public function touch($key, int $expire = 0) : bool
-    {
-        $key = $this->normalizeKey($key);
-        $mkey = static::META_PREFIX . $key;
-        $meta = $this->redis->get($mkey);
-        if (isset($meta[0]) && $this->redis->exists($key))
-        {
-            $expire = $this->normalizeExpire($expire);
-            $meta[0] = $expire;
-            $this->redis->setTimeout($key, $expire);
-            $this->redis->set($mkey, $meta, $expire);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * Removes some data identified by a key from the cache.
-     *
-     * @param mixed $key The data key.
-     * @return void
-     */
-    public function remove($key)
-    {
-        $key = $this->normalizeKey($key);
-        $this->redis->delete($key);
-        $this->redis->delete(static::META_PREFIX . $key);
-    }
 
     /**
      * Checks whether cache lifetime is expired or not.
@@ -187,7 +91,7 @@ class PHPRedisCache extends Cache
      */
     public function isExpired($key) : bool
     {
-        return !$this->redis->exists($key);
+        return !$this->redis->exists($this->normalizeKey($key));
     }
 
     /**
@@ -199,7 +103,7 @@ class PHPRedisCache extends Cache
     {
         $this->redis->flushDB();
     }
-  
+
     /**
      * Closes the current connection with Redis.
      *
@@ -208,5 +112,57 @@ class PHPRedisCache extends Cache
     public function __destruct()
     {
         $this->redis->close();
+    }
+
+    /**
+     * Retrieves data from the cache.
+     *
+     * @param string $key The normalized data key.
+     * @param mixed $success Set to TRUE in success and FALSE in failure.
+     * @return mixed
+     */
+    protected function fetch(string $key, &$success = null)
+    {
+        $success = $this->redis->exists($key);
+        return $success ? $this->redis->get($key) : null;
+    }
+
+    /**
+     * Stores data in the cache.
+     *
+     * @param string $key The normalized data key.
+     * @param mixed $content The serializable data.
+     * @param int $expire The normalized cache expiration time.
+     * @return bool TRUE on success and FALSE on failure.
+     */
+    protected function store(string $key, $content, int $expire) : bool
+    {
+        return $this->redis->set($key, $content, $expire);
+    }
+
+    /**
+     * Sets a new expiration on an cached data.
+     * Returns TRUE on success or FALSE on failure.
+     *
+     * @param string $key The normalized data key.
+     * @param int $expire The new expiration time (in seconds).
+     * @return bool
+     */
+    protected function expire(string $key, int $expire) : bool
+    {
+        /** @noinspection PhpIncompatibleReturnTypeInspection */
+        /** @noinspection PhpVoidFunctionResultUsedInspection */
+        return $this->redis->setTimeout($key, $expire);
+    }
+
+    /**
+     * Removes a stored data from the cache.
+     *
+     * @param string $key The normalized data key.
+     * @return bool TRUE on success and FALSE on failure.
+     */
+    protected function delete(string $key) : bool
+    {
+        return $this->redis->delete($key) == 1;
     }
 }

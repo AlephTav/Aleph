@@ -36,7 +36,6 @@ interface IMutex
      * If $key is not specified, the application identifier will be used.
      *
      * @param string $key The unique identifier of a mutex.
-     * @return void
      */
     public function __construct(string $key = null);
     

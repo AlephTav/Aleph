@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -26,7 +26,7 @@ namespace Aleph\Cache;
  * The class is intended for caching of different data using the direct connection to the Redis server.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.2
+ * @version 1.3.0
  * @package aleph.cache
  */
 class RedisCache extends Cache
@@ -37,14 +37,14 @@ class RedisCache extends Cache
     const ERR_CACHE_REDIS_1 = 'Unable to connect to the Redis server. ERROR: %s - %s.';
     const ERR_CACHE_REDIS_2 = 'Failed reading data from Redis connection socket.';
     const ERR_CACHE_REDIS_3 = 'Redis error: %s.';
-  
+
     /**
      * Redis socket connection.
      *
      * @var resource
      */
     private $rp = null;
-  
+
     /**
      * Constructor.
      *
@@ -53,23 +53,20 @@ class RedisCache extends Cache
      * @param int|null $timeout The connection timeout, in seconds.
      * @param string|null $password Password for server authentication, optional.
      * @param int $database Number of the redis database to use.
-     * @return void
      */
     public function __construct(string $host = '127.0.0.1', int $port = 6379, int $timeout = null, string $password = null, int $database = 0)
     {
         parent::__construct();
         $this->rp = stream_socket_client($host . ':' . $port, $errno, $errstr, $timeout !== null ? $timeout : ini_get('default_socket_timeout'));
-        if (!$this->rp)
-        {
+        if (!$this->rp) {
             throw new \RuntimeException(sprintf(static::ERR_CACHE_REDIS_1, $errno, $errstr));
         }
-        if ($password !== null)
-        {
+        if ($password !== null) {
             $this->execute('AUTH', [$password]);
         }
         $this->execute('SELECT', [$database]);
     }
-  
+
     /**
      * Executes the given redis command.
      *
@@ -82,21 +79,17 @@ class RedisCache extends Cache
     {
         array_unshift($params, $command);
         $command = '*' . count($params) . "\r\n";
-        foreach ($params as $param)
-        {
+        foreach ($params as $param) {
             $command .= '$' . strlen($param) . "\r\n" . $param . "\r\n";
         }
         fwrite($this->rp, $command);
-        $parse = function() use (&$parse)
-        {
-            if (false === $line = fgets($this->rp))
-            {
+        $parse = function () use (&$parse) {
+            if (false === $line = fgets($this->rp)) {
                 throw new \RuntimeException(static::ERR_CACHE_REDIS_2);
             }
             $type = $line[0];
             $line = substr($line, 1, -2);
-            switch ($type)
-            {
+            switch ($type) {
                 case '+':
                     return true;
                 case '-':
@@ -104,16 +97,13 @@ class RedisCache extends Cache
                 case ':':
                     return $line;
                 case '$':
-                    if ($line == '-1')
-                    {
+                    if ($line == '-1') {
                         return null;
                     }
                     $length = $line + 2;
                     $data = '';
-                    while ($length)
-                    {
-                        if (false === $block = fread($this->rp, $length))
-                        {
+                    while ($length) {
+                        if (false === $block = fread($this->rp, $length)) {
                             throw new \RuntimeException(static::ERR_CACHE_REDIS_2);
                         }
                         $data .= $block;
@@ -123,8 +113,7 @@ class RedisCache extends Cache
                 case '*':
                     $count = (int)$line;
                     $data = [];
-                    for ($i = 0; $i < $count; $i++)
-                    {
+                    for ($i = 0; $i < $count; $i++) {
                         $data[] = $parse();
                     }
                     return $data;
@@ -133,107 +122,6 @@ class RedisCache extends Cache
             }
         };
         return $parse();
-    }
-    
-    /**
-     * Returns meta information (expiration time and tags) of the cached data.
-     * It returns empty array if the meta data does not exist.
-     *
-     * @param mixed $key The data key.
-     * @return array
-     */
-    public function getMeta($key) : array
-    {
-        $res = $this->execute('GET', [static::META_PREFIX . $this->normalizeKey($key)]);
-        return $res === null ? [] : unserialize($res);
-    }
-    
-    /**
-     * Returns some data previously stored in the cache.
-     *
-     * @param mixed $key The data key.
-     * @param mixed $isExpired It will be set to TRUE if the given cache is expired and FALSE otherwise.
-     * @return mixed
-     */
-    public function get($key, &$isExpired = null)
-    {
-        $res = $this->execute('GET', [$this->normalizeKey($key)]);
-        if ($res === null)
-        {
-            $isExpired = true;
-            return;
-        }
-        $isExpired = false;
-        return unserialize($res);
-    }
-  
-    /**
-     * Stores some data identified by a key in the cache.
-     *
-     * @param mixed $key The data key.
-     * @param mixed $content The cached data.
-     * @param int $expire The cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
-     * @param string[] $tags An array of tags associated with the data.
-     * @return void
-     */
-    public function set($key, $content, int $expire = 0, array $tags = [])
-    {
-        $k = $this->normalizeKey($key);
-        $expire = $this->normalizeExpire($expire);
-        $this->execute('SETEX', [$k, $expire, serialize($content)]);
-        $this->execute('SETEX', [static::META_PREFIX . $k, $expire, serialize([$expire, $tags])]);
-        $this->saveKeyToVault($key, $expire, $tags);
-    }
-    
-    /**
-     * Updates the previously stored data with new data.
-     *
-     * @param mixed $key The key of the data being updated.
-     * @param mixed $content The new data.
-     * @return bool It returns TRUE on success and FALSE on failure (if cache does not exist or expired).
-     */
-    public function update($key, $content) : bool
-    {
-        $key = $this->normalizeKey($key);
-        $meta = $this->execute('GET', [static::META_PREFIX . $key]);
-        return $meta ? $this->execute('SETEX', [$key, $meta[0], serialize($content)]) : false;
-    }
-    
-    /**
-     * Sets a new expiration on an cached data.
-     * Returns TRUE on success or FALSE on failure. 
-     *
-     * @param mixed $key The data key.
-     * @param int $expire The new expiration time.
-     * @return bool
-     */
-    public function touch($key, int $expire = 0) : bool
-    {
-        $key = $this->normalizeKey($key);
-        $mkey = static::META_PREFIX . $key;
-        $meta = $this->execute('GET', [$mkey]);
-        if (isset($meta[0]) && $this->execute('EXISTS', [$key]))
-        {
-            $expire = $this->normalizeExpire($expire);
-            $meta[0] = $expire;
-            $this->execute('EXPIRE', [$key, $expire]);
-            $this->execute('SETEX', [$mkey, $meta, $expire]);
-            return true;
-        }
-        return false;
-    }
-    
-    /**
-     * Removes some data identified by a key from the cache.
-     *
-     * @param mixed $key The data key.
-     * @return void
-     */
-    public function remove($key)
-    {
-        $key = $this->normalizeKey($key);
-        $this->execute('DEL', [$key]);
-        $this->execute('DEL', [static::META_PREFIX . $key]);
     }
 
     /**
@@ -255,5 +143,60 @@ class RedisCache extends Cache
     public function clean()
     {
         $this->execute('FLUSHDB');
+    }
+
+    /**
+     * Retrieves data from the cache.
+     *
+     * @param string $key The normalized data key.
+     * @param mixed $success Set to TRUE in success and FALSE in failure.
+     * @return mixed
+     */
+    protected function fetch(string $key, &$success = null)
+    {
+        $value = $this->execute('GET', [$key]);
+        if ($value !== null) {
+            $success = true;
+            return unserialize($value);
+        }
+        $success = false;
+        return null;
+    }
+
+    /**
+     * Stores data in the cache.
+     *
+     * @param string $key The normalized data key.
+     * @param mixed $content The serializable data.
+     * @param int $expire The normalized cache expiration time.
+     * @return bool TRUE on success and FALSE on failure.
+     */
+    protected function store(string $key, $content, int $expire) : bool
+    {
+        return $this->execute('SETEX', [$key, $expire, serialize($content)]);
+    }
+
+    /**
+     * Sets a new expiration on an cached data.
+     * Returns TRUE on success or FALSE on failure.
+     *
+     * @param string $key The normalized data key.
+     * @param int $expire The new expiration time (in seconds).
+     * @return bool
+     */
+    protected function expire(string $key, int $expire) : bool
+    {
+        return $this->execute('EXPIRE', [$key, $expire]);
+    }
+
+    /**
+     * Removes a stored data from the cache.
+     *
+     * @param string $key The normalized data key.
+     * @return bool TRUE on success and FALSE on failure.
+     */
+    protected function delete(string $key) : bool
+    {
+        return $this->execute('DEL', [$key]);
     }
 }

@@ -27,7 +27,7 @@ namespace Aleph\Patterns\Traits;
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
- * @package aleph.ptterns
+ * @package aleph.patterns
  */
 trait Singleton
 {
@@ -40,8 +40,6 @@ trait Singleton
 
     /**
      * Protects against creation through "new".
-     *
-     * @return void
      */
     private function __construct(){}
     

@@ -51,7 +51,6 @@ class Memento implements IMemento
      * Constructor.
      *
      * @param object $originator
-     * @return void
      */
     public function __construct($originator)
     {

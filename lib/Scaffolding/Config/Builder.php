@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -37,13 +37,13 @@ abstract class Builder implements IBuilder
      * Error message templates.
      */
     const ERR_BUILDER_1 = 'Config builder of type "%s" is not supported.';
-    
+
     /**
      * Available types of config files.
      */
     const TYPE_PHP = 'php';
     const TYPE_INI = 'ini';
-    
+
     /**
      * The configuration data.
      *
@@ -56,12 +56,11 @@ abstract class Builder implements IBuilder
      *
      * @param array $data The config data.
      * @param string $type The builder type.
-     * @return Aleph\Scaffolding\Config\Interfaces\IBuilder
+     * @return \Aleph\Scaffolding\Config\Interfaces\IBuilder
      */
     public static function create(array $data, string $type = self::TYPE_PHP) : IBuilder
     {
-        switch ($type)
-        {
+        switch ($type) {
             case self::TYPE_PHP:
                 return new PHPBuilder($data);
             case self::TYPE_INI:
@@ -69,18 +68,17 @@ abstract class Builder implements IBuilder
         }
         throw new \UnexpectedValueException(sprintf(static::ERR_BUILDER_1, $type));
     }
-    
+
     /**
      * Constructor.
      *
      * @param array $data The config data.
-     * @return void
      */
     public function __construct(array $data)
     {
         $this->setData($data);
     }
-    
+
     /**
      * Returns the given config data.
      *
@@ -90,7 +88,7 @@ abstract class Builder implements IBuilder
     {
         return $this->data;
     }
-    
+
     /**
      * Sets the config data.
      *
@@ -101,7 +99,7 @@ abstract class Builder implements IBuilder
     {
         $this->data = $data;
     }
-    
+
     /**
      * Creates config file of the given type.
      *

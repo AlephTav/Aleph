@@ -35,7 +35,6 @@ interface IBuilder
      * Constructor.
      *
      * @param array $data The config data.
-     * @return void
      */
     public function __construct(array $data);
 

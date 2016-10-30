@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -37,13 +37,13 @@ abstract class Parser implements IParser
      * Error message templates.
      */
     const ERR_PARSER_1 = 'Config parser of type "%s" is not supported.';
-    
+
     /**
      * Available types of config files.
      */
     const TYPE_PHP = 'php';
     const TYPE_INI = 'ini';
-    
+
     /**
      * Path to the configuration file.
      *
@@ -56,12 +56,11 @@ abstract class Parser implements IParser
      *
      * @param string $path The path to the config file.
      * @param string $type The parser type.
-     * @return Aleph\Scaffolding\Config\Interfaces\IParser
+     * @return \Aleph\Scaffolding\Config\Interfaces\IParser
      */
     public static function create(string $path, string $type = self::TYPE_PHP) : IParser
     {
-        switch ($type)
-        {
+        switch ($type) {
             case self::TYPE_PHP:
                 return new PHPParser($path);
             case self::TYPE_INI:
@@ -69,18 +68,17 @@ abstract class Parser implements IParser
         }
         throw new \UnexpectedValueException(sprintf(static::ERR_PARSER_1, $type));
     }
-    
+
     /**
      * Constructor.
      *
      * @param string $path Path to the config file.
-     * @return void
      */
     public function __construct(string $path)
     {
         $this->setConfigFile($path);
     }
-    
+
     /**
      * Returns path to the config file.
      *
@@ -90,7 +88,7 @@ abstract class Parser implements IParser
     {
         return $this->path;
     }
-    
+
     /**
      * Sets path to the config file.
      *
@@ -101,7 +99,7 @@ abstract class Parser implements IParser
     {
         $this->path = $path;
     }
-    
+
     /**
      * Parses a config file of the given type and
      * returns the config data.

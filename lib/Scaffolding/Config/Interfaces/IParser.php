@@ -35,7 +35,6 @@ interface IParser
      * Constructor.
      *
      * @param string $path Path to the config file.
-     * @return void
      */
     public function __construct(string $path);
 

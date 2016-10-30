@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -27,7 +27,7 @@ namespace Aleph\Cache;
  * You can use this type of cache for testing caching in your applications.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.2.1
+ * @version 1.3.0
  * @package aleph.cache
  */
 class SessionCache extends Cache
@@ -38,7 +38,7 @@ class SessionCache extends Cache
      * @var string
      */
     protected $ns = '__CACHE__';
-    
+
     /**
      * Checks whether the current type of cache is available or not.
      *
@@ -48,7 +48,7 @@ class SessionCache extends Cache
     {
         return session_id() != '';
     }
-    
+
     /**
      * Returns the key of session array's element that stores all cached data.
      *
@@ -58,7 +58,7 @@ class SessionCache extends Cache
     {
         return $this->ns;
     }
-    
+
     /**
      * Sets the key of of session array's element that stores all cached data.
      *
@@ -67,120 +67,11 @@ class SessionCache extends Cache
      */
     public function setNamespace(string $namespace)
     {
+        if (!isset($_SESSION[$this->ns])) {
+            $_SESSION[$namespace] = $_SESSION[$this->ns];
+            unset($_SESSION[$this->ns]);
+        }
         $this->ns = $namespace;
-    }
-    
-    /**
-     * Returns meta information (expiration time and tags) of the cached data.
-     * It returns empty array if the meta data does not exist.
-     *
-     * @param mixed $key The data key.
-     * @return array
-     */
-    public function getMeta($key) : array
-    {
-        $mkey = static::META_PREFIX . $this->normalizeKey($key);
-        return $_SESSION[$this->ns][$mkey] ?? [];
-    }
-    
-    /**
-     * Returns some data previously stored in the cache.
-     *
-     * @param mixed $key The data key.
-     * @param mixed $isExpired It will be set to TRUE if the given cache is expired and FALSE otherwise.
-     * @return mixed
-     */
-    public function get($key, &$isExpired = null)
-    {                    
-        $key = $this->normalizeKey($key);
-        if (isset($_SESSION[$this->ns][$key]))
-        {
-            $data = $_SESSION[$this->ns][$key];
-            if (is_array($data))
-            {
-                $isExpired = $data[1] <= time();
-                return unserialize($data[0]);
-            }
-        }
-        $isExpired = true;
-    }
-
-    /**
-     * Stores some data identified by a key in the cache.
-     *
-     * @param mixed $key The data key.
-     * @param mixed $content The cached data.
-     * @param int $expire The cache lifetime (in seconds). If it is FALSE or zero the cache life time is used.
-     * @param string[] $tags An array of tags associated with the data.
-     * @return void
-     */
-    public function set($key, $content, int $expire = 0, array $tags = [])
-    {
-        $k = $this->normalizeKey($key);
-        $expire = $this->normalizeExpire($expire);
-        $_SESSION[$this->ns][$k] = [serialize($content), $expire + time()];
-        $_SESSION[$this->ns][static::META_PREFIX . $k] = [$expire, $tags];
-        $this->saveKeyToVault($key, $expire, $tags);
-    }
-    
-    /**
-     * Updates the previously stored data with new data.
-     *
-     * @param mixed $key The key of the data being updated.
-     * @param mixed $content The new data.
-     * @return bool Returns TRUE on success and FALSE on failure (if cache does not exist or expired).
-     */
-    public function update($key, $content) : bool
-    {
-        $key = $this->normalizeKey($key);
-        $mkey = static::META_PREFIX . $key;
-        if (!empty($_SESSION[$this->ns][$mkey]))
-        {
-            $meta = $_SESSION[$this->ns][$mkey];
-            if (is_array($meta))
-            {
-                $_SESSION[$this->ns][$key] = [serialize($content), $meta[0] + time()];
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Sets a new expiration on an cached data.
-     * Returns TRUE on success or FALSE on failure. 
-     *
-     * @param mixed $key The data key.
-     * @param int $expire The new expiration time.
-     * @return bool
-     */
-    public function touch($key, int $expire = 0) : bool
-    {
-        $key = $this->normalizeKey($key);
-        if (!empty($_SESSION[$this->ns][$key]))
-        {
-            if (is_array($_SESSION[$this->ns][$key]))
-            {
-                $expire = $this->normalizeExpire($expire);
-                $_SESSION[$this->ns][$key][1] = $expire + time();
-                $_SESSION[$this->ns][static::META_PREFIX . $key][0] = $expire;
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    /**
-     * Removes some data identified by a key from the cache.
-     *
-     * @param mixed $key The data key.
-     * @return void
-     */
-    public function remove($key)
-    {
-        $key = $this->normalizeKey($key);
-        unset($_SESSION[$this->ns][$key]);
-        unset($_SESSION[$this->ns][static::META_PREFIX . $key]);
     }
 
     /**
@@ -190,19 +81,17 @@ class SessionCache extends Cache
      * @return bool
      */
     public function isExpired($key) : bool
-    {                      
+    {
         $key = $this->normalizeKey($key);
-        if (!empty($_SESSION[$this->ns][$key]))
-        {
+        if (isset($_SESSION[$this->ns][$key])) {
             $data = $_SESSION[$this->ns][$key];
-            if (is_array($data))
-            {
+            if (is_array($data)) {
                 return $data[1] <= time();
             }
         }
-        return false;
+        return true;
     }
-  
+
     /**
      * Removes all previously stored data from the cache.
      *
@@ -212,7 +101,7 @@ class SessionCache extends Cache
     {
         unset($_SESSION[$this->ns]);
     }
-   
+
     /**
      * Removes keys of the expired data from the key vault.
      *
@@ -220,17 +109,80 @@ class SessionCache extends Cache
      */
     protected function normalizeVault()
     {
-        if (isset($_SESSION[$this->ns]) && is_array($_SESSION[$this->ns]))
-        {
-            foreach ($_SESSION[$this->ns] as $key => $item)
-            {
-                if (strpos($key, static::META_PREFIX) === false && (!is_array($item) || $item[1] < time()))
-                {
+        if (isset($_SESSION[$this->ns]) && is_array($_SESSION[$this->ns])) {
+            foreach ($_SESSION[$this->ns] as $key => $item) {
+                if (strpos($key, $this->getMetaPrefix()) === false &&
+                    (!is_array($item) || $item[1] <= time())) {
                     unset($_SESSION[$this->ns][$key]);
-                    unset($_SESSION[$this->ns][static::META_PREFIX . $key]);
+                    unset($_SESSION[$this->ns][$this->getMetaPrefix() . $key]);
                 }
             }
         }
         parent::normalizeVault();
+    }
+
+    /**
+     * Retrieves data from the cache.
+     *
+     * @param string $key The normalized data key.
+     * @param mixed $success Set to TRUE in success and FALSE in failure.
+     * @return mixed
+     */
+    protected function fetch(string $key, &$success = null)
+    {
+        if (isset($_SESSION[$this->ns][$key])) {
+            $data = $_SESSION[$this->ns][$key];
+            if (is_array($data)) {
+                if  ($data[1] > time()) {
+                    $success = true;
+                    return unserialize($data[0]);
+                }
+            }
+        }
+        $success = false;
+        return null;
+    }
+
+    /**
+     * Stores data in the cache.
+     *
+     * @param string $key The normalized data key.
+     * @param mixed $content The serializable data.
+     * @param int $expire The normalized cache expiration time.
+     * @return bool TRUE on success and FALSE on failure.
+     */
+    protected function store(string $key, $content, int $expire) : bool
+    {
+        $_SESSION[$this->ns][$key] = [serialize($content), $expire + time()];
+        return true;
+    }
+
+    /**
+     * Sets a new expiration on an cached data.
+     * Returns TRUE on success or FALSE on failure.
+     *
+     * @param string $key The normalized data key.
+     * @param int $expire The new expiration time (in seconds).
+     * @return bool
+     */
+    protected function expire(string $key, int $expire) : bool
+    {
+        if (isset($_SESSION[$this->ns][$key])) {
+            $_SESSION[$this->ns][$key][1] = $expire + time();
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Removes a stored data from the cache.
+     *
+     * @param string $key The normalized data key.
+     * @return bool TRUE on success and FALSE on failure.
+     */
+    protected function delete(string $key) : bool
+    {
+        unset($_SESSION[$this->ns][$key]);
+        return true;
     }
 }
