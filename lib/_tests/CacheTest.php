@@ -88,18 +88,18 @@ class CacheTest extends TestCase
             $this->assertTrue($isExpired);
             foreach ($keys as $key) {
                 $this->assertTrue($cache->set($key, $content, 2));
-                $this->assertEquals($cache->get($key, $isExpired), $content);
+                $this->assertEquals($content, $cache->get($key, $isExpired));
                 $this->assertFalse($isExpired);
             }
         }
-        sleep(1);
+        usleep(500000);
         foreach (self::$cacheInstances as $cache) {
             foreach ($keys as $key) {
-                $this->assertEquals($cache->get($key, $isExpired), $content);
+                $this->assertEquals($content, $cache->get($key, $isExpired));
                 $this->assertFalse($isExpired);
             }
         }
-        sleep(1);
+        sleep(2);
         foreach (self::$cacheInstances as $cache) {
             foreach ($keys as $key) {
                 $this->assertNull($cache->get($key, $isExpired));
@@ -117,7 +117,7 @@ class CacheTest extends TestCase
         foreach (self::$cacheInstances as $cache) {
             $key = uniqid('', true);
             $this->assertTrue($cache->set($key, 'content', 1));
-            $this->assertEquals($cache->getMeta($key), [1, []]);
+            $this->assertEquals([1, []], $cache->getMeta($key));
         }
     }
 
@@ -131,18 +131,18 @@ class CacheTest extends TestCase
         foreach (self::$cacheInstances as $type => $cache) {
             $keys[$type] = uniqid($type, true);
             $this->assertTrue($cache->set($keys[$type], 'abc', 2));
-            $this->assertEquals($cache->get($keys[$type], $isExpired), 'abc');
+            $this->assertEquals('abc', $cache->get($keys[$type], $isExpired));
             $this->assertFalse($isExpired);
         }
         sleep(1);
         foreach (self::$cacheInstances as $type => $cache) {
             $this->assertTrue($cache->update($keys[$type], '123'));
-            $this->assertEquals($cache->get($keys[$type], $isExpired), '123');
+            $this->assertEquals('123', $cache->get($keys[$type], $isExpired));
             $this->assertFalse($isExpired);
         }
         sleep(1);
         foreach (self::$cacheInstances as $type => $cache) {
-            $this->assertEquals($cache->get($keys[$type], $isExpired), '123');
+            $this->assertEquals('123', $cache->get($keys[$type], $isExpired));
             $this->assertFalse($isExpired);
         }
         sleep(1);
@@ -181,14 +181,14 @@ class CacheTest extends TestCase
         foreach (self::$cacheInstances as $type => $cache) {
             $keys[$type] = uniqid('', true);
             $this->assertTrue($cache->set($keys[$type], 'content', 1));
-            $this->assertEquals($cache->get($keys[$type], $isExpired), 'content');
+            $this->assertEquals('content', $cache->get($keys[$type], $isExpired));
             $this->assertFalse($isExpired);
             $this->assertFalse($cache->add($keys[$type], 'abc', 1));
         }
         usleep(1100000);
         foreach (self::$cacheInstances as $type => $cache) {
             $this->assertTrue($cache->add($keys[$type], 'abc', 1));
-            $this->assertEquals($cache->get($keys[$type], $isExpired), 'abc');
+            $this->assertEquals('abc', $cache->get($keys[$type], $isExpired));
             $this->assertFalse($isExpired);
         }
     }
@@ -208,14 +208,14 @@ class CacheTest extends TestCase
                 return ++$x[$type];
             };
             $keys[$type] = uniqid('', true);
-            $this->assertEquals($cache->rw($keys[$type], $dataProviders[$type], 1), 1);
-            $this->assertEquals($cache->get($keys[$type], $isExpired), 1);
+            $this->assertEquals(1, $cache->rw($keys[$type], $dataProviders[$type], 1));
+            $this->assertEquals(1, $cache->get($keys[$type], $isExpired));
             $this->assertFalse($isExpired);
-            $this->assertEquals($cache->rw($keys[$type], $dataProviders[$type], 1), 1);
+            $this->assertEquals(1, $cache->rw($keys[$type], $dataProviders[$type], 1));
         }
         usleep(1100000);
         foreach (self::$cacheInstances as $type => $cache) {
-            $this->assertEquals($cache->rw($keys[$type], $dataProviders[$type], 1), 2);
+            $this->assertEquals(2, $cache->rw($keys[$type], $dataProviders[$type], 1));
         }
     }
 
@@ -237,7 +237,7 @@ class CacheTest extends TestCase
         }
         usleep(600000);
         foreach (self::$cacheInstances as $type => $cache) {
-            $this->assertEquals($cache->get($keys[$type], $isExpired), 'content');
+            $this->assertEquals('content', $cache->get($keys[$type], $isExpired));
             $this->assertFalse($isExpired);
         }
     }
@@ -251,7 +251,7 @@ class CacheTest extends TestCase
         foreach (self::$cacheInstances as $cache) {
             $key = uniqid('', true);
             $this->assertTrue($cache->set($key, 'content', 10));
-            $this->assertEquals($cache->get($key, $isExpired), 'content');
+            $this->assertEquals('content', $cache->get($key, $isExpired));
             $this->assertFalse($isExpired);
             $this->assertTrue($cache->remove($key));
             $this->assertNull($cache->get($key, $isExpired));
@@ -268,7 +268,7 @@ class CacheTest extends TestCase
         foreach (self::$cacheInstances as $cache) {
             for ($i = 0; $i < 10; ++$i) {
                 $cache->set($i, $i, 10);
-                $this->assertEquals($cache->get($i, $isExpired), $i);
+                $this->assertEquals($i, $cache->get($i, $isExpired));
                 $this->assertFalse($isExpired);
             }
             $cache->clean();
@@ -300,29 +300,29 @@ class CacheTest extends TestCase
         foreach (self::$cacheInstances as $cache) {
             foreach ($keys as $n => $key) {
                 $this->assertTrue($cache->set($key, $tags[$n], 2, $tags[$n]));
-                $this->assertEquals($cache->get($key, $isExpired), $tags[$n]);
+                $this->assertEquals($tags[$n], $cache->get($key, $isExpired));
                 $this->assertFalse($isExpired);
             }
         }
         sleep(1);
         foreach (self::$cacheInstances as $cache) {
-            $this->assertEquals($cache->getByTag('a'), [
+            $this->assertEquals([
                 serialize($keys[0]) => $tags[0],
                 serialize($keys[1]) => $tags[1]
-            ]);
-            $this->assertEquals($cache->getByTag('b'), [
+            ], $cache->getByTag('a'));
+            $this->assertEquals([
                 serialize($keys[0]) => $tags[0],
                 serialize($keys[2]) => $tags[2]
-            ]);
-            $this->assertEquals($cache->getByTag('c'), [
+            ], $cache->getByTag('b'));
+            $this->assertEquals([
                 serialize($keys[2]) => $tags[2]
-            ]);
+            ], $cache->getByTag('c'));
         }
         sleep(2);
         foreach (self::$cacheInstances as $cache) {
-            $this->assertEquals($cache->getByTag('a'), []);
-            $this->assertEquals($cache->getByTag('b'), []);
-            $this->assertEquals($cache->getByTag('c'), []);
+            $this->assertEquals([], $cache->getByTag('a'));
+            $this->assertEquals([], $cache->getByTag('b'));
+            $this->assertEquals([], $cache->getByTag('c'));
         }
     }
 
@@ -338,10 +338,10 @@ class CacheTest extends TestCase
             $cache->clean();
             for ($i = 0; $i < 3; ++$i) {
                 $this->assertTrue($cache->set('key' . $i, 'content' . $i, 10, [$i]));
-                $this->assertEquals($cache->get('key' . $i, $isExpired), 'content' . $i);
+                $this->assertEquals('content' . $i, $cache->get('key' . $i, $isExpired));
                 $this->assertFalse($isExpired);
             }
-            $this->assertEquals($cache->getVault(), [
+            $this->assertEquals([
                 [
                     serialize('key0') => 10
                 ],
@@ -351,8 +351,8 @@ class CacheTest extends TestCase
                 [
                     serialize('key2') => 10
                 ]
-            ]);
-            $this->assertEquals($cache->getKeyCount(), 3);
+            ], $cache->getVault());
+            $this->assertEquals(3, $cache->getKeyCount());
         }
     }
 
@@ -367,7 +367,7 @@ class CacheTest extends TestCase
             $cache->clean();
             for ($i = 0; $i <= 5; ++$i) {
                 $this->assertTrue($cache->set('key' . $i, 'content' . $i, 10, [$i]));
-                $this->assertEquals($cache->get('key' . $i, $isExpired), 'content' . $i);
+                $this->assertEquals('content' . $i, $cache->get('key' . $i, $isExpired));
                 $this->assertFalse($isExpired);
             }
             $cache->cleanByTag(0);
@@ -376,14 +376,14 @@ class CacheTest extends TestCase
                 $this->assertNull($cache->get('key' . $i, $isExpired));
                 $this->assertTrue($isExpired);
             }
-            $this->assertEquals($cache->getVault(), [
+            $this->assertEquals([
                 4 => [
                     serialize('key4') => 10
                 ],
                 5 => [
                     serialize('key5') => 10
                 ]
-            ]);
+            ], $cache->getVault());
         }
     }
 }

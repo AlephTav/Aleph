@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -23,7 +23,7 @@
 namespace Aleph\Core;
 
 use Aleph;
- 
+
 /**
  * Exception allows to generate user exceptions with some additional information about exception.
  *
@@ -32,13 +32,13 @@ use Aleph;
  * @package aleph.core
  */
 class Exception extends \Exception
-{    
+{
     /**
      * Additional information about the exception.
      *
      * @var mixed
      */
-    protected $data = null;
+    private $data = null;
 
     /**
      * Constructor.
@@ -47,7 +47,6 @@ class Exception extends \Exception
      * @param mixed $data Some additional information about the exception.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
-     * @return void
      */
     public function __construct(string $message = '', $data = null, int $code = 0, \Throwable $previous = null)
     {
@@ -64,7 +63,7 @@ class Exception extends \Exception
     {
         return $this->data !== null ? $this->data : $this->getMessage();
     }
-    
+
     /**
      * Returns additional information about the exception.
      *
@@ -74,7 +73,18 @@ class Exception extends \Exception
     {
         return $this->data;
     }
-  
+
+    /**
+     * Sets additional information about the exception.
+     *
+     * @param mixed $data
+     * @return void
+     */
+    public function setData($data)
+    {
+        $this->data = $data;
+    }
+
     /**
      * Returns full information about the current exception.
      *

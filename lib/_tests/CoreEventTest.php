@@ -28,9 +28,9 @@ class CoreEventTest extends TestCase
     {
         Event::listen('foo1', function () {});
         Event::listen('foo2', function () {});
-        $this->assertEquals(Event::listeners('foo1'), 1);
-        $this->assertEquals(Event::listeners('foo2'), 1);
-        $this->assertEquals(Event::listeners(), 2);
+        $this->assertEquals(1, Event::listeners('foo1'));
+        $this->assertEquals(1, Event::listeners('foo2'));
+        $this->assertEquals(2, Event::listeners());
     }
 
     /**
@@ -45,19 +45,19 @@ class CoreEventTest extends TestCase
         Event::listen('foo', $empty);
         Event::listen('foo', $empty);
         Event::remove();
-        $this->assertEquals(Event::listeners(), 0);
+        $this->assertEquals(0, Event::listeners());
         Event::listen('foo', $empty);
         Event::listen('foo', $empty);
         Event::remove('foo');
-        $this->assertEquals(Event::listeners(), 0);
+        $this->assertEquals(0, Event::listeners());
         Event::listen('foo', $empty);
         Event::listen('foo', function () {});
         Event::remove('foo', $empty);
-        $this->assertEquals(Event::listeners(), 1);
+        $this->assertEquals(1, Event::listeners());
         Event::listen('foo', $empty);
         Event::listen('foo', $empty);
         Event::remove(null, $empty);
-        $this->assertEquals(Event::listeners(), 1);
+        $this->assertEquals(1, Event::listeners());
     }
 
     /**

@@ -26,7 +26,7 @@ class CoreExceptionTest extends TestCase
     public function testData()
     {
         $exc = new Exception('error', 'some data');
-        $this->assertEquals($exc->getData(), 'some data');
+        $this->assertEquals('some data', $exc->getData());
     }
 
     /**
@@ -37,8 +37,8 @@ class CoreExceptionTest extends TestCase
     public function testDataOrMessage()
     {
         $exc = new Exception('error', 'some data');
-        $this->assertEquals($exc->getDataOrMessage(), 'some data');
+        $this->assertEquals('some data', $exc->getDataOrMessage());
         $exc = new Exception('error');
-        $this->assertEquals($exc->getDataOrMessage(), 'error');
+        $this->assertEquals('error', $exc->getDataOrMessage());
     }
 }

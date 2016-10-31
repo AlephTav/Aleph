@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -22,79 +22,76 @@
 
 namespace Aleph\Core;
 
-use Aleph,
-    Aleph\Web;
+use Aleph\Core\Interfaces\ICallback;
 
 /**
- * With this class you can transform a string in certain format into a method or function invoking.
+ * This class is generalization of callable type.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
- * @version 1.1.2
+ * @version 1.2.0
  * @package aleph.core
  */
-class Callback
+class Callback implements ICallback
 {
     /**
      * Error message templates.
      */
     const ERR_CALLBACK_1 = 'Callback %s is not callable.';
-    const ERR_CALLBACK_2 = 'Control with UID = "%s" is not found.';
+
+    /**
+     * The callable object or null.
+     *
+     * @var object|callable|null
+     */
+    private $callable = null;
 
     /**
      * A string in the Aleph callback format.
      *
      * @var string
      */
-    protected $callback = '';
-  
+    private $callback = '';
+
     /**
      * Full name (class name with namespace) of a callback class.
      *
      * @var string
      */
-    protected $class = '';
-  
+    private $class = '';
+
     /**
      * Method name of a callback class.
      *
      * @var string
      */
-    protected $method = '';
-  
+    private $method = '';
+
     /**
      * Equals TRUE if a callback method is static and FALSE if it isn't.
      *
      * @var bool
      */
-    protected $static = false;
-  
+    private $static = false;
+
     /**
-     * Shows number of callback arguments that should be transmited into callback constructor.
+     * Shows the number of callback arguments that should be passed into callback constructor.
      *
      * @var int
      */
-    protected $numargs = 0;
-  
-    /**
-     * Contains logic identifier or unique identifier of a web-control.
-     *
-     * @var string
-     */
-    protected $cid = '';
-  
+    private $numargs = 0;
+
     /**
      * Can be equal 'function', 'closure' or 'class' according to callback format.
      *
      * @var string
      */
-    protected $type = '';
+    private $type = '';
 
     /**
-     * Constructor. The only argument of it is string in Aleph framework format.
-     * The following formats are possible:
+     * Constructor.
+     *
+     * The following formats of $callback are possible:
      * 'function' - invokes a global function with name 'function'.
-     * '->method' - invokes a method 'method' of Aleph\Web\Page::current() object (if defined) or Aleph object. 
-     * '::method' - invokes a static method 'method' of Aleph\Web\Page::current() object (if defined) or Aleph object.
      * 'class::method' - invokes a static method 'method' of a class 'class'.
      * 'class->method' - invokes a method 'method' of a class 'class' with its constructor without arguments.
      * 'class[]' - creates an object of a class 'class' without sending any arguments in its constructor.
@@ -103,183 +100,63 @@ class Callback
      * 'class[n]' - creates an object of a class 'class' with its constructor taking n arguments.
      * 'class[n]::method' - the same as 'class::method'.
      * 'class[n]->method' - invokes a method 'method' of a class 'class' with its constructor taking n arguments.
-     * 'class@cid->method' - invokes a method 'method' of web control type of 'class' with unique (or logic) ID equals 'cid'.
      *
-     * @param mixed $callback An Aleph framework callback string or a callable callback.
-     * @return void
+     * @param mixed $callback Any valid callable object.
+     * @throws \InvalidArgumentException If $callback is in wrong format.
      */
     public function __construct($callback)
     {
-        if ($callback instanceof Callback)
-        {
-            foreach ($callback->getInfo() as $var => $value)
-            {
-                $this->{$var} = $value;
-            }
-            $this->callback = (string)$callback;
-        }
-        else if ($callback instanceof \Closure)
-        {
-            $this->type = 'closure';
-            $this->method = $callback;
-            $this->callback = 'Closure';
-        }
-        else if (is_object($callback))
-        {
-            $class = new \ReflectionClass($callback);
-            $this->type = 'class';
-            $this->class = $callback;
-            $this->method = '__construct';
-            $this->numargs = $class->hasMethod($this->method) ? $class->getConstructor()->getNumberOfParameters() : 0;
-            $this->callback = get_class($callback) . '[' . ($this->numargs ?: '') . ']';
-        }
-        else if (is_array($callback))
-        {
-            if (!is_callable($callback))
-            {
-                if (isset($callback[0]) && is_object($callback[0]))
-                {
-                    $callback[0] = '{' . get_class($callback[0]) . '}';
-                }
-                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, json_encode($callback)));
-            }
-            $this->type = 'class';
-            $this->class = $callback[0];
-            $this->method = $callback[1];
-            $this->static = !is_object($this->class);
-            $this->numargs = $this->static ? 0 : (new \ReflectionClass($this->class))->getConstructor()->getNumberOfParameters();
-            $this->callback = (is_object($this->class) ? get_class($this->class) : $this->class) . ($this->static ? '::' : '[' . ($this->numargs ?: ''). ']->') . $this->method;
-        }
-        else
-        {
-            if ($callback == '' || is_numeric($callback))
-            {
-                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
-            }
-            $callback = htmlspecialchars_decode($callback);
-            preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*|[^:-]*parent::[^:-]*)$/', $callback, $matches);
-            if (count($matches) == 0)
-            {
-                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
-            }
-            if ($matches[4] == '' && $matches[2] == '')
-            {
-                $this->type = 'function';
-                $this->method = $matches[1];
-            }
-            else
-            {
-                $this->type = 'class';
-                $this->class = $matches[1] ?: (Web\Page::current() instanceof Web\Page ? get_class(Web\Page::current()) : false);
-                if ($this->class === false)
-                {
-                    throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
-                }
-                if ($this->class[0] == '\\')
-                {
-                    $this->class = ltrim($this->class, '\\');
-                }
-                $this->numargs = (int)$matches[3];
-                $this->static = ($matches[4] == '::');
-                $this->method = $matches[5] ?: '__construct';
-                $class = explode('@', $this->class);
-                if (count($class) > 1)
-                {
-                    $this->class = $class[0];
-                    $this->cid = $class[1];
-                    $this->type = 'control';
-                }
-            }
-            $this->callback = $this->class . ($this->static ? '::' : '[' . ($this->numargs ?: ''). ']->') . $this->method;
-        }
-    } 
-  
-    /**
-     * The magic method allowing to convert an object of this class to a callback string.
-     *
-     * @return string
-     */
-    public function __toString() : string
-    {
-        return $this->callback;
+        $this->parse($callback);
     }
-  
+
+    /**
+     * Invokes a callback's method or creating a class object.
+     * For callbacks in format 'class[n]' and 'class[n]->method' first n arguments of the method
+     * are arguments of the constructor of a class 'class'.
+     *
+     * @param array $args An array of callback's arguments.
+     * @param object $newThis The object to which the given closure function should be bound.
+     * @return mixed
+     */
+    public function call(array $args = [], $newThis = null)
+    {
+        $args = (array)$args;
+        if ($this->type == 'closure') {
+            $closure = $this->callable;
+            if (is_object($newThis)) {
+                return $closure->call($newThis, ...$args);
+            }
+            return $closure(...$args);
+        }
+        if ($this->type == 'function') {
+            $callable = $this->method;
+            return $callable(...$args);
+        }
+        if ($this->static) {
+            return call_user_func_array([$this->class, $this->method], $args);
+        }
+        $class = $this->getObject($args);
+        if ($this->method == '__construct') {
+            return $class;
+        }
+        return call_user_func_array([$class, $this->method], array_splice($args, $this->numargs));
+    }
+
     /**
      * The magic method allowing to invoke an object of this class as a method.
      * The method can take different number of arguments.
      *
+     * @param array $params The callback's arguments.
      * @return mixed
      */
-    public function __invoke()
+    public function __invoke(...$params)
     {
-        return $this->call(func_get_args());
-    }
-  
-    /**
-     * Invokes a callback's method or creating a class object.
-     * For callbacks in format 'class[n]' and 'class[n]->method' first n arguments of the method
-     * are arguments of constructor of a class 'class'.
-     *
-     * @param array $args An array of method arguments.
-     * @param object $newthis The object to which the given closure function should be bound.
-     * @return mixed
-    */
-    public function call(array $args = [], $newthis = null)
-    {
-        $args = (array)$args;
-        if ($this->type == 'closure')
-        {
-            $closure = $this->method;
-            if (is_object($newthis))
-            {
-                return $closure->call($newthis, ...$args);
-            }
-            return call_user_func_array($closure, $args);
-        }
-        if ($this->type == 'function')
-        {
-            return call_user_func_array($this->method, $args);
-        }
-        if ($this->type == 'control')
-        {
-            if (($class = Web\Page::current()->get($this->cid)) === false)
-            {
-                throw new \LogicException(sprintf(static::ERR_CALLBACK_2, $this->cid));
-            }
-            if ($this->method == '__construct')
-            {
-                return $class;
-            }
-            return call_user_func_array([$class, $this->method], $args);
-        }
-        else
-        {
-            if ($this->static)
-            {
-                return call_user_func_array([$this->class, $this->method], $args);
-            }
-            if (is_object($this->class))
-            {
-                $class = $this->class;
-            }
-            else if (Web\Page::current() instanceof Web\Page && $this->class == get_class(Web\Page::current()))
-            {
-                $class = Web\Page::current();
-            }
-            else
-            {
-                $class = $this->getObject($args);
-            }
-            if ($this->method == '__construct')
-            {
-                return $class;
-            }
-            return call_user_func_array([$class, $this->method], array_splice($args, $this->numargs));
-        }
+        return $this->call($params);
     }
 
     /**
      * Checks whether or not the callback can be invoked according to permissions.
+     *
      * Permissions array have the following structure:
      * [
      *   'permitted' => ['regexp1', 'regexp2', ... ],
@@ -294,88 +171,61 @@ class Callback
      */
     public function isPermitted(array $permissions) : bool
     {
-        foreach (['permitted' => true, 'forbidden' => false] as $type => $res)
-        {
-            if (isset($permissions[$type]))
-            {
+        foreach (['permitted' => true, 'forbidden' => false] as $type => $res) {
+            if (isset($permissions[$type])) {
                 $flag = !$res;
-                foreach ((array)$permissions[$type] as $regexp)
-                {
-                    if (preg_match($regexp, $this->callback))
-                    {
+                foreach ((array)$permissions[$type] as $regexp) {
+                    if (preg_match($regexp, $this->callback)) {
                         $flag = $res;
                         break;
                     }
                 }
-                if (!$flag)
-                {
+                if (!$flag) {
                     return false;
                 }
             }
         }
         return true;
     }
-  
+
     /**
-     * Verifies that the callack exists and can be invoked.
+     * Verifies that the callback exists and can be invoked.
      *
-     * @param boolean $autoload Whether or not to call __autoload by default.
+     * @param bool $autoload Whether or not to call __autoload by default.
      * @return bool
      */
     public function isCallable(bool $autoload = true) : bool
     {
-        if ($this->type == 'closure')
-        {
+        if ($this->type == 'closure') {
             return true;
         }
-        if ($this->type == 'function')
-        {
+        if ($this->type == 'function') {
             return function_exists($this->method);
         }
-        if ($this->type == 'control')
-        {
-            return Web\Page::current()->get($this->cid) !== false;
-        }
-        $static = $this->static;
-        $methodExists = function($class, $method) use ($static)
-        {
-            if (!method_exists($class, $method))
-            {
+        if ($this->callable || class_exists($this->class, $autoload)) {
+            if (!method_exists($this->class, $this->method)) {
                 return false;
             }
-            $class = new \ReflectionClass($class);
-            if (!$class->hasMethod($method))
-            {
+            $class = new \ReflectionClass($this->class);
+            if (!$class->hasMethod($this->method)) {
                 return false;
             }
-            $method = $class->getMethod($method);
-            return $method->isPublic() && $static === $method->isStatic();
-        };
-        if (is_object($this->class) || class_exists($this->class, false))
-        {
-            return $methodExists($this->class, $this->method);
+            $method = $class->getMethod($this->method);
+            return $method->isPublic() && $this->static == $method->isStatic();
         }
-        if (!$autoload)
-        {
-            return false;
-        }
-        if (!Aleph::loadClass($this->class))
-        {
-            return false;
-        }
-        return $methodExists($this->class, $this->method);
+        return false;
     }
-  
+
     /**
-     * Returns array of detail information of the callback.
+     * Returns an array of the detailed information of the callback.
+     *
      * Output array has the format
      * [
-     *     'class' => ... [string] ..., 
-     *     'method' => ... [string] ..., 
-     *     'static' => ... [boolean] ..., 
-     *     'numargs' => ... [integer] ..., 
-     *     'cid' => ... [string] ...,
-     *     'type' => ... [string] ...
+     *     'type' => ... [string] ...,
+     *     'class' => ... [string] ...,
+     *     'method' => ... [string] ...,
+     *     'static' => ... [boolean] ...,
+     *     'numargs' => ... [integer] ...
      * ]
      *
      * @return array
@@ -383,15 +233,14 @@ class Callback
     public function getInfo() : array
     {
         return [
-            'class' => $this->class, 
+            'type' => $this->type,
+            'class' => $this->class,
             'method' => $this->method,
             'static' => $this->static,
-            'numargs' => $this->numargs,
-            'cid' => $this->cid,
-            'type' => $this->type
+            'numargs' => $this->numargs
         ];
     }
-  
+
     /**
      * Returns full class name (with namespace) of the callback.
      *
@@ -401,7 +250,7 @@ class Callback
     {
         return $this->class;
     }
-  
+
     /**
      * Returns method name of the callback.
      *
@@ -411,9 +260,10 @@ class Callback
     {
         return $this->method;
     }
-  
+
     /**
-     * Returns callback type. Possible values can be "closure", "function", "class" or "control".
+     * Returns callback type.
+     * Possible values can be "closure", "function" or "class".
      *
      * @return string
      */
@@ -421,7 +271,7 @@ class Callback
     {
         return $this->type;
     }
-  
+
     /**
      * Returns TRUE if the given callback is a static class method and FALSE otherwise.
      *
@@ -431,52 +281,133 @@ class Callback
     {
         return $this->static;
     }
-  
+
     /**
-     * Returns parameters of a callback class method, function or closure. 
-     * Method returns FALSE if class method doesn't exist.
-     * Parameters are returned as an array of \ReflectionParameter class instance.
+     * Returns parameters of a callback class method, function or closure.
+     * Method returns FALSE if the class method doesn't exist.
      *
-     * @return array|bool
+     * @return \ReflectionParameter[]|bool
      */
     public function getParameters()
     {
-        if ($this->type != 'class')
-        {
+        if ($this->type != 'class') {
             return (new \ReflectionFunction($this->method))->getParameters();
         }
         $class = new \ReflectionClass($this->class);
-        if (!$class->hasMethod($this->method))
-        {
+        if (!$class->hasMethod($this->method)) {
             return false;
         }
         return $class->getMethod($this->method)->getParameters();
     }
-  
+
     /**
      * Creates and returns object of callback's class.
      *
+     * @param bool $createNew Determines whether the callable object should be a new instance.
      * @param array $args Arguments of the class constructor.
      * @return object|null
      */
-    public function getObject(array $args = [])
+    public function getObject(bool $createNew = false, array $args = [])
     {
-        if ($this->type == 'closure')
-        {
-            return $this->method;
+        if ($this->type == 'closure') {
+            return $createNew ? clone $this->callable : $this->callable;
         }
-        if ($this->type == 'control')
-        {
-            return Web\Page::current()->get($this->cid);
-        }
-        if ($this->type == 'class')
-        {
-            $class = new \ReflectionClass($this->class);
-            if ($this->numargs == 0)
-            {
-                return $class->newInstance();
+        if ($this->type == 'class') {
+            if (!$createNew && $this->callable) {
+                return $this->callable;
             }
-            return $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
+            $class = new \ReflectionClass($this->class);
+            if ($this->numargs == 0) {
+                $callable = $class->newInstance();
+            } else {
+                $callable = $class->newInstanceArgs(array_splice($args, 0, $this->numargs));
+            }
+            if (!$createNew) {
+                $this->callable = $callable;
+            }
+            return $callable;
+        }
+        return null;
+    }
+
+    /**
+     * The magic method allowing to convert an object of this class to a callback string.
+     *
+     * @return string
+     */
+    public function __toString() : string
+    {
+        return $this->callback;
+    }
+
+    /**
+     * Parses the callable object.
+     *
+     * @param mixed $callback Any valid callable object.
+     * @return void
+     * @throws \InvalidArgumentException If $callback is in wrong format.
+     */
+    private function parse($callback)
+    {
+        if ($callback instanceof ICallback) {
+            foreach ($callback->getInfo() as $var => $value) {
+                $this->{$var} = $value;
+            }
+            $this->callback = (string)$callback;
+            $this->callable = $callback;
+        } else if ($callback instanceof \Closure) {
+            $this->type = 'closure';
+            $this->class = 'Closure';
+            $this->callback = 'Closure';
+            $this->callable = $callback;
+        } else if (is_object($callback)) {
+            $constructor = (new \ReflectionClass($callback))->getConstructor();
+            $this->type = 'class';
+            $this->class = get_class($callback);
+            $this->method = '__construct';
+            $this->numargs = $constructor ? $constructor->getNumberOfParameters() : 0;
+            $this->callback = $this->class . '[' . ($this->numargs ?: '') . ']';
+            $this->callable = $callback;
+        } else if (is_array($callback)) {
+            if (!is_callable($callback)) {
+                if (isset($callback[0]) && is_object($callback[0])) {
+                    $callback[0] = '{' . get_class($callback[0]) . '}';
+                }
+                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, json_encode($callback)));
+            }
+            $constructor = (new \ReflectionClass($callback))->getConstructor();
+            $this->type = 'class';
+            $this->static = !is_object($this->class);
+            $this->class = $this->static ? get_class($callback[0]) : $callback[0];
+            $this->method = $callback[1];
+            $this->numargs = $constructor ? $constructor->getNumberOfParameters() : 0;
+            $this->callback = $this->class .
+                ($this->static ? '::' : '[' . ($this->numargs ?: '') . ']->') . $this->method;
+            $this->callable = $this->static ? null : $callback[0];
+        } else {
+            if ($callback == '' || is_numeric($callback)) {
+                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
+            }
+            preg_match('/^([^\[:-]*)(\[([^\]]*)\])?(::|->)?([^:-]*(?:parent::|self::|)[^:-]*)$/', $callback, $matches);
+            if (count($matches) == 0 || $matches[1] == '') {
+                throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, $callback));
+            }
+            if ($matches[4] == '' && $matches[2] == '') {
+                $this->type = 'function';
+                $this->method = $matches[1];
+                $this->callback = $this->method;
+            } else {
+                $this->type = 'class';
+                $this->class = $matches[1];
+                if ($this->class[0] == '\\') {
+                    $this->class = ltrim($this->class, '\\');
+                }
+                $this->numargs = (int)$matches[3];
+                $this->static = ($matches[4] == '::');
+                $this->method = $matches[5] ?: '__construct';
+                $this->callback = $this->class .
+                    ($this->static ? '::' : '[' . ($this->numargs ?: '') . ']->') . $this->method;
+            }
         }
     }
 }

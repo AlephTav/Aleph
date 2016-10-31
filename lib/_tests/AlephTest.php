@@ -165,13 +165,13 @@ class AlephTest extends TestCase
     public function testConfigAccessGet()
     {
         Aleph::setConfig($this->config3, false);
-        $this->assertEquals(Aleph::get('var1'), 1);
-        $this->assertEquals(Aleph::get('var4.4.var2'), 'test');
-        $this->assertEquals(Aleph::get('section2'), ['var1' => 'abc']);
-        $this->assertEquals(Aleph::get('var5', 'none'), 'none');
-        $this->assertEquals(Aleph::get('var5.1.2.3.4', 'none'), 'none');
-        $this->assertEquals(Aleph::get('var5|1|2|3|4', 'none', '|'), 'none');
-        $this->assertEquals(Aleph::get('var4#4#var2', null, '#'), 'test');
+        $this->assertEquals(1, Aleph::get('var1'));
+        $this->assertEquals('test', Aleph::get('var4.4.var2'));
+        $this->assertEquals(['var1' => 'abc'], Aleph::get('section2'));
+        $this->assertEquals('none', Aleph::get('var5', 'none'));
+        $this->assertEquals('none', Aleph::get('var5.1.2.3.4', 'none'));
+        $this->assertEquals('none', Aleph::get('var5|1|2|3|4', 'none', '|'));
+        $this->assertEquals('test', Aleph::get('var4#4#var2', null, '#'));
     }
 
     /**
@@ -184,15 +184,15 @@ class AlephTest extends TestCase
     {
         Aleph::setConfig($this->config3, false);
         Aleph::set('var1', []);
-        $this->assertEquals(Aleph::get('var1'), []);
+        $this->assertEquals([], Aleph::get('var1'));
         Aleph::set('var4.4', ['var1' => 'abc'], true);
-        $this->assertEquals(Aleph::get('var4.4'), ['var2' => 'test', 'var1' => 'abc']);
+        $this->assertEquals(['var2' => 'test', 'var1' => 'abc'], Aleph::get('var4.4'));
         Aleph::set('var3', 'no', true);
-        $this->assertEquals(Aleph::get('var3'), 'no');
+        $this->assertEquals('no', Aleph::get('var3'));
         Aleph::set('a.b.c', 123);
-        $this->assertEquals(Aleph::get('a.b.c'), 123);
+        $this->assertEquals(123, Aleph::get('a.b.c'));
         Aleph::set('a%b%c', [1, 2, 3], true, '%');
-        $this->assertEquals(Aleph::get('a.b.c'), [1, 2, 3]);
+        $this->assertEquals([1, 2, 3], Aleph::get('a.b.c'));
     }
 
     /**
@@ -223,9 +223,9 @@ class AlephTest extends TestCase
         Aleph::remove('var2');
         $this->assertNull(Aleph::get('var2'));
         Aleph::remove('section1.var1');
-        $this->assertEquals(Aleph::get('section1'), ['var2' => 'abc']);
+        $this->assertEquals(['var2' => 'abc'], Aleph::get('section1'));
         Aleph::remove('section1/var2', '/');
-        $this->assertEquals(Aleph::get('section1'), []);
+        $this->assertEquals([], Aleph::get('section1'));
         Aleph::remove('a.b.c');
         $this->assertNull(Aleph::get('a'));
     }
