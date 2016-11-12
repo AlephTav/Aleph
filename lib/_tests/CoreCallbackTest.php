@@ -1,6 +1,5 @@
 <?php
 
-use Aleph\Core\Interfaces\ICallback;
 use Aleph\Core\Callback;
 use PHPUnit\Framework\TestCase;
 
@@ -12,15 +11,6 @@ use PHPUnit\Framework\TestCase;
 class CoreCallbackTest extends TestCase
 {
     /**
-     * Includes Aleph\Core\Callback class.
-     */
-    public static function setUpBeforeClass()
-    {
-        require_once(__DIR__ . '/../Core/Interfaces/ICallback.php');
-        require_once(__DIR__ . '/../Core/Callback.php');
-    }
-
-    /**
      * Invalid callbacks provider.
      *
      * @return array
@@ -28,11 +18,13 @@ class CoreCallbackTest extends TestCase
     public function invalidCallbackProvider()
     {
         return [
+            [''],
             [0],
             [[1, 2, 3]],
             [['a' => 1, 2, 'b' => [], new \stdClass]],
             [['Test', 'test' => 'foo']],
             [['Test', new \stdClass]],
+            [['ReflectionClass', '__construct']],
             ['test::parent::foo::boo'],
             ['test[]->self::parent::foo'],
             ['class[123]::foo::boo'],
@@ -47,6 +39,7 @@ class CoreCallbackTest extends TestCase
      */
     public function validCallbackProvider()
     {
+        CoreCallbackTest::setUpBeforeClass();
         return [
             [
                 'foo',
@@ -101,7 +94,7 @@ class CoreCallbackTest extends TestCase
                     'static' => false,
                     'numargs' => 0
                 ],
-                'test[]->__construct'
+                'test[]'
             ],
             [
                 '\test[321]',
@@ -112,7 +105,7 @@ class CoreCallbackTest extends TestCase
                     'static' => false,
                     'numargs' => 321
                 ],
-                'test[321]->__construct'
+                'test[321]'
             ],
             [
                 'test[7]::parent::foo',
@@ -146,13 +139,67 @@ class CoreCallbackTest extends TestCase
                     'numargs' => 0
                 ],
                 'stdClass[]'
+            ],
+            [
+                new \ReflectionClass('stdClass'),
+                [
+                    'type' => 'class',
+                    'class' => 'ReflectionClass',
+                    'method' => '__construct',
+                    'static' => false,
+                    'numargs' => 1
+                ],
+                'ReflectionClass[1]'
+            ],
+            [
+                [new \ReflectionClass('stdClass'), 'isAbstract'],
+                [
+                    'type' => 'class',
+                    'class' => 'ReflectionClass',
+                    'method' => 'isAbstract',
+                    'static' => false,
+                    'numargs' => 1
+                ],
+                'ReflectionClass[1]->isAbstract'
+            ],
+            [
+                ['ReflectionClass', 'export'],
+                [
+                    'type' => 'class',
+                    'class' => 'ReflectionClass',
+                    'method' => 'export',
+                    'static' => true,
+                    'numargs' => 0
+                ],
+                'ReflectionClass::export'
+            ],
+            [
+                function() {},
+                [
+                    'type' => 'closure',
+                    'class' => 'Closure',
+                    'method' => '',
+                    'static' => false,
+                    'numargs' => 0
+                ],
+                'Closure'
+            ],
+            [
+                new Callback('Test[3]->foo'),
+                [
+                    'type' => 'class',
+                    'class' => 'Test',
+                    'method' => 'foo',
+                    'static' => false,
+                    'numargs' => 3
+                ],
+                'Test[3]->foo'
             ]
         ];
     }
 
     /**
-     * Checks callback parsing.
-     *
+     * @covers Callback::parse
      * @param mixed $callback
      * @dataProvider invalidCallbackProvider
      */
@@ -163,8 +210,7 @@ class CoreCallbackTest extends TestCase
     }
 
     /**
-     * Checks callback parsing.
-     *
+     * @covers Callback::parse
      * @param mixed $callback
      * @param array $info
      * @param string $toString
@@ -175,5 +221,55 @@ class CoreCallbackTest extends TestCase
         $callable = new Callback($callback);
         $this->assertEquals($info, $callable->getInfo());
         $this->assertEquals($toString, (string)$callable);
+    }
+
+    /**
+     * @covers Callback::isPermitted
+     */
+    public function testIsPermitted()
+    {
+        $this->assertTrue((new Callback('foo'))->isPermitted([]));
+        $c1 = new Callback('Test->foo');
+        $c2 = new Callback('Test::foo');
+        $c3 = new Callback('A->__set');
+        $c4 = new Callback('B->__isset');
+        $c5 = new Callback('C->__isset');
+        $permissions = [
+            'forbidden' => [
+                '/^Test\[\d*\]->foo$/i',
+                '/^(A|B)\[\d*\]->__(unset|isset)$/'
+            ]
+        ];
+        $this->assertFalse($c1->isPermitted($permissions));
+        $this->assertTrue($c2->isPermitted($permissions));
+        $this->assertTrue($c3->isPermitted($permissions));
+        $this->assertFalse($c4->isPermitted($permissions));
+        $this->assertTrue($c5->isPermitted($permissions));
+        $permissions = [
+            'permitted' => [
+                '/^Test::foo$/i',
+                '/^(A|B)\[\d*\]->__[a-zA-Z]{3,5}$/i'
+            ]
+        ];
+        $this->assertFalse($c1->isPermitted($permissions));
+        $this->assertTrue($c2->isPermitted($permissions));
+        $this->assertTrue($c3->isPermitted($permissions));
+        $this->assertTrue($c4->isPermitted($permissions));
+        $this->assertFalse($c5->isPermitted($permissions));
+        $permissions = [
+            'permitted' => [
+                '/^Test::foo$/i',
+                '/^(A|B)\[\d*\]->__[a-zA-Z]{3,5}$/i'
+            ],
+            'forbidden' => [
+                '/^Test\[\d*\]->foo$/i',
+                '/^(A|B)\[\d*\]->__(unset|isset)$/'
+            ]
+        ];
+        $this->assertFalse($c1->isPermitted($permissions));
+        $this->assertTrue($c2->isPermitted($permissions));
+        $this->assertTrue($c3->isPermitted($permissions));
+        $this->assertFalse($c4->isPermitted($permissions));
+        $this->assertFalse($c5->isPermitted($permissions));
     }
 }

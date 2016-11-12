@@ -11,14 +11,6 @@ use PHPUnit\Framework\TestCase;
 class CoreExceptionTest extends TestCase
 {
     /**
-     * Includes Aleph\Core\Exception class.
-     */
-    public static function setUpBeforeClass()
-    {
-        require_once(__DIR__ . '/../Core/Exception.php');
-    }
-
-    /**
      * Checks obtaining information from an exception.
      *
      * @covers Exception::getData

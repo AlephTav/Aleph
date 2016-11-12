@@ -10,6 +10,13 @@ use PHPUnit\Framework\TestCase;
 class AlephTest extends TestCase
 {
     /**
+     * The old framework's config.
+     *
+     * @var array
+     */
+    private static $config = [];
+
+    /**
      * Config examples to test.
      */
     private $config1 = [
@@ -96,7 +103,15 @@ class AlephTest extends TestCase
      */
     public static function setUpBeforeClass()
     {
-        require_once(__DIR__ . '/../Aleph.php');
+        self::$config = Aleph::getConfig();
+    }
+
+    /**
+     * Restores the frameworks's config.
+     */
+    public static function tearDownAfterClass()
+    {
+        Aleph::setConfig(self::$config);
     }
 
     /**

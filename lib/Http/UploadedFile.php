@@ -20,7 +20,7 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Utils;
+namespace Aleph\Http;
 
 use Aleph;
 
@@ -840,7 +840,6 @@ class UploadedFile
      * @param string $type The original file mime type.
      * @param int $size The file size (in bytes).
      * @param int $error The upload error.
-     * @return void
      */
     public function __construct($path, string $name = '', string $type = '', int $size = 0, int $error = 0)
     {
@@ -1024,18 +1023,12 @@ class UploadedFile
         if ($this->max > 0 || $this->min > 0)
         {
             $size = $this->getSize();
-        }
-        if ($this->max > 0)
-        {
-            if ($size > $this->max)
+            if ($this->max > 0 && $size > $this->max)
             {
                 $this->error = 12;
                 return false;
             }
-        }
-        if ($this->min > 0)
-        {
-            if ($size < $this->min)
+            if ($this->min > 0 && $size < $this->min)
             {
                 $this->error = 13;
                 return false;

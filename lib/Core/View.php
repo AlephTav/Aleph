@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -22,9 +22,6 @@
 
 namespace Aleph\Core;
 
-use Aleph,
-    Aleph\Core;
-
 /**
  * The simple view class using PHP as template language.
  *
@@ -32,94 +29,80 @@ use Aleph,
  * @version 1.0.3
  * @package aleph.core
  */
-class View
+class View extends Template
 {
     /**
      * Error message templates.
      */
     const ERR_VIEW_1 = 'View "%s" is not found.';
     const ERR_VIEW_2 = 'No blocks have been started yet.';
-    
+
     /**
      * Blocks of views.
      *
      * @var array
      */
-    protected $blocks = [];
-    
+    private $blocks = [];
+
     /**
      * Contains in-progress blocks.
      *
      * @var array
      */
-    protected $stack = [];
-    
-    /**
-     * View data.
-     *
-     * @var array
-     */
-    protected $vars = [];
-    
+    private $stack = [];
+
     /**
      * The number of rendering views.
      *
      * @var int
      */
-    protected $level = 0;
-    
+    private $level = 0;
+
     /**
      * Name of the parent view.
      *
      * @var string
      */
-    protected $parentView = '';
-    
+    private $parentView = '';
+
     /**
      * Name of the parent block.
      * This block is used as container that contains all outputs of the current view.
      *
      * @var string
      */
-    protected $parentBlock = '';
-    
-    /**
-     * View string or path to the view file.
-     *
-     * @var string
-     */
-    protected $view = '';
-    
+    private $parentBlock = '';
+
     /**
      * Extension of all view files.
      *
      * @var string
      */
-    protected $extension = '';
-    
+    private $extension = '';
+
     /**
      * View directories.
      *
-     * @var array     
+     * @var array
      */
-    protected $directories = [];
-    
+    private $directories = [];
+
     /**
      * Constructor.
      *
      * @param string $view A view string or path to a view file.
      * @param array $vars The view variables.
      * @param string $extension Extension of all view files.
-     * @return void
+     * @param array $directories Directories of view files.
      */
     public function __construct(string $view = '', array $vars = [], string $extension = '', array $directories = [])
     {
-        $this->view = $view;
-        $this->vars = $vars;
+        parent::__construct($view);
+        $this->setVars($vars);
         $this->extension = $extension;
         $this->directories = $directories;
     }
-    
+
     /**
      * Returns extension of view files.
      *
@@ -129,7 +112,7 @@ class View
     {
         return $this->extension;
     }
-    
+
     /**
      * Sets extension of view files.
      *
@@ -140,8 +123,8 @@ class View
     {
         $this->extension = $extension;
     }
-    
-    /** 
+
+    /**
      * Returns directories of view files.
      *
      * @return array
@@ -150,7 +133,7 @@ class View
     {
         return $this->directories;
     }
-    
+
     /**
      * Sets directories of view files.
      *
@@ -161,179 +144,42 @@ class View
     {
         $this->directories = $directories;
     }
-    
-    /**
-     * Sets value of a view variable.
-     *
-     * @param string $name The variable name.
-     * @param mixed $value The variable value.
-     * @return void
-     */
-    public function __set(string $name, $value)
-    {
-        $this->vars[$name] = $value;
-    }
 
-    /**
-     * Returns value of a view variable.
-     *
-     * @param string $name The variable name.
-     * @return mixed
-     */
-    public function &__get(string $name)
-    {
-        if (!isset($this->vars[$name]))
-        {
-            $this->vars[$name] = null;
-        }
-        return $this->vars[$name];
-    }
-
-    /**
-     * Checks whether or not a view variable exists and its value is not NULL.
-     *
-     * @param string $name The variable name.
-     * @return bool
-     */
-    public function __isset($name) : bool
-    {
-        return isset($this->vars[$name]);
-    }
-
-    /**
-     * Deletes a view variable.
-     *
-     * @param string $name The variable name.
-     * @return void
-     */
-    public function __unset($name)
-    {
-        unset($this->vars[$name]);
-    }
-    
-    /**
-     * Returns array of view variables.
-     *
-     * @return array
-     */
-    public function getVars() : array
-    {
-        return $this->vars;
-    }
-
-    /**
-     * Sets view variables.
-     *
-     * @param array $vars
-     * @param bool $merge Determines whether new variables should be merged with existing variables.
-     * @return void
-     */
-    public function setVars(array $vars, bool $merge = false)
-    {
-        if (!$merge)
-        {
-            $this->vars = $vars;
-        }
-        else
-        {
-            $this->vars = array_merge($this->vars, $vars);
-        }
-    }
-    
     /**
      * Returns rendered view content.
      *
-     * @param string $view The view name or path to the view file.
      * @return string
      */
-    public function render(string $view = '') : string
+    public function render() : string
     {
-        $view = $view !== '' ? $view : $this->view;
-        ${'(_._)'} = $this->findViewFile($view);
-        unset($view);
+        ${'(_._)'} = $this->findViewFile();
         $this->level++;
         ob_start();
         ob_implicit_flush(false);
-        extract($this->vars);
+        extract($this->getVars());
         require(${'(_._)'});
-        while ($this->stack)
-        {
+        while ($this->stack) {
             $this->endBlock();
         }
         $content = ob_get_clean();
-        if ($this->parentView)
-        {
-            if (strlen($this->parentBlock))
-            {
+        if ($this->parentView) {
+            if (strlen($this->parentBlock)) {
                 $this->blocks[$this->parentBlock] = $content;
             }
-            $view = $this->parentView;
+            $currentView = $this->getTemplate();
+            $this->setTemplate($this->parentView);
             $this->parentView = null;
             $this->parentBlock = null;
-            $content = $this->render($view);
+            $content = $this->render();
+            $this->setTemplate($currentView);
         }
         $this->level--;
-        if ($this->level == 0)
-        {
+        if ($this->level == 0) {
             $this->blocks = [];
         }
         return $content;
     }
-    
-    /**
-     * Outputs a rendered view to a browser.
-     *
-     * @param string $view The view name or path to the view file.
-     * @return void
-     */
-    public function show(string $view = '')
-    {
-        echo $this->render($view);
-    }
-    
-    /**
-     * Converts an instance of view to string.
-     *
-     * @return string
-     */
-    public function __toString() : string
-    {
-        try
-        {
-            return $this->render();
-        }
-        catch (\Throwable $e)
-        {
-            Aleph::exception($e);
-        }
-    }
-    
-    /**
-     * Searches view file by view name.
-     *
-     * @param string $view A view file or view name.
-     * @return void
-     * @throws \LogicException If the given view is not found.
-     */
-    protected function findViewFile(string $view)
-    {
-        if (is_file($view))
-        {
-            return $view;
-        }
-        $ext = '.' . ltrim($this->extension !== '' ? $this->extension : Aleph::get('view.extension', 'php'), '.');
-        $dirs = $this->directories ?: Aleph::get('view.directories', []);
-        foreach ($dirs as $path)
-        {
-            $path = Aleph::dir($path) . DIRECTORY_SEPARATOR . $view . $ext;
-            if (is_file($path))
-            {
-                return $path;
-            }
-        }
-        throw new \LogicException(sprintf(static::ERR_VIEW_1, $view));
-    }
-    
+
     /**
      * Returns the block content.
      *
@@ -345,7 +191,7 @@ class View
     {
         return str_replace(md5($block), '', $this->blocks[$block] ?? $default);
     }
-    
+
     /**
      * Sets block content.
      *
@@ -357,7 +203,7 @@ class View
     {
         $this->blocks[$block] = $content;
     }
-    
+
     /**
      * Starts the new block of a view.
      *
@@ -367,18 +213,15 @@ class View
      */
     protected function startBlock(string $block, $content = null)
     {
-        if ((string)$content === '')
-        {
+        if ((string)$content === '') {
             $this->extendBlock($block, $content);
-        }
-        else
-        {
+        } else {
             ob_start();
             ob_implicit_flush(false);
             $this->stack[] = $block;
         }
     }
-    
+
     /**
      * Ends the block of a view.
      *
@@ -388,22 +231,18 @@ class View
      */
     protected function endBlock(bool $overwrite = false) : string
     {
-        if (!$this->stack)
-        {
+        if (!$this->stack) {
             throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         $block = array_pop($this->stack);
-        if ($overwrite)
-        {
+        if ($overwrite) {
             $this->blocks[$block] = ob_get_clean();
-        }
-        else
-        {
+        } else {
             $this->extendBlock($block, ob_get_clean());
         }
         return $block;
     }
-    
+
     /**
      * Extends the given block.
      *
@@ -413,13 +252,12 @@ class View
      */
     protected function extendBlock(string $block, $content)
     {
-        if (isset($this->blocks[$block]))
-        {
+        if (isset($this->blocks[$block])) {
             $content = str_replace(md5($block), $content, $this->blocks[$block]);
         }
         $this->blocks[$block] = $content;
     }
-    
+
     /**
      * Ends block and appends its content.
      *
@@ -428,22 +266,18 @@ class View
      */
     protected function appendBlock() : string
     {
-        if (!$this->stack)
-        {
+        if (!$this->stack) {
             throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         $block = array_pop($this->stack);
-        if (isset($this->blocks[$block]))
-        {
+        if (isset($this->blocks[$block])) {
             $this->blocks[$block] .= ob_get_clean();
-        }
-        else
-        {
+        } else {
             $this->blocks[$block] = ob_get_clean();
         }
         return $block;
     }
-    
+
     /**
      * Outputs the block content.
      *
@@ -454,7 +288,7 @@ class View
     {
         echo $this->getBlock($block !== '' ? $block : $this->endBlock(false));
     }
-    
+
     /**
      * Outputs the parent block content.
      *
@@ -463,13 +297,12 @@ class View
      */
     protected function parentContent()
     {
-        if (!$this->stack)
-        {
+        if (!$this->stack) {
             throw new \BadMethodCallException(static::ERR_VIEW_2);
         }
         echo md5(end($this->stack));
     }
-    
+
     /**
      * Extends the current view from the parent one.
      *
@@ -481,5 +314,27 @@ class View
     {
         $this->parentView = $view;
         $this->parentBlock = $block;
+    }
+
+    /**
+     * Searches view file by view name.
+     *
+     * @return string
+     * @throws \LogicException If the given view is not found.
+     */
+    private function findViewFile() : string
+    {
+        $view = $this->getTemplate();
+        if (strlen($view) <= PHP_MAXPATHLEN && is_file($view)) {
+            return $view;
+        }
+        $ext = $this->extension !== '' ? '.' . ltrim($this->extension, '.') : '';
+        foreach ($this->directories as $dir) {
+            $file = $dir . DIRECTORY_SEPARATOR . $view . $ext;
+            if (strlen($file) <= PHP_MAXPATHLEN && is_file($file)) {
+                return $file;
+            }
+        }
+        throw new \LogicException(sprintf(static::ERR_VIEW_1, $view));
     }
 }

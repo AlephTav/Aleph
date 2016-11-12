@@ -50,7 +50,7 @@ class Event
      *
      * @param string $event The event name.
      * @param callable $listener The callback to invoke when the event is triggered.
-     * @param int $priority The priority of the event.
+     * @param int $priority The priority of the callback.
      * @param bool $once Determines whether a listener should be called once.
      * @return void
      */

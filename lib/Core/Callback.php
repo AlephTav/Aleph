@@ -135,7 +135,7 @@ class Callback implements ICallback
         if ($this->static) {
             return call_user_func_array([$this->class, $this->method], $args);
         }
-        $class = $this->getObject($args);
+        $class = $this->getObject(false, $args);
         if ($this->method == '__construct') {
             return $class;
         }
@@ -375,12 +375,16 @@ class Callback implements ICallback
                 }
                 throw new \InvalidArgumentException(sprintf(static::ERR_CALLBACK_1, json_encode($callback)));
             }
-            $constructor = (new \ReflectionClass($callback))->getConstructor();
             $this->type = 'class';
-            $this->static = !is_object($this->class);
-            $this->class = $this->static ? get_class($callback[0]) : $callback[0];
+            $this->static = !is_object($callback[0]);
+            $this->class = $this->static ? $callback[0] : get_class($callback[0]);
             $this->method = $callback[1];
-            $this->numargs = $constructor ? $constructor->getNumberOfParameters() : 0;
+            if ($this->static) {
+                $this->numargs = 0;
+            } else {
+                $constructor = (new \ReflectionClass($callback[0]))->getConstructor();
+                $this->numargs = $constructor ? $constructor->getNumberOfParameters() : 0;
+            }
             $this->callback = $this->class .
                 ($this->static ? '::' : '[' . ($this->numargs ?: '') . ']->') . $this->method;
             $this->callable = $this->static ? null : $callback[0];
@@ -406,7 +410,8 @@ class Callback implements ICallback
                 $this->static = ($matches[4] == '::');
                 $this->method = $matches[5] ?: '__construct';
                 $this->callback = $this->class .
-                    ($this->static ? '::' : '[' . ($this->numargs ?: '') . ']->') . $this->method;
+                    ($this->static ? '::' . $this->method : '[' . ($this->numargs ?: '') . ']' .
+                        ($this->method != '__construct' ? '->' . $this->method : ''));
             }
         }
     }

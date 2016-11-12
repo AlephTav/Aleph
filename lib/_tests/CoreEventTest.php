@@ -11,14 +11,6 @@ use PHPUnit\Framework\TestCase;
 class CoreEventTest extends TestCase
 {
     /**
-     * Includes Aleph\Core\Event class.
-     */
-    public static function setUpBeforeClass()
-    {
-        require_once(__DIR__ . '/../Core/Event.php');
-    }
-
-    /**
      * Checks adding listeners to an event.
      *
      * @covers Event::listen

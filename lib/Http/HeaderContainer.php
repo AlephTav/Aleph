@@ -22,9 +22,9 @@
 
 namespace Aleph\Http;
 
-use Aleph,
-    Aleph\Data,
-    Aleph\Utils;
+use Aleph;
+use Aleph\Data\Structures\Container;
+use Aleph\Utils\{Arr, DT};
 
 /**
  * Class provides access to HTTP headers of the server's request or response.
@@ -33,7 +33,7 @@ use Aleph,
  * @version 1.1.1
  * @package aleph.http
  */
-class HeaderBag extends Data\Bag
+class HeaderContainer extends Container
 {
     /**
      * Error message templates.
@@ -362,7 +362,7 @@ class HeaderBag extends Data\Bag
         {
             return null;
         }
-        return new Utils\DT($value, 'UTC');
+        return new DT($value, 'UTC');
     }
     
     /**
@@ -371,7 +371,7 @@ class HeaderBag extends Data\Bag
      * @param \Aleph\Utils\DT $value
      * @return string
      */
-    protected static function computeDate(Utils\DT $value) : string
+    protected static function computeDate(DT $value) : string
     {
         return $value->format('D, d M Y H:i:s') . ' GMT';
     }
@@ -394,7 +394,7 @@ class HeaderBag extends Data\Bag
      * @param \Aleph\Utils\DT $value
      * @return string
      */
-    protected static function computeExpires(Utils\DT $value) : string
+    protected static function computeExpires(DT $value) : string
     {
         return static::computeDate($value);
     }
@@ -417,7 +417,7 @@ class HeaderBag extends Data\Bag
      * @param \Aleph\Utils\DT $value
      * @return string
      */
-    protected static function computeLastModified(Utils\DT $value) : string
+    protected static function computeLastModified(DT $value) : string
     {
         return static::computeDate($value);
     }
@@ -440,7 +440,7 @@ class HeaderBag extends Data\Bag
      * @param \Aleph\Utils\DT $value
      * @return string
      */
-    protected static function computeIfModifiedSince(Utils\DT $value) : string
+    protected static function computeIfModifiedSince(DT $value) : string
     {
         return static::computeDate($value);
     }
@@ -517,9 +517,8 @@ class HeaderBag extends Data\Bag
      *
      * @param array $headers An array of key/value pairs.
      * @param string $delimiter The default key delimiter in composite keys.
-     * @return void
      */
-    public function __construct(array $headers = [], string $delimiter = Utils\Arr::DEFAULT_KEY_DELIMITER)
+    public function __construct(array $headers = [], string $delimiter = Arr::DEFAULT_KEY_DELIMITER)
     {
         parent::__construct(static::parseHeaders($headers), $delimiter);
     }
@@ -528,9 +527,9 @@ class HeaderBag extends Data\Bag
      * Replaces the current header set by a new one.
      *
      * @param array $headers
-     * @return static
+     * @return \Aleph\Data\Structures\Container
      */
-    public function replace(array $headers = [])
+    public function replace(array $headers = []) : Container
     {
         return parent::replace(static::parseHeaders($headers));
     }
@@ -539,9 +538,9 @@ class HeaderBag extends Data\Bag
      * Adds new headers to the current set.
      *
      * @param array $headers
-     * @return static
+     * @return \Aleph\Data\Structures\Container
      */
-    public function add(array $headers = [])
+    public function add(array $headers = []) : Container
     {
         return parent::add(static::parseHeaders($headers));
     }
@@ -550,9 +549,9 @@ class HeaderBag extends Data\Bag
      * Merge existing headers with new set.
      *
      * @param array $headers
-     * @return static
+     * @return \Aleph\Data\Structures\Container
      */
-    public function merge(array $headers = [])
+    public function merge(array $headers = []) : Container
     {
         return parent::merge(static::parseHeaders($headers));
     }
@@ -563,7 +562,7 @@ class HeaderBag extends Data\Bag
      * @param string $name The header name.
      * @param bool $compositeKey Determines whether the key is compound key.
      * @param string $delimiter The key delimiter in composite keys.
-     * @return void
+     * @return bool
      */
     public function has($name, bool $compositeKey = false, string $delimiter = '') : bool
     {
@@ -592,9 +591,10 @@ class HeaderBag extends Data\Bag
      * @param bool $merge Determines whether the old element value should be merged with new one.
      * @param bool $compositeKey Determines whether the key is compound key.
      * @param string $delimiter The key delimiter in composite keys.
-     * @return static
+     * @return \Aleph\Data\Structures\Container
      */
-    public function set($name, $value, bool $merge = false, bool $compositeKey = false, string $delimiter = '')
+    public function set($name, $value, bool $merge = false,
+                        bool $compositeKey = false, string $delimiter = '') : Container
     {
         $name = static::normalizeHeaderName($name);
         return parent::set($name, static::parseHeaderValue($name, $value), $merge, $compositeKey, $delimiter);
@@ -607,9 +607,10 @@ class HeaderBag extends Data\Bag
      * @param bool $compositeKey Determines whether the key is compound key.
      * @param string $delimiter The key delimiter in composite keys.
      * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains elements after removing the given one.
-     * @return static
+     * @return \Aleph\Data\Structures\Container
      */
-    public function remove($name, bool $compositeKey = false, string $delimiter = '', bool $removeEmptyParent = false)
+    public function remove($name, bool $compositeKey = false,
+                           string $delimiter = '', bool $removeEmptyParent = false) : Container
     {
         return parent::remove(static::normalizeHeaderName($name), $compositeKey, $delimiter, $removeEmptyParent);
     }
@@ -723,9 +724,9 @@ class HeaderBag extends Data\Bag
      *
      * @param string $directive The directive name.
      * @param mixed $value The directive value.
-     * @return static
+     * @return \Aleph\Data\Structures\Container
      */
-    public function setCacheControlDirective(string $directive, $value = '')
+    public function setCacheControlDirective(string $directive, $value = '') : Container
     {
         return $this->set('Cache-Control.' . $directive, $value);
     }
@@ -734,9 +735,9 @@ class HeaderBag extends Data\Bag
      * Removes the given cache control directive.
      *
      * @param string $directive The directive name.
-     * @return static
+     * @return \Aleph\Data\Structures\Container
      */
-    public function removeCacheControlDirective(string $directive)
+    public function removeCacheControlDirective(string $directive) : Container
     {
         return $this->remove('Cache-Control.' . $directive);
     }

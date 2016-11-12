@@ -20,47 +20,28 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Http\Exceptions;
-
-use Aleph\Core;
+namespace Aleph\Data\Structures\Arrays;
 
 /**
- * The base class for all HTTP exceptions.
+ * The implementation of tight array of floats.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
- * @package aleph.http
+ * @package aleph.data
  */
-class Exception extends Core\Exception
+class FloatTightArray extends TightArray
 {
-    /**
-     * An HTTP response status code.
-     *
-     * @var int
-     */
-    private $statusCode;
-    
     /**
      * Constructor.
      *
-     * @param string $message The exception message to throw.
-     * @param int $statusCode An HTTP response status code.
-     * @param int $code The exception code.
-     * @param \Throwable $previous The previous exception used for the exception chaining.
+     * @param int $size The initial capacity of a tight array.
+     * @param bool $autoSize Determines whether the array capacity should be automatically increased.
+     * @return void
      */
-    public function __construct(string $message = '', int $statusCode = 200, int $code = 0, \Throwable $previous = null)
+    public function __construct(int $size = 0, bool $autoSize = true)
     {
-        parent::__construct($message, null, $code, $previous);
-        $this->statusCode = $statusCode;
-    }
-    
-    /**
-     * Returns an HTTP response status code.
-     *
-     * @return int
-     */
-    public function getStatusCode() : int
-    {
-        return $this->statusCode;
+        $this->itemSize = strlen(pack('d', 1.5));
+        $this->format = 'd';
+        parent::__construct($size, $autoSize);
     }
 }

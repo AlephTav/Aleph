@@ -39,12 +39,11 @@ class MethodNotAllowedException extends Exception
      * @param array $methods Allowed HTTP methods.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
-     * @return void
      */
     public function __construct(string $message = 'Method is not supported.', array $methods = [], int $code = 0, \Throwable $previous = null)
     {
         parent::__construct($message, 405, $code, $previous);
-        $this->data = $methods;
+        $this->setData($methods);
     }
     
     /**
@@ -54,6 +53,6 @@ class MethodNotAllowedException extends Exception
      */
     public function getMethods() : array
     {
-        return $this->data;
+        return $this->getData();
     }
 }

@@ -38,7 +38,6 @@ class NotImplementedException extends Exception
      * @param string $message The exception message to throw.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
-     * @return void
      */
     public function __construct(string $message = 'Method is not implemented.', int $code = 0, \Throwable $previous = null)
     {

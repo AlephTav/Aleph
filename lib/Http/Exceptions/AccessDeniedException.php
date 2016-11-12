@@ -23,7 +23,7 @@
 namespace Aleph\Http\Exceptions;
 
 /**
- * This type of exception can be used when a user hasn't access to some resource.
+ * This type of exception can be used when a user has not access to some resource.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
@@ -37,7 +37,6 @@ class AccessDeniedException extends Exception
      * @param string $message The exception message to throw.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
-     * @return void
      */
     public function __construct(string $message = 'Access denied.', int $code = 0, \Throwable $previous = null)
     {

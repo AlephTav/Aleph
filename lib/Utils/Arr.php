@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -35,7 +35,7 @@ class Arr
      * Default key delimiter in composite array keys.
      */
     const DEFAULT_KEY_DELIMITER = '.';
-    
+
     /**
      * Returns TRUE if the given array is numeric and FALSE otherwise.
      *
@@ -46,7 +46,7 @@ class Arr
     {
         return array_keys($array) === range(0, count($array) - 1);
     }
-    
+
     /**
      * Returns element value of a multidimensional array, defined by its compound key.
      *
@@ -59,18 +59,17 @@ class Arr
     public static function get(array $array, $keys, $default = null, string $delimiter = '')
     {
         $arr = $array;
-        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
-        foreach ($keys as $key)
-        {
-            if (!is_array($arr) || !array_key_exists($key, $arr))
-            {
+        $keys = is_array($keys) ? $keys :
+            explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
+        foreach ($keys as $key) {
+            if (!is_array($arr) || !array_key_exists($key, $arr)) {
                 return $default;
             }
             $arr = $arr[$key];
         }
         return $arr;
     }
-    
+
     /**
      * Sets new value of an element of a multidimensional array, defined by its compound key.
      *
@@ -85,20 +84,16 @@ class Arr
     {
         $arr = &$array;
         $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
-        foreach ($keys as $key)
-        {
+        foreach ($keys as $key) {
             $arr = &$arr[$key];
         }
-        if ($merge && is_array($arr) && is_array($value))
-        {
+        if ($merge && is_array($arr) && is_array($value)) {
             $arr = static::merge($arr, $value);
-        }
-        else
-        {
+        } else {
             $arr = $value;
         }
     }
-    
+
     /**
      * Checks whether an element of a multidimensional array exists or not.
      *
@@ -111,17 +106,15 @@ class Arr
     {
         $arr = $array;
         $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
-        foreach ($keys as $key)
-        {
-            if (!is_array($arr) || !array_key_exists($key, $arr))
-            {
+        foreach ($keys as $key) {
+            if (!is_array($arr) || !array_key_exists($key, $arr)) {
                 return false;
             }
             $arr = $arr[$key];
         }
         return true;
     }
-    
+
     /**
      * Removes an element of a multidimensional array, defined by its compound key.
      *
@@ -134,33 +127,23 @@ class Arr
     public static function remove(array &$array, $keys, bool $removeEmptyParent = false, string $delimiter = '')
     {
         $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
-        if ($removeEmptyParent)
-        {
+        if ($removeEmptyParent) {
             $key = array_shift($keys);
-            if (array_key_exists($key, $array))
-            {
-                if ($keys && is_array($array[$key])) 
-                {
+            if (array_key_exists($key, $array)) {
+                if ($keys && is_array($array[$key])) {
                     self::remove($array[$key], $keys, true);
-                    if (!$array[$key])
-                    {
+                    if (!$array[$key]) {
                         unset($array[$key]);
                     }
-                }
-                else
-                {
+                } else {
                     unset($array[$key]);
                 }
             }
-        }
-        else
-        {
+        } else {
             $arr = &$array;
             $last = array_pop($keys);
-            foreach ($keys as $key)
-            {
-                if (!is_array($arr) || !array_key_exists($key, $arr))
-                {
+            foreach ($keys as $key) {
+                if (!is_array($arr) || !array_key_exists($key, $arr)) {
                     return;
                 }
                 $arr = &$arr[$key];
@@ -173,75 +156,55 @@ class Arr
      * Swaps two elements of the array.
      *
      * @param array $array The array in which the two elements will be swapped.
-     * @param int|string $n1 The first element's key or index.
-     * @param int|string $n2 The second element's key or index.
-     * @param bool $index Determines whether $key1 and $key2 treated as element indexes. 
+     * @param int|string $key1 The first element's key or index.
+     * @param int|string $key2 The second element's key or index.
+     * @param bool $index Determines whether $key1 and $key2 treated as element indexes.
      * @param bool $swapKeys Determines whether keys of the elements should also be swapped.
      * @return void
      */
     public static function swap(array &$array, $key1, $key2, bool $index = false, bool $swapKeys = false)
     {
-        if ($swapKeys)
-        {
-            $tmp = []; 
-            if ($index)
-            {
+        if ($swapKeys) {
+            $tmp = [];
+            if ($index) {
                 $n1 = (int)$key1;
                 $n2 = (int)$key2;
-                if ($n2 === $n1)
-                {
-                    return $array;
+                if ($n2 === $n1) {
+                    return;
                 }
                 $key1 = key(array_slice($array, $n1, 1, true));
                 $key2 = key(array_slice($array, $n2, 1, true));
+            } else {
+                $key1 = is_numeric($key1) ? (int)$key1 : (string)$key1;
+                $key2 = is_numeric($key2) ? (int)$key2 : (string)$key2;
             }
-            else
-            {
-                $key1 == is_numeric($key1) ? (int)$key1 : (string)$key1;
-                $key2 == is_numeric($key2) ? (int)$key2 : (string)$key2;
-            }
-            foreach ($array as $key => $value)
-            {
-                if ($key === $key1)
-                {
+            foreach ($array as $key => $value) {
+                if ($key === $key1) {
                     $tmp[$key2] = $array[$key2];
-                }
-                else if ($key === $key2)
-                {
+                } else if ($key === $key2) {
                     $tmp[$key1] = $array[$key1];
-                }
-                else
-                {
+                } else {
                     $tmp[$key] = $value;
                 }
             }
             $array = $tmp;
-        }
-        else
-        {
-            if ($index)
-            {
+        } else {
+            if ($index) {
                 $n1 = (int)$key1;
                 $n2 = (int)$key2;
-                if ($n2 === $n1)
-                {
-                    return $array;
+                if ($n2 === $n1) {
+                    return;
                 }
-                if ($n1 > $n2)
-                {
+                if ($n1 > $n2) {
                     $tmp = $n1;
                     $n1 = $n2;
                     $n2 = $tmp;
                 }
                 $n = 0;
-                foreach ($array as $key => $value)
-                {
-                    if ($n === $n1)
-                    {
+                foreach ($array as $key => $value) {
+                    if ($n === $n1) {
                         $key1 = $key;
-                    }
-                    else if ($n === $n2)
-                    {
+                    } else if ($n === $n2) {
                         $key2 = $key;
                         break;
                     }
@@ -253,7 +216,7 @@ class Arr
             $array[$key2] = $tmp;
         }
     }
-  
+
     /**
      * Inserts a value or an array to the input array at the specified position.
      *
@@ -266,7 +229,7 @@ class Arr
     {
         $array = array_merge(array_slice($array, 0, $offset, true), is_array($value) ? $value : [$value], array_slice($array, $offset, null, true));
     }
-  
+
     /**
      * Merges two arrays recursively.
      * This method merges values with equal integer keys and replaces values with the same string keys.
@@ -277,34 +240,21 @@ class Arr
      */
     public static function merge(array $a1, array $a2) : array
     {
-        foreach ($a2 as $k => $v)
-        {
-            if (is_array($v) && isset($a1[$k]) && is_array($a1[$k]))
-            {
-                if (is_int($k))
-                {
-                   $a1[] = self::merge($a1[$k], $v);
-                }
-                else
-                {
-                    $a1[$k] = self::merge($a1[$k], $v);
-                }
-            }
-            else
-            {
-                if (is_int($k))
-                {
+        if ($a1) {
+            foreach ($a2 as $k => $v) {
+                if (is_int($k)) {
                     $a1[] = $v;
-                }
-                else
-                {
+                } else if (is_array($v) && isset($a1[$k]) && is_array($a1[$k])) {
+                    $a1[$k] = self::merge($a1[$k], $v);
+                } else {
                     $a1[$k] = $v;
                 }
             }
+            return $a1;
         }
-        return $a1;
+        return $a2;
     }
-  
+
     /**
      * Converts tree-like structure of the following form
      *
@@ -326,7 +276,7 @@ class Arr
      *                 ['parent'] => 'node_1',
      *                 ['node'] => 'node 2',
      *                 ['children'] => [
-     *                     ['node_3'] => [     
+     *                     ['node_3'] => [
      *                         ['parent'] => 'node_2',
      *                         ['node'] => 'node 3',
      *                         ['children'] => [
@@ -352,20 +302,16 @@ class Arr
     public static function makeNested(array $nodes, $parent = 'parent', $children = 'children') : array
     {
         $tree = [];
-        foreach ($nodes as $ID => &$node)
-        {
-            if (isset($node[$parent]))
-            {
+        foreach ($nodes as $ID => &$node) {
+            if (isset($node[$parent])) {
                 $nodes[$node[$parent]][$children][$ID] = &$node;
-            }
-            else
-            {
-                $tree[$ID] = &$node; 
+            } else {
+                $tree[$ID] = &$node;
             }
         }
         return $tree;
     }
-  
+
     /**
      * Converts the nested tree-like structure into the flat tree-like structure.
      * The result of performing this method is opposite of the result of performing makeNested() method.
@@ -378,17 +324,13 @@ class Arr
     public static function makeFlat(array $nodes, $parent = 'parent', $children = 'children') : array
     {
         $tree = [];
-        $reduce = function(array $nodes, $parentID = null) use(&$reduce, &$tree, $parent, $children)
-        {
-            foreach ($nodes as $ID => $node)
-            {
-                if ($parentID !== null)
-                {
+        $reduce = function (array $nodes, $parentID = null) use (&$reduce, &$tree, $parent, $children) {
+            foreach ($nodes as $ID => $node) {
+                if ($parentID !== null) {
                     $node[$parent] = $parentID;
                 }
                 $tree[$ID] = $node;
-                if (isset($node[$children]))
-                {
+                if (isset($node[$children])) {
                     $reduce($node[$children], $ID);
                     unset($tree[$ID][$children]);
                 }
@@ -397,7 +339,7 @@ class Arr
         $reduce($nodes);
         return $tree;
     }
-    
+
     /**
      * Recursively iterates an array.
      *
@@ -407,15 +349,12 @@ class Arr
      */
     public static function iterate(array $array, $iterateObjects = false) : \Generator
     {
-        foreach ($array as $key => $value)
-        {
-            if ($iterateObjects && is_object($value))
-            {
+        foreach ($array as $key => $value) {
+            if ($iterateObjects && is_object($value)) {
                 $value = get_object_vars($value);
             }
             yield $key => $value;
-            if (is_array($value))
-            {
+            if (is_array($value)) {
                 yield from self::iterate($value);
             }
         }

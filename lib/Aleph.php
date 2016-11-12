@@ -21,6 +21,10 @@
  */
 
 use Aleph\Cache\Cache;
+use Aleph\Core\View;
+use Aleph\Core\Template;
+use Aleph\Core\CacheableTemplate;
+use Aleph\Core\Interfaces\ITemplate;
 
 if (!defined('START_ALEPH_TS')) {
     define('START_ALEPH_TS', microtime(true));
@@ -1191,6 +1195,8 @@ final class Aleph
         return '/' . str_replace('\\', '/', ltrim($dir, '\\/'));
     }
 
+    /*********************************************** DEFAULT LOGGER ***************************************************/
+
     /**
      * Returns custom log handler or NULL if not specified.
      *
@@ -1225,6 +1231,8 @@ final class Aleph
             file_put_contents($path . '/' . date('d H.i.s#') . microtime(true) . '.log', serialize($data));
         }
     }
+
+    /************************************* REDIRECTION HELPER METHODS *************************************************/
 
     /**
      * Performs redirect to given URL.
@@ -1265,6 +1273,8 @@ final class Aleph
         self::setOutput($output, $immediately);
     }
 
+    /************************************************ FACTORY METHODS *************************************************/
+
     /**
      * Returns the default cache object.
      *
@@ -1295,6 +1305,51 @@ final class Aleph
     }
 
     /**
+     * Creates an instance of the base template class.
+     *
+     * @param string $template The template string or path to a template file.
+     * @return \Aleph\Core\Interfaces\ITemplate
+     */
+    public static function createTemplate(string $template = '') : ITemplate
+    {
+        return new Template($template);
+    }
+
+    /**
+     * Creates an instance of the base template class.
+     *
+     * @param string $template The template string or path to a template file.
+     * @param int $cacheExpire The template cache life time in seconds.
+     * @param array $cacheTags Tags associated with the template cache.
+     * @return \Aleph\Core\Interfaces\ITemplate
+     */
+    public static function createCacheableTemplate(string $template = '',
+                                          int $cacheExpire = -1, array $cacheTags = []) : ITemplate
+    {
+        return new CacheableTemplate($template, self::getCache(), microtime(true), $cacheExpire, $cacheTags);
+    }
+
+    /**
+     * @param string $view A view string or path to a view file.
+     * @param array $vars The view variables.
+     * @param string $extension Extension of all view files.
+     * @param array $directories Directories of view files.
+     * @return \Aleph\Core\Interfaces\ITemplate
+     */
+    public static function createView(string $view = '',
+                                      array $vars = [], string $extension = '', array $directories = []) : ITemplate
+    {
+        $directories = $directories ?: self::get('view.directories', []);
+        foreach ($directories as &$dir) {
+            $dir = self::dir($dir);
+        }
+        $extension = $extension ?: self::get('view.extension', 'php');
+        return new View($view, $vars, $extension, $directories);
+    }
+
+    /********************************************** CLASS AUTOLOADING *************************************************/
+
+    /**
      * Creates the class map.
      *
      * @return int The number of all found classes.
@@ -1311,7 +1366,8 @@ final class Aleph
      */
     public static function getClassMap() : array
     {
-        if (isset(self::$config['autoload']['classmap']) && self::$config['autoload']['classmap'] !== self::$classmap) {
+        if (isset(self::$config['autoload']['classmap']) &&
+            self::$config['autoload']['classmap'] !== self::$classmap) {
             $classmap = self::dir(self::$config['autoload']['classmap']);
             /** @noinspection PhpIncludeInspection */
             self::$classes = file_exists($classmap) ? (array)require($classmap) : [];
@@ -1330,7 +1386,8 @@ final class Aleph
      */
     public static function setClassMap(array $classes, string $classmap = '')
     {
-        $file = $classmap ? self::dir($classmap) : (isset(self::$config['autoload']['classmap']) ? self::dir(self::$config['autoload']['classmap']) : '');
+        $file = $classmap ? self::dir($classmap) :
+            (isset(self::$config['autoload']['classmap']) ? self::dir(self::$config['autoload']['classmap']) : '');
         if (!$file) {
             throw new \LogicException(self::ERR_3);
         }
@@ -1527,6 +1584,7 @@ final class Aleph
                                         self::$classes[$cs] = strpos($file, self::$root) === 0 ? ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;
                                         break;
                                     }
+                                    ++$i;
                                 }
                                 break;
                         }
@@ -1551,6 +1609,8 @@ final class Aleph
         }
         return true;
     }
+
+    /************************************************** MISC **********************************************************/
 
     /**
      * Merges two arrays recursively.

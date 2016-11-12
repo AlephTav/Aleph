@@ -25,17 +25,13 @@ class CacheTest extends TestCase
      */
     public static function setUpBeforeClass()
     {
-        require_once(__DIR__ . '/../Cache/Cache.php');
-        require_once(__DIR__ . '/../Cache/FileCache.php');
-        require_once(__DIR__ . '/../Cache/SessionCache.php');
-        require_once(__DIR__ . '/../Cache/RedisCache.php');
-        require_once(__DIR__ . '/../Cache/PHPRedisCache.php');
-        require_once(__DIR__ . '/../Cache/MemoryCache.php');
         $params = [
             'directory' => __DIR__ . '/_cache/' . uniqid('dir', true)
         ];
         self::$cacheInstances['file'] = Cache::getInstance('file', $params);
-        self::$cacheInstances['session'] = Cache::getInstance('session');
+        if (!session_id() && @session_start()) {
+            self::$cacheInstances['session'] = Cache::getInstance('session');
+        }
         if (RedisCache::isAvailable()) {
             self::$cacheInstances['redis'] = Cache::getInstance('redis');
         }

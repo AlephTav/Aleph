@@ -37,7 +37,6 @@ class NotFoundException extends Exception
      * @param string $message The exception message to throw.
      * @param int $code The exception code.
      * @param \Throwable $previous The previous exception used for the exception chaining.
-     * @return void
      */
     public function __construct(string $message = 'The requested resource is not found.', int $code = 0, \Throwable $previous = null)
     {
