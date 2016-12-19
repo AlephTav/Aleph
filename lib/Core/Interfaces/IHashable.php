@@ -23,18 +23,18 @@
 namespace Aleph\Core\Interfaces;
 
 /**
- * This interface allows objects to be rendered to strings.
+ * This interface allows objects to be used as keys.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
  * @package aleph.core
  */
-interface ITemplate
+interface IHashable
 {
     /**
-     * Returns the rendered template.
+     * Returns the hash of this object.
      *
      * @return string
      */
-    public function render() : string;
+    public function hash() : string;
 }

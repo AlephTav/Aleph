@@ -22,7 +22,13 @@
 
 namespace Aleph\Core\Interfaces;
 
-
+/**
+ * This interface allows objects to be invoked as functions.
+ *
+ * @author Aleph Tav <4lephtav@gmail.com>
+ * @version 1.0.0
+ * @package aleph.core
+ */
 interface ICallback
 {
     /**

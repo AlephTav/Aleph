@@ -32,7 +32,7 @@ use Aleph\Core\Interfaces\ITemplate;
  * @version 1.1.0
  * @package aleph.core
  */
-class Template implements ITemplate
+class Template implements \Countable, \IteratorAggregate, ITemplate
 {
     /**
      * Template variables.

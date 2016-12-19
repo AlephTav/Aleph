@@ -14,15 +14,15 @@ class CoreEventTest extends TestCase
      * Checks adding listeners to an event.
      *
      * @covers Event::listen
-     * @covers Event::listeners
+     * @covers Event::count
      */
     public function testListen()
     {
         Event::listen('foo1', function () {});
         Event::listen('foo2', function () {});
-        $this->assertEquals(1, Event::listeners('foo1'));
-        $this->assertEquals(1, Event::listeners('foo2'));
-        $this->assertEquals(2, Event::listeners());
+        $this->assertEquals(1, Event::count('foo1'));
+        $this->assertEquals(1, Event::count('foo2'));
+        $this->assertEquals(2, Event::count());
     }
 
     /**
@@ -37,19 +37,19 @@ class CoreEventTest extends TestCase
         Event::listen('foo', $empty);
         Event::listen('foo', $empty);
         Event::remove();
-        $this->assertEquals(0, Event::listeners());
+        $this->assertEquals(0, Event::count());
         Event::listen('foo', $empty);
         Event::listen('foo', $empty);
         Event::remove('foo');
-        $this->assertEquals(0, Event::listeners());
+        $this->assertEquals(0, Event::count());
         Event::listen('foo', $empty);
         Event::listen('foo', function () {});
         Event::remove('foo', $empty);
-        $this->assertEquals(1, Event::listeners());
+        $this->assertEquals(1, Event::count());
         Event::listen('foo', $empty);
         Event::listen('foo', $empty);
         Event::remove(null, $empty);
-        $this->assertEquals(1, Event::listeners());
+        $this->assertEquals(1, Event::count());
     }
 
     /**

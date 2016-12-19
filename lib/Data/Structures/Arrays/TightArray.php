@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -38,55 +38,55 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
      */
     const ERR_TIGHT_ARRAY_1 = 'Index "%s" is out of bounds.';
     const ERR_TIGHT_ARRAY_2 = 'Array size cannot be negative.';
-    
+
     /**
      * The tight array capacity.
      *
      * @var int
      */
     protected $size = 0;
-    
+
     /**
      * The size of an array element in bytes.
      *
      * @var int
      */
     protected $itemSize = 0;
-    
+
     /**
      * The total number of array elements.
      *
      * @var int
      */
     protected $numItems = 0;
-    
+
     /**
      * Determines whether the array capacity should be automatically
      * increased.
      */
     protected $autoSize = false;
-    
+
     /**
      * The data format for pack/unpack operations.
      *
      * @var string
      */
     protected $format = '';
-    
+
     /**
      * The memory stream handler.
      *
      * @var resource
      */
     private $stream = null;
-    
+
     /**
      * The internal pointer for the iterator.
      *
      * @var int
      */
     private $pos = 0;
-    
+
     /**
      * Creates a tight array instance from the given regular array.
      *
@@ -97,23 +97,19 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
      */
     public static function fromArray(array $arr, bool $saveIndexes = false, bool $autoSize = true) : TightArray
     {
-        if ($saveIndexes)
-        {
+        if ($saveIndexes) {
             $a = new static(0, true);
-            foreach ($arr as $k => $v)
-            {
+            foreach ($arr as $k => $v) {
                 $a->offsetSet($k, $v);
             }
             $a->setAutoSize($autoSize);
-        }
-        else
-        {
+        } else {
             $a = new static(0, $autoSize);
             $a->setArray($arr);
         }
         return $a;
     }
-    
+
     /**
      * Constructor.
      *
@@ -127,7 +123,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
         $this->setSize($size);
         $this->setAutoSize($autoSize);
     }
-    
+
     /**
      * Destructor.
      *
@@ -137,7 +133,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         fclose($this->stream);
     }
-    
+
     /**
      * Returns the number of array elements.
      *
@@ -147,17 +143,17 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         return $this->numItems;
     }
-    
+
     /**
      * Resets the internal array pointer.
      *
-     * @return void     
+     * @return void
      */
     public function rewind()
     {
         $this->pos = 0;
     }
-    
+
     /**
      * Returns the current array element.
      *
@@ -167,7 +163,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         return $this->offsetGet($this->pos);
     }
-    
+
     /**
      * Returns the current element index.
      *
@@ -177,7 +173,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         return $this->pos;
     }
-    
+
     /**
      * Increments the internal array pointer.
      *
@@ -187,7 +183,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         ++$this->pos;
     }
-    
+
     /**
      * Checks if the internal array pointer is in array bounds.
      *
@@ -197,7 +193,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         return $this->pos < $this->numItems;
     }
-    
+
     /**
      * Returns an array element with the specified index.
      *
@@ -210,7 +206,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
         fseek($this->stream, $this->getIndex($index));
         return unpack($this->format, fread($this->stream, $this->itemSize))[1];
     }
-    
+
     /**
      * Returns TRUE if an element with the specified index exists and FALSE otherwise.
      *
@@ -221,7 +217,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         return $index >= 0 && $index < $this->numItems;
     }
-    
+
     /**
      * Removes an array element with the specified index.
      *
@@ -232,7 +228,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         $this->offsetSet($index, 0);
     }
-    
+
     /**
      * Assigns new value to an array element with the specified index.
      *
@@ -247,7 +243,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
         fseek($this->stream, $this->getIndex($index));
         fwrite($this->stream, pack($this->format, $value));
     }
-    
+
     /**
      * Returns TRUE if the auto size mode is enabled, otherwise it returns FALSE.
      *
@@ -257,7 +253,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         return $this->autoSize;
     }
-    
+
     /**
      * Sets the auto size mode.
      *
@@ -268,7 +264,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         $this->autoSize = $autoSize;
     }
-    
+
     /**
      * Returns the array capacity.
      *
@@ -278,7 +274,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     {
         return $this->size;
     }
-    
+
     /**
      * Sets capacity of the array.
      *
@@ -288,21 +284,18 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
      */
     public function setSize(int $size)
     {
-        if ($size < 0)
-        {
+        if ($size < 0) {
             throw new \RuntimeException(static::ERR_TIGHT_ARRAY_2);
         }
-        if ($size != $this->size)
-        {
+        if ($size != $this->size) {
             ftruncate($this->stream, $size * $this->itemSize);
             $this->size = $size;
-            if ($size < $this->numItems)
-            {
+            if ($size < $this->numItems) {
                 $this->numItems = $size;
             }
         }
     }
-    
+
     /**
      * Converts the instance of tight array to a regular array.
      *
@@ -321,9 +314,9 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
     protected function getArray() : array
     {
         return array_values(unpack($this->format . '*',
-               stream_get_contents($this->stream, $this->itemSize * $this->numItems, 0)));
+            stream_get_contents($this->stream, $this->itemSize * $this->numItems, 0)));
     }
-    
+
     /**
      * Converts a regular array to the current tight array.
      *
@@ -336,7 +329,7 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
         fwrite($this->stream, pack($this->format . '*', ...$arr));
         $this->numItems = $this->size = count($arr);
     }
-    
+
     /**
      * Returns the position of an array element in the stream.
      *
@@ -346,18 +339,14 @@ abstract class TightArray implements \Iterator, \ArrayAccess, \Countable
      */
     private function getIndex($index)
     {
-        if ($index >= 0)
-        {
-            if ($index > $this->numItems - 1)
-            {
+        if ($index >= 0) {
+            if ($index > $this->numItems - 1) {
                 $this->numItems = $index + 1;
             }
-            if ($index < $this->size)
-            {
+            if ($index < $this->size) {
                 return $index * $this->itemSize;
             }
-            if ($this->autoSize)
-            {
+            if ($this->autoSize) {
                 $this->setSize(1 << ceil(log($index, 2)));
                 return $index * $this->itemSize;
             }

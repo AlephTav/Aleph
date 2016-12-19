@@ -20,21 +20,49 @@
  * @license http://www.opensource.org/licenses/MIT
  */
 
-namespace Aleph\Core\Interfaces;
+namespace Aleph\Data\Structures\Interfaces;
 
 /**
- * This interface allows objects to be rendered to strings.
+ * The common interface for any collection of data.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.0
- * @package aleph.core
+ * @package aleph.data.structures
  */
-interface ITemplate
+interface IContainer extends \IteratorAggregate, \Countable
 {
     /**
-     * Returns the rendered template.
+     * Returns TRUE if this set contains no elements.
+     *
+     * @return bool
+     */
+    public function isEmpty() : bool;
+
+    /**
+     * Removes all elements from this container.
+     *
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
+     */
+    public function clean();
+
+    /**
+     * Returns a copy of this container.
+     *
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
+     */
+    public function copy();
+
+    /**
+     * Converts this container to an array.
+     *
+     * @return array
+     */
+    public function toArray() : array;
+
+    /**
+     * Converts this container to a JSON-encoded string.
      *
      * @return string
      */
-    public function render() : string;
+    public function toJson() : string;
 }

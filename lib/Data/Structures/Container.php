@@ -23,6 +23,7 @@
 namespace Aleph\Data\Structures;
 
 use Aleph\Utils\Arr;
+use Aleph\Data\Structures\Interfaces\IContainer;
 
 /**
  * Simple container for key/value pairs.
@@ -31,7 +32,7 @@ use Aleph\Utils\Arr;
  * @version 1.0.1
  * @package aleph.data.structures
  */
-class Container implements \ArrayAccess, \IteratorAggregate, \Countable
+class Container implements \ArrayAccess, IContainer
 {
     /**
      * An array of key/value pairs.
@@ -67,6 +68,16 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
     public function count() : int
     {
         return count($this->items);
+    }
+
+    /**
+     * Returns TRUE if this container contains no items.
+     *
+     * @return bool
+     */
+    public function isEmpty() : bool
+    {
+        return count($this->items) == 0;
     }
 
     /**
@@ -111,13 +122,23 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
     }
 
     /**
-     * Returns the array.
+     * Converts this container to an associative array.
      *
      * @return array
      */
-    public function all() : array
+    public function toArray() : array
     {
         return $this->items;
+    }
+
+    /**
+     * Converts this container to a JSON-encoded string.
+     *
+     * @return string
+     */
+    public function toJson() : string
+    {
+        return json_encode($this->items);
     }
 
     /**
@@ -144,9 +165,9 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
      * Replaces the current array by a new one.
      *
      * @param array $items
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function replace(array $items = []) : Container
+    public function replace(array $items = []) : IContainer
     {
         $this->items = $items;
         return $this;
@@ -156,9 +177,9 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
      * Adds new key/value pairs to the current set.
      *
      * @param array $items
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function add(array $items = []) : Container
+    public function add(array $items = []) : IContainer
     {
         $this->items = array_replace($this->items, $items);
         return $this;
@@ -168,9 +189,9 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
      * Merge existing key/value pairs with new set.
      *
      * @param array $items
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function merge(array $items = []) : Container
+    public function merge(array $items = []) : IContainer
     {
         $this->items = Arr::merge($this->items, $items);
         return $this;
@@ -179,21 +200,29 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
     /**
      * Removes all key/value pairs.
      *
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function clean() : Container
+    public function clean() : IContainer
     {
         $this->items = [];
         return $this;
     }
 
     /**
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
+     */
+    public function copy() : IContainer
+    {
+        return clone $this;
+    }
+
+    /**
      * Applies the given callback to an each item.
      *
      * @param callable $callback
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function each(callable $callback) : Container
+    public function each(callable $callback) : IContainer
     {
         foreach ($this->items as $key => $item) {
             if ($callback($item, $key) === false) {
@@ -228,9 +257,9 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
      *
      * @param mixed $value
      * @param string|int $key The simple key.
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function push($value, $key = null) : Container
+    public function push($value, $key = null) : IContainer
     {
         if ($key === null) {
             $this->items[] = $value;
@@ -255,9 +284,9 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
      *
      * @param mixed $value
      * @param string|int $key The simple key.
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function prepend($value, $key = null) : Container
+    public function prepend($value, $key = null) : IContainer
     {
         if ($key === null) {
             array_unshift($this->items, $value);
@@ -302,10 +331,10 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
      * @param bool $merge Determines whether the old item value should be merged with new one.
      * @param bool $compositeKey Determines whether the key is a compound key.
      * @param string $delimiter The key delimiter in compound keys.
-     * @return \Aleph\Data\Structures\Container
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
     public function set($key, $value, bool $merge = false,
-                        bool $compositeKey = false, string $delimiter = '') : Container
+                        bool $compositeKey = false, string $delimiter = '') : IContainer
     {
         if (!$compositeKey) {
             if ($merge && is_array($value) && isset($this->items[$key]) && is_array($this->items[$key])) {
@@ -341,10 +370,12 @@ class Container implements \ArrayAccess, \IteratorAggregate, \Countable
      * @param array|string $key An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
      * @param bool $compositeKey Determines whether the key is compound key.
      * @param string $delimiter The key delimiter in composite keys.
-     * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains elements after removing the given one.
-     * @return \Aleph\Data\Structures\Container
+     * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains
+     * elements after removing the given one.
+     * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function remove($key, bool $compositeKey = false, string $delimiter = '', bool $removeEmptyParent = false) : Container
+    public function remove($key, bool $compositeKey = false,
+                           string $delimiter = '', bool $removeEmptyParent = false) : IContainer
     {
         if (!$compositeKey) {
             unset($this->items[$key]);

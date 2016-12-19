@@ -27,7 +27,7 @@ use Aleph,
     Aleph\Http\Exceptions;
 
 /**
- * The base class for creating of the RESTFul API system.
+ * The base class for creating of the REST API system.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
  * @version 1.0.1

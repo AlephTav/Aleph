@@ -83,7 +83,7 @@ class Event
      * @param string|null $event The event name.
      * @return int
      */
-    public static function listeners(string $event = null) : int
+    public static function count(string $event = null) : int
     {
         $count = 0;
         if ($event === null) {
