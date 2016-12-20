@@ -196,7 +196,7 @@ class HashBag implements IBag
             return $this;
         }
         $hash = Str::hash($item);
-        $max = $this->counts[$hash] ?: 0;
+        $max = $this->counts[$hash] ?? 0;
         if ($max > 0) {
             $n = min($count, $max);
             $min = $max - $n + 1;
@@ -205,6 +205,8 @@ class HashBag implements IBag
             }
             if ($min == 1) {
                 unset($this->counts[$hash]);
+            } else {
+                $this->counts[$hash] = $min - 1;
             }
         }
         return $this;
@@ -220,6 +222,12 @@ class HashBag implements IBag
      */
     public function union(IBag $bag) : IBag
     {
+        if (count($bag) == 0) {
+            return $this->copy();
+        }
+        if (count($this->bag) == 0) {
+            return $bag->copy();
+        }
         $new = new static();
         foreach ($this->counts as $hash => $n) {
             $item = $this->bag[$hash . '1'];
@@ -234,7 +242,7 @@ class HashBag implements IBag
     }
 
     /**
-     * Creates a bag that contains all elements that are present simultaneously
+     * Creates a bag that contains all elements that are presented simultaneously
      * in each of bags, and the multiplicity of each element is equal to the minimum
      * multiplicity of the corresponding elements in the given bags.
      *
@@ -244,6 +252,9 @@ class HashBag implements IBag
     public function intersect(IBag $bag) : IBag
     {
         $new = new static();
+        if (count($bag) == 0) {
+            return $new;
+        }
         foreach ($this->counts as $hash => $n) {
             $item = $this->bag[$hash . '1'];
             $m = $bag->multiplicity($item);
@@ -279,10 +290,13 @@ class HashBag implements IBag
      */
     public function diff(IBag $bag) : IBag
     {
+        if (count($bag) == 0) {
+            return $this->copy();
+        }
         $new = new static();
         foreach ($this->counts as $hash => $n) {
             $item = $this->bag[$hash . '1'];
-            $n = max(0, $bag->multiplicity($item));
+            $n = max(0, $n - $bag->multiplicity($item));
             if ($n > 0) {
                 $new->addInstances($item, $n);
             }
@@ -301,6 +315,12 @@ class HashBag implements IBag
      */
     public function symdiff(IBag $bag) : IBag
     {
+        if (count($bag) == 0) {
+            return $this->copy();
+        }
+        if (count($this->bag) == 0) {
+            return $bag->copy();
+        }
         $new = new static();
         foreach ($this->counts as $hash => $n) {
             $item = $this->bag[$hash . '1'];
@@ -311,9 +331,8 @@ class HashBag implements IBag
         }
         foreach (array_unique($bag->toArray()) as $item) {
             $n = $this->multiplicity($item);
-            $m = $bag->multiplicity($item);
-            if ($n != $m) {
-                $new->addInstances($item, abs($n - $m));
+            if ($n == 0) {
+                $new->addInstances($item, $bag->multiplicity($item));
             }
         }
         return $new;
@@ -333,11 +352,26 @@ class HashBag implements IBag
     /**
      * Returns a randomly chosen element of this bag.
      *
+     * @param bool $remove Determines whether to delete the returning element from this bag.
      * @return mixed
      */
-    public function grab()
+    public function grab(bool $remove = false)
     {
-        return $this->bag[array_rand($this->bag)];
+        $key = array_rand($this->bag);
+        if (!$remove) {
+            return $this->bag[$key];
+        }
+        $hash = substr($key, 0, -1);
+        $count = $this->counts[$hash];
+        $key = $hash . $count;
+        $item = $this->bag[$key];
+        unset($this->bag[$key]);
+        if ($count == 1) {
+            unset($this->counts[$hash]);
+        } else {
+            --$this->counts[$hash];
+        }
+        return $item;
     }
 
     /**
@@ -367,7 +401,7 @@ class HashBag implements IBag
      */
     public function toSet() : ISet
     {
-        return new HashSet(...$this->bag);
+        return new HashSet(...$this->toArray());
     }
 
     /**

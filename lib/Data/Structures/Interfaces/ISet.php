@@ -95,7 +95,7 @@ interface ISet extends IContainer
      * @param \Aleph\Data\Structures\Interfaces\ISet $set
      * @return \Aleph\Data\Structures\Interfaces\ISet
      */
-    public function symdiff(ISet $set) : ISet;
+    public function symdiff(ISet $set);
 
     /**
      * Returns a randomly chosen element of this set.

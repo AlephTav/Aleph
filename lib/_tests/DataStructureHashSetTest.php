@@ -34,8 +34,10 @@ class DataStructureHashSetTest extends TestCase
         $item4 = ['b'];
         $item5 = new \stdClass;
         $item6 = new \stdClass;
+
         $set = new HashSet();
         $this->assertFalse($set->contains('a'));
+
         $set->add($item1, $item2, $item3, $item4, $item5);
         $this->assertTrue($set->contains($item4));
         $this->assertTrue($set->contains($item1, $item2, $item5));
@@ -57,40 +59,15 @@ class DataStructureHashSetTest extends TestCase
             new \stdClass,
             ['a' => new \stdClass, ['b' => 2, 3]]
         ];
+
         $set = new HashSet(...$items);
         $this->assertTrue($set->contains(...$items));
+
         $set->remove($items[3]);
         $this->assertFalse($set->contains($items[3]));
+
         $set->remove(...$items);
         $this->assertTrue($set->isEmpty());
-    }
-
-    /**
-     * @covers HashSet::toArray
-     * @depends testAdd
-     */
-    public function testToArray()
-    {
-        $set = new HashSet();
-        $this->assertEquals([], $set->toArray());
-        $set->add(1);
-        $this->assertEquals([1], $set->toArray());
-        $set->add('a', ['b', 'c'], 123);
-        $this->assertEquals([1, 'a', ['b', 'c'], 123], $set->toArray());
-    }
-
-    /**
-     * @covers HashSet::toJson
-     * @depends testAdd
-     */
-    public function testToJson()
-    {
-        $set = new HashSet();
-        $this->assertEquals(json_encode([]), $set->toJson());
-        $set->add(1);
-        $this->assertEquals(json_encode([1]), $set->toJson());
-        $set->add('a', ['b', 'c'], 123);
-        $this->assertEquals(json_encode([1, 'a', ['b', 'c'], 123]), $set->toJson());
     }
 
     /**
@@ -102,15 +79,23 @@ class DataStructureHashSetTest extends TestCase
         $set1 = new HashSet('a', 'b', 'c', 'd');
         $set2 = new HashSet('c', 'd', 'e', 'f', 'g');
         $empty = new HashSet();
+
         $union = $set1->union($empty);
         $this->assertTrue($union->contains('a', 'b', 'c', 'd'));
         $this->assertEquals(4, $union->count());
+
         $union = $empty->union($set2);
         $this->assertTrue($union->contains('c', 'd', 'e', 'f', 'g'));
         $this->assertEquals(5, $union->count());
+
         $union = $empty->union($empty);
         $this->assertTrue($union->isEmpty());
+
         $union = $set1->union($set2);
+        $this->assertTrue($union->contains('a', 'b', 'c', 'd', 'e', 'f', 'g'));
+        $this->assertEquals(7, $union->count());
+
+        $union = $set2->union($set1);
         $this->assertTrue($union->contains('a', 'b', 'c', 'd', 'e', 'f', 'g'));
         $this->assertEquals(7, $union->count());
     }
@@ -124,15 +109,24 @@ class DataStructureHashSetTest extends TestCase
         $set1 = new HashSet('a', 'b', 'c', 'd');
         $set2 = new HashSet('c', 'd', 'e', 'f', 'g');
         $empty = new HashSet();
+
         $intersect = $set1->intersect($empty);
         $this->assertTrue($intersect->isEmpty());
+
         $intersect = $empty->intersect($set2);
         $this->assertTrue($intersect->isEmpty());
+
         $intersect = $empty->intersect($empty);
         $this->assertTrue($intersect->isEmpty());
+
         $intersect = $set1->intersect($set2);
         $this->assertTrue($intersect->contains('c', 'd'));
         $this->assertEquals(2, $intersect->count());
+
+        $intersect = $set2->intersect($set1);
+        $this->assertTrue($intersect->contains('c', 'd'));
+        $this->assertEquals(2, $intersect->count());
+
         $intersect = $intersect->intersect(new HashSet('a', 'b'));
         $this->assertTrue($intersect->isEmpty());
     }
@@ -146,16 +140,21 @@ class DataStructureHashSetTest extends TestCase
         $set1 = new HashSet('a', 'b', 'c', 'd');
         $set2 = new HashSet('c', 'd', 'e', 'f', 'g');
         $empty = new HashSet();
+
         $diff = $set1->diff($empty);
         $this->assertTrue($diff->contains('a', 'b', 'c', 'd'));
         $this->assertEquals(4, $diff->count());
+
         $diff = $empty->diff($set2);
         $this->assertTrue($diff->isEmpty());
+
         $diff = $empty->diff($empty);
         $this->assertTrue($diff->isEmpty());
+
         $diff = $set1->diff($set2);
         $this->assertTrue($diff->contains('a', 'b'));
         $this->assertEquals(2, $diff->count());
+
         $diff = $diff->diff($diff);
         $this->assertTrue($diff->isEmpty());
     }
@@ -169,16 +168,21 @@ class DataStructureHashSetTest extends TestCase
         $set1 = new HashSet('a', 'b', 'c', 'd');
         $set2 = new HashSet('c', 'd', 'e', 'f', 'g');
         $empty = new HashSet();
+
         $diff = $set1->symdiff($empty);
         $this->assertTrue($diff->contains('a', 'b', 'c', 'd'));
         $this->assertEquals(4, $diff->count());
+
         $diff = $empty->symdiff($set2);
         $this->assertTrue($diff->contains('c', 'd', 'e', 'f', 'g'));
+
         $diff = $empty->symdiff($empty);
         $this->assertTrue($diff->isEmpty());
+
         $diff = $set1->symdiff($set2);
         $this->assertTrue($diff->contains('a', 'b', 'e', 'f', 'g'));
         $this->assertEquals(5, $diff->count());
+
         $diff = $diff->symdiff($diff);
         $this->assertTrue($diff->isEmpty());
     }
@@ -191,23 +195,57 @@ class DataStructureHashSetTest extends TestCase
     {
         $set = new HashSet(1, 2, 3);
         $this->assertFalse($set->isEmpty());
+
         $set->clean();
         $this->assertTrue($set->isEmpty());
     }
 
     /**
-     * @covers HashSet::grab
+     * @covers HashSet::toArray
      * @depends testAdd
+     */
+    public function testToArray()
+    {
+        $set = new HashSet();
+        $this->assertEquals([], $set->toArray());
+
+        $set->add(1);
+        $this->assertEquals([1], $set->toArray());
+
+        $set->add('a', ['b', 'c'], 123);
+        $this->assertEquals([1, 'a', ['b', 'c'], 123], $set->toArray());
+    }
+
+    /**
+     * @covers HashSet::toJson
+     * @depends testAdd
+     */
+    public function testToJson()
+    {
+        $set = new HashSet();
+        $this->assertEquals(json_encode([]), $set->toJson());
+
+        $set->add(1);
+        $this->assertEquals(json_encode([1]), $set->toJson());
+
+        $set->add('a', ['b', 'c'], 123);
+        $this->assertEquals(json_encode([1, 'a', ['b', 'c'], 123]), $set->toJson());
+    }
+
+    /**
+     * @covers HashSet::grab
      * @depends testToArray
      */
     public function testGrab()
     {
         $set = new HashSet('a', 'b', 'c', 'd', 'e');
         $items = $set->toArray();
+
         for ($i = 0; $i < 3; ++$i) {
             $this->assertContains($set->grab(false), $items);
         }
         $this->assertEquals(5, $set->count());
+
         for ($i = 0; $i < 5; ++$i) {
             $this->assertContains($set->grab(true), $items);
         }
@@ -216,12 +254,13 @@ class DataStructureHashSetTest extends TestCase
 
     /**
      * @covers HashSet::getIterator
-     * @depends testAdd
+     * @depends testToArray
      */
     public function testIterator()
     {
         $set = new HashSet('a', 'b', 'c', 'd', 'e', 'f');
         $items = $set->toArray();
+
         foreach ($set as $n => $item) {
             $this->assertEquals($items[$n], $item);
         }

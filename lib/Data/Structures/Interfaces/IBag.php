@@ -54,7 +54,7 @@ interface IBag extends IContainer
      * @param mixed ...$items
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function add(...$items) : IBag;
+    public function add(...$items);
 
     /**
      * Adds the specified number of instances of the given element to this bag.
@@ -63,7 +63,7 @@ interface IBag extends IContainer
      * @param int $count
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function addInstances($item, int $count = 1) : IBag;
+    public function addInstances($item, int $count = 1);
 
     /**
      * Removes all occurrences of the specified elements from this bag
@@ -72,7 +72,7 @@ interface IBag extends IContainer
      * @param mixed ...$items
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function remove(...$items) : IBag;
+    public function remove(...$items);
 
     /**
      * Remove the given number of instances from the bag.
@@ -91,7 +91,7 @@ interface IBag extends IContainer
      * @param \Aleph\Data\Structures\Interfaces\IBag $bag
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function union(IBag $bag) : IBag;
+    public function union(IBag $bag);
 
     /**
      * Creates a bag that contains all elements that are present simultaneously
@@ -101,7 +101,7 @@ interface IBag extends IContainer
      * @param \Aleph\Data\Structures\Interfaces\IBag $bag
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function intersect(IBag $bag) : IBag;
+    public function intersect(IBag $bag);
 
     /**
      * Creates a bag that contains all elements that are present in at least one of
@@ -111,7 +111,7 @@ interface IBag extends IContainer
      * @param \Aleph\Data\Structures\Interfaces\IBag $bag
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function sum(IBag $bag) : IBag;
+    public function sum(IBag $bag);
 
     /**
      * Creates a bag that contains all elements of the first bag,
@@ -123,7 +123,7 @@ interface IBag extends IContainer
      * @param \Aleph\Data\Structures\Interfaces\IBag $bag
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function diff(IBag $bag) : IBag;
+    public function diff(IBag $bag);
 
     /**
      * Creates a new bag that contains elements of the both bags multiplicities
@@ -134,14 +134,15 @@ interface IBag extends IContainer
      * @param \Aleph\Data\Structures\Interfaces\IBag $bag
      * @return \Aleph\Data\Structures\Interfaces\IBag
      */
-    public function symdiff(IBag $bag) : IBag;
+    public function symdiff(IBag $bag);
 
     /**
      * Returns a randomly chosen element of this bag.
      *
+     * @param bool $remove Determines whether to delete the returning element from this bag.
      * @return mixed
      */
-    public function grab();
+    public function grab(bool $remove = false);
 
     /**
      * Converts this bag to a set.

@@ -175,7 +175,7 @@ class HashSet implements ISet
      * @param \Aleph\Data\Structures\Interfaces\ISet $set
      * @return \Aleph\Data\Structures\Interfaces\ISet
      */
-    public function intersect(ISet $set): ISet
+    public function intersect(ISet $set) : ISet
     {
         $new = new static();
         foreach ($this->set as $item) {
@@ -194,7 +194,7 @@ class HashSet implements ISet
      * @param \Aleph\Data\Structures\Interfaces\ISet $set
      * @return \Aleph\Data\Structures\Interfaces\ISet
      */
-    public function diff(ISet $set): ISet
+    public function diff(ISet $set) : ISet
     {
         return $this->copy()->remove(...$set->toArray());
     }
@@ -208,7 +208,7 @@ class HashSet implements ISet
      * @param \Aleph\Data\Structures\Interfaces\ISet $set
      * @return \Aleph\Data\Structures\Interfaces\ISet
      */
-    public function symdiff(ISet $set): ISet
+    public function symdiff(ISet $set) : ISet
     {
         $new = new static();
         foreach ($this->set as $item) {
