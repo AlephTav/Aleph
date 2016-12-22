@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @group core
  */
-class CoreCallbackTest extends TestCase
+class CallbackTest extends TestCase
 {
     /**
      * Invalid callbacks provider.
@@ -39,7 +39,7 @@ class CoreCallbackTest extends TestCase
      */
     public function validCallbackProvider()
     {
-        CoreCallbackTest::setUpBeforeClass();
+        CallbackTest::setUpBeforeClass();
         return [
             [
                 'foo',

@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @group core
  */
-class CoreEventTest extends TestCase
+class EventTest extends TestCase
 {
     /**
      * Checks adding listeners to an event.

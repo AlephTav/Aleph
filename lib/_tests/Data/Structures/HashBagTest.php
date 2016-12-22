@@ -8,7 +8,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @group data-structures
  */
-class DataStructureHashBagTest extends TestCase
+class HashBagTest extends TestCase
 {
     /**
      * @covers HashBag::isEmpty

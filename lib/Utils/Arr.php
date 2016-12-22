@@ -37,80 +37,167 @@ class Arr
     const DEFAULT_KEY_DELIMITER = '.';
 
     /**
-     * Returns TRUE if the given array is numeric and FALSE otherwise.
+     * Returns TRUE if the given array has sequential integer keys and FALSE otherwise.
      *
-     * @param array $array
+     * @param array $arr
      * @return bool
      */
-    public static function isNumeric(array $array) : bool
+    public static function isSequential(array $arr) : bool
     {
-        return array_keys($array) === range(0, count($array) - 1);
+        if ($arr) {
+            $n = 0;
+            foreach ($arr as $k => $v) {
+                if ($n !== $k) {
+                    return false;
+                }
+                ++$n;
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns TRUE if the given array has only integer keys and FALSE otherwise.
+     *
+     * @param array $arr
+     * @return bool
+     */
+    public static function isNumeric(array $arr) : bool
+    {
+        if ($arr) {
+            foreach ($arr as $k => $v) {
+                if (!is_int($k)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns TRUE if the given array has only string keys and FALSE otherwise.
+     *
+     * @param array $arr
+     * @return bool
+     */
+    public static function isAssoc(array $arr) : bool
+    {
+        if ($arr) {
+            foreach ($arr as $k => $v) {
+                if (!is_string($k)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Returns TRUE if the given array has mixed (integer and string) keys and FALSE otherwise.
+     *
+     * @param array $arr
+     * @return bool
+     */
+    public static function isMixed(array $arr) : bool
+    {
+        $count = count($arr);
+        if ($count == 0) {
+            return false;
+        }
+        if ($count == 1) {
+            return true;
+        }
+        $int = $str = 1;
+        foreach ($arr as $k => $v) {
+            if (is_int($k)) {
+                if ($int) {
+                    --$int;
+                    if ($str == 0) {
+                        return true;
+                    }
+                }
+            } else if ($str) {
+                --$str;
+                if ($int == 0) {
+                    return true;
+                }
+            }
+        }
+        return $int == $str;
     }
 
     /**
      * Returns element value of a multidimensional array, defined by its compound key.
      *
-     * @param array $array The multidimensional array.
+     * @param array $arr The multidimensional array.
      * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
      * @param mixed $default The default value of an element if it don't exist.
      * @param string $delimiter The key delimiter in composite keys.
      * @return mixed
      */
-    public static function get(array $array, $keys, $default = null, string $delimiter = '')
+    public static function get(array $arr, $keys, $default = null, string $delimiter = '')
     {
-        $arr = $array;
+        $a = $arr;
         $keys = is_array($keys) ? $keys :
             explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key) {
-            if (!is_array($arr) || !array_key_exists($key, $arr)) {
+            if (!is_array($a) || !array_key_exists($key, $a)) {
                 return $default;
             }
-            $arr = $arr[$key];
+            $a = $a[$key];
         }
-        return $arr;
+        return $a;
     }
 
     /**
      * Sets new value of an element of a multidimensional array, defined by its compound key.
      *
-     * @param array $array The multidimensional array.
+     * @param array $arr The multidimensional array.
      * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
      * @param mixed $value The new value of an array element.
      * @param bool $merge Determines whether the old element value should be merged with new one.
      * @param string $delimiter The key delimiter in composite keys.
      * @return void
      */
-    public static function set(array &$array, $keys, $value, bool $merge = false, string $delimiter = '')
+    public static function set(array &$arr, $keys, $value, bool $merge = false, string $delimiter = '')
     {
-        $arr = &$array;
-        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
+        $a = &$arr;
+        $keys = is_array($keys) ? $keys :
+            explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key) {
-            $arr = &$arr[$key];
+            if (!is_array($a)) {
+                $a = [];
+            }
+            $a = &$a[$key];
         }
-        if ($merge && is_array($arr) && is_array($value)) {
-            $arr = static::merge($arr, $value);
+        if ($merge && is_array($a) && is_array($value)) {
+            $a = static::merge($a, $value);
         } else {
-            $arr = $value;
+            $a = $value;
         }
     }
 
     /**
      * Checks whether an element of a multidimensional array exists or not.
      *
-     * @param array $array The multidimensional array.
+     * @param array $arr The multidimensional array.
      * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
      * @param string $delimiter The key delimiter in composite keys.
      * @return bool
      */
-    public static function has(array $array, $keys, string $delimiter = '') : bool
+    public static function has(array $arr, $keys, string $delimiter = '') : bool
     {
-        $arr = $array;
-        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
+        $a = $arr;
+        $keys = is_array($keys) ? $keys :
+            explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         foreach ($keys as $key) {
-            if (!is_array($arr) || !array_key_exists($key, $arr)) {
+            if (!is_array($a) || !array_key_exists($key, $a)) {
                 return false;
             }
-            $arr = $arr[$key];
+            $a = $a[$key];
         }
         return true;
     }
@@ -118,90 +205,92 @@ class Arr
     /**
      * Removes an element of a multidimensional array, defined by its compound key.
      *
-     * @param array $array The array from which an element will be removed.
+     * @param array $arr The array from which an element will be removed.
      * @param array|string $keys An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains elements after removing the given one.
+     * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains
+     * elements after removing the given one.
      * @param string $delimiter The key delimiter in composite keys.
      * @return void
      */
-    public static function remove(array &$array, $keys, bool $removeEmptyParent = false, string $delimiter = '')
+    public static function remove(array &$arr, $keys, bool $removeEmptyParent = false, string $delimiter = '')
     {
-        $keys = is_array($keys) ? $keys : explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
+        $keys = is_array($keys) ? $keys :
+            explode($delimiter === '' ? static::DEFAULT_KEY_DELIMITER : $delimiter, $keys);
         if ($removeEmptyParent) {
             $key = array_shift($keys);
-            if (array_key_exists($key, $array)) {
-                if ($keys && is_array($array[$key])) {
-                    self::remove($array[$key], $keys, true);
-                    if (!$array[$key]) {
-                        unset($array[$key]);
+            if (array_key_exists($key, $arr)) {
+                if ($keys && is_array($arr[$key])) {
+                    self::remove($arr[$key], $keys, true);
+                    if (!$arr[$key]) {
+                        unset($arr[$key]);
                     }
                 } else {
-                    unset($array[$key]);
+                    unset($arr[$key]);
                 }
             }
         } else {
-            $arr = &$array;
+            $a = &$arr;
             $last = array_pop($keys);
             foreach ($keys as $key) {
-                if (!is_array($arr) || !array_key_exists($key, $arr)) {
+                if (!is_array($a) || !array_key_exists($key, $a)) {
                     return;
                 }
-                $arr = &$arr[$key];
+                $a = &$a[$key];
             }
-            unset($arr[$last]);
+            unset($a[$last]);
         }
     }
 
     /**
      * Swaps two elements of the array.
      *
-     * @param array $array The array in which the two elements will be swapped.
+     * @param array $arr The array in which the two elements will be swapped.
      * @param int|string $key1 The first element's key or index.
      * @param int|string $key2 The second element's key or index.
      * @param bool $index Determines whether $key1 and $key2 treated as element indexes.
      * @param bool $swapKeys Determines whether keys of the elements should also be swapped.
      * @return void
      */
-    public static function swap(array &$array, $key1, $key2, bool $index = false, bool $swapKeys = false)
+    public static function swap(array &$arr, $key1, $key2, bool $index = false, bool $swapKeys = false)
     {
+        if ($index) {
+            $n1 = (int)$key1;
+            $n2 = (int)$key2;
+            if ($n2 === $n1) {
+                return;
+            }
+        } else {
+            $key1 = is_numeric($key1) ? (int)$key1 : (string)$key1;
+            $key2 = is_numeric($key2) ? (int)$key2 : (string)$key2;
+            if ($key1 === $key2) {
+                return;
+            }
+        }
         if ($swapKeys) {
             $tmp = [];
             if ($index) {
-                $n1 = (int)$key1;
-                $n2 = (int)$key2;
-                if ($n2 === $n1) {
-                    return;
-                }
-                $key1 = key(array_slice($array, $n1, 1, true));
-                $key2 = key(array_slice($array, $n2, 1, true));
-            } else {
-                $key1 = is_numeric($key1) ? (int)$key1 : (string)$key1;
-                $key2 = is_numeric($key2) ? (int)$key2 : (string)$key2;
+                $key1 = key(array_slice($arr, $n1, 1, true)) ?? $n1;
+                $key2 = key(array_slice($arr, $n2, 1, true)) ?? $n2;
             }
-            foreach ($array as $key => $value) {
+            foreach ($arr as $key => $value) {
                 if ($key === $key1) {
-                    $tmp[$key2] = $array[$key2];
+                    $tmp[$key2] = $arr[$key2] ?? null;
                 } else if ($key === $key2) {
-                    $tmp[$key1] = $array[$key1];
+                    $tmp[$key1] = $arr[$key1] ?? null;
                 } else {
                     $tmp[$key] = $value;
                 }
             }
-            $array = $tmp;
+            $arr = $tmp;
         } else {
             if ($index) {
-                $n1 = (int)$key1;
-                $n2 = (int)$key2;
-                if ($n2 === $n1) {
-                    return;
-                }
                 if ($n1 > $n2) {
                     $tmp = $n1;
                     $n1 = $n2;
                     $n2 = $tmp;
                 }
                 $n = 0;
-                foreach ($array as $key => $value) {
+                foreach ($arr as $key => $value) {
                     if ($n === $n1) {
                         $key1 = $key;
                     } else if ($n === $n2) {
@@ -211,23 +300,24 @@ class Arr
                     $n++;
                 }
             }
-            $tmp = $array[$key1];
-            $array[$key1] = $array[$key2];
-            $array[$key2] = $tmp;
+            $tmp = $arr[$key1] ?? null;
+            $arr[$key1] = $arr[$key2] ?? null;
+            $arr[$key2] = $tmp;
         }
     }
 
     /**
      * Inserts a value or an array to the input array at the specified position.
      *
-     * @param array $array The input array in which a value will be inserted.
+     * @param array $arr The input array in which a value will be inserted.
      * @param mixed $value The inserting value.
      * @param int $offset The position in the first array.
      * @return void
      */
-    public static function insert(array &$array, $value, int $offset = 0)
+    public static function insert(array &$arr, $value, int $offset = 0)
     {
-        $array = array_merge(array_slice($array, 0, $offset, true), is_array($value) ? $value : [$value], array_slice($array, $offset, null, true));
+        $offset = $offset < 0 ? 0 : $offset;
+        $arr = array_merge(array_slice($arr, 0, $offset, true), is_array($value) ? $value : [$value], array_slice($arr, $offset, null, true));
     }
 
     /**
@@ -324,7 +414,7 @@ class Arr
     public static function makeFlat(array $nodes, $parent = 'parent', $children = 'children') : array
     {
         $tree = [];
-        $reduce = function (array $nodes, $parentID = null) use (&$reduce, &$tree, $parent, $children) {
+        $reduce = function(array $nodes, $parentID = null) use(&$reduce, &$tree, $parent, $children) {
             foreach ($nodes as $ID => $node) {
                 if ($parentID !== null) {
                     $node[$parent] = $parentID;
@@ -343,13 +433,13 @@ class Arr
     /**
      * Recursively iterates an array.
      *
-     * @param array $array The array to iterate.
+     * @param array $arr The array to iterate.
      * @param bool $iterateObjects Determines whether to iterate an objects (all objects will be converted to an array).
      * @return \Generator
      */
-    public static function iterate(array $array, $iterateObjects = false) : \Generator
+    public static function iterate(array $arr, $iterateObjects = false) : \Generator
     {
-        foreach ($array as $key => $value) {
+        foreach ($arr as $key => $value) {
             if ($iterateObjects && is_object($value)) {
                 $value = get_object_vars($value);
             }

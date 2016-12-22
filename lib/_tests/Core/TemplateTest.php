@@ -10,14 +10,14 @@ use PHPUnit\Framework\TestCase;
  *
  * @group core
  */
-class CoreTemplateTest extends TestCase
+class TemplateTest extends TestCase
 {
     /**
      * @cover Template::render
      */
     public function testSimpleTemplateRender()
     {
-        $tpl = new Template(__DIR__ . '/_resources/template.tpl');
+        $tpl = new Template(__DIR__ . '/../_resources/template.tpl');
         $tpl->attr1 = 2;
         $tpl->attr2 = 1;
         $tpl->tpl = 'test';
@@ -31,7 +31,7 @@ class CoreTemplateTest extends TestCase
      */
     public function testNestedTemplateRender()
     {
-        $template = __DIR__ . '/_resources/template.tpl';
+        $template = __DIR__ . '/../_resources/template.tpl';
         $tpl = new Template($template);
         $tpl->attr2 = 'a2';
         $tpl->attr1 = 'a1';
@@ -50,7 +50,7 @@ class CoreTemplateTest extends TestCase
      */
     public function testCacheTemplateRender()
     {
-        $dir = __DIR__ . '/_cache/' . uniqid('tpl', true);
+        $dir = __DIR__ . '/../_cache/' . uniqid('tpl', true);
         $cache = new FileCache();
         $cache->setDirectory($dir);
         $key1 = uniqid('key1', true);
@@ -58,10 +58,10 @@ class CoreTemplateTest extends TestCase
         $tpl1 = 'Template #1: 1 | Template #2: 2 | test';
         $tpl2 = 'Template #1: 1 | Template #2: 1 | test';
         $tpl3 = 'Template #1: 2 | Template #2: 1 | test';
-        $tpl = new CacheableTemplate(__DIR__ . '/_resources/cached_template.tpl', $cache, $key1, 4);
+        $tpl = new CacheableTemplate(__DIR__ . '/../_resources/cached_template.tpl', $cache, $key1, 4);
         $tpl->number = 1;
         $tpl->var = 1;
-        $tpl->tpl = new CacheableTemplate(__DIR__ . '/_resources/cached_template.tpl', $cache, $key2, 2);
+        $tpl->tpl = new CacheableTemplate(__DIR__ . '/../_resources/cached_template.tpl', $cache, $key2, 2);
         $tpl->tpl->number = 2;
         $tpl->tpl->var = 2;
         $tpl->tpl->tpl = 'test';
