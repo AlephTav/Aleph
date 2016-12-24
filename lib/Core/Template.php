@@ -24,6 +24,7 @@ namespace Aleph\Core;
 
 use Aleph;
 use Aleph\Core\Interfaces\ITemplate;
+use Aleph\Core\Traits\{ArrayAccess, ObjectAccess};
 
 /**
  * Implementation of the base template engine.
@@ -34,12 +35,14 @@ use Aleph\Core\Interfaces\ITemplate;
  */
 class Template implements \Countable, \IteratorAggregate, ITemplate
 {
+    use ArrayAccess, ObjectAccess;
+
     /**
      * Template variables.
      *
      * @var array
      */
-    private $vars = [];
+    private $items = [];
 
     /**
      * Template string or path to a template file.
@@ -86,7 +89,7 @@ class Template implements \Countable, \IteratorAggregate, ITemplate
      */
     public function getVars() : array
     {
-        return $this->vars;
+        return $this->items;
     }
 
     /**
@@ -99,58 +102,10 @@ class Template implements \Countable, \IteratorAggregate, ITemplate
     public function setVars(array $vars, bool $merge = false)
     {
         if ($merge) {
-            $this->vars = array_merge($this->vars, $vars);
+            $this->items = array_merge($this->items, $vars);
         } else {
-            $this->vars = $vars;
+            $this->items = $vars;
         }
-    }
-
-    /**
-     * Sets value of a template variable.
-     *
-     * @param string $name The variable name.
-     * @param mixed $value The variable value.
-     * @return void
-     */
-    public function __set(string $name, $value)
-    {
-        $this->vars[$name] = $value;
-    }
-
-    /**
-     * Returns value of a template variable.
-     *
-     * @param string $name The variable name.
-     * @return mixed
-     */
-    public function &__get(string $name)
-    {
-        if (!isset($this->vars[$name])) {
-            $this->vars[$name] = null;
-        }
-        return $this->vars[$name];
-    }
-
-    /**
-     * Checks whether or not a template variable exists.
-     *
-     * @param string $name The variable name.
-     * @return bool
-     */
-    public function __isset(string $name) : bool
-    {
-        return isset($this->vars[$name]);
-    }
-
-    /**
-     * Deletes a template variable.
-     *
-     * @param string $name The variable name.
-     * @return void
-     */
-    public function __unset(string $name)
-    {
-        unset($this->vars[$name]);
     }
 
     /**
@@ -160,7 +115,7 @@ class Template implements \Countable, \IteratorAggregate, ITemplate
      */
     public function count() : int
     {
-        return count($this->vars);
+        return count($this->items);
     }
 
     /**
@@ -170,7 +125,7 @@ class Template implements \Countable, \IteratorAggregate, ITemplate
      */
     public function getIterator() : \ArrayIterator
     {
-        return new \ArrayIterator($this->vars);
+        return new \ArrayIterator($this->items);
     }
 
     /**
@@ -181,13 +136,13 @@ class Template implements \Countable, \IteratorAggregate, ITemplate
     public function render() : string
     {
         if (strlen($this->template) <= PHP_MAXPATHLEN && is_file($this->template)) {
-            extract($this->vars);
+            extract($this->items);
             ob_start();
             ob_implicit_flush(false);
             require($this->template);
             return ob_get_clean();
         }
-        return Aleph::executeEmbeddedCode($this->template, $this->vars);
+        return Aleph::executeEmbeddedCode($this->template, $this->items);
     }
 
     /**

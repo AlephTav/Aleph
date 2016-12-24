@@ -24,6 +24,7 @@ namespace Aleph\Data\Structures;
 
 use Aleph\Utils\Arr;
 use Aleph\Data\Structures\Interfaces\IContainer;
+use Aleph\Core\Traits\{ArrayAccess, ObjectAccess};
 
 /**
  * Simple container for key/value pairs.
@@ -34,6 +35,8 @@ use Aleph\Data\Structures\Interfaces\IContainer;
  */
 class Container implements \ArrayAccess, IContainer
 {
+    use ArrayAccess, ObjectAccess;
+
     /**
      * An array of key/value pairs.
      *
@@ -109,16 +112,6 @@ class Container implements \ArrayAccess, IContainer
     public function getGenerator($iterateObjects = false) : \Generator
     {
         return Arr::iterate($this->items, $iterateObjects);
-    }
-
-    /**
-     * Returns TRUE if the container is a numeric array and FALSE otherwise.
-     *
-     * @return bool
-     */
-    public function isNumeric() : bool
-    {
-        return Arr::isNumeric($this->items);
     }
 
     /**
@@ -225,7 +218,7 @@ class Container implements \ArrayAccess, IContainer
     public function each(callable $callback) : IContainer
     {
         foreach ($this->items as $key => $item) {
-            if ($callback($item, $key) === false) {
+            if (call_user_func($callback, $item, $key) === false) {
                 break;
             }
         }
@@ -311,15 +304,11 @@ class Container implements \ArrayAccess, IContainer
      *
      * @param array|string $key An array of the item's elementary keys or compound key (i.e. keys, separated by dot).
      * @param mixed $default The default value of an item if it does not exist.
-     * @param bool $compositeKey Determines whether the item key is a compound key.
      * @param string $delimiter The key delimiter in compound keys.
      * @return mixed
      */
-    public function get($key, $default = null, bool $compositeKey = false, string $delimiter = '')
+    public function get($key, $default = null, string $delimiter = '')
     {
-        if (!$compositeKey) {
-            return array_key_exists($key, $this->items) ? $this->items[$key] : $default;
-        }
         return Arr::get($this->items, $key, $default, $delimiter === '' ? $this->delimiter : $delimiter);
     }
 
@@ -329,22 +318,12 @@ class Container implements \ArrayAccess, IContainer
      * @param array|string $key An array of the item's elementary keys or compound key (i.e. keys, separated by dot).
      * @param mixed $value The new value of a container item.
      * @param bool $merge Determines whether the old item value should be merged with new one.
-     * @param bool $compositeKey Determines whether the key is a compound key.
      * @param string $delimiter The key delimiter in compound keys.
      * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function set($key, $value, bool $merge = false,
-                        bool $compositeKey = false, string $delimiter = '') : IContainer
+    public function set($key, $value, bool $merge = false, string $delimiter = '') : IContainer
     {
-        if (!$compositeKey) {
-            if ($merge && is_array($value) && isset($this->items[$key]) && is_array($this->items[$key])) {
-                $this->items[$key] = Arr::merge($this->items[$key], $value);
-            } else {
-                $this->items[$key] = $value;
-            }
-        } else {
-            Arr::set($this->items, $key, $value, $merge, $delimiter === '' ? $this->delimiter : $delimiter);
-        }
+        Arr::set($this->items, $key, $value, $merge, $delimiter === '' ? $this->delimiter : $delimiter);
         return $this;
     }
 
@@ -352,15 +331,11 @@ class Container implements \ArrayAccess, IContainer
      * Checks whether an element of the array exists or not.
      *
      * @param array|string $key An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param bool $compositeKey Determines whether the key is compound key.
      * @param string $delimiter The key delimiter in composite keys.
      * @return bool
      */
-    public function has($key, bool $compositeKey = false, string $delimiter = '') : bool
+    public function has($key, string $delimiter = '') : bool
     {
-        if (!$compositeKey) {
-            return array_key_exists($key, $this->items);
-        }
         return Arr::has($this->items, $key, $delimiter === '' ? $this->delimiter : $delimiter);
     }
 
@@ -368,110 +343,14 @@ class Container implements \ArrayAccess, IContainer
      * Removes an element of the array, defined by its compound key.
      *
      * @param array|string $key An array of the element's elementary keys or compound key (i.e. keys, separated by dot).
-     * @param bool $compositeKey Determines whether the key is compound key.
-     * @param string $delimiter The key delimiter in composite keys.
      * @param bool $removeEmptyParent Determines whether the parent element should be removed if it no longer contains
      * elements after removing the given one.
+     * @param string $delimiter The key delimiter in composite keys.
      * @return \Aleph\Data\Structures\Interfaces\IContainer
      */
-    public function remove($key, bool $compositeKey = false,
-                           string $delimiter = '', bool $removeEmptyParent = false) : IContainer
+    public function remove($key, bool $removeEmptyParent = false, string $delimiter = '') : IContainer
     {
-        if (!$compositeKey) {
-            unset($this->items[$key]);
-        } else {
-            Arr::remove($this->items, $key, $removeEmptyParent, $delimiter === '' ? $this->delimiter : $delimiter);
-        }
+        Arr::remove($this->items, $key, $removeEmptyParent, $delimiter === '' ? $this->delimiter : $delimiter);
         return $this;
-    }
-
-    /**
-     * Returns value of the array element by its simple (not a composite) key.
-     *
-     * @param string $key The element key.
-     * @return mixed
-     */
-    public function __get(string $key)
-    {
-        return $this->get($key);
-    }
-
-    /**
-     * Sets value of an array element.
-     *
-     * @param string $key The simple (not a composite) element key.
-     * @param mixed $value The new element value.
-     * @return void
-     */
-    public function __set(string $key, $value)
-    {
-        $this->set($key, $value);
-    }
-
-    /**
-     * Returns TRUE if an array element with the given key exists.
-     *
-     * @param string $key The simple (not a composite) element key.
-     * @return bool
-     */
-    public function __isset(string $key) : bool
-    {
-        return $this->has($key);
-    }
-
-    /**
-     * Remove an array element by its key.
-     *
-     * @param string $key The simple (not a composite) element key.
-     * @return void
-     */
-    public function __unset(string $key)
-    {
-        $this->remove($key);
-    }
-
-    /**
-     * Returns value of the array element by its simple (not a composite) key.
-     *
-     * @param string $key The element key.
-     * @return mixed
-     */
-    public function offsetGet($key)
-    {
-        return $this->get($key);
-    }
-
-    /**
-     * Sets value of an array element.
-     *
-     * @param string $key The simple (not a composite) element key.
-     * @param mixed $value The new element value.
-     * @return void
-     */
-    public function offsetSet($key, $value)
-    {
-        $this->set($key, $value);
-    }
-
-    /**
-     * Returns TRUE if an array element with the given key exists.
-     *
-     * @param string $key The simple (not a composite) element key.
-     * @return bool
-     */
-    public function offsetExists($key)
-    {
-        return $this->has($key);
-    }
-
-    /**
-     * Removes an array element by its key.
-     *
-     * @param string $key The simple (not a composite) element key.
-     * @return void
-     */
-    public function offsetUnset($key)
-    {
-        $this->remove($key);
     }
 }
