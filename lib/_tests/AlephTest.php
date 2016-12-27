@@ -130,7 +130,7 @@ class AlephTest extends TestCase
 
     /**
      * @param mixed $config Invalid config
-     * @covers       Aleph::setConfig
+     * @covers Aleph::setConfig
      * @dataProvider invalidConfigs
      */
     public function testConfigInvalidLoad($config)
@@ -156,7 +156,7 @@ class AlephTest extends TestCase
     /**
      * Checks configs merge.
      *
-     * @covers  Aleph::setConfig
+     * @covers Aleph::setConfig
      * @depends testConfigLoad
      */
     public function testConfigMerge()
@@ -174,7 +174,7 @@ class AlephTest extends TestCase
     /**
      * Checks "get" access to the config.
      *
-     * @covers  Aleph::get
+     * @covers Aleph::get
      * @depends testConfigMerge
      */
     public function testConfigAccessGet()
@@ -192,7 +192,7 @@ class AlephTest extends TestCase
     /**
      * Checks "set" access to the config.
      *
-     * @covers  Aleph::set
+     * @covers Aleph::set
      * @depends testConfigAccessGet
      */
     public function testConfigAccessSet()
@@ -213,7 +213,7 @@ class AlephTest extends TestCase
     /**
      * Checks "has" access to the config.
      *
-     * @covers  Aleph::has
+     * @covers Aleph::has
      * @depends testConfigAccessGet
      */
     public function testConfigAccessHas()
@@ -229,7 +229,7 @@ class AlephTest extends TestCase
     /**
      * Checks "remove" access to the config.
      *
-     * @covers  Aleph::remove
+     * @covers Aleph::remove
      * @depends testConfigAccessGet
      */
     public function testConfigAccessRemove()

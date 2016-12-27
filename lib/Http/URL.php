@@ -71,7 +71,7 @@ class URL
     /**
      * The port of the URL.
      *
-     * @var integer
+     * @var int
      */
     public $port = 80;
 
@@ -164,7 +164,7 @@ class URL
      * @param string $url
      * @return void
      */
-    public function parse(string $url)
+    public function parse(string $url = '')
     {
         if ($url === '') {
             $this->reset();
@@ -176,13 +176,13 @@ class URL
         if (empty($data[1])) {
             $data = explode(':', $data[0]);
             $this->host = urldecode($data[0]);
-            $this->port = isset($data[1]) ? (int)$data[1] : '';
+            $this->port = empty($data[1]) ? ($this->isSecure() ? 443 : 80) : (int)$data[1];
             $this->user = '';
             $this->password = '';
         } else {
             $d1 = explode(':', $data[1]);
             $this->host = urldecode($d1[0]);
-            $this->port = isset($d1[1]) ? (int)$d1[1] : '';
+            $this->port = empty($d1[1]) ? ($this->isSecure() ? 443 : 80) : (int)$d1[1];
             $d2 = explode(':', $data[0]);
             $this->user = urldecode($d2[0]);
             $this->password = urldecode(isset($d2[1]) ? $d2[1] : '');
@@ -246,7 +246,7 @@ class URL
             if (strlen($url) || $component & static::PATH) {
                 $url .= '?';
             }
-            $url .= http_build_query($this->query->all());
+            $url .= http_build_query($this->query->toArray());
         }
         if ($component & static::FRAGMENT && isset($this->fragment) && strlen($this->fragment)) {
             if (strlen($url)) {

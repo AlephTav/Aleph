@@ -73,8 +73,9 @@ final class Aleph
     const INIT_CLOSE_OUTPUT_BUFFERS = 4;   // determines whether the previous opened output buffers should be closed before Aleph's initialization.
     const INIT_USE_OUTPUT_BUFFERING = 8;   // determines whether the output buffering should be used.
     const INIT_ENABLE_ERROR_HANDLING = 16; // determines whether the error handling should be enabled.
-    const INIT_CLI = 16;                   // flags for initialization of typical console application.
-    const INIT_WEB = 27;                   // flags for initialization of typical web application.
+    const INIT_USE_AUTOLOADING = 32;       // determines whether the class autoloading should be used.
+    const INIT_CLI = 48;                   // flags for initialization of typical console application.
+    const INIT_WEB = 59;                   // flags for initialization of typical web application.
 
     /**
      * Determines whether the framework was initialized or not.
@@ -232,6 +233,8 @@ final class Aleph
         ]
     ];
 
+    /************************************ APP INITIALIZATION AND APP-RELATED HELPERS **********************************/
+
     /**
      * Initializes the Aleph framework.
      *
@@ -309,10 +312,12 @@ final class Aleph
         } else if (date_default_timezone_set(@date_default_timezone_get()) === false) {
             date_default_timezone_set('UTC');
         }
-        ini_set('unserialize_callback_func', 'spl_autoload_call');
-        spl_autoload_register(function ($class) {
-            Aleph::loadClass($class, empty(self::$config['autoload']['disableExceptions']));
-        });
+        if (self::$flags & self::INIT_USE_AUTOLOADING) {
+            ini_set('unserialize_callback_func', 'spl_autoload_call');
+            spl_autoload_register(function ($class) {
+                Aleph::loadClass($class, empty(self::$config['autoload']['disableExceptions']));
+            });
+        }
         if (self::$flags & self::INIT_START_SESSION) {
             if (!session_id()) {
                 if (!@session_start($sessionOptions)) {
@@ -336,6 +341,27 @@ final class Aleph
     }
 
     /**
+     * Returns the unique ID of your application (site).
+     *
+     * @return string
+     */
+    public static function getAppUniqueID() : string
+    {
+        return self::$appUniqueID;
+    }
+
+    /**
+     * Sets the unique ID of your application (site).
+     *
+     * @param string $uid
+     * @return void
+     */
+    public static function setAppUniqueID(string $uid)
+    {
+        self::$appUniqueID = $uid;
+    }
+
+    /**
      * Returns initialization flags.
      *
      * @return int
@@ -354,12 +380,10 @@ final class Aleph
      */
     public static function reserveMemory(int $size = 5242880)
     {
-        /** @noinspection PhpUnusedLocalVariableInspection */
         static $reservedMemory;
         if ($size === 0) {
             $reservedMemory = null;
         } else {
-            /** @noinspection PhpUnusedLocalVariableInspection */
             $reservedMemory = str_repeat(chr(0), $size);
         }
     }
@@ -393,6 +417,44 @@ final class Aleph
     }
 
     /**
+     * Cleans or flushes output buffers up to target level.
+     * Resulting level can be greater than target level if a non-removable buffer has been encountered.
+     *
+     * @param int $targetLevel The target output buffering level.
+     * @param bool $flush Determines whether to flush or clean the buffers.
+     * @param bool $returnContent Determines whether the buffer contents should be returned.
+     * @return string
+     */
+    public static function closeOutputBuffers(int $targetLevel, bool $flush = false, bool $returnContent = false) : string
+    {
+        $content = '';
+        $status = ob_get_status(true);
+        $level = count($status);
+        $flags = defined('PHP_OUTPUT_HANDLER_REMOVABLE') ? PHP_OUTPUT_HANDLER_REMOVABLE |
+            ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE) : -1;
+        while ($level-- > $targetLevel &&
+            ($s = $status[$level]) &&
+            (!isset($s['del']) ? !isset($s['flags']) || $flags === ($s['flags'] & $flags) : $s['del'])) {
+            if ($flush) {
+                if ($returnContent) {
+                    $content .= ob_get_flush();
+                } else {
+                    ob_end_flush();
+                }
+            } else {
+                if ($returnContent) {
+                    $content .= ob_get_clean();
+                } else {
+                    ob_end_clean();
+                }
+            }
+        }
+        return $content;
+    }
+
+    /*********************************************** CONFIGURATION ****************************************************/
+
+    /**
      * Returns array of configuration variables.
      *
      * @return array
@@ -415,7 +477,6 @@ final class Aleph
             if (!is_string($data) || $data == '' || strlen($data) > PHP_MAXPATHLEN) {
                 throw new \InvalidArgumentException(self::ERR_9);
             }
-            /** @noinspection PhpIncludeInspection */
             $data = require($data);
         }
         self::$config = $merge ? self::merge(self::$config, $data) : $data;
@@ -503,48 +564,7 @@ final class Aleph
         unset($cfg[$last]);
     }
 
-    /**
-     * Cleans or flushes output buffers up to target level.
-     * Resulting level can be greater than target level if a non-removable buffer has been encountered.
-     *
-     * @param int $targetLevel The target output buffering level.
-     * @param bool $flush Determines whether to flush or clean the buffers.
-     * @param bool $returnContent Determines whether the buffer contents should be returned.
-     * @return string
-     */
-    public static function closeOutputBuffers(int $targetLevel, bool $flush = false, bool $returnContent = false) : string
-    {
-        $content = '';
-        $status = ob_get_status(true);
-        $level = count($status);
-        $flags = defined('PHP_OUTPUT_HANDLER_REMOVABLE') ? PHP_OUTPUT_HANDLER_REMOVABLE | ($flush ? PHP_OUTPUT_HANDLER_FLUSHABLE : PHP_OUTPUT_HANDLER_CLEANABLE) : -1;
-        while ($level-- > $targetLevel && ($s = $status[$level]) && (!isset($s['del']) ? !isset($s['flags']) || $flags === ($s['flags'] & $flags) : $s['del'])) {
-            if ($flush) {
-                if ($returnContent) {
-                    $content .= ob_get_flush();
-                } else {
-                    ob_end_flush();
-                }
-            } else {
-                if ($returnContent) {
-                    $content .= ob_get_clean();
-                } else {
-                    ob_end_clean();
-                }
-            }
-        }
-        return $content;
-    }
-
-    /**
-     * Returns site root directory.
-     *
-     * @return string
-     */
-    public static function getRoot() : string
-    {
-        return self::$root;
-    }
+    /********************************************** SIMPLE PROFILER ****************************************************/
 
     /**
      * Sets start time point for some code part.
@@ -622,15 +642,7 @@ final class Aleph
         return microtime(true) - (float)$_SERVER['REQUEST_TIME'];
     }
 
-    /**
-     * Returns the unique ID of your application (site).
-     *
-     * @return string
-     */
-    public static function getAppUniqueID() : string
-    {
-        return self::$appUniqueID;
-    }
+    /*********************************************** ERROR HANDLING ***************************************************/
 
     /**
      * Returns custom error handler or NULL if not specified.
@@ -679,8 +691,7 @@ final class Aleph
                     if (error_reporting() & $errno) {
                         Aleph::exception(new \ErrorException($errstr, 0, $errno, $errfile, $errline));
                     }
-                },
-                    self::getErrorLevel());
+                }, self::getErrorLevel());
                 self::$errorHandling = true;
             }
         } else if (self::$errorHandling) {
@@ -769,9 +780,11 @@ final class Aleph
         if (PHP_SAPI === 'cli') {
             if ($debug) {
                 $output = PHP_EOL . PHP_EOL . 'BUG REPORT' . PHP_EOL . PHP_EOL;
-                $output .= 'The following error [[ ' . $info['message'] . ' ]] has been caught in file ' . $info['file'] . ' on line ' . $info['line'] . PHP_EOL . PHP_EOL;
+                $output .= 'The following error [[ ' . $info['message'] . ' ]] has been caught in file ' .
+                    $info['file'] . ' on line ' . $info['line'] . PHP_EOL . PHP_EOL;
                 $output .= 'Stack Trace:' . PHP_EOL . $info['traceAsString'] . PHP_EOL . PHP_EOL;
-                $output .= 'Execution Time: ' . $info['executionTime'] . ' sec' . PHP_EOL . 'Memory Usage: ' . $info['memoryUsage'] . ' Mb' . PHP_EOL . PHP_EOL;
+                $output .= 'Execution Time: ' . $info['executionTime'] . ' sec' . PHP_EOL . 'Memory Usage: ' .
+                    $info['memoryUsage'] . ' Mb' . PHP_EOL . PHP_EOL;
             } else {
                 $output = self::ERROR_TEMPLATE . PHP_EOL;
             }
@@ -785,13 +798,11 @@ final class Aleph
                 unset($tpl);
                 if (strlen(${'(_._)'}) <= PHP_MAXPATHLEN && is_file(${'(_._)'})) {
                     extract($info);
-                    /** @noinspection PhpIncludeInspection */
                     return require(${'(_._)'});
                 }
                 $info['traceAsString'] = htmlspecialchars($info['traceAsString']);
                 extract($info);
                 eval('$res = "' . str_replace('"', '\"', ${'(_._)'}) . '";');
-                /** @noinspection PhpUndefinedVariableInspection */
                 return $res;
             };
             $debugTemplate = $render($debugTemplate, $info);
@@ -807,7 +818,8 @@ final class Aleph
             }
         } else {
             $errorTemplate = empty(self::$config['errorTemplate']) ? null : self::dir(self::$config['errorTemplate']);
-            $output = (is_file($errorTemplate) && is_readable($errorTemplate)) ? file_get_contents($errorTemplate) : self::ERROR_TEMPLATE;
+            $output = (is_file($errorTemplate) && is_readable($errorTemplate)) ?
+                file_get_contents($errorTemplate) : self::ERROR_TEMPLATE;
         }
         self::setOutput($output);
     }
@@ -1094,7 +1106,7 @@ final class Aleph
     }
 
     /**
-     * Executes PHP code that inserted into HTML.
+     * Executes PHP code that inserted into HTML or XML.
      *
      * @param string $code The PHP inline code.
      * @param array $vars Variables to extract to the PHP code.
@@ -1116,6 +1128,45 @@ final class Aleph
         }
         return $res;
     }
+
+    /*********************************************** DEFAULT LOGGER ***************************************************/
+
+    /**
+     * Returns custom log handler or NULL if not specified.
+     *
+     * @return callable|null
+     */
+    public static function getLogger()
+    {
+        return self::$logger;
+    }
+
+    /**
+     * Sets custom log handler.
+     *
+     * @param callable $callback A callback that will be automatically invoked when an error is logging.
+     * @return void
+     */
+    public static function setLogger(callable $callback)
+    {
+        self::$logger = $callback;
+    }
+
+    /**
+     * Logs some data into log files.
+     *
+     * @param mixed $data Some data to log.
+     * @return void
+     */
+    public static function log($data)
+    {
+        $path = self::dir('@logs') . '/' . date('Y F');
+        if (is_dir($path) || mkdir($path, 0711, true)) {
+            file_put_contents($path . '/' . date('d H.i.s#') . microtime(true) . '.log', serialize($data));
+        }
+    }
+
+    /******************************* HELPERS FOR GETTING FULLY QUALIFIED PATHS AND URLS *******************************/
 
     /**
      * Returns the canonicalized absolute pathname of a directory specified by its alias.
@@ -1149,6 +1200,7 @@ final class Aleph
         if (file_exists($dir)) {
             return realpath($dir);
         }
+        // Implementations of realpath for non-existing files.
         $unipath = strlen($dir) == 0 || $dir[0] != '/';
         if (strpos($dir, ':') === false && $unipath) {
             $dir = getcwd() . DIRECTORY_SEPARATOR . $dir;
@@ -1195,44 +1247,17 @@ final class Aleph
         return '/' . str_replace('\\', '/', ltrim($dir, '\\/'));
     }
 
-    /*********************************************** DEFAULT LOGGER ***************************************************/
-
     /**
-     * Returns custom log handler or NULL if not specified.
+     * Returns site root directory.
      *
-     * @return callable|null
+     * @return string
      */
-    public static function getLogger()
+    public static function getRoot() : string
     {
-        return self::$logger;
+        return self::$root;
     }
 
-    /**
-     * Sets custom log handler.
-     *
-     * @param callable $callback A callback that will be automatically invoked when an error is logging.
-     * @return void
-     */
-    public static function setLogger(callable $callback)
-    {
-        self::$logger = $callback;
-    }
-
-    /**
-     * Logs some data into log files.
-     *
-     * @param mixed $data Some data to log.
-     * @return void
-     */
-    public static function log($data)
-    {
-        $path = self::dir('@logs') . '/' . date('Y F');
-        if (is_dir($path) || mkdir($path, 0711, true)) {
-            file_put_contents($path . '/' . date('d H.i.s#') . microtime(true) . '.log', serialize($data));
-        }
-    }
-
-    /************************************* REDIRECTION HELPER METHODS *************************************************/
+    /******************************************* REDIRECTION HELPER METHODS *******************************************/
 
     /**
      * Performs redirect to given URL.
@@ -1427,7 +1452,6 @@ final class Aleph
         if (isset($classes[$cs])) {
             $file = self::dir($classes[$cs]);
             if (is_file($file)) {
-                /** @noinspection PhpIncludeInspection */
                 require_once($file);
                 if (self::typeExists($cs)) {
                     return true;
@@ -1448,7 +1472,6 @@ final class Aleph
                     $file = self::dir($dir) . DIRECTORY_SEPARATOR .
                         str_replace('\\', DIRECTORY_SEPARATOR, $cs) . '.php';
                     if (file_exists($file)) {
-                        /** @noinspection PhpIncludeInspection */
                         require_once($file);
                         if (self::typeExists($class)) {
                             return true;
@@ -1489,17 +1512,14 @@ final class Aleph
             if (!$classmap) {
                 throw new \LogicException(self::ERR_3);
             }
-            /** @noinspection PhpIncludeInspection */
             if (file_exists($classmap) && (require($classmap)) === false) {
                 $seconds = 0;
                 $timeout = self::$config['autoload']['timeout'] ?? 300;
-                /** @noinspection PhpIncludeInspection */
                 while (($classes = require($classmap)) === false && ++$seconds <= $timeout) {
                     sleep(1);
                 }
                 if ($seconds <= $timeout) {
                     if (isset($classes[$class]) && is_file($classes[$class])) {
-                        /** @noinspection PhpIncludeInspection */
                         require_once($classes[$class]);
                         return self::typeExists($class);
                     }
@@ -1575,13 +1595,16 @@ final class Aleph
                                     if ($t[0] == T_STRING) {
                                         $cs = strtolower(ltrim($namespace . $t[1], '\\'));
                                         if (!empty(self::$config['autoload']['unique']) && isset(self::$classes[$cs])) {
-                                            $normalize = function ($dir) {
-                                                return str_replace((DIRECTORY_SEPARATOR == '\\') ? '/' : '\\', DIRECTORY_SEPARATOR, $dir);
+                                            $normalize = function($dir) {
+                                                return str_replace(DIRECTORY_SEPARATOR == '\\' ? '/' : '\\',
+                                                    DIRECTORY_SEPARATOR, $dir);
                                             };
                                             self::setClassMap([]);
-                                            throw new \LogicException(sprintf(self::ERR_2, ltrim($namespace . $t[1], '\\'), $normalize(self::dir(self::$classes[$cs])), $normalize($file)));
+                                            throw new \LogicException(sprintf(self::ERR_2, ltrim($namespace . $t[1], '\\'),
+                                                $normalize(self::dir(self::$classes[$cs])), $normalize($file)));
                                         }
-                                        self::$classes[$cs] = strpos($file, self::$root) === 0 ? ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;
+                                        self::$classes[$cs] = strpos($file, self::$root) === 0 ?
+                                            ltrim(substr($file, strlen(self::$root)), DIRECTORY_SEPARATOR) : $file;
                                         break;
                                     }
                                     ++$i;
@@ -1599,7 +1622,6 @@ final class Aleph
             if ($class !== null) {
                 if (isset(self::$classes[$class])) {
                     $file = self::dir(self::$classes[$class]);
-                    /** @noinspection PhpIncludeInspection */
                     require_once($file);
                     return self::typeExists($class);
                 }

@@ -2,16 +2,16 @@
 /**
  * Copyright (c) 2013 - 2016 Aleph Tav
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated 
- * documentation files (the "Software"), to deal in the Software without restriction, including without limitation 
- * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, 
+ * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
+ * documentation files (the "Software"), to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software,
  * and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
  *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO 
- * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO
+ * THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *
  * @author Aleph Tav <4lephtav@gmail.com>
@@ -39,14 +39,14 @@ class UploadedFile
      * @var array
      */
     protected $data = [];
-  
+
     /**
      * The code of the last happened error.
      *
      * @var int
      */
     protected $error = 0;
-  
+
     /**
      * The list of default extensions corresponding to file mime types.
      *
@@ -756,7 +756,7 @@ class UploadedFile
         'video/x-sgi-movie' => 'movie',
         'x-conference/x-cooltalk' => 'ice'
     ];
-  
+
     /**
      * The desired name of the uploaded file.
      * If this property is not defined the uploaded file will have the original name.
@@ -764,21 +764,21 @@ class UploadedFile
      * @var string
      */
     public $name = '';
-  
+
     /**
      * Determines whether the name of the uploaded file should be unique.
      *
      * @var bool
      */
     public $unique = false;
-  
+
     /**
      * The desired destination directory for the uploaded file.
      *
      * @var string
-    */
+     */
     public $destination = '';
-  
+
     /**
      * Turns on or turns off the validation of the uploaded file during moving it to a new location.
      *
@@ -793,7 +793,7 @@ class UploadedFile
      * @var array
      */
     public $extensions = [];
-  
+
     /**
      * Allowable mime types.
      * The uploaded file should have mime type which matches to one of these types.
@@ -801,7 +801,7 @@ class UploadedFile
      * @var array
      */
     public $types = [];
-  
+
     /**
      * The maximum file size (in bytes) of the uploaded file.
      * It should be greater than 0.
@@ -809,7 +809,7 @@ class UploadedFile
      * @var int
      */
     public $max = null;
-  
+
     /**
      * The minimum file size (in bytes) of the uploaded file.
      * It should be greater than 0.
@@ -817,14 +817,14 @@ class UploadedFile
      * @var int
      */
     public $min = null;
-    
+
     /**
      * Permissions for newly created directory to store the uploaded file.
      *
      * @var int
      */
     public $directoryMode = 0711;
-  
+
     /**
      * Permissions for the uploaded file.
      *
@@ -843,8 +843,7 @@ class UploadedFile
      */
     public function __construct($path, string $name = '', string $type = '', int $size = 0, int $error = 0)
     {
-        if (is_array($path))
-        {
+        if (is_array($path)) {
             $this->data = [
                 'name' => $path['name'],
                 'path' => $path['tmp_name'],
@@ -852,9 +851,7 @@ class UploadedFile
                 'size' => $path['size'],
                 'error' => $path['error']
             ];
-        }
-        else
-        {
+        } else {
             $this->data = [
                 'name' => $name,
                 'path' => $path,
@@ -864,7 +861,7 @@ class UploadedFile
             ];
         }
     }
-  
+
     /**
      * Returns the extension based on the mime type.
      * If the mime type is unknown, returns NULL.
@@ -876,7 +873,7 @@ class UploadedFile
         $type = $this->getType();
         return isset($this->defaultExtensions[$type]) ? $this->defaultExtensions[$type] : null;
     }
-  
+
     /**
      * Returns the extension of the uploaded file.
      *
@@ -886,7 +883,7 @@ class UploadedFile
     {
         return pathinfo($this->data['name'], PATHINFO_EXTENSION);
     }
-  
+
     /**
      * Returns the real mime type of the uploaded file.
      * If the mime type is unknown, returns NULL.
@@ -897,7 +894,7 @@ class UploadedFile
     {
         return $this->data['path'] ? mime_content_type($this->data['path']) : null;
     }
-  
+
     /**
      * Returns the real size (in bytes) of the uploaded file.
      *
@@ -907,7 +904,7 @@ class UploadedFile
     {
         return filesize($this->data['path']);
     }
-  
+
     /**
      * Returns the original name of the uploaded file.
      *
@@ -917,13 +914,13 @@ class UploadedFile
     {
         return $this->data['name'];
     }
-  
+
     /**
      * Returns the original mime type of the uploaded file.
      *
      * @return string
      */
-    public function	getClientType() : string
+    public function getClientType() : string
     {
         return $this->data['type'];
     }
@@ -937,7 +934,7 @@ class UploadedFile
     {
         return $this->data['size'];
     }
-  
+
     /**
      * Returns the code of the last happened error.
      *
@@ -947,7 +944,7 @@ class UploadedFile
     {
         return $this->error;
     }
-  
+
     /**
      * Returns the message of the last happened error.
      *
@@ -955,8 +952,7 @@ class UploadedFile
      */
     public function getErrorMessage() : string
     {
-        switch ($this->error)
-        {
+        switch ($this->error) {
             case 0:
                 return 'File has been successfully uploaded.';
             case UPLOAD_ERR_INI_SIZE:
@@ -990,7 +986,7 @@ class UploadedFile
         }
         return 'File uploading is failed (error code is ' . $this->error . ').';
     }
-  
+
     /**
      * Checks that the uploaded file was uploaded successfully and match the specified requirements.
      * Returns TRUE if no error occurred during uploading and all requirements are met and FALSE otherwise.
@@ -999,37 +995,29 @@ class UploadedFile
      */
     public function validate() : bool
     {
-        if ($this->data['error'] > 0)
-        {
+        if ($this->data['error'] > 0) {
             $this->error = $this->data['error'];
             return false;
         }
-        if (is_array($this->extensions) && count($this->extensions) > 0)
-        {
-            if (!in_array($this->getExtension(), $this->extensions) && !in_array($this->getExtensionByType(), $this->extensions))
-            {
+        if (is_array($this->extensions) && count($this->extensions) > 0) {
+            if (!in_array($this->getExtension(), $this->extensions) && !in_array($this->getExtensionByType(), $this->extensions)) {
                 $this->error = 10;
                 return false;
             }
         }
-        if (is_array($this->types) && count($this->types) > 0)
-        {
-            if (!in_array($this->getType(), $this->types))
-            {
+        if (is_array($this->types) && count($this->types) > 0) {
+            if (!in_array($this->getType(), $this->types)) {
                 $this->error = 11;
                 return false;
             }
         }
-        if ($this->max > 0 || $this->min > 0)
-        {
+        if ($this->max > 0 || $this->min > 0) {
             $size = $this->getSize();
-            if ($this->max > 0 && $size > $this->max)
-            {
+            if ($this->max > 0 && $size > $this->max) {
                 $this->error = 12;
                 return false;
             }
-            if ($this->min > 0 && $size < $this->min)
-            {
+            if ($this->min > 0 && $size < $this->min) {
                 $this->error = 13;
                 return false;
             }
@@ -1037,7 +1025,7 @@ class UploadedFile
         $this->error = 0;
         return true;
     }
-  
+
     /**
      * Moves the uploaded file to a new location.
      * Returns the information of the moved file and FALSE if an error has occurred.
@@ -1046,37 +1034,29 @@ class UploadedFile
      */
     public function move()
     {
-        if ($this->validate && !$this->validate())
-        {
+        if ($this->validate && !$this->validate()) {
             return false;
         }
-        if (!is_uploaded_file($this->data['path']))
-        {
+        if (!is_uploaded_file($this->data['path'])) {
             $this->error = 14;
             return false;
         }
         $file = $this->destination;
-        if (!is_dir($file))
-        {
+        if (!is_dir($file)) {
             mkdir($file, $this->directoryMode, true);
         }
-        if (!is_writable($file))
-        {
+        if (!is_writable($file)) {
             $this->error = 15;
             return false;
         }
         $ext = $this->getExtension() ?: $this->getExtensionByType();
-        if (!$this->unique)
-        {
+        if (!$this->unique) {
             $name = $this->name ?: $this->data['name'];
-        }
-        else
-        {
+        } else {
             $name = md5(microtime() . mt_rand()) . ($ext ? '.' . $ext : '');
         }
         $file .= DIRECTORY_SEPARATOR . $name;
-        if (!move_uploaded_file($this->data['path'], $file) && !chmod($file, $this->fileMode))
-        {
+        if (!move_uploaded_file($this->data['path'], $file) && !chmod($file, $this->fileMode)) {
             $this->error = 16;
             return false;
         }
@@ -1086,9 +1066,9 @@ class UploadedFile
             'url' => strpos($file, Aleph::getRoot()) === 0 ? '/' . str_replace('\\', '/', ltrim(substr($file, strlen(Aleph::getRoot())), '\\/')) : false,
             'name' => $name,
             'filename' => pathinfo($name, PATHINFO_FILENAME),
-            'extension' => $ext, 
-            'originalName' => $this->data['name'], 
-            'size' => filesize($file), 
+            'extension' => $ext,
+            'originalName' => $this->data['name'],
+            'size' => filesize($file),
             'type' => mime_content_type($file)
         ];
     }
